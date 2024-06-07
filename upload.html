@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>File Upload</title>
+</head>
+<body>
+<h1>Upload a File</h1>
+<input type="file" id="fileInput" required>
+<button onclick="uploadFile()">Upload</button>
+
+<script>
+    function uploadFile() {
+        const fileInput = document.getElementById('fileInput');
+        if (!fileInput.files.length) return;
+
+        const file = fileInput.files[0];
+        const ws = new WebSocket(`ws://${window.location.host}/upload`);
+
+        ws.onopen = function() {
+            ws.send(file.name);
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const buffer = event.target.result;
+                ws.send(buffer);
+            };
+            reader.readAsArrayBuffer(file);
+        };
+
+        ws.onmessage = function(event) {
+            alert(event.data);
+            ws.close();
+        };
+
+        ws.onerror = function(error) {
+            alert("WebSocket error: " + error.message);
+        };
+    }
+</script>
+</body>
+</html>

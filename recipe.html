@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{{.name}}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 p-4">
+<div class="bg-white shadow-md rounded-lg p-6 mb-6">
+    <h2 class="text-2xl font-bold mb-2">{{.name}}</h2>
+    <a href="{{.source}}" class="text-blue-500 underline">{{.source}}</a>
+    <div class="mt-4">
+        <img src="{{.image}}" alt="{{.name}}" class="w-24 h-24 object-cover rounded-full">
+    </div>
+    <div class="mt-4">
+        <h3 class="text-xl font-semibold">Ingredients:</h3>
+        {{range .recipe_ingredient_groups}}
+            <div class="mt-2">
+                <h4 class="font-semibold">{{.name}}</h4>
+                <ul class="list-disc list-inside">
+                    {{range .ingredients}}
+                        <li>{{.}}</li>
+                    {{end}}
+                </ul>
+            </div>
+        {{end}}
+    </div>
+    <div class="mt-4">
+        <h3 class="text-xl font-semibold">Directions:</h3>
+        <ol class="list-decimal list-inside">
+            {{range .recipe_directions}}
+                <li class="mt-2">{{.}}</li>
+            {{end}}
+        </ol>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>File System</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px 12px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #f4f4f4; }
+    </style>
+</head>
+<body>
+<h1>File System</h1>
+<table>
+    <thead>
+    <tr>
+        <th>Name</th>
+        <th>Size</th>
+        <th>Last Modified</th>
+    </tr>
+    </thead>
+    <tbody>
+    {{range .}}
+        <tr>
+            <td>
+                {{if .IsDir}}
+                    <a href="{{.Path}}">{{.Name}}</a>
+                {{else}}
+                    <a href="{{.Path}}" download>{{.Name}}</a>
+                {{end}}
+            </td>
+            <td>{{.Size}}</td>
+            <td>{{.ModTime}}</td>
+        </tr>
+    {{end}}
+    </tbody>
+</table>
+</body>
+</html>
