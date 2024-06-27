@@ -204,8 +204,18 @@ func codeHandler(w http.ResponseWriter, r *http.Request) {
 
 // fileServerHandler handles the file system view
 func fileServerHandler(w http.ResponseWriter, r *http.Request) {
-	path := "." + r.URL.Path
-	http.ServeFile(w, r, path)
+	host := r.Host
+
+	// the host is in the form: *.justshare.io, extract the subdomain
+
+	subdomain := strings.Split(host, ".")[0]
+
+	if subdomain == "justshare" {
+		http.ServeFile(w, r, "index.html")
+		return
+	}
+
+	http.ServeFile(w, r, path.Join(subdomain, r.URL.Path))
 	return
 }
 
@@ -472,7 +482,7 @@ func startServer(useTLS bool, port int) {
 			TLSConfig: tlsConfig,
 		}
 
-		log.Println("Starting HTTPS server on port 4443")
+		log.Printf("Starting HTTPS server on port: %d", port)
 		err := server.ListenAndServeTLS(certFile, keyFile)
 		if err != nil {
 			log.Fatalf("Failed to start HTTPS server: %v", err)
