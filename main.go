@@ -463,9 +463,10 @@ func startServer(useTLS bool) {
 	interCertFile := path.Join(dir, "intermediate.cert.pem")
 	certFile := path.Join(dir, "domain.cert.pem")
 	keyFile := path.Join(dir, "private.key.pem")
-	tlsConfig := NewTLSConfig(interCertFile, certFile, keyFile)
 
 	if useTLS {
+		tlsConfig := NewTLSConfig(interCertFile, certFile, keyFile)
+
 		server := &http.Server{
 			Addr:      ":4443",
 			TLSConfig: tlsConfig,
