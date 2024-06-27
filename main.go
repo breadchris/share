@@ -446,7 +446,7 @@ func loadIndex() http.HandlerFunc {
 	return h.searchHandler
 }
 
-func startServer(useTLS bool) {
+func startServer(useTLS bool, port int) {
 	http.HandleFunc("/chat", chatHandler)
 	http.HandleFunc("/chat/send", sendHandler)
 	http.HandleFunc("/chat/clear", clearHandler)
@@ -468,7 +468,7 @@ func startServer(useTLS bool) {
 		tlsConfig := NewTLSConfig(interCertFile, certFile, keyFile)
 
 		server := &http.Server{
-			Addr:      ":4443",
+			Addr:      fmt.Sprintf(":%d", port),
 			TLSConfig: tlsConfig,
 		}
 
@@ -478,8 +478,8 @@ func startServer(useTLS bool) {
 			log.Fatalf("Failed to start HTTPS server: %v", err)
 		}
 	} else {
-		log.Println("Starting HTTP server on port 8042")
-		http.ListenAndServe(":8042", nil)
+		log.Printf("Starting HTTP server on port: %d", port)
+		http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 	}
 }
 
@@ -493,9 +493,13 @@ func main() {
 					&cli.BoolFlag{
 						Name: "tls",
 					},
+					&cli.IntFlag{
+						Name:  "port",
+						Value: 8080,
+					},
 				},
 				Action: func(c *cli.Context) error {
-					startServer(c.Bool("tls"))
+					startServer(c.Bool("tls"), c.Int("port"))
 					return nil
 				},
 			},
