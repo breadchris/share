@@ -11,7 +11,17 @@
     </style>
 </head>
 <body>
-<h1>File System</h1>
+{{if .IsFile}}
+    <div class="file-content">
+        <h2>{{.FileName}}</h2>
+        <pre style="height: 100%; width: 100%">{{.FileContent | safeHTML}}</pre>
+    </div>
+{{else}}
+{{if .ReadmeContent}}
+    <div class="readme">
+        {{.ReadmeContent | safeHTML}}
+    </div>
+{{end}}
 <table>
     <thead>
     <tr>
@@ -21,13 +31,13 @@
     </tr>
     </thead>
     <tbody>
-    {{range .}}
+    {{range .Files}}
         <tr>
             <td>
                 {{if .IsDir}}
-                    <a href="{{.Path}}">{{.Name}}</a>
+                    <a href="{{.Path}}">{{.Name}}/</a>
                 {{else}}
-                    <a href="{{.Path}}" download>{{.Name}}</a>
+                    <a href="{{.Path}}">{{.Name}}</a>
                 {{end}}
             </td>
             <td>{{.Size}}</td>
@@ -36,5 +46,6 @@
     {{end}}
     </tbody>
 </table>
+{{end}}
 </body>
 </html>

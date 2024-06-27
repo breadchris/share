@@ -1,36 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>{{.name}}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Name}}</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@1.9.3/dist/full.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100 p-4">
-<div class="bg-white shadow-md rounded-lg p-6 mb-6">
-    <h2 class="text-2xl font-bold mb-2">{{.name}}</h2>
-    <a href="{{.source}}" class="text-blue-500 underline">{{.source}}</a>
-    <div class="mt-4">
-        <img src="{{.image}}" alt="{{.name}}" class="w-24 h-24 object-cover rounded-full">
-    </div>
-    <div class="mt-4">
-        <h3 class="text-xl font-semibold">Ingredients:</h3>
-        {{range .recipe_ingredient_groups}}
-            <div class="mt-2">
-                <h4 class="font-semibold">{{.name}}</h4>
-                <ul class="list-disc list-inside">
+<body class="bg-gray-100 text-gray-800">
+<a href="{{.home}}">home</a>
+<div class="container mx-auto p-4">
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex items-center">
+            <img src="{{.image}}" alt="{{.name}}" class="w-16 h-16 rounded-full mr-4">
+            <div>
+                <h1 class="text-2xl font-bold">{{.name}}</h1>
+                <a href="{{.source}}" class="text-blue-500">Source</a>
+            </div>
+        </div>
+        <div class="mt-6">
+            <h2 class="text-xl font-semibold">Ingredients</h2>
+            <ul class="list-disc list-inside">
+                {{range .recipe_ingredient_groups}}
                     {{range .ingredients}}
                         <li>{{.}}</li>
                     {{end}}
-                </ul>
+                {{end}}
+            </ul>
+        </div>
+        <div class="mt-6">
+            <h2 class="text-xl font-semibold">Directions</h2>
+            <div class="space-y-4">
+                {{range .recipe_directions}}
+                    <p>{{.}}</p>
+                {{end}}
             </div>
-        {{end}}
-    </div>
-    <div class="mt-4">
-        <h3 class="text-xl font-semibold">Directions:</h3>
-        <ol class="list-decimal list-inside">
-            {{range .recipe_directions}}
-                <li class="mt-2">{{.}}</li>
-            {{end}}
-        </ol>
+        </div>
     </div>
 </div>
 </body>

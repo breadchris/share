@@ -1,0 +1,10 @@
+{{if eq (len .) 0}}
+    <p class="font-semibold mb-4">No search results</p>
+{{end}}
+{{range .}}
+    <div class="border p-4 mb-4 bg-white rounded shadow">
+        <h2 class="text-xl font-semibold">{{.Title}}</h2>
+        <p>{{.Description}}</p>
+        <a href="{{.URL}}" class="text-blue-500">Read more</a>
+    </div>
+{{end}}
