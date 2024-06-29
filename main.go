@@ -10,6 +10,7 @@ import (
 	ignore "github.com/sabhiram/go-gitignore"
 	"github.com/urfave/cli/v2"
 	"html/template"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -206,16 +207,45 @@ func codeHandler(w http.ResponseWriter, r *http.Request) {
 func fileServerHandler(w http.ResponseWriter, r *http.Request) {
 	host := r.Host
 
+	fmt.Printf("path: %s\n", r.URL.Path)
+
 	// the host is in the form: *.justshare.io, extract the subdomain
 
 	subdomain := strings.Split(host, ".")[0]
+	isRoot := subdomain == "justshare" || strings.HasPrefix(subdomain, "l")
 
-	if subdomain == "justshare" {
-		http.ServeFile(w, r, "index.html")
+	if r.Method == "PUT" {
+		// update file with content from request body
+		c, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// remove the leading slash
+		p := r.URL.Path[1:]
+		if !isRoot {
+			p = path.Join(subdomain, p)
+		}
+		f, err := os.OpenFile(p, os.O_RDWR, 0644)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		_, err = io.Copy(f, strings.NewReader(string(c)))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		return
 	}
 
-	http.ServeFile(w, r, path.Join(subdomain, r.URL.Path))
+	if isRoot {
+		fileServe(r, w, r.URL.Path)
+		return
+	}
+
+	fileServe(r, w, path.Join(subdomain, r.URL.Path))
 	return
 }
 
@@ -245,7 +275,7 @@ func fileUpload() {
 }
 
 func recipeHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("recipe/index.html")
+	tmpl, err := template.ParseFiles("data/recipes/index.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -253,96 +283,94 @@ func recipeHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, nil)
 }
 
-func fileServer(baseDir string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		//path := filepath.Join(baseDir, r.URL.Path)
-		path := r.URL.Path
-		// remove the leading slash
-		path = path[1:]
+func fileServe(r *http.Request, w http.ResponseWriter, baseDir string) {
+	//path := filepath.Join(baseDir, r.URL.Path)
+	path := r.URL.Path
+	// remove the leading slash
+	path = path[1:]
 
-		fileInfo, err := ioutil.ReadDir(path)
+	fileInfo, err := ioutil.ReadDir(path)
+	if err == nil {
+		type File struct {
+			Name  string
+			IsDir bool
+		}
+		var fileNames []File
+		for _, file := range fileInfo {
+			fileNames = append(fileNames, File{file.Name(), file.IsDir()})
+		}
+
+		data := map[string]any{
+			"files": fileNames,
+		}
+
+		indexPath := filepath.Join(path, "index.html")
+		indexTemplate, err := template.ParseFiles(indexPath)
 		if err == nil {
-			type File struct {
-				Name  string
-				IsDir bool
-			}
-			var fileNames []File
-			for _, file := range fileInfo {
-				fileNames = append(fileNames, File{file.Name(), file.IsDir()})
-			}
-
-			data := map[string]any{
-				"files": fileNames,
-			}
-
-			indexPath := filepath.Join(path, "index.html")
-			indexTemplate, err := template.ParseFiles(indexPath)
-			if err == nil {
-				indexTemplate.Execute(w, data)
-				return
-			}
-
-			indexTemplate, err = template.ParseFiles("dir.html")
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			err = indexTemplate.Execute(w, data)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
+			indexTemplate.Execute(w, data)
 			return
 		}
 
-		ext := filepath.Ext(path)
-		if ext == ".html" {
-			tmpl, err := template.ParseFiles(path)
-			if err == nil {
-				tmpl.Execute(w, nil)
-				return
-			}
-		} else if ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif" {
-			http.ServeFile(w, r, path)
-			return
-		} else if ext == ".json" {
-			data := map[string]any{
-				"home": "/data/recipes/",
-			}
-
-			jsonFile, err := os.Open(path)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			defer jsonFile.Close()
-
-			byteValue, err := ioutil.ReadAll(jsonFile)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			if err = json.Unmarshal(byteValue, &data); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			indexTemplate, err := template.ParseFiles("recipe.html")
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			err = indexTemplate.Execute(w, data)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
+		indexTemplate, err = template.ParseFiles("dir.html")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		http.ServeFile(w, r, path)
+
+		err = indexTemplate.Execute(w, data)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		return
 	}
+
+	ext := filepath.Ext(path)
+	if ext == ".html" {
+		tmpl, err := template.ParseFiles(path)
+		if err == nil {
+			tmpl.Execute(w, nil)
+			return
+		}
+	} else if ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif" {
+		http.ServeFile(w, r, path)
+		return
+	} else if ext == ".json" {
+		data := map[string]any{
+			"home": "/data/recipes/",
+		}
+
+		jsonFile, err := os.Open(path)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer jsonFile.Close()
+
+		byteValue, err := ioutil.ReadAll(jsonFile)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if err = json.Unmarshal(byteValue, &data); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		indexTemplate, err := template.ParseFiles("recipe.html")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		err = indexTemplate.Execute(w, data)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		return
+	}
+	http.ServeFile(w, r, path)
 }
 
 // SearchResult represents a single search result item
@@ -465,7 +493,6 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/blog", blogHandler)
 	http.HandleFunc("/submit", submitHandler)
 	http.HandleFunc("/recipe", recipeHandler)
-	http.HandleFunc("/data/", fileServer("./data"))
 	http.HandleFunc("/search", loadIndex())
 	http.HandleFunc("/", fileServerHandler)
 
