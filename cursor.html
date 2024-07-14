@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Event Tracker</title>
+    <style>
+        .cursor {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: red;
+            border-radius: 50%;
+            transition: transform 0.1s linear;
+        }
+    </style>
+</head>
+<body>
+<div id="cursor" class="cursor"></div>
+<script>
+    const cursor = document.getElementById('cursor');
+    const ws = new WebSocket(`ws://${window.location.host}/ws`);
+    let clientId;
+    let lastSent = 0;
+    const interval = 100; // Send data every 100 ms
+
+    const sendEvent = (type, data) => {
+        const event = { type, data };
+        ws.send(JSON.stringify(event));
+    };
+
+    ws.onmessage = function(event) {
+        const message = JSON.parse(event.data);
+        clientId = message.client_id;
+        switch (message.type) {
+            case 'cursor':
+                handleCursorUpdate(message.client_id, message.data, message.color);
+                break;
+            case 'click':
+                handleClick(message.data);
+                break;
+            case 'typing':
+                handleTyping(message.data);
+                break;
+            // Handle other event types as needed
+        }
+    };
+
+    const handleCursorUpdate = (clientId, data, color) => {
+        let otherCursor = document.getElementById(`cursor-${clientId}`);
+        if (!otherCursor) {
+            otherCursor = document.createElement('div');
+            otherCursor.id = `cursor-${clientId}`;
+            otherCursor.className = 'cursor';
+            otherCursor.style.backgroundColor = color;
+            document.body.appendChild(otherCursor);
+        }
+        otherCursor.style.transform = `translate(${data.x}px, ${data.y}px)`;
+    };
+
+    const handleClick = (data) => {
+        console.log(`Click event at (${data.x}, ${data.y})`);
+    };
+
+    const handleTyping = (data) => {
+        console.log(`Typing event: ${data.text}`);
+    };
+
+    document.addEventListener('mousemove', function(event) {
+        const now = Date.now();
+        if (now - lastSent > interval) {
+            const cursorData = {
+                x: event.clientX,
+                y: event.clientY
+            };
+            cursor.style.transform = `translate(${cursorData.x}px, ${cursorData.y}px)`;
+            sendEvent('cursor', cursorData);
+            lastSent = now;
+        }
+    });
+
+    document.addEventListener('click', function(event) {
+        const clickData = {
+            x: event.clientX,
+            y: event.clientY
+        };
+        sendEvent('click', clickData);
+    });
+
+    document.addEventListener('keydown', function(event) {
+        const typingData = {
+            text: event.key
+        };
+        sendEvent('typing', typingData);
+    });
+</script>
+</body>
+</html>

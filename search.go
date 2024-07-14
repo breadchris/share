@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/blevesearch/bleve"
+	"io"
 	"io/fs"
-	"io/ioutil"
 )
 
 type SearchIndex struct {
@@ -11,6 +11,19 @@ type SearchIndex struct {
 }
 
 // TODO breadchris make sure I am using this right https://github.com/blevesearch/beer-search
+
+func loadSearchIndex(indexPath string) (bleve.Index, error) {
+	mapping := bleve.NewIndexMapping()
+	bleveIdx, err := bleve.Open(indexPath)
+	if err == nil {
+		return bleveIdx, nil
+	}
+	bleveIdx, err = bleve.New(indexPath, mapping)
+	if err != nil {
+		return nil, err
+	}
+	return bleveIdx, nil
+}
 
 func NewSearchIndex(indexPath string) (*SearchIndex, error) {
 	idx, err := loadSearchIndex(indexPath)
@@ -28,22 +41,13 @@ func (s *SearchIndex) DeleteDocument(id string) error {
 	return s.Index.Delete(id)
 }
 
+func (s *SearchIndex) Batch(b *bleve.Batch) error {
+	return s.Index.Batch(b)
+}
+
 func (s *SearchIndex) Search(query string) (*bleve.SearchResult, error) {
 	req := bleve.NewSearchRequest(bleve.NewQueryStringQuery(query))
 	return s.Index.Search(req)
-}
-
-func loadSearchIndex(indexPath string) (bleve.Index, error) {
-	mapping := bleve.NewIndexMapping()
-	bleveIdx, err := bleve.Open(indexPath)
-	if err == nil {
-		return bleveIdx, nil
-	}
-	bleveIdx, err = bleve.New(indexPath, mapping)
-	if err != nil {
-		return nil, err
-	}
-	return bleveIdx, nil
 }
 
 // ProcessFileFunc defines the function type to process a file's contents.
@@ -63,7 +67,7 @@ func WalkDirectory(fsys fs.FS, dir string, processFunc ProcessFileFunc) error {
 			return err
 		}
 		defer file.Close()
-		contents, err := ioutil.ReadAll(file)
+		contents, err := io.ReadAll(file)
 		if err != nil {
 			return err
 		}

@@ -26,6 +26,78 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+func startServer(useTLS bool, port int) {
+	http.HandleFunc("/chat", chatHandler)
+	http.HandleFunc("/chat/send", sendHandler)
+	http.HandleFunc("/chat/clear", clearHandler)
+
+	loadEntries()
+
+	setupWebauthn()
+	setupCursor()
+	//text.Setup(upgrader)
+
+	http.HandleFunc("/blog", blogHandler)
+	http.HandleFunc("/submit", submitHandler)
+	http.HandleFunc("/recipe", recipeHandler)
+	http.HandleFunc("/search", loadIndex())
+	http.HandleFunc("/qrcode", handleQR)
+	http.HandleFunc("/", fileServerHandler)
+
+	dir := "data/justshare.io-ssl-bundle"
+	interCertFile := path.Join(dir, "intermediate.cert.pem")
+	certFile := path.Join(dir, "domain.cert.pem")
+	keyFile := path.Join(dir, "private.key.pem")
+
+	if useTLS {
+		tlsConfig := NewTLSConfig(interCertFile, certFile, keyFile)
+
+		server := &http.Server{
+			Addr:      fmt.Sprintf(":%d", port),
+			TLSConfig: tlsConfig,
+		}
+
+		log.Printf("Starting HTTPS server on port: %d", port)
+		err := server.ListenAndServeTLS(certFile, keyFile)
+		if err != nil {
+			log.Fatalf("Failed to start HTTPS server: %v", err)
+		}
+	} else {
+		log.Printf("Starting HTTP server on port: %d", port)
+		http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+	}
+}
+
+func main() {
+	app := &cli.App{
+		Name: "share",
+		Commands: []*cli.Command{
+			{
+				Name: "start",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name: "tls",
+					},
+					&cli.IntFlag{
+						Name:  "port",
+						Value: 8080,
+					},
+				},
+				Action: func(c *cli.Context) error {
+					startServer(c.Bool("tls"), c.Int("port"))
+					return nil
+				},
+			},
+		},
+	}
+
+	err := app.Run(os.Args)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl, err := template.ParseFiles("blog.html")
 	if err != nil {
@@ -454,7 +526,7 @@ func NewTLSConfig(
 }
 
 func loadIndex() http.HandlerFunc {
-	index, err := NewSearchIndex("data/search")
+	index, err := NewSearchIndex("data/search.belve")
 	processFunc := func(name string, contents []byte) error {
 		println(name)
 		var data map[string]any
@@ -482,70 +554,4 @@ func loadIndex() http.HandlerFunc {
 		index: index,
 	}
 	return h.searchHandler
-}
-
-func startServer(useTLS bool, port int) {
-	http.HandleFunc("/chat", chatHandler)
-	http.HandleFunc("/chat/send", sendHandler)
-	http.HandleFunc("/chat/clear", clearHandler)
-
-	loadEntries()
-	http.HandleFunc("/blog", blogHandler)
-	http.HandleFunc("/submit", submitHandler)
-	http.HandleFunc("/recipe", recipeHandler)
-	http.HandleFunc("/search", loadIndex())
-	http.HandleFunc("/", fileServerHandler)
-
-	dir := "data/justshare.io-ssl-bundle"
-	interCertFile := path.Join(dir, "intermediate.cert.pem")
-	certFile := path.Join(dir, "domain.cert.pem")
-	keyFile := path.Join(dir, "private.key.pem")
-
-	if useTLS {
-		tlsConfig := NewTLSConfig(interCertFile, certFile, keyFile)
-
-		server := &http.Server{
-			Addr:      fmt.Sprintf(":%d", port),
-			TLSConfig: tlsConfig,
-		}
-
-		log.Printf("Starting HTTPS server on port: %d", port)
-		err := server.ListenAndServeTLS(certFile, keyFile)
-		if err != nil {
-			log.Fatalf("Failed to start HTTPS server: %v", err)
-		}
-	} else {
-		log.Printf("Starting HTTP server on port: %d", port)
-		http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
-	}
-}
-
-func main() {
-	app := &cli.App{
-		Name: "share",
-		Commands: []*cli.Command{
-			{
-				Name: "start",
-				Flags: []cli.Flag{
-					&cli.BoolFlag{
-						Name: "tls",
-					},
-					&cli.IntFlag{
-						Name:  "port",
-						Value: 8080,
-					},
-				},
-				Action: func(c *cli.Context) error {
-					startServer(c.Bool("tls"), c.Int("port"))
-					return nil
-				},
-			},
-		},
-	}
-
-	err := app.Run(os.Args)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
 }

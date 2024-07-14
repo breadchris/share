@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebAuthn with HTMX</title>
+    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+</head>
+<body hx-boost="true">
+<script>
+    async function registerUser(event) {
+        const options = JSON.parse(event.detail.xhr.response);
+        console.log(options);
+        options.publicKey.challenge = base64ToArrayBuffer(options.publicKey.challenge);
+        options.publicKey.user.id = base64ToArrayBuffer(options.publicKey.user.id);
+        // options.publicKey.excludeCredentials = options.excludeCredentials.map(cred => ({
+        //     id: base64ToArrayBuffer(cred.id),
+        //     type: cred.type,
+        //     transports: cred.transports
+        // }));
+
+        const credential = await navigator.credentials.create(options);
+        const credentialData = {
+            id: credential.id,
+            rawId: arrayBufferToBase64(credential.rawId),
+            response: {
+                attestationObject: arrayBufferToBase64(credential.response.attestationObject),
+                clientDataJSON: arrayBufferToBase64(credential.response.clientDataJSON)
+            },
+            type: credential.type
+        };
+        await fetch('/register/finish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(credentialData)
+        });
+        alert("Registration successful");
+    }
+
+    async function loginUser(event) {
+        const options = await event.detail.response.json();
+        const assertion = await navigator.credentials.get({ publicKey: options });
+        const assertionData = {
+            id: assertion.id,
+            rawId: arrayBufferToBase64(assertion.rawId),
+            response: {
+                authenticatorData: arrayBufferToBase64(assertion.response.authenticatorData),
+                clientDataJSON: arrayBufferToBase64(assertion.response.clientDataJSON),
+                signature: arrayBufferToBase64(assertion.response.signature),
+                userHandle: arrayBufferToBase64(assertion.response.userHandle)
+            },
+            type: assertion.type
+        };
+        await fetch('/login/finish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(assertionData)
+        });
+        alert("Login successful");
+    }
+
+    function arrayBufferToBase64(buffer) {
+        return btoa(String.fromCharCode(...new Uint8Array(buffer)));
+    }
+
+    function base64ToArrayBuffer(base64) {
+        const binaryString = atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes.buffer;
+    }
+</script>
+<h1>WebAuthn Example</h1>
+<button hx-post="/register" hx-on::after-request="registerUser(event)">Register</button>
+<button hx-post="/login" hx-on::after-request="loginUser(event)">Login</button>
+
+<div class="hero-left order-2 col-lg-6 order-lg-1">
+    <h2>WebAuthn.io</h2>
+    <h5>A demo of the WebAuthn specification</h5>
+
+
+    <div class="mt-5 hero-form" x-data="global">
+        <template x-if="webauthnSupported">
+            <section class="form-group">
+                <form @submit.prevent="handleSubmit()">
+                    <div class="form-row">
+                        <div class="col-sm-12 mb-3">
+                            <input type="text" class="form-control form-control-lg" id="input-email" placeholder="example_username" x-model="username" autocomplete="username webauthn">
+                        </div>
+                        <template x-if="alert.show">
+                            <div class="col-sm-12">
+                                <div :class="alert.alertClass" x-text="alert.text" aria-live="polite"></div>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="form-row">
+                        <div class="col-sm-6 mb-3">
+                            <button class="btn btn-block btn-primary" type="submit" id="register-button" @click="handleClickRegister()">
+                                Register
+                            </button>
+                        </div>
+                        <div class="col-sm-6 mb-3">
+                            <button class="btn btn-block btn-primary" id="login-button" @click="handleClickAuthenticate()">
+                                Authenticate
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <div id="advanced-settings" class="mb-3">
+                    <button class="btn btn-secondary mb-3" @click="toggleDrawer()" :class="{
+            'btn-light': showAdvancedSettings,
+          }">
+                        Advanced Settings
+                    </button>
+
+                    <div class="card container settings-drawer pb-0" x-cloak="" x-show="showAdvancedSettings">
+                        <div class="card-body">
+                            <div class="row">
+                                <p class="col-12 px-0 mb-1">
+                                    <ins>Registration Settings</ins>
+                                </p>
+
+                                <!-- User Verification -->
+                                <label for="optRegUserVerification" class="col-md-6 col-sm-12 mb-2">
+                                    User Verification
+                                    <br>
+                                    <select name="optRegUserVerification" id="optRegUserVerification" class="custom-select" x-model="options.regUserVerification">
+                                        <template x-for="option in userVerificationOpts" :key="option.value">
+                                            <option :value="option.value" :selected="options.regUserVerification === option.value" x-text="option.label"></option>
+                                        </template>
+                                    </select>
+                                </label>
+
+                                <!-- Attachment -->
+                                <label for="attachment" class="col-md-6 col-sm-12 mb-2">
+                                    Attachment
+                                    <br>
+                                    <select name="attachment" id="attachment" class="custom-select" x-model="options.attachment">
+                                        <template x-for="attachment in attachments" :key="attachment.value">
+                                            <option :value="attachment.value" :selected="options.attachment === attachment.value" x-text="attachment.label"></option>
+                                        </template>
+                                    </select>
+                                </label>
+
+                                <!-- Discoverable Credential -->
+                                <label for="discoverableCredential" class="col-md-7 col-sm-12 mb-2">
+                                    Discoverable Credential
+                                    <br>
+                                    <select name="discoverableCredential" id="discoverableCredential" class="custom-select" x-model="options.discoverableCredential">
+                                        <template x-for="option in discoverableCredentialOpts" :key="option.value">
+                                            <option :value="option.value" :selected="options.discoverableCredential === option.value" x-text="option.label"></option>
+                                        </template>
+                                    </select>
+                                </label>
+
+                                <!-- Attestation dropdown -->
+                                <label for="attestation" class="col-md-5 col-sm-12 mb-2">
+                                    Attestation
+                                    <br>
+                                    <select name="attestation" id="attestation" class="custom-select" x-model="options.attestation">
+                                        <template x-for="attestation in attestations" :key="attestation.value">
+                                            <option :value="attestation.value" :selected="options.attestation === attestation.value" x-text="attestation.label"></option>
+                                        </template>
+                                    </select>
+                                </label>
+
+                                <section class="col-12 mb-2">
+                                    <p class="mb-0">Public Key Algorithms</p>
+                                    <!-- Algorithm - ES256 -->
+                                    <div class="custom-control custom-checkbox custom-control-inline">
+                                        <input type="checkbox" name="optAlgES256" id="optAlgES256" class="custom-control-input" x-model="options.algES256">
+                                        <label for="optAlgES256" class="custom-control-label">
+                                            Support ES256
+                                        </label>
+                                    </div>
+
+                                    <!-- Algorithm - RS256 -->
+                                    <div class="custom-control custom-checkbox custom-control-inline">
+                                        <input type="checkbox" name="optAlgRS256" id="optAlgRS256" class="custom-control-input" x-model="options.algRS256">
+                                        <label for="optAlgRS256" class="custom-control-label">
+                                            Support RS256
+                                        </label>
+                                    </div>
+                                </section>
+
+                                <!-- Registration Hints -->
+                                <section class="col-sm-12 mb-2">
+                                    <p class="mb-0">Registration Hints (most to least preferred)</p>
+                                    <div class="custom-control custom-checkbox custom-control-inline">
+                                        <input type="checkbox" class="custom-control-input" id="regHintSecurityKey" x-model="_regHints.securityKey" @change="handleSelectRegHintsSecurityKey">
+                                        <label class="custom-control-label" for="regHintSecurityKey">
+                                            Security Key
+                                        </label>
+                                    </div>
+                                    <div class="custom-control custom-checkbox custom-control-inline">
+                                        <input type="checkbox" class="custom-control-input" id="regHintClientDevice" x-model="_regHints.clientDevice" @change="handleSelectRegHintsClientDevice">
+                                        <label class="custom-control-label" for="regHintClientDevice">
+                                            Client Device
+                                        </label>
+                                    </div>
+                                    <div class="custom-control custom-checkbox custom-control-inline">
+                                        <input type="checkbox" class="custom-control-input" id="regHintHybrid" x-model="_regHints.hybrid" @change="handleSelectRegHintsHybrid">
+                                        <label class="custom-control-label" for="regHintHybrid">
+                                            Hybrid
+                                        </label>
+                                    </div>
+                                    <p class="mb-0 text-secondary">
+                                        Order:
+                                        <span x-text="_regHints.formatted"></span>
+                                    </p>
+                                </section>
+                            </div>
+
+                            <div class="row">
+                                <p class="col-12 px-0 mb-1">
+                                    <ins>Authentication Settings</ins>
+                                </p>
+
+                                <!-- User Verification -->
+                                <label for="optAuthUserVerification" class="col-md-6 col-sm-12 mb-2">
+                                    User Verification
+                                    <br>
+                                    <select name="optAuthUserVerification" id="optAuthUserVerification" class="custom-select" x-model="options.authUserVerification">
+                                        <template x-for="option in userVerificationOpts" :key="option.value">
+                                            <option :value="option.value" :selected="options.authUserVerification === option.value" x-text="option.label"></option>
+                                        </template>
+                                    </select>
+                                </label>
+                            </div>
+
+                            <div class="row">
+                                <section class="col-12 px-0 mb-0">
+                                    <button class="btn btn-warning" @click="resetSettings()">
+                                        Reset Settings
+                                    </button>
+                                </section>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </template><section class="form-group">
+            <form @submit.prevent="handleSubmit()">
+                <div class="form-row">
+                    <div class="col-sm-12 mb-3">
+                        <input type="text" class="form-control form-control-lg" id="input-email" placeholder="example_username" x-model="username" autocomplete="username webauthn">
+                    </div>
+                    <template x-if="alert.show">
+                        <div class="col-sm-12">
+                            <div :class="alert.alertClass" x-text="alert.text" aria-live="polite"></div>
+                        </div>
+                    </template>
+                </div>
+                <div class="form-row">
+                    <div class="col-sm-6 mb-3">
+                        <button class="btn btn-block btn-primary" type="submit" id="register-button" @click="handleClickRegister()">
+                            Register
+                        </button>
+                    </div>
+                    <div class="col-sm-6 mb-3">
+                        <button class="btn btn-block btn-primary" id="login-button" @click="handleClickAuthenticate()">
+                            Authenticate
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <div id="advanced-settings" class="mb-3">
+                <button class="btn btn-secondary mb-3 btn-light" @click="toggleDrawer()" :class="{
+            'btn-light': showAdvancedSettings,
+          }">
+                    Advanced Settings
+                </button>
+
+                <div class="card container settings-drawer pb-0" x-show="showAdvancedSettings">
+                    <div class="card-body">
+                        <div class="row">
+                            <p class="col-12 px-0 mb-1">
+                                <ins>Registration Settings</ins>
+                            </p>
+
+                            <!-- User Verification -->
+                            <label for="optRegUserVerification" class="col-md-6 col-sm-12 mb-2">
+                                User Verification
+                                <br>
+                                <select name="optRegUserVerification" id="optRegUserVerification" class="custom-select" x-model="options.regUserVerification">
+                                    <template x-for="option in userVerificationOpts" :key="option.value">
+                                        <option :value="option.value" :selected="options.regUserVerification === option.value" x-text="option.label"></option>
+                                    </template><option :value="option.value" :selected="options.regUserVerification === option.value" x-text="option.label" value="discouraged">Discouraged</option><option :value="option.value" :selected="options.regUserVerification === option.value" x-text="option.label" value="preferred" selected="selected">Preferred</option><option :value="option.value" :selected="options.regUserVerification === option.value" x-text="option.label" value="required">Required</option>
+                                </select>
+                            </label>
+
+                            <!-- Attachment -->
+                            <label for="attachment" class="col-md-6 col-sm-12 mb-2">
+                                Attachment
+                                <br>
+                                <select name="attachment" id="attachment" class="custom-select" x-model="options.attachment">
+                                    <template x-for="attachment in attachments" :key="attachment.value">
+                                        <option :value="attachment.value" :selected="options.attachment === attachment.value" x-text="attachment.label"></option>
+                                    </template><option :value="attachment.value" :selected="options.attachment === attachment.value" x-text="attachment.label" value="all" selected="selected">All Supported</option><option :value="attachment.value" :selected="options.attachment === attachment.value" x-text="attachment.label" value="cross_platform">Cross-Platform</option><option :value="attachment.value" :selected="options.attachment === attachment.value" x-text="attachment.label" value="platform">Platform</option>
+                                </select>
+                            </label>
+
+                            <!-- Discoverable Credential -->
+                            <label for="discoverableCredential" class="col-md-7 col-sm-12 mb-2">
+                                Discoverable Credential
+                                <br>
+                                <select name="discoverableCredential" id="discoverableCredential" class="custom-select" x-model="options.discoverableCredential">
+                                    <template x-for="option in discoverableCredentialOpts" :key="option.value">
+                                        <option :value="option.value" :selected="options.discoverableCredential === option.value" x-text="option.label"></option>
+                                    </template><option :value="option.value" :selected="options.discoverableCredential === option.value" x-text="option.label" value="discouraged">Discouraged</option><option :value="option.value" :selected="options.discoverableCredential === option.value" x-text="option.label" value="preferred" selected="selected">Preferred</option><option :value="option.value" :selected="options.discoverableCredential === option.value" x-text="option.label" value="required">Required</option>
+                                </select>
+                            </label>
+
+                            <!-- Attestation dropdown -->
+                            <label for="attestation" class="col-md-5 col-sm-12 mb-2">
+                                Attestation
+                                <br>
+                                <select name="attestation" id="attestation" class="custom-select" x-model="options.attestation">
+                                    <template x-for="attestation in attestations" :key="attestation.value">
+                                        <option :value="attestation.value" :selected="options.attestation === attestation.value" x-text="attestation.label"></option>
+                                    </template><option :value="attestation.value" :selected="options.attestation === attestation.value" x-text="attestation.label" value="none" selected="selected">None</option><option :value="attestation.value" :selected="options.attestation === attestation.value" x-text="attestation.label" value="direct">Direct</option>
+                                </select>
+                            </label>
+
+                            <section class="col-12 mb-2">
+                                <p class="mb-0">Public Key Algorithms</p>
+                                <!-- Algorithm - ES256 -->
+                                <div class="custom-control custom-checkbox custom-control-inline">
+                                    <input type="checkbox" name="optAlgES256" id="optAlgES256" class="custom-control-input" x-model="options.algES256">
+                                    <label for="optAlgES256" class="custom-control-label">
+                                        Support ES256
+                                    </label>
+                                </div>
+
+                                <!-- Algorithm - RS256 -->
+                                <div class="custom-control custom-checkbox custom-control-inline">
+                                    <input type="checkbox" name="optAlgRS256" id="optAlgRS256" class="custom-control-input" x-model="options.algRS256">
+                                    <label for="optAlgRS256" class="custom-control-label">
+                                        Support RS256
+                                    </label>
+                                </div>
+                            </section>
+
+                            <!-- Registration Hints -->
+                            <section class="col-sm-12 mb-2">
+                                <p class="mb-0">Registration Hints (most to least preferred)</p>
+                                <div class="custom-control custom-checkbox custom-control-inline">
+                                    <input type="checkbox" class="custom-control-input" id="regHintSecurityKey" x-model="_regHints.securityKey" @change="handleSelectRegHintsSecurityKey">
+                                    <label class="custom-control-label" for="regHintSecurityKey">
+                                        Security Key
+                                    </label>
+                                </div>
+                                <div class="custom-control custom-checkbox custom-control-inline">
+                                    <input type="checkbox" class="custom-control-input" id="regHintClientDevice" x-model="_regHints.clientDevice" @change="handleSelectRegHintsClientDevice">
+                                    <label class="custom-control-label" for="regHintClientDevice">
+                                        Client Device
+                                    </label>
+                                </div>
+                                <div class="custom-control custom-checkbox custom-control-inline">
+                                    <input type="checkbox" class="custom-control-input" id="regHintHybrid" x-model="_regHints.hybrid" @change="handleSelectRegHintsHybrid">
+                                    <label class="custom-control-label" for="regHintHybrid">
+                                        Hybrid
+                                    </label>
+                                </div>
+                                <p class="mb-0 text-secondary">
+                                    Order:
+                                    <span x-text="_regHints.formatted">[]</span>
+                                </p>
+                            </section>
+                        </div>
+
+                        <div class="row">
+                            <p class="col-12 px-0 mb-1">
+                                <ins>Authentication Settings</ins>
+                            </p>
+
+                            <!-- User Verification -->
+                            <label for="optAuthUserVerification" class="col-md-6 col-sm-12 mb-2">
+                                User Verification
+                                <br>
+                                <select name="optAuthUserVerification" id="optAuthUserVerification" class="custom-select" x-model="options.authUserVerification">
+                                    <template x-for="option in userVerificationOpts" :key="option.value">
+                                        <option :value="option.value" :selected="options.authUserVerification === option.value" x-text="option.label"></option>
+                                    </template><option :value="option.value" :selected="options.authUserVerification === option.value" x-text="option.label" value="discouraged">Discouraged</option><option :value="option.value" :selected="options.authUserVerification === option.value" x-text="option.label" value="preferred" selected="selected">Preferred</option><option :value="option.value" :selected="options.authUserVerification === option.value" x-text="option.label" value="required">Required</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <div class="row">
+                            <section class="col-12 px-0 mb-0">
+                                <button class="btn btn-warning" @click="resetSettings()">
+                                    Reset Settings
+                                </button>
+                            </section>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <template x-if="!webauthnSupported">
+            <h2>WebAuthn isn't supported. Please consider switching to a modern browser.</h2>
+        </template>
+    </div>
+
+    <script src="/static/js/simplewebauthn-browser.8.2.1.umd.min.js"></script>
+    <script>
+        const {
+            browserSupportsWebAuthn,
+            startRegistration,
+            startAuthentication,
+            browserSupportsWebAuthnAutofill,
+        } = SimpleWebAuthnBrowser;
+
+        // Initialize advanced options
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('global', () => ({
+                init() {
+                    // Make sure WebAuthn is available in the browser
+                    this.webauthnSupported = browserSupportsWebAuthn();
+                    if (!this.webauthnSupported) {
+                        return;
+                    }
+
+                    // Read options from query params if set
+                    if (location.search) {
+                        console.log('initializing options from query params');
+                        this.showAdvancedSettings = true;
+
+                        // Read query params
+                        const currentParams = new URLSearchParams(location.search);
+
+                        // Initialize data from query params
+
+                        /**
+                         * Registration Settings
+                         */
+                        this.options.algES256 = currentParams.get('algES256') === 'true';
+                        this.options.algRS256 = currentParams.get('algRS256') === 'true';
+
+                        const _regUserVerification = currentParams.get('regUserVerification');
+                        for (const uv of this.userVerificationOpts) {
+                            if (uv.value === _regUserVerification) {
+                                this.options.regUserVerification = _regUserVerification;
+                                break;
+                            }
+                        }
+
+                        const _attestation = currentParams.get('attestation');
+                        for (const attestation of this.attestations) {
+                            if (attestation.value === _attestation) {
+                                this.options.attestation = _attestation;
+                                break;
+                            }
+                        }
+
+                        const _attachment = currentParams.get('attachment');
+                        for (const attachment of this.attachments) {
+                            if (attachment.value === _attachment) {
+                                this.options.attachment = _attachment;
+                                break;
+                            }
+                        }
+
+                        const _discCred = currentParams.get('discoverableCredential');
+                        for (const opt of this.discoverableCredentialOpts) {
+                            if (opt.value === _discCred) {
+                                this.options.discoverableCredential = _discCred;
+                                break;
+                            }
+                        }
+
+                        const _regHintsStr = currentParams.get('regHints');
+                        _regHintsStr.split(',').forEach((hint) => {
+                            if (hint === 'security-key') {
+                                this._regHints.securityKey = true;
+                                this._toggleRegHint('security-key', true);
+                            } else if (hint === 'client-device') {
+                                this._regHints.clientDevice = true;
+                                this._toggleRegHint('client-device', true);
+                            } else if (hint === 'hybrid') {
+                                this._regHints.hybrid = true;
+                                this._toggleRegHint('hybrid', true);
+                            }
+                        });
+                        this._formatRegHintsForUI();
+
+                        /**
+                         * Authentication Settings
+                         */
+                        const _authUserVerification = currentParams.get('authUserVerification');
+                        for (const uv of this.userVerificationOpts) {
+                            if (uv.value === _authUserVerification) {
+                                this.options.authUserVerification = _authUserVerification;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Update query parameters when options change
+                    this.$watch('options', () => {
+                        const newParams = new URLSearchParams(this.options);
+                        window.history.replaceState(
+                            {},
+                            "",
+                            `${location.pathname}?${newParams}`
+                        );
+                    });
+
+                    /**
+                     * Format the list of registration hints to help confirm the order of preference
+                     */
+                    this.$watch('options.regHints', () => {
+                        this._formatRegHintsForUI();
+                    });
+
+                    // Set up Conditional UI if supported
+                    browserSupportsWebAuthnAutofill().then(async (supported) => {
+                        if (supported) {
+                            console.log('Setting up Conditional UI');
+                            try {
+                                await this._startAuthentication(true);
+                            } catch (err) {
+                                if (err.name === 'AbortError') {
+                                    console.log('Conditional UI request was aborted');
+                                } else {
+                                    console.error('Conditional UI error:', err);
+                                }
+                            }
+                        }
+                    });
+                },
+
+                // Default state
+                webauthnSupported: true,
+                showAdvancedSettings: false,
+                formAction: 'registration',
+                options: {
+                    // Registration
+                    regUserVerification: 'preferred',
+                    attestation: 'none',
+                    attachment: 'all',
+                    algES256: true,
+                    algRS256: true,
+                    discoverableCredential: 'preferred',
+                    regHints: [],
+                    // Authentication
+                    authUserVerification: 'preferred',
+                },
+                username: '',
+                alert: {
+                    show: false,
+                    alertClass: 'alert alert-success',
+                    text: '',
+                },
+                // We need to track some state to properly support hints preference order
+                _regHints: {
+                    securityKey: false,
+                    clientDevice: false,
+                    hybrid: false,
+                    formatted: "[]",
+                },
+                // Possible values for options.regUserVerification and options.authUserVerification
+                userVerificationOpts: [
+                    { label: 'Discouraged', value: 'discouraged' },
+                    { label: 'Preferred', value: 'preferred' },
+                    { label: 'Required', value: 'required' },
+                ],
+                // Possible values for options.attestation
+                attestations: [
+                    { label: 'None', value: 'none' },
+                    { label: 'Direct', value: 'direct' },
+                ],
+                // Possible values for options.attachment
+                attachments: [
+                    { label: 'All Supported', value: 'all' },
+                    { label: 'Cross-Platform', value: 'cross_platform' },
+                    { label: 'Platform', value: 'platform' },
+                ],
+                discoverableCredentialOpts: [
+                    { label: 'Discouraged', value: 'discouraged' },
+                    { label: 'Preferred', value: 'preferred' },
+                    { label: 'Required', value: 'required' },
+                ],
+
+                // Event handlers
+                toggleDrawer() {
+                    this.showAdvancedSettings = !this.showAdvancedSettings;
+                },
+                hideAlert() {
+                    this.alert.show = false;
+                },
+                showSuccessAlert(text) {
+                    this.alert.alertClass = 'alert alert-success';
+                    this.alert.text = text;
+                    this.alert.show = true;
+                },
+                showErrorAlert(text) {
+                    this.alert.alertClass = 'alert alert-danger';
+                    this.alert.text = text;
+                    this.alert.show = true;
+                },
+                handleClickRegister() {
+                    this.formAction = 'register';
+                },
+                handleClickAuthenticate() {
+                    this.formAction = 'authenticate';
+                },
+                async handleSubmit() {
+                    this.hideAlert();
+
+                    // Perform action
+                    try {
+                        if (this.formAction === 'register') {
+                            await this._startRegistration();
+                        } else {
+                            await this._startAuthentication(false);
+                        }
+                    } catch (err) {
+                        this.showErrorAlert(err.message);
+                    }
+                },
+                resetSettings() {
+                    // Reload the page sans query params
+                    window.location.href = '/';
+                },
+                handleSelectRegHintsSecurityKey() {
+                    this._toggleRegHint('security-key', this._regHints.securityKey);
+                },
+                handleSelectRegHintsClientDevice() {
+                    this._toggleRegHint('client-device', this._regHints.clientDevice);
+                },
+                handleSelectRegHintsHybrid() {
+                    this._toggleRegHint('hybrid', this._regHints.hybrid);
+                },
+
+                // Internal Methods
+                async _startRegistration() {
+                    // Submit options
+                    const {
+                        regUserVerification,
+                        algES256,
+                        algRS256,
+                        attestation,
+                        attachment,
+                        discoverableCredential,
+                        regHints,
+                    } = this.options;
+
+                    const algorithms = [];
+
+                    if (algES256) {
+                        algorithms.push('es256');
+                    }
+
+                    if (algRS256) {
+                        algorithms.push('rs256');
+                    }
+
+                    if (!this.username) {
+                        this.showErrorAlert('Please enter a username to register');
+                        return;
+                    }
+
+                    const apiRegOptsResp = await fetch('/registration/options', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username: this.username,
+                            // e.g. 'preferred'
+                            user_verification: regUserVerification,
+                            // e.g. 'direct'
+                            attestation,
+                            // e.g. 'platform'
+                            attachment,
+                            // e.g. ['es256', 'rs256']
+                            algorithms,
+                            // e.g. 'preferred'
+                            discoverable_credential: discoverableCredential,
+                            // e.g. ['security-key', 'hybrid']
+                            hints: regHints,
+                        }),
+                    });
+                    const registrationOptionsJSON = await apiRegOptsResp.json();
+
+                    console.log('REGISTRATION OPTIONS');
+                    console.log(JSON.stringify(registrationOptionsJSON, null, 2));
+
+                    // Start WebAuthn registration
+                    const regResp = await startRegistration(registrationOptionsJSON);
+
+                    console.log('REGISTRATION RESPONSE');
+                    console.log(JSON.stringify(regResp, null, 2));
+
+                    // Submit response
+                    const apiRegVerResp = await fetch('/registration/verification', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username: this.username,
+                            response: regResp,
+                        }),
+                    });
+                    const verificationJSON = await apiRegVerResp.json()
+
+                    // Display outcome
+                    if (verificationJSON.verified === true) {
+                        this.showSuccessAlert('Success! Now try to authenticate...');
+                    } else {
+                        this.showErrorAlert(`Registration failed: ${verificationJSON.error}`);
+                    }
+                },
+                async _startAuthentication(startConditionalUI = false) {
+                    const {
+                        authUserVerification,
+                    } = this.options;
+
+                    let username = this.username;
+                    if (startConditionalUI) {
+                        // We won't have a username for conditional UI
+                        username = undefined;
+                    }
+
+                    // Submit options
+                    const apiAuthOptsResp = await fetch('/authentication/options', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username,
+                            user_verification: authUserVerification,
+                        }),
+                    });
+                    const authenticationOptionsJSON = await apiAuthOptsResp.json();
+
+                    console.log('AUTHENTICATION OPTIONS');
+                    console.log(JSON.stringify(authenticationOptionsJSON, null, 2));
+
+                    if (authenticationOptionsJSON.error) {
+                        this.showErrorAlert(authenticationOptionsJSON.error);
+                        return;
+                    }
+
+                    // Start WebAuthn authentication
+                    const authResp = await startAuthentication(authenticationOptionsJSON, startConditionalUI);
+
+                    console.log('AUTHENTICATION RESPONSE');
+                    console.log(JSON.stringify(authResp, null, 2));
+
+                    // Submit response
+                    const apiAuthVerResp = await fetch('/authentication/verification', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username: this.username,
+                            response: authResp,
+                        }),
+                    });
+                    const verificationJSON = await apiAuthVerResp.json()
+
+                    if (verificationJSON.verified === true) {
+                        // Reload page to display profile
+                        window.location.href = '/';
+                    } else {
+                        this.showErrorAlert(`Authentication failed: ${verificationJSON.error}`);
+                    }
+                },
+                /**
+                 * Registration hints can be ordered by preference, but there's no good native HTML element
+                 * that allows for selection _and_ sorting.
+                 *
+                 * We'll handle it here by making each hint a checkbox, and the order in which a checkbox is
+                 * checked will simply append that hint to the end of the list of selected hints.
+                 *
+                 * Unchecking a hint will remove it from its arbitrary place in the list of choices.
+                 */
+                _toggleRegHint(hintName, isChecked) {
+                    if (isChecked) {
+                        this.options.regHints.push(hintName);
+                    } else {
+                        const securityKeyIndex = this.options.regHints.indexOf(hintName);
+                        if (securityKeyIndex >= 0) {
+                            this.options.regHints.splice(securityKeyIndex, 1);
+                        }
+                    }
+                },
+                /**
+                 * Format registration hints so we can visualize their preference order
+                 */
+                _formatRegHintsForUI() {
+                    let formattedHints = JSON.stringify(this.options.regHints);
+                    // Add a space between items
+                    formattedHints = formattedHints.replace(/,/g, ", ");
+
+                    this._regHints.formatted = formattedHints;
+                }
+            }));
+        });
+    </script>
+    <script defer="" src="/static/js/alpinejs-3.10.2.min.js"></script>
+
+</div>
+</body>
+</html>
