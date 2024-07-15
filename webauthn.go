@@ -86,7 +86,7 @@ func finishRegistration(w http.ResponseWriter, r *http.Request) {
 
 	credential, err := webAuthn.FinishRegistration(user, *sessionData, r)
 	if err != nil {
-		http.Error(w, "Failed to finish registration", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -100,10 +100,14 @@ func beginLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user := users["user@example.com"]
+	if user == nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
 
 	options, sessionData, err := webAuthn.BeginLogin(user)
 	if err != nil {
-		http.Error(w, "Failed to begin login", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

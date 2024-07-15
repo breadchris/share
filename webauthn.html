@@ -59,24 +59,36 @@
         alert("Login successful");
     }
 
-    function arrayBufferToBase64(buffer) {
-        return btoa(String.fromCharCode(...new Uint8Array(buffer)));
+    function arrayBufferToBase64(value) {
+        return btoa(String.fromCharCode.apply(null, new Uint8Array(value)))
+            .replace(/\+/g, "-")
+            .replace(/\//g, "_")
+            .replace(/=/g, "");;
     }
 
-    function base64ToArrayBuffer(base64) {
-        const binaryString = atob(base64);
-        const len = binaryString.length;
-        const bytes = new Uint8Array(len);
-        for (let i = 0; i < len; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
+    function base64ToArrayBuffer(value) {
+        // Replace URL-safe characters with Base64 standard characters
+        let base64 = value.replace(/-/g, '+').replace(/_/g, '/');
+
+        // Pad with '=' characters if necessary
+        switch (base64.length % 4) {
+            case 2:
+                base64 += '==';
+                break;
+            case 3:
+                base64 += '=';
+                break;
         }
-        return bytes.buffer;
+
+        // Decode the Base64 string
+        return Uint8Array.from(atob(base64), c => c.charCodeAt(0));
     }
 </script>
 <h1>WebAuthn Example</h1>
 <button hx-post="/register" hx-on::after-request="registerUser(event)">Register</button>
 <button hx-post="/login" hx-on::after-request="loginUser(event)">Login</button>
 
+<!--
 <div class="hero-left order-2 col-lg-6 order-lg-1">
     <h2>WebAuthn.io</h2>
     <h5>A demo of the WebAuthn specification</h5>
@@ -124,7 +136,6 @@
                                     <ins>Registration Settings</ins>
                                 </p>
 
-                                <!-- User Verification -->
                                 <label for="optRegUserVerification" class="col-md-6 col-sm-12 mb-2">
                                     User Verification
                                     <br>
@@ -135,7 +146,6 @@
                                     </select>
                                 </label>
 
-                                <!-- Attachment -->
                                 <label for="attachment" class="col-md-6 col-sm-12 mb-2">
                                     Attachment
                                     <br>
@@ -146,7 +156,6 @@
                                     </select>
                                 </label>
 
-                                <!-- Discoverable Credential -->
                                 <label for="discoverableCredential" class="col-md-7 col-sm-12 mb-2">
                                     Discoverable Credential
                                     <br>
@@ -157,7 +166,6 @@
                                     </select>
                                 </label>
 
-                                <!-- Attestation dropdown -->
                                 <label for="attestation" class="col-md-5 col-sm-12 mb-2">
                                     Attestation
                                     <br>
@@ -170,7 +178,6 @@
 
                                 <section class="col-12 mb-2">
                                     <p class="mb-0">Public Key Algorithms</p>
-                                    <!-- Algorithm - ES256 -->
                                     <div class="custom-control custom-checkbox custom-control-inline">
                                         <input type="checkbox" name="optAlgES256" id="optAlgES256" class="custom-control-input" x-model="options.algES256">
                                         <label for="optAlgES256" class="custom-control-label">
@@ -178,7 +185,6 @@
                                         </label>
                                     </div>
 
-                                    <!-- Algorithm - RS256 -->
                                     <div class="custom-control custom-checkbox custom-control-inline">
                                         <input type="checkbox" name="optAlgRS256" id="optAlgRS256" class="custom-control-input" x-model="options.algRS256">
                                         <label for="optAlgRS256" class="custom-control-label">
@@ -187,7 +193,6 @@
                                     </div>
                                 </section>
 
-                                <!-- Registration Hints -->
                                 <section class="col-sm-12 mb-2">
                                     <p class="mb-0">Registration Hints (most to least preferred)</p>
                                     <div class="custom-control custom-checkbox custom-control-inline">
@@ -220,7 +225,6 @@
                                     <ins>Authentication Settings</ins>
                                 </p>
 
-                                <!-- User Verification -->
                                 <label for="optAuthUserVerification" class="col-md-6 col-sm-12 mb-2">
                                     User Verification
                                     <br>
@@ -284,7 +288,6 @@
                                 <ins>Registration Settings</ins>
                             </p>
 
-                            <!-- User Verification -->
                             <label for="optRegUserVerification" class="col-md-6 col-sm-12 mb-2">
                                 User Verification
                                 <br>
@@ -295,7 +298,6 @@
                                 </select>
                             </label>
 
-                            <!-- Attachment -->
                             <label for="attachment" class="col-md-6 col-sm-12 mb-2">
                                 Attachment
                                 <br>
@@ -306,7 +308,6 @@
                                 </select>
                             </label>
 
-                            <!-- Discoverable Credential -->
                             <label for="discoverableCredential" class="col-md-7 col-sm-12 mb-2">
                                 Discoverable Credential
                                 <br>
@@ -317,7 +318,6 @@
                                 </select>
                             </label>
 
-                            <!-- Attestation dropdown -->
                             <label for="attestation" class="col-md-5 col-sm-12 mb-2">
                                 Attestation
                                 <br>
@@ -330,7 +330,6 @@
 
                             <section class="col-12 mb-2">
                                 <p class="mb-0">Public Key Algorithms</p>
-                                <!-- Algorithm - ES256 -->
                                 <div class="custom-control custom-checkbox custom-control-inline">
                                     <input type="checkbox" name="optAlgES256" id="optAlgES256" class="custom-control-input" x-model="options.algES256">
                                     <label for="optAlgES256" class="custom-control-label">
@@ -338,7 +337,6 @@
                                     </label>
                                 </div>
 
-                                <!-- Algorithm - RS256 -->
                                 <div class="custom-control custom-checkbox custom-control-inline">
                                     <input type="checkbox" name="optAlgRS256" id="optAlgRS256" class="custom-control-input" x-model="options.algRS256">
                                     <label for="optAlgRS256" class="custom-control-label">
@@ -347,7 +345,6 @@
                                 </div>
                             </section>
 
-                            <!-- Registration Hints -->
                             <section class="col-sm-12 mb-2">
                                 <p class="mb-0">Registration Hints (most to least preferred)</p>
                                 <div class="custom-control custom-checkbox custom-control-inline">
@@ -380,7 +377,6 @@
                                 <ins>Authentication Settings</ins>
                             </p>
 
-                            <!-- User Verification -->
                             <label for="optAuthUserVerification" class="col-md-6 col-sm-12 mb-2">
                                 User Verification
                                 <br>
@@ -806,5 +802,6 @@
     <script defer="" src="/static/js/alpinejs-3.10.2.min.js"></script>
 
 </div>
+-->
 </body>
 </html>

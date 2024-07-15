@@ -26,7 +26,29 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+type AppConfig struct {
+	OpenAIKey string `json:"openai_key"`
+}
+
+func loadConfig() *AppConfig {
+	// load the app config
+	var appConfig AppConfig
+	configFile, err := os.Open("data/config.json")
+	if err != nil {
+		log.Fatalf("Failed to open config file: %v", err)
+	}
+	defer configFile.Close()
+
+	err = json.NewDecoder(configFile).Decode(&appConfig)
+	if err != nil {
+		log.Fatalf("Failed to decode config file: %v", err)
+	}
+	return &appConfig
+}
+
 func startServer(useTLS bool, port int) {
+	appConfig := loadConfig()
+
 	http.HandleFunc("/chat", chatHandler)
 	http.HandleFunc("/chat/send", sendHandler)
 	http.HandleFunc("/chat/clear", clearHandler)
@@ -35,12 +57,12 @@ func startServer(useTLS bool, port int) {
 
 	setupWebauthn()
 	setupCursor()
+	setupRecipe()
+	setupChatgpt(appConfig)
 	//text.Setup(upgrader)
 
 	http.HandleFunc("/blog", blogHandler)
 	http.HandleFunc("/submit", submitHandler)
-	http.HandleFunc("/recipe", recipeHandler)
-	http.HandleFunc("/search", loadIndex())
 	http.HandleFunc("/qrcode", handleQR)
 	http.HandleFunc("/", fileServerHandler)
 
@@ -445,60 +467,6 @@ func fileServe(r *http.Request, w http.ResponseWriter, baseDir string) {
 	http.ServeFile(w, r, path)
 }
 
-// SearchResult represents a single search result item
-type SearchResult struct {
-	Title       string
-	Description string
-	URL         string
-}
-
-type Handler struct {
-	index *SearchIndex
-}
-
-func (s *Handler) searchHandler(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query().Get("q")
-	if query == "" {
-		http.Error(w, "Query parameter 'q' is required", http.StatusBadRequest)
-		return
-	}
-
-	var results []SearchResult
-
-	res, err := s.index.Search(query)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	for _, h := range res.Hits {
-		f, err := os.ReadFile(path.Join("data/recipes/nyt", h.ID))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		var data map[string]any
-		err = json.Unmarshal(f, &data)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		results = append(results, SearchResult{
-			Title:       data["name"].(string),
-			Description: data["source"].(string),
-			URL:         fmt.Sprintf("/data/recipes/nyt/%s", h.ID),
-		})
-	}
-
-	w.Header().Set("Content-Type", "text/html")
-	searchTmpl := template.Must(template.ParseFiles("searchresults.html"))
-	err = searchTmpl.Execute(w, results)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
 func NewTLSConfig(
 	interCertFile,
 	certFile,
@@ -523,35 +491,4 @@ func NewTLSConfig(
 		Certificates: []tls.Certificate{cert},
 		ClientCAs:    certPool,
 	}
-}
-
-func loadIndex() http.HandlerFunc {
-	index, err := NewSearchIndex("data/search.belve")
-	processFunc := func(name string, contents []byte) error {
-		println(name)
-		var data map[string]any
-
-		err = json.Unmarshal(contents, &data)
-		if err != nil {
-			return err
-		}
-
-		return index.IndexDocument(name, data["name"])
-	}
-
-	_ = func() {
-		println("loading recipes")
-		err = WalkDirectory(os.DirFS("data/recipes/nyt"), ".", processFunc)
-		if err != nil {
-			log.Fatalf("Failed to walk directory: %v", err)
-		}
-		println("recipes loaded")
-	}
-
-	//go loadRecipes()
-
-	h := &Handler{
-		index: index,
-	}
-	return h.searchHandler
 }

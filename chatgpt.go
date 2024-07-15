@@ -1,0 +1,163 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"github.com/google/uuid"
+	"github.com/sashabaranov/go-openai"
+	"html/template"
+	"net/http"
+	"os"
+	"path/filepath"
+)
+
+type ChatMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+type ChatState struct {
+	ID       string
+	Name     string
+	Messages []ChatMessage `json:"messages"`
+}
+
+var (
+	tm    *template.Template
+	tmmsg *template.Template
+)
+
+func setupChatgpt(appConfig *AppConfig) {
+	tm = template.Must(template.ParseFiles("chatgpt.html"))
+	tmmsg = template.Must(template.ParseFiles("chatgptmsg.html"))
+
+	s := NewOpenAIService(*appConfig)
+
+	http.HandleFunc("/chatgpt", s.homeHandler)
+	http.HandleFunc("/chatgpt/{id}", s.homeHandler)
+	http.HandleFunc("/chatgpt/send", s.sendMessageHandler)
+	http.HandleFunc("/chatgpt/chat", s.chatgptHandler)
+}
+
+type OpenAIService struct {
+	client *openai.Client
+}
+
+func NewOpenAIService(config AppConfig) *OpenAIService {
+	c := openai.NewClient(config.OpenAIKey)
+	return &OpenAIService{
+		client: c,
+	}
+}
+
+func (s *OpenAIService) homeHandler(w http.ResponseWriter, r *http.Request) {
+	i := r.PathValue("id")
+	var chatState ChatState
+	if i != "" {
+		chatState = loadChatState(i)
+	}
+	chats := loadChats()
+	err := tm.Execute(w, struct {
+		Chats    []ChatState
+		Messages []ChatMessage
+	}{Chats: chats, Messages: chatState.Messages})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (s *OpenAIService) sendMessageHandler(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	message := r.FormValue("message")
+	chatID := r.URL.Query().Get("chat")
+
+	if chatID == "" {
+		chatID = uuid.NewString()
+		err := saveChat(ChatState{ID: chatID, Name: fmt.Sprintf("Chat %s", chatID)})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	chatState := loadChatState(chatID)
+	chatState.Messages = append(chatState.Messages, ChatMessage{Role: "user", Content: message})
+
+	// Call OpenAI API
+	req := openai.ChatCompletionRequest{
+		Model: openai.GPT4o20240513,
+		Messages: []openai.ChatCompletionMessage{
+			{Role: "system", Content: "You are a helpful assistant."},
+			{Role: "user", Content: message},
+		},
+	}
+	resp, err := s.client.CreateChatCompletion(r.Context(), req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	chatState.Messages = append(
+		chatState.Messages,
+		ChatMessage{
+			Role: "assistant", Content: resp.Choices[0].Message.Content,
+		},
+	)
+	saveChatState(chatID, chatState)
+
+	err = tmmsg.Execute(w, chatState)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func (s *OpenAIService) chatgptHandler(w http.ResponseWriter, r *http.Request) {
+	chatID := filepath.Base(r.URL.Path)
+	chatState := loadChatState(chatID)
+	err := tmmsg.ExecuteTemplate(w, "chat-messages", chatState)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func loadChats() []ChatState {
+	files, _ := os.ReadDir("data/chatgpt")
+	var chats []ChatState
+	for _, f := range files {
+		if filepath.Ext(f.Name()) == ".json" {
+			data, _ := os.ReadFile("data/chatgpt/" + f.Name())
+			var chat ChatState
+			err := json.Unmarshal(data, &chat)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			chats = append(chats, chat)
+		}
+	}
+	return chats
+}
+
+func saveChat(chat ChatState) error {
+	data, _ := json.Marshal(chat)
+	// create the directory if it doesn't exist
+	if err := os.MkdirAll("data/chatgpt", 0755); err != nil {
+		return err
+	}
+	return os.WriteFile(fmt.Sprintf("data/chatgpt/%s.json", chat.ID), data, 0644)
+}
+
+func loadChatState(chatID string) ChatState {
+	data, err := os.ReadFile(fmt.Sprintf("data/chatgpt/%s.json", chatID))
+	if err != nil {
+		return ChatState{}
+	}
+	var state ChatState
+	json.Unmarshal(data, &state)
+	return state
+}
+
+func saveChatState(chatID string, state ChatState) {
+	data, _ := json.Marshal(state)
+	os.WriteFile(fmt.Sprintf("data/chatgpt/%s.json", chatID), data, 0644)
+}

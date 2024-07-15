@@ -1,15 +1,20 @@
 module github.com/breadchris/share
 
-go 1.21.0
+go 1.22
 
 require (
 	github.com/blevesearch/bleve v1.0.14
 	github.com/evanw/esbuild v0.23.0
 	github.com/go-webauthn/webauthn v0.10.2
 	github.com/gomarkdown/markdown v0.0.0-20240419095408-642f0ee99ae2
+	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.1
+	github.com/gosimple/slug v1.14.0
+	github.com/nlnwa/gowarc v1.6.0
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
+	github.com/sashabaranov/go-openai v1.26.3
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
+	github.com/spf13/pflag v1.0.5
 	github.com/urfave/cli/v2 v2.27.2
 	rogchap.com/v8go v0.9.0
 )
@@ -35,9 +40,13 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-tpm v0.9.0 // indirect
-	github.com/google/uuid v1.6.0 // indirect
+	github.com/gosimple/unidecode v1.0.1 // indirect
+	github.com/klauspost/compress v1.15.12 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
+	github.com/nlnwa/whatwg-url v0.4.0 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
+	github.com/prometheus/prometheus v0.40.3 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/steveyen/gtreap v0.1.0 // indirect
 	github.com/willf/bitset v1.1.11 // indirect
@@ -46,7 +55,7 @@ require (
 	go.etcd.io/bbolt v1.3.10 // indirect
 	golang.org/x/crypto v0.24.0 // indirect
 	golang.org/x/net v0.26.0 // indirect
-	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
+	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 )
