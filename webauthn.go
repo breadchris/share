@@ -14,7 +14,7 @@ func setupWebauthn() {
 	var err error
 	webAuthn, err = webauthn.New(&webauthn.Config{
 		RPDisplayName: "Example Corp", // Display Name for your site
-		RPID:          "localhost",    // Generally the domain name
+		RPID:          "justshare.io", // Generally the domain name
 		RPOrigins: []string{
 			"http://localhost:8080",
 			"https://justshare.io",
