@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Loader</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2 {
+            text-align: center;
+        }
+
+        .controls {
+            margin-top: 20px;
+        }
+
+        .controls label, .controls input {
+            display: block;
+            margin: 5px 0;
+        }
+
+        #keyMappings, #performanceLog {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Media Loader</h1>
+    <input type="file" id="mediaInput" accept="video/*,audio/*">
+    <div id="mediaContainer"></div>
+    <div class="controls">
+        <label for="startTime">Start Time (seconds):</label>
+        <input type="number" id="startTime" min="0" step="0.1">
+        <label for="endTime">End Time (seconds):</label>
+        <input type="number" id="endTime" min="0" step="0.1">
+        <label for="keyPress">Key Press:</label>
+        <input type="text" id="keyPress" maxlength="1">
+        <button id="mapKey">Map Key</button>
+    </div>
+    <div id="keyMappings"></div>
+
+    <h2>Performance View</h2>
+    <button id="startRecording">Start Recording</button>
+    <button id="stopRecording">Stop Recording</button>
+    <button id="replaySession">Replay Session</button>
+    <div id="performanceLog"></div>
+</div>
+<script>
+    const mediaInput = document.getElementById('mediaInput');
+    const mediaContainer = document.getElementById('mediaContainer');
+    const startTimeInput = document.getElementById('startTime');
+    const endTimeInput = document.getElementById('endTime');
+    const keyPressInput = document.getElementById('keyPress');
+    const mapKeyButton = document.getElementById('mapKey');
+    const keyMappingsContainer = document.getElementById('keyMappings');
+    const startRecordingButton = document.getElementById('startRecording');
+    const stopRecordingButton = document.getElementById('stopRecording');
+    const replaySessionButton = document.getElementById('replaySession');
+    const performanceLogContainer = document.getElementById('performanceLog');
+
+    let mediaElement;
+    const keyMappings = {};
+    let recording = false;
+    const performanceLog = [];
+
+    mediaInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const url = URL.createObjectURL(file);
+            if (file.type.startsWith('video')) {
+                mediaElement = document.createElement('video');
+            } else {
+                mediaElement = document.createElement('audio');
+            }
+            mediaElement.src = url;
+            mediaElement.controls = true;
+            mediaContainer.innerHTML = '';
+            mediaContainer.appendChild(mediaElement);
+        }
+    });
+
+    mapKeyButton.addEventListener('click', () => {
+        const startTime = parseFloat(startTimeInput.value);
+        const endTime = parseFloat(endTimeInput.value);
+        const keyPress = keyPressInput.value.toLowerCase();
+
+        if (!isNaN(startTime) && !isNaN(endTime) && keyPress) {
+            keyMappings[keyPress] = { startTime, endTime };
+            updateKeyMappingsDisplay();
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        const keyPress = event.key.toLowerCase();
+        if (keyMappings[keyPress]) {
+            const { startTime, endTime } = keyMappings[keyPress];
+            mediaElement.currentTime = startTime;
+            mediaElement.play();
+
+            const duration = endTime - startTime;
+            setTimeout(() => {
+                mediaElement.pause();
+            }, duration * 1000);
+
+            if (recording) {
+                const timestamp = mediaElement.currentTime;
+                performanceLog.push({ keyPress, timestamp });
+                updatePerformanceLogDisplay();
+            }
+        }
+    });
+
+    startRecordingButton.addEventListener('click', () => {
+        recording = true;
+        performanceLog.length = 0;
+        updatePerformanceLogDisplay();
+    });
+
+    stopRecordingButton.addEventListener('click', () => {
+        recording = false;
+    });
+
+    replaySessionButton.addEventListener('click', () => {
+        if (performanceLog.length > 0) {
+            let startTime = performanceLog[0].timestamp;
+            performanceLog.forEach((log, index) => {
+                const delay = (log.timestamp - startTime) * 1000;
+                setTimeout(() => {
+                    const { startTime, endTime } = keyMappings[log.keyPress];
+                    mediaElement.currentTime = startTime;
+                    mediaElement.play();
+                    setTimeout(() => {
+                        mediaElement.pause();
+                    }, (endTime - startTime) * 1000);
+                }, delay);
+            });
+        }
+    });
+
+    function updateKeyMappingsDisplay() {
+        keyMappingsContainer.innerHTML = '';
+        for (const [key, { startTime, endTime }] of Object.entries(keyMappings)) {
+            const div = document.createElement('div');
+            div.textContent = `Key: ${key.toUpperCase()}, Start Time: ${startTime}s, End Time: ${endTime}s`;
+            keyMappingsContainer.appendChild(div);
+        }
+    }
+
+    function updatePerformanceLogDisplay() {
+        performanceLogContainer.innerHTML = '';
+        performanceLog.forEach((log) => {
+            const div = document.createElement('div');
+            div.textContent = `Key: ${log.keyPress.toUpperCase()}, Timestamp: ${log.timestamp.toFixed(2)}s`;
+            performanceLogContainer.appendChild(div);
+        });
+    }
+</script>
+</body>
+</html>
