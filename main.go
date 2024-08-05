@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/session"
 	"github.com/gomarkdown/markdown"
 	"github.com/gorilla/websocket"
 	ignore "github.com/sabhiram/go-gitignore"
@@ -53,17 +54,27 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/chat/send", sendHandler)
 	http.HandleFunc("/chat/clear", clearHandler)
 
-	loadEntries()
+	loadJSON(dataFile, &entries)
+
+	s, err := session.New()
+	if err != nil {
+		log.Fatalf("Failed to create session store: %v", err)
+	}
+	a := NewAuth(s)
 
 	setupWebauthn()
 	setupCursor()
 	setupRecipe()
 	setupChatgpt(appConfig)
+
 	//text.Setup(upgrader)
 
+	http.HandleFunc("/register", a.handleRegister)
+	http.HandleFunc("/login", a.handleLogin)
+	http.HandleFunc("/qr", handleQR)
 	http.HandleFunc("/blog", blogHandler)
 	http.HandleFunc("/submit", submitHandler)
-	http.HandleFunc("/qrcode", handleQR)
+	http.HandleFunc("/home", a.homeHandler)
 	http.HandleFunc("/", fileServerHandler)
 
 	dir := "data/justshare.io-ssl-bundle"
@@ -71,12 +82,15 @@ func startServer(useTLS bool, port int) {
 	certFile := path.Join(dir, "domain.cert.pem")
 	keyFile := path.Join(dir, "private.key.pem")
 
+	h := s.LoadAndSave(http.DefaultServeMux)
+
 	if useTLS {
 		tlsConfig := NewTLSConfig(interCertFile, certFile, keyFile)
 
 		server := &http.Server{
 			Addr:      fmt.Sprintf(":%d", port),
 			TLSConfig: tlsConfig,
+			Handler:   h,
 		}
 
 		log.Printf("Starting HTTPS server on port: %d", port)
@@ -86,7 +100,7 @@ func startServer(useTLS bool, port int) {
 		}
 	} else {
 		log.Printf("Starting HTTP server on port: %d", port)
-		http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+		http.ListenAndServe(fmt.Sprintf(":%d", port), h)
 	}
 }
 

@@ -4,13 +4,16 @@ go 1.22
 
 require (
 	github.com/blevesearch/bleve v1.0.14
+	github.com/breadchris/scs/v2 v2.0.0-20230909081317-6125300685dd
 	github.com/evanw/esbuild v0.23.0
 	github.com/go-webauthn/webauthn v0.10.2
 	github.com/gomarkdown/markdown v0.0.0-20240419095408-642f0ee99ae2
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.1
 	github.com/gosimple/slug v1.14.0
+	github.com/makiuchi-d/gozxing v0.1.1
 	github.com/nlnwa/gowarc v1.6.0
+	github.com/pkg/errors v0.9.1
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/sashabaranov/go-openai v1.26.3
 	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
@@ -45,7 +48,6 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/nlnwa/whatwg-url v0.4.0 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/prometheus v0.40.3 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/steveyen/gtreap v0.1.0 // indirect
@@ -57,5 +59,6 @@ require (
 	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
+	golang.org/x/xerrors v0.0.0-20240716161551-93cc26a95ae9 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 )
