@@ -50,6 +50,7 @@ require (
 	github.com/nlnwa/whatwg-url v0.4.0 // indirect
 	github.com/prometheus/prometheus v0.40.3 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	github.com/samber/lo v1.46.0 // indirect
 	github.com/steveyen/gtreap v0.1.0 // indirect
 	github.com/willf/bitset v1.1.11 // indirect
 	github.com/x448/float16 v0.8.4 // indirect

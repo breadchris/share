@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/makiuchi-d/gozxing"
 	"github.com/makiuchi-d/gozxing/qrcode"
+	"github.com/samber/lo"
 	"html/template"
 	"image/png"
 	"net/http"
@@ -29,6 +30,7 @@ var (
 	// secret -> user id
 	inviteLookup = map[string]string{}
 	authFile     = "data/auth.json"
+	invitesFile  = "data/invites.json"
 )
 
 func init() {
@@ -38,6 +40,7 @@ func init() {
 
 	// TODO build state object for auth
 	loadJSON(authFile, &users)
+	loadJSON(invitesFile, &invites)
 }
 
 type Auth struct {
@@ -63,6 +66,20 @@ func handleQR(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Auth) handleInvite(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		id, err := s.s.GetUserID(r.Context())
+		if err != nil {
+			http.Error(w, "Not logged in", http.StatusUnauthorized)
+			return
+		}
+		invite := uuid.NewString()
+		inviteLookup[invite] = id
+		fmt.Fprintf(w, "<a href=\"/register?invite=%s\">send me!</a>", invite)
+	}
+}
+
 func (s *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
@@ -75,36 +92,41 @@ func (s *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		file, _, err := r.FormFile("file")
-		if err != nil {
-			http.Error(w, "Error retrieving the file", http.StatusBadRequest)
-			return
-		}
-		defer file.Close()
+		sec := r.FormValue("id")
 
-		img, err := png.Decode(file)
-		if err != nil {
-			http.Error(w, "Error decoding PNG image", http.StatusBadRequest)
-			return
-		}
-		qrCode, err := gozxing.NewBinaryBitmapFromImage(img)
-		if err != nil {
-			http.Error(w, "Error decoding QR code", http.StatusBadRequest)
-			return
-		}
+		if sec == "" {
+			file, _, err := r.FormFile("file")
+			if err != nil {
+				http.Error(w, "Error retrieving the file", http.StatusBadRequest)
+				return
+			}
+			defer file.Close()
 
-		qrReader := qrcode.NewQRCodeReader()
-		result, err := qrReader.Decode(qrCode, nil)
-		if err != nil {
-			http.Error(w, "Error reading QR code", http.StatusBadRequest)
-			return
+			img, err := png.Decode(file)
+			if err != nil {
+				http.Error(w, "Error decoding PNG image", http.StatusBadRequest)
+				return
+			}
+			qrCode, err := gozxing.NewBinaryBitmapFromImage(img)
+			if err != nil {
+				http.Error(w, "Error decoding QR code", http.StatusBadRequest)
+				return
+			}
+
+			qrReader := qrcode.NewQRCodeReader()
+			result, err := qrReader.Decode(qrCode, nil)
+			if err != nil {
+				http.Error(w, "Error reading QR code", http.StatusBadRequest)
+				return
+			}
+			sec = result.String()
 		}
 
 		for _, user := range users {
 			for _, secret := range user.Secrets {
-				if result.String() == secret {
+				if sec == secret {
 					s.s.SetUserID(r.Context(), user.ID)
-					http.Redirect(w, r, "/home", http.StatusFound)
+					http.Redirect(w, r, "/", http.StatusFound)
 					return
 				}
 			}
@@ -114,8 +136,8 @@ func (s *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Auth) homeHandler(w http.ResponseWriter, r *http.Request) {
-	t, err := template.ParseFiles("home.html")
+func (s *Auth) accountHandler(w http.ResponseWriter, r *http.Request) {
+	t, err := template.ParseFiles("account.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -129,11 +151,36 @@ func (s *Auth) homeHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "User not found", http.StatusNotFound)
 		return
 	}
-	t.Execute(w, struct {
-		User *User
+
+	var inv []string
+	for k, v := range inviteLookup {
+		if v == id {
+			inv = append(inv, k)
+		}
+	}
+
+	err = t.Execute(w, struct {
+		User         *User
+		Invites      []string
+		InvitedUsers []*User
 	}{
 		User: user,
+		InvitedUsers: lo.Filter(
+			lo.Map(
+				lo.Filter(invites, func(i Invite, idx int) bool {
+					return i.From == id
+				}),
+				func(i Invite, idx int) *User {
+					return users[i.To]
+				},
+			), func(u *User, idx int) bool {
+				return u != nil
+			}),
+		Invites: inv,
 	})
+	if err != nil {
+		println(err.Error())
+	}
 }
 
 func (s *Auth) handleRegister(w http.ResponseWriter, r *http.Request) {
@@ -167,6 +214,7 @@ func (s *Auth) handleRegister(w http.ResponseWriter, r *http.Request) {
 			From: inviteFrom,
 			To:   id,
 		})
+		saveJSON(invitesFile, invites)
 
 		// find user by email
 		for _, user := range users {

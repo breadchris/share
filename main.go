@@ -71,10 +71,11 @@ func startServer(useTLS bool, port int) {
 
 	http.HandleFunc("/register", a.handleRegister)
 	http.HandleFunc("/login", a.handleLogin)
+	http.HandleFunc("/invite", a.handleInvite)
 	http.HandleFunc("/qr", handleQR)
-	http.HandleFunc("/blog", blogHandler)
-	http.HandleFunc("/submit", submitHandler)
-	http.HandleFunc("/home", a.homeHandler)
+	http.HandleFunc("/blog", a.blogHandler)
+	http.HandleFunc("/submit", a.submitHandler)
+	http.HandleFunc("/account", a.accountHandler)
 	http.HandleFunc("/", fileServerHandler)
 
 	dir := "data/justshare.io-ssl-bundle"

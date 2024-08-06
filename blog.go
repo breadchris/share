@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/samber/lo"
 	"html/template"
 	"net/http"
 	"os"
@@ -9,8 +10,10 @@ import (
 )
 
 type Entry struct {
-	Text      string
+	Text      template.HTML
 	Timestamp string
+	User      *User
+	UserID    string
 }
 
 var entries []Entry
@@ -49,17 +52,33 @@ func saveJSON(f string, v any) {
 	}
 }
 
-func blogHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl.Execute(w, entries)
+func (s *Auth) blogHandler(w http.ResponseWriter, r *http.Request) {
+	_, err := s.s.GetUserID(r.Context())
+	if err != nil {
+		http.Error(w, "Not logged in", http.StatusUnauthorized)
+		return
+	}
+
+	tmpl.Execute(w, lo.Map(entries, func(e Entry, idx int) Entry {
+		e.User = users[e.UserID]
+		return e
+	}))
 }
 
-func submitHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Auth) submitHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := s.s.GetUserID(r.Context())
+	if err != nil {
+		http.Error(w, "Not logged in", http.StatusUnauthorized)
+		return
+	}
+
 	if r.Method == http.MethodPost {
 		r.ParseForm()
 		text := r.FormValue("entry")
 		entry := Entry{
-			Text:      text,
+			Text:      template.HTML(text),
 			Timestamp: time.Now().Format("2006-01-02 15:04:05"),
+			UserID:    id,
 		}
 		entries = append([]Entry{entry}, entries...)
 		saveJSON(dataFile, entries)

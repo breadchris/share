@@ -6,24 +6,83 @@
     <title>Journal</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/daisyui@1.14.0/dist/full.css" rel="stylesheet">
+    <script src="//cdn.jsdelivr.net/npm/medium-editor@latest/dist/js/medium-editor.min.js"></script>
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/medium-editor@latest/dist/css/medium-editor.min.css" type="text/css" media="screen" charset="utf-8">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <!-- and it's easy to individually load additional languages -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/go.min.js"></script>
+    <script src="/medium-button.min.js"></script>
+
+    <style>
+        /* restore defaults */
+        h1 { font-size: 2em; }
+        h2 { font-size: 1.5em; }
+        h3 { font-size: 1.17em; }
+        h4 { font-size: 1.00em; }
+        h5 { font-size: 0.8em; }
+        a {
+            color: blue;
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body class="bg-gray-100 p-4">
 <div class="container mx-auto">
     <div class="card shadow-lg compact bg-white text-black p-6">
         <h1 class="text-2xl font-bold mb-4">Journal</h1>
-        <form action="/submit" method="POST" class="mb-4">
-            <textarea name="entry" rows="4" class="textarea textarea-bordered w-full mb-2" placeholder="Write your journal entry..."></textarea>
+        <form action="/submit" method="POST" class="mb-4" onsubmit="copyDivContent()">
+            <input name="entry" id="entry" type="hidden" />
+            <div class="editable"></div>
             <button type="submit" class="btn btn-primary">Submit</button>
         </form>
+        <script>
+            function copyDivContent() {
+                var editableDivContent = document.querySelector('.editable').innerHTML;
+                document.getElementById('entry').value = editableDivContent;
+            }
+        </script>
         <div class="space-y-4">
             {{range .}}
                 <div class="border p-4 rounded-lg bg-gray-50">
                     <p class="mb-2">{{.Text}}</p>
                     <p class="text-sm text-gray-500">{{.Timestamp}}</p>
+                    {{ if .User }}
+                        <p class="text-sm text-gray-500">{{.User.Email}}</p>
+                    {{end}}
                 </div>
             {{end}}
         </div>
     </div>
 </div>
+<script>
+    var editor = new MediumEditor('.editable', {
+        // toolbar: {
+        //     buttons: ['b', 'u', 'h2', 'warning', 'pop']
+        // },
+        // extensions: {
+        //     // compact
+        //     'b':  new MediumButton({label:'BOLD', start:'<b>', end:'</b>'}),
+        //     'h2': new MediumButton({label:'h2', start:'<h2>', end:'</h2>'}),
+        //
+        //     // expanded
+        //     'warning': new MediumButton({
+        //         label: '<i class="fa fa-exclamation-triangle"></i>',
+        //         start: '<div class="warning">',
+        //         end:   '</div>'
+        //     }),
+        //
+        //     // with JavaScript
+        //     'pop': new MediumButton({
+        //         label:'POP',
+        //         action: function(html, mark, parent){
+        //             alert('hello :)')
+        //             return html
+        //         }
+        //     })
+        // }
+    })
+</script>
 </body>
 </html>
