@@ -51,6 +51,7 @@
                     {{ if .User }}
                         <p class="text-sm text-gray-500">{{.User.Email}}</p>
                     {{end}}
+                    <a href="/blog?id={{.ID}}" class="text-blue-500">link</a>
                 </div>
             {{end}}
         </div>

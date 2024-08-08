@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/google/uuid"
 	"github.com/samber/lo"
 	"html/template"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 )
 
 type Entry struct {
+	ID        string
 	Text      template.HTML
 	Timestamp string
 	User      *User
@@ -59,6 +61,19 @@ func (s *Auth) blogHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	id := r.URL.Query().Get("id")
+	if id != "" {
+		for _, e := range entries {
+			if e.ID == id {
+				e.User = users[e.UserID]
+				tmpl.Execute(w, []Entry{e})
+				return
+			}
+		}
+		http.Error(w, "Entry not found", http.StatusNotFound)
+		return
+	}
+
 	tmpl.Execute(w, lo.Map(entries, func(e Entry, idx int) Entry {
 		e.User = users[e.UserID]
 		return e
@@ -76,6 +91,7 @@ func (s *Auth) submitHandler(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 		text := r.FormValue("entry")
 		entry := Entry{
+			ID:        uuid.NewString(),
 			Text:      template.HTML(text),
 			Timestamp: time.Now().Format("2006-01-02 15:04:05"),
 			UserID:    id,

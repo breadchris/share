@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/breadchris/share/session"
 	"github.com/gomarkdown/markdown"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	ignore "github.com/sabhiram/go-gitignore"
 	"github.com/urfave/cli/v2"
@@ -59,6 +60,15 @@ func startServer(useTLS bool, port int) {
 	appConfig := loadConfig()
 
 	loadJSON(dataFile, &entries)
+	var newEntries []Entry
+	for _, e := range entries {
+		if e.ID == "" {
+			e.ID = uuid.New().String()
+		}
+		newEntries = append(newEntries, e)
+	}
+	entries = newEntries
+	saveJSON(dataFile, entries)
 
 	s, err := session.New()
 	if err != nil {
