@@ -13,7 +13,7 @@
             <h2 class="text-xl font-bold mb-4">Previous Chats</h2>
             <ul id="chat-list">
                 {{range .Chats}}
-                    <li class="mb-2"><a href="/chatgpt/{{.ID}}" class="text-blue-500">{{.Name}}</a></li>
+                    <li class="mb-2"><a href="/llm/{{.ID}}" class="text-blue-500">{{.Name}}</a></li>
                 {{end}}
             </ul>
         </div>
@@ -27,7 +27,7 @@
                     </div>
                 {{end}}
             </div>
-            <form id="chat-form" hx-post="/chatgpt/send" hx-target="#chat-window" hx-swap="innerHTML">
+            <form id="chat-form" hx-post="/llm/send" hx-target="#chat-window" hx-swap="innerHTML">
                 <input type="text" name="message" class="w-full p-2 border rounded" placeholder="Type a message...">
                 <button type="submit" class="mt-2 bg-blue-500 text-white p-2 rounded">Send</button>
             </form>

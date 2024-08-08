@@ -234,7 +234,7 @@ func (s *Auth) handleRegister(w http.ResponseWriter, r *http.Request) {
 		}
 		saveJSON(authFile, users)
 		s.s.SetUserID(r.Context(), id)
-		fmt.Fprintf(w, "<img src=\"/qr?data=%s\"/>", sec)
+		fmt.Fprintf(w, "<img src=\"/qr?data=%s\"/><hr /><a href=\"/\">go home</a>", sec)
 	}
 }
 

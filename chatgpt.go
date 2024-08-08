@@ -27,16 +27,16 @@ var (
 	tmmsg *template.Template
 )
 
-func setupChatgpt(appConfig *AppConfig) {
+func setupChatgpt(s *OpenAIService) *http.ServeMux {
+	m := http.NewServeMux()
 	tm = template.Must(template.ParseFiles("chatgpt.html"))
 	tmmsg = template.Must(template.ParseFiles("chatgptmsg.html"))
 
-	s := NewOpenAIService(*appConfig)
-
-	http.HandleFunc("/chatgpt", s.homeHandler)
-	http.HandleFunc("/chatgpt/{id}", s.homeHandler)
-	http.HandleFunc("/chatgpt/send", s.sendMessageHandler)
-	http.HandleFunc("/chatgpt/chat", s.chatgptHandler)
+	m.HandleFunc("/", s.homeHandler)
+	m.HandleFunc("/{id}", s.homeHandler)
+	m.HandleFunc("/send", s.sendMessageHandler)
+	m.HandleFunc("/chat", s.chatgptHandler)
+	return m
 }
 
 type OpenAIService struct {

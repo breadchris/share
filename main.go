@@ -27,8 +27,16 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+type SMTPConfig struct {
+	Host     string `json:"host"`
+	Port     string `json:"port"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 type AppConfig struct {
-	OpenAIKey string `json:"openai_key"`
+	OpenAIKey string     `json:"openai_key"`
+	SMTP      SMTPConfig `json:"smtp"`
 }
 
 func loadConfig() *AppConfig {
@@ -50,10 +58,6 @@ func loadConfig() *AppConfig {
 func startServer(useTLS bool, port int) {
 	appConfig := loadConfig()
 
-	http.HandleFunc("/chat", chatHandler)
-	http.HandleFunc("/chat/send", sendHandler)
-	http.HandleFunc("/chat/clear", clearHandler)
-
 	loadJSON(dataFile, &entries)
 
 	s, err := session.New()
@@ -62,10 +66,17 @@ func startServer(useTLS bool, port int) {
 	}
 	a := NewAuth(s)
 
+	p := func(p string, s *http.ServeMux) {
+		http.Handle(p+"/", http.StripPrefix(p, s))
+	}
+
 	setupWebauthn()
 	setupCursor()
 	setupRecipe()
-	setupChatgpt(appConfig)
+	oai := NewOpenAIService(*appConfig)
+	c := NewChat(s, oai)
+	p("/llm", setupChatgpt(oai))
+	p("/chat", c.NewMux())
 
 	//text.Setup(upgrader)
 
