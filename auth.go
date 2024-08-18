@@ -7,15 +7,16 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
+	"html/template"
+	"image/png"
+	"net/http"
+	"strings"
+
 	"github.com/breadchris/share/session"
 	"github.com/google/uuid"
 	"github.com/makiuchi-d/gozxing"
 	"github.com/makiuchi-d/gozxing/qrcode"
 	"github.com/samber/lo"
-	"html/template"
-	"image/png"
-	"net/http"
-	"strings"
 )
 
 type Invite struct {

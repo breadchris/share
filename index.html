@@ -1,16 +1,22 @@
 <html>
 <head>
     <title>justshare</title>
+    <script src="https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js"></script>
+    <link href="https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body>
-    <h1>justshare</h1>
-    <p>justshare is a simple file sharing service.</p>
-    <a href="/data/recipes/">recipes</a>
-    <a href="/login">login</a>
-    <a href="/register">register</a>
-    <a href="/blog">blog</a>
-    <a href="/account">account</a>
-    <a href="/chat">chat</a>
-    <a href="/llm">llm</a>
+<body hx-boost="true">
+    <header>
+        <div class="nav">
+                <h1 class="text-3xl font-bold">justshare</h1>
+                <p class="">a simple file sharing service</p>
+                <div hx-get="/nav.html" hx-trigger="load"></div>
+            </div>
+        </div>
+    </header>
+    
+    
+    <div id="content" hx-swap="innerHTML">
+        <!-- Default content or a placeholder can go here -->
+    </div>
 </body>
 </html>
