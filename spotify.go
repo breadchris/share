@@ -45,7 +45,7 @@ func NewSpotify(c AppConfig) *Spotify {
 	}
 
 	a := auth.New(
-		auth.WithRedirectURL("http://localhost:8080/spotify/callback"),
+		auth.WithRedirectURL(fmt.Sprintf("%s/spotify/callback", c.ExternalURL)),
 		auth.WithScopes(auth.ScopeUserReadPlaybackState, auth.ScopeUserModifyPlaybackState),
 		auth.WithClientID(c.Spotify.ClientID),
 		auth.WithClientSecret(c.Spotify.ClientSecret),
