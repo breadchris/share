@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Queue</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-100 text-gray-900">
+
+<div class="container mx-auto p-8">
+    <div class="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-6">
+        <h1 class="text-3xl font-bold text-center mb-8">Spotify Queue</h1>
+
+        <div class="mb-6">
+            <h2 class="text-2xl font-semibold mb-4">frands</h2>
+            <ul class="list-disc list-inside space-y-2">
+                {{range .Users}}
+                    <li class="text-lg">
+                        {{.}}
+                    </li>
+                {{else}}
+                    <li class="text-lg text-gray-500">no frands yet</li>
+                {{end}}
+            </ul>
+
+            <div class="text-center">
+                <h2 class="text-2xl font-semibold mb-4">Connect Your Spotify Account</h2>
+                <a href="/spotify/connect"
+                   class="inline-block bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    Connect to Spotify
+                </a>
+            </div>
+        </div>
+        <div class="mb-6">
+            <h2 class="text-2xl font-semibold mb-4">songs</h2>
+            <ul class="list-disc list-inside space-y-2">
+                {{range .SongQueue}}
+                    <li class="text-lg">
+                        {{.Name}} -
+                        <a href="{{.URL}}" class="text-blue-500 hover:underline">Play on Spotify</a>
+                    </li>
+                {{else}}
+                    <li class="text-lg text-gray-500">No songs queued</li>
+                {{end}}
+            </ul>
+        </div>
+
+        <div class="mb-6">
+            <h2 class="text-2xl font-semibold mb-4">Add a Song</h2>
+            <form action="/spotify/add" method="POST" class="space-y-4">
+                <div>
+                    <label for="song" class="block text-sm font-medium text-gray-700">Song Name:</label>
+                    <input type="text" id="song" name="song"
+                           class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+
+                <div>
+                    <label for="url" class="block text-sm font-medium text-gray-700">Spotify URL:</label>
+                    <input type="text" id="url" name="url"
+                           class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+
+                <button type="submit"
+                        class="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    Add to Queue
+                </button>
+            </form>
+        </div>
+
+        <!-- Button to start playing songs -->
+        <div class="mb-6">
+            <form action="/spotify/play" method="POST">
+                <button type="submit"
+                        class="w-full bg-green-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                    Play Next Song
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+</body>
+
+</html>

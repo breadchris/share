@@ -46,10 +46,16 @@ func init() {
 
 type Auth struct {
 	s *session.SessionManager
+	e *SMTPEmail
+	c AppConfig
 }
 
-func NewAuth(s *session.SessionManager) *Auth {
-	return &Auth{s: s}
+func NewAuth(s *session.SessionManager, e *SMTPEmail, c AppConfig) *Auth {
+	return &Auth{
+		s: s,
+		e: e,
+		c: c,
+	}
 }
 
 func handleQR(w http.ResponseWriter, r *http.Request) {
@@ -82,14 +88,54 @@ func (s *Auth) handleInvite(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
+	type state struct {
+		Msg string
+	}
+	sta := state{}
+
+	t := template.Must(template.ParseFiles("login.html"))
 	switch r.Method {
 	case http.MethodGet:
-		t := template.Must(template.ParseFiles("login.html"))
-		t.Execute(w, nil)
+		sec := r.URL.Query().Get("sec")
+		if sec == "" {
+			t.Execute(w, nil)
+			return
+		}
+		for _, user := range users {
+			for _, secret := range user.Secrets {
+				if sec == secret {
+					s.s.SetUserID(r.Context(), user.ID)
+					http.Redirect(w, r, "/", http.StatusFound)
+					return
+				}
+			}
+		}
+		http.Error(w, "invalid secret", http.StatusBadRequest)
 	case http.MethodPost:
 		err := r.ParseMultipartForm(10 << 20) // 10 MB
 		if err != nil {
 			http.Error(w, "Error parsing form data", http.StatusBadRequest)
+			return
+		}
+		f := r.FormValue("email")
+		if f != "" {
+			for _, user := range users {
+				if user.Email == f {
+					msg := fmt.Sprintf("Click <a href=\"%s/login?sec=%s\">here</a> to login.", s.c.ExternalURL, user.Secrets[0])
+					e := s.e.SendRecoveryEmail(user.Email, "Recover your account", msg, user.Secrets[0])
+					if e != nil {
+						fmt.Printf("Error sending email: %v\n", e)
+						sta.Msg = "Error sending email"
+						t.Execute(w, sta)
+						return
+					}
+					sta.Msg = "check your email"
+					t.Execute(w, sta)
+					return
+				}
+			}
+			sta.Msg = "no user with that email"
+			t.Execute(w, sta)
 			return
 		}
 

@@ -17,7 +17,7 @@ type Message struct {
 
 var messages []Message
 var mu sync.Mutex
-var clients = make(map[chan Message]struct{})
+var chatClients = make(map[chan Message]struct{})
 
 type Chat struct {
 	s *session.SessionManager
@@ -102,7 +102,7 @@ func sseHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	messageChan := make(chan Message)
-	clients[messageChan] = struct{}{}
+	chatClients[messageChan] = struct{}{}
 
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -118,7 +118,7 @@ func sseHandler(w http.ResponseWriter, r *http.Request) {
 				flusher.Flush()
 			}
 		case <-r.Context().Done():
-			delete(clients, messageChan)
+			delete(chatClients, messageChan)
 			return
 		}
 	}
@@ -127,7 +127,7 @@ func sseHandler(w http.ResponseWriter, r *http.Request) {
 func notifyClients(m Message) {
 	mu.Lock()
 	defer mu.Unlock()
-	for client := range clients {
+	for client := range chatClients {
 		client <- m
 	}
 }
