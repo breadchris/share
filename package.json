@@ -3,6 +3,7 @@
     "@blueprintjs/core": "4.13.0",
     "@types/dagre": "0.7.48",
     "@types/randomcolor": "0.5.7",
+    "@xyflow/react": "^12.1.0",
     "color": "4.2.3",
     "dagre": "0.8.5",
     "nanoid": "4.0.0",
@@ -10,11 +11,11 @@
     "react": "18.0.0",
     "react-dom": "18.0.0",
     "react-scripts": "4.0.3",
-    "reactflow": "11.3.3",
     "valtio": "1.7.6",
     "valtio-yjs": "0.4.0",
-    "y-websocket": "1.4.5",
-    "yjs": "13.5.43"
+    "y-webrtc": "^10.3.0",
+    "y-websocket": "^2.0.4",
+    "yjs": "^13.6.18"
   },
   "devDependencies": {
     "@types/react": "^18.3.3"

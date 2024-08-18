@@ -15,10 +15,11 @@ func TestBuild(t *testing.T) {
 			".ts":  api.LoaderTS,
 			".tsx": api.LoaderTSX,
 		},
-		Outfile:  "graph.js",
-		Bundle:   true,
-		Write:    true,
-		LogLevel: api.LogLevelInfo,
+		Outfile:   "graph.js",
+		Bundle:    true,
+		Write:     true,
+		Sourcemap: api.SourceMapInline,
+		LogLevel:  api.LogLevelInfo,
 	})
 
 	for _, warning := range result.Warnings {

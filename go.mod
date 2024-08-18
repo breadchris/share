@@ -15,10 +15,12 @@ require (
 	github.com/nlnwa/gowarc v1.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
+	github.com/samber/lo v1.46.0
 	github.com/sashabaranov/go-openai v1.26.3
-	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/spf13/pflag v1.0.5
 	github.com/urfave/cli/v2 v2.27.2
+	github.com/zmb3/spotify/v2 v2.4.2
+	golang.org/x/oauth2 v0.22.0
 	rogchap.com/v8go v0.9.0
 )
 
@@ -50,16 +52,17 @@ require (
 	github.com/nlnwa/whatwg-url v0.4.0 // indirect
 	github.com/prometheus/prometheus v0.40.3 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
-	github.com/samber/lo v1.46.0 // indirect
 	github.com/steveyen/gtreap v0.1.0 // indirect
 	github.com/willf/bitset v1.1.11 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
+	github.com/zmb3/spotify v1.3.0 // indirect
 	go.etcd.io/bbolt v1.3.10 // indirect
-	golang.org/x/crypto v0.24.0 // indirect
-	golang.org/x/net v0.26.0 // indirect
-	golang.org/x/sys v0.22.0 // indirect
-	golang.org/x/text v0.16.0 // indirect
+	golang.org/x/crypto v0.26.0 // indirect
+	golang.org/x/net v0.28.0 // indirect
+	golang.org/x/sys v0.23.0 // indirect
+	golang.org/x/text v0.17.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240716161551-93cc26a95ae9 // indirect
+	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 )

@@ -1,115 +1,60 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"testing"
 )
 
-func D(innerHTML ...string) string {
-	d := "<div>"
-	for _, h := range innerHTML {
-		d += h
-	}
-	return d + "</div>"
-}
-
-func H1(text string) string {
-	return fmt.Sprintf("<h1>%s</h1>", text)
-}
-
-func P(text string) string {
-	return fmt.Sprintf("<p>%s</p>", text)
-}
-
-func Button(text string, onclick string) string {
-	return fmt.Sprintf("<button onclick=\"%s\">%s</button>", onclick, text)
-}
-
-type tag struct {
-	Name     string
-	Attrs    map[string]string
-	Body     string
-	Children []Tag
-}
-
-type Tag interface {
-	Build() string
-	A(attrs map[string]string) *tag
-}
-
-func (s *tag) A(attrs map[string]string) *tag {
-	ns := *s
-	ns.Attrs = attrs
-	return &ns
-}
-
-func (s *tag) Build() string {
-	c := ""
-	for _, t := range s.Children {
-		c += t.Build()
-	}
-	a := ""
-	for k, v := range s.Attrs {
-		a += fmt.Sprintf("%s=%s ", k, v)
-	}
-	return fmt.Sprintf("<%s %s>%s</%s>", s.Name, a, c, s.Name)
-}
-
-func nt(n string, t []Tag) *tag {
-	return &tag{
-		Name:     n,
-		Children: t,
-	}
-}
-
-type Text struct {
-	tag
-	Body string
-}
-
-func (s *Text) Build() string {
-	return s.Body
-}
-
-func T(s string) *Text {
-	return &Text{
-		Body: s,
-	}
-}
-
-func D2(t ...Tag) *tag {
-	return nt("div", t)
-}
-
-func H12(t ...Tag) *tag {
-	return nt("h1", t)
-}
-
-func P2(t ...Tag) *tag {
-	return nt("p", t)
-}
-
-func Button2(t ...Tag) *tag {
-	return nt("button", t)
-}
-
 func TestHTML(t *testing.T) {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		h := D(
-			H1("asdf"),
-			P("fdsa"),
-			Button("hello", "alert('hello')"),
+		m := Main(Class("mt-8"),
+			Section(Class("text-center"),
+				H2(Text("Submit a New Recipe")),
+				Form(Method("POST"), Action("/submit"),
+					Div(Class("mb-4"),
+						Label(For("title"), T("Recipe Title")),
+						Input(Type("text"), Id("title"), Name("title"), Class("border rounded w-full py-2 px-3")),
+					),
+					Div(Class("mb-4"),
+						Label(For("ingredients"), T("Ingredients")),
+						TextArea(Id("ingredients"), Name("ingredients"), Class("border rounded w-full py-2 px-3"), Rows(5)),
+					),
+					Div(Class("mb-4"),
+						Label(For("instructions"), T("Instructions")),
+						TextArea(Id("instructions"), Name("instructions"), Class("border rounded w-full py-2 px-3"), Rows(5)),
+					),
+					Div(Class("text-center"),
+						Button(Type("submit"), Class("bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"), T("Submit Recipe")),
+					)),
+			),
 		)
-		w.Write([]byte(h))
-	})
-	http.HandleFunc("/2", func(w http.ResponseWriter, r *http.Request) {
-		h := D2(
-			H12(T("asdf")),
-			P2(T("fdsa")),
-			Button2().A(),
+		nav := Nav(
+			Ul(Class("flex justify-center space-x-4"),
+				Li(A(Href("/"), T("Home")),
+					Li(A(Href("/recipes"), T("Recipes"))),
+					Li(A(Href("/submit"), T("Submit a Recipe"))),
+				),
+			),
 		)
-		w.Write([]byte(h))
+		render(w, Html(
+			Head(
+				Title(T("Recipe Site")),
+				Link(Href("https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"), At("rel", "stylesheet"), At("type", "text/css")),
+				Script(Src("https://cdn.tailwindcss.com")),
+				Style(T("body { font-family: 'Inter', sans-serif; }")),
+			),
+			Body(Class("min-h-screen flex flex-col items-center justify-center"),
+				Div(Class("container mx-auto p-4"),
+					Header(Class("text-center mb-4"),
+						H1(Text("Welcome to the Recipe Site")),
+						nav,
+						m,
+					),
+				),
+			),
+		))
 	})
-	http.ListenAndServe(":8080", nil)
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		t.Fatal(err)
+	}
 }

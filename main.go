@@ -35,12 +35,19 @@ type SMTPConfig struct {
 	Password string `json:"password"`
 }
 
-type AppConfig struct {
-	OpenAIKey string     `json:"openai_key"`
-	SMTP      SMTPConfig `json:"smtp"`
+type SpotifyConfig struct {
+	ClientID     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
 }
 
-func loadConfig() *AppConfig {
+type AppConfig struct {
+	OpenAIKey   string        `json:"openai_key"`
+	SMTP        SMTPConfig    `json:"smtp"`
+	Spotify     SpotifyConfig `json:"spotify"`
+	ExternalURL string        `json:"external_url"`
+}
+
+func loadConfig() AppConfig {
 	// load the app config
 	var appConfig AppConfig
 	configFile, err := os.Open("data/config.json")
@@ -53,7 +60,7 @@ func loadConfig() *AppConfig {
 	if err != nil {
 		log.Fatalf("Failed to decode config file: %v", err)
 	}
-	return &appConfig
+	return appConfig
 }
 
 func startServer(useTLS bool, port int) {
@@ -74,7 +81,8 @@ func startServer(useTLS bool, port int) {
 	if err != nil {
 		log.Fatalf("Failed to create session store: %v", err)
 	}
-	a := NewAuth(s)
+	e := NewSMTPEmail(&appConfig)
+	a := NewAuth(s, e, appConfig)
 
 	p := func(p string, s *http.ServeMux) {
 		http.Handle(p+"/", http.StripPrefix(p, s))
@@ -83,7 +91,8 @@ func startServer(useTLS bool, port int) {
 	setupWebauthn()
 	setupCursor()
 	setupRecipe()
-	oai := NewOpenAIService(*appConfig)
+	setupSpotify(appConfig)
+	oai := NewOpenAIService(appConfig)
 	c := NewChat(s, oai)
 	p("/llm", setupChatgpt(oai))
 	p("/chat", c.NewMux())
