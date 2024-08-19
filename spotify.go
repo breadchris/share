@@ -41,7 +41,8 @@ func NewSpotify(c AppConfig) *Spotify {
 	}
 	token, err := config.Token(context.Background())
 	if err != nil {
-		log.Fatalf("couldn't get token: %v", err)
+		log.Printf("couldn't get token, spotify routes will not be mounted: %v", err)
+		return nil
 	}
 
 	a := auth.New(
@@ -69,12 +70,14 @@ var (
 
 func setupSpotify(c AppConfig) *http.ServeMux {
 	s := NewSpotify(c)
-	http.HandleFunc("/spotify", s.homeHandler)
-	http.HandleFunc("/spotify/", s.homeHandler)
-	http.HandleFunc("/spotify/callback", s.completeAuth)
-	http.HandleFunc("/spotify/add", s.addSongHandler)
-	http.HandleFunc("/spotify/play", s.playSongsHandler)
-	http.HandleFunc("/spotify/connect", s.connect)
+	if s != nil {
+		http.HandleFunc("/spotify", s.homeHandler)
+		http.HandleFunc("/spotify/", s.homeHandler)
+		http.HandleFunc("/spotify/callback", s.completeAuth)
+		http.HandleFunc("/spotify/add", s.addSongHandler)
+		http.HandleFunc("/spotify/play", s.playSongsHandler)
+		http.HandleFunc("/spotify/connect", s.connect)
+	}
 	return nil
 }
 
