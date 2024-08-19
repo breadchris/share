@@ -8,14 +8,15 @@ import (
 
 func TestBuild(t *testing.T) {
 	result := api.Build(api.BuildOptions{
-		EntryPoints: []string{"graph.tsx"},
+		EntryPoints: []string{"graph.tsx", "mingraph.ts"},
 		Loader: map[string]api.Loader{
 			".js":  api.LoaderJS,
 			".jsx": api.LoaderJSX,
 			".ts":  api.LoaderTS,
 			".tsx": api.LoaderTSX,
 		},
-		Outfile:   "graph.js",
+		//Outfile:   "graph.js",
+		Outdir:    ".",
 		Bundle:    true,
 		Write:     true,
 		Sourcemap: api.SourceMapInline,

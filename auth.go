@@ -8,13 +8,20 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/breadchris/share/session"
+	"github.com/fsnotify/fsnotify"
 	"github.com/google/uuid"
 	"github.com/makiuchi-d/gozxing"
 	"github.com/makiuchi-d/gozxing/qrcode"
 	"github.com/samber/lo"
+	"github.com/traefik/yaegi/interp"
+	"github.com/traefik/yaegi/stdlib"
+	"go/build"
 	"html/template"
 	"image/png"
+	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -369,4 +376,112 @@ func generateKeyPair() (*ecdsa.PrivateKey, *ecdsa.PublicKey, error) {
 	publicKey := &privateKey.PublicKey
 
 	return privateKey, publicKey, nil
+}
+
+func WatchFilesAndFolders(paths []string, callback func(string)) error {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return fmt.Errorf("failed to create watcher: %w", err)
+	}
+	defer watcher.Close()
+
+	// Add the paths to the watcher
+	for _, path := range paths {
+		absPath, err := filepath.Abs(path)
+		if err != nil {
+			return fmt.Errorf("failed to get absolute path for %s: %w", path, err)
+		}
+
+		err = watcher.Add(absPath)
+		if err != nil {
+			return fmt.Errorf("failed to add %s to watcher: %w", absPath, err)
+		}
+	}
+
+	done := make(chan bool)
+
+	go func() {
+		for {
+			select {
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return
+				}
+				absPath, err := filepath.Abs(event.Name)
+				if err != nil {
+					log.Printf("failed to get absolute path for %s: %v", event.Name, err)
+					continue
+				}
+				callback(absPath)
+
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					return
+				}
+				log.Printf("error: %v", err)
+			}
+		}
+	}()
+
+	<-done
+	return nil
+}
+
+var (
+	renderedLookup = map[string]string{}
+)
+
+func watchPaths() {
+	paths := []string{"./html/hacker.go"}
+	callback := func(path string) {
+		fmt.Printf("Change detected: %s\n", path)
+		i := interp.New(interp.Options{
+			GoPath: build.Default.GOPATH,
+			Env:    os.Environ(),
+		})
+
+		i.Use(stdlib.Symbols)
+
+		d, err := os.ReadFile("html/html.go")
+		if err != nil {
+			println("Error reading file", err)
+			return
+		}
+		_, err = i.Eval(string(d))
+
+		d, err = os.ReadFile(path)
+		if err != nil {
+			println("Error reading file", err)
+			return
+		}
+
+		_, err = i.Eval(string(d))
+		if err != nil {
+			println("Error evaluating code", err.Error())
+			return
+		}
+
+		v, err := i.Eval("html.RenderHacker")
+		if err != nil {
+			println("Error evaluating code", err.Error())
+			return
+		}
+
+		r := v.Interface().(func() string)
+		renderedLookup["html.go"] = r()
+	}
+
+	if err := WatchFilesAndFolders(paths, callback); err != nil {
+		log.Fatalf("error watching files and folders: %v", err)
+	}
+}
+
+func (s *Auth) codeHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		mu.Lock()
+		defer mu.Unlock()
+
+		w.Write([]byte(renderedLookup["html.go"]))
+	}
 }

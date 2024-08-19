@@ -1,56 +1,42 @@
-// server.js
-const WebSocket = require('ws');
-const http = require('http');
-const Y = require('yjs');
-const { encodeStateAsUpdate, applyUpdate } = require('yjs');
+const WebSocket = require('ws')
+const http = require('http')
+const ywsUtils = require('y-websocket/bin/utils')
+const setupWSConnection = ywsUtils.setupWSConnection
+const docs = ywsUtils.docs
+const env = require('lib0/environment')
+const nostatic = env.hasParam('--nostatic')
 
-// Maps document names to Yjs documents
-const docs = new Map();
+const production = process.env.PRODUCTION != null
+const port = process.env.PORT || 1234
 
-const port = process.env.PORT || 1234;
-const server = http.createServer();
-const wss = new WebSocket.Server({ server });
-
-// Function to get or create a Yjs document
-const getYDoc = (docName) => {
-  if (!docs.has(docName)) {
-    const ydoc = new Y.Doc();
-    docs.set(docName, ydoc);
+const server = http.createServer((request, response) => {
+  if (request.url === '/health') {
+    response.writeHead(200, { 'Content-Type': 'application/json' })
+    response.end(JSON.stringify({
+      response: 'ok'
+    }))
+    return
   }
-  return docs.get(docName);
-};
+})
+const wss = new WebSocket.Server({ server })
 
-wss.on('connection', (ws, req) => {
-  const docName = req.url.slice(1); // Get the document name from the URL
-  const ydoc = getYDoc(docName);
+wss.on('connection', (conn, req) => {
+  setupWSConnection(conn, req, { gc: req.url.slice(1) !== 'ws/prosemirror-versions' })
+})
 
-  // Send the initial document state to the client
-  ws.send(encodeStateAsUpdate(ydoc));
+// log some stats
+setInterval(() => {
+  let conns = 0
+  docs.forEach(doc => { conns += doc.conns.size })
+  const stats = {
+    conns,
+    docs: docs.size,
+    websocket: `ws://localhost:${port}`,
+    http: `http://localhost:${port}`
+  }
+  console.log(`${new Date().toISOString()} Stats: ${JSON.stringify(stats)}`)
+}, 10000)
 
-  // Apply incoming updates to the Yjs document and broadcast them
-  ws.on('message', (message) => {
-    console.log('Received message:', message);
+server.listen(port, '0.0.0.0')
 
-    try {
-      const update = new Uint8Array(message);
-      applyUpdate(ydoc, update);
-
-      // Broadcast the update to all other clients
-      wss.clients.forEach((client) => {
-        if (client !== ws && client.readyState === WebSocket.OPEN) {
-          client.send(update);
-        }
-      });
-    } catch (error) {
-      console.error('Failed to process message:', error);
-    }
-  });
-
-  ws.on('close', () => {
-    // Handle cleanup if necessary
-  });
-});
-
-server.listen(port, () => {
-  console.log(`Yjs WebSocket server running on port ${port}`);
-});
+console.log(`Listening to http://localhost:${port} (${production ? 'production + ' : ''} ${nostatic ? 'no static content' : 'serving static content'})`)

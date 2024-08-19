@@ -98,6 +98,7 @@ func startServer(useTLS bool, port int) {
 	p("/chat", c.NewMux())
 
 	//text.Setup(upgrader)
+	go watchPaths()
 
 	http.HandleFunc("/register", a.handleRegister)
 	http.HandleFunc("/login", a.handleLogin)
@@ -106,6 +107,7 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/blog", a.blogHandler)
 	http.HandleFunc("/submit", a.submitHandler)
 	http.HandleFunc("/account", a.accountHandler)
+	http.HandleFunc("/code", a.codeHandler)
 	http.HandleFunc("/", fileServerHandler)
 
 	dir := "data/justshare.io-ssl-bundle"

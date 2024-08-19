@@ -6,6 +6,7 @@ import {
     Background,
     useNodesState,
     useEdgesState,
+    Node,
     addEdge, useReactFlow, Connection, ReactFlowProvider,
 } from '@xyflow/react';
 
@@ -28,6 +29,7 @@ export default function App() {
     const onConnect = (params: Connection) => {
         connectingNodeId.current = null;
         onEdgesChange([addEdge(params, edges)]);
+        onNodesChange([addEdge(params, nodes)]);
     }
 
     const reactFlowWrapper = useRef(null);
@@ -57,7 +59,7 @@ export default function App() {
                     origin: [0.5, 0.0],
                 };
 
-                setNodes((nds) => nds.concat(newNode));
+                setNodes((nds) => nds.concat([newNode]));
                 setEdges((eds) =>
                     eds.concat({ id, source: connectingNodeId.current, target: id }),
                 );
@@ -69,6 +71,17 @@ export default function App() {
 
     return (
         <div style={{ width: '100vw', height: '100vh' }}>
+            <button onClick={() => {
+                // add a new node
+                const id = getId();
+                const newNode = {
+                    id,
+                    position: { x: 0, y: 0 },
+                    data: { label: `Node ${id}` },
+                };
+                setNodes((nds) => nds.concat([newNode]));
+
+            }}>Add Node</button>
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
