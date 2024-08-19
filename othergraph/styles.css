@@ -1,0 +1,200 @@
+* {
+  box-sizing: border-box;
+}
+
+iframe {
+  display: none !important;
+}
+
+html {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  width: 100%;
+  height: 100%;
+  background: #eee;
+  font-size: 14px;
+  font-family: sans-serif;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+[class~='react-flow__handle'] {
+  transform: none;
+  right: auto;
+}
+
+body.transitioning .react-flow__node {
+  transition: transform 500ms;
+}
+body.transitioning .react-flow__node > div {
+  transition: width 500ms, height 500ms;
+}
+.react-flow__edges {
+  opacity: 1;
+  transition: opacity 500ms;
+}
+body.transitioning .react-flow__edges {
+  opacity: 0;
+}
+body.dragging .react-flow__edges {
+  display: none;
+}
+
+.react-flow__node:hover,
+.react-flow__node:hover > div {
+  border-color: black !important;
+}
+
+.react-flow__node-COMP {
+  z-index: 15 !important;
+}
+.react-flow__node-GROUP {
+  z-index: 5 !important;
+}
+
+.edge-connector-wrap {
+  position: relative;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+body .edge-connector {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  left: 0;
+  bottom: auto !important;
+  background: none !important;
+  border-radius: 0 !important;
+  transform: none;
+  width: 100%;
+  height: 100%;
+  border: 10px solid transparent;
+  cursor: inherit !important;
+}
+body.connecting .edge-connector:hover {
+  background: yellow;
+}
+body:not(.dragging) .edge-connector:hover {
+  border-color: yellow !important;
+  cursor: crosshair !important;
+}
+body:not(.dragging):not(.connecting) .edge-connector:hover + div {
+  outline: 1px dashed #777;
+  border-radius: 3px;
+}
+.edge-connector-inner {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  left: 10px;
+  width: calc(100% - 20px);
+  height: calc(100% - 20px);
+}
+
+body.dragging .selected,
+body.dragging .selected * {
+  z-index: 1010 !important;
+}
+
+.react-flow__node:hover .group-name {
+  color: black !important;
+}
+.group-name {
+  line-height: 1;
+}
+.react-flow__handle:not(.edge-connector) {
+  width: 2px !important;
+  height: 2px !important;
+  min-width: 2px !important;
+  min-height: 2px !important;
+}
+
+.node-highlight > div {
+  border-color: red !important;
+  box-shadow: 0 0 7px 1px rgba(0, 0, 0, 0.2);
+}
+
+.ghost-comp {
+  position: fixed;
+  z-index: 1000;
+  background: white;
+  border: 3px solid black;
+  border-radius: 3px;
+  opacity: 0.5;
+}
+
+.ghost-group {
+  position: fixed;
+  z-index: 1000;
+  background: #ccc;
+  border: 3px dashed black;
+  border-radius: 3px;
+  opacity: 0.5;
+}
+
+.ghost-node-comp {
+  border: 2px solid black;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: bold;
+  font-family: monospace;
+  background: white;
+  opacity: 0.5;
+  z-index: 2000;
+}
+
+.comp-name {
+  cursor: default;
+}
+.comp-name:hover {
+  outline: 1px dashed #ccc;
+}
+#CompNameInput {
+  width: 100%;
+  font-size: 10px;
+  font-family: monospace;
+  font-weight: bold;
+  margin: 0;
+  outline: 2px solid lightblue;
+  border: 1px solid black;
+  border-radius: 2px;
+}
+
+.flex {
+  display: flex;
+  align-items: center;
+}
+.flex-end {
+  display: flex;
+  align-items: flex-end;
+}
+.between {
+  justify-content: space-between;
+}
+
+.p-1 {
+  padding: 5px;
+}
+.p-2 {
+  padding: 10px;
+}
+.p-3 {
+  padding: 15px;
+}
+.p-4 {
+  padding: 20px;
+}

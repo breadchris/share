@@ -134,6 +134,24 @@ func (s *Node) Render() string {
 	return fmt.Sprintf("<%s %s>%s</%s>", s.Name, a, c, s.Name)
 }
 
+//
+//func (s *Node) RenderGoCode() string {
+//	c := ""
+//	for _, t := range s.Children {
+//		c += t.RenderGoCode()
+//	}
+//	caser := cases.Title(language.AmericanEnglish)
+//	if len(s.Attrs) == 0 {
+//		return fmt.Sprintf("%s(\n%s,\n)", caser.String(s.Name), c)
+//	}
+//
+//	var attrs []string
+//	for k, v := range s.Attrs {
+//		attrs = append(attrs, fmt.Sprintf("%s(\"%s\"),\n", caser.String(k), v))
+//	}
+//	return fmt.Sprintf("%s(\n%s,\n%s\n,),\n", s.Name, strings.Join(attrs, ",\n"), c)
+//}
+
 type TextNode struct {
 	text string
 }
@@ -152,15 +170,20 @@ func (s *TextNode) Render() string {
 	return s.text
 }
 
+func (s *TextNode) RenderGoCode() string {
+	return fmt.Sprintf("Text(\"%s\")", s.text)
+}
+
 type RenderNode interface {
 	Render() string
+	//RenderGoCode() string
 }
 
 type NodeOption interface {
 	Init(n *Node)
 }
 
-func newNode(s string, o []NodeOption) *Node {
+func NewNode(s string, o []NodeOption) *Node {
 	n := &Node{
 		Name:  s,
 		Attrs: map[string]string{},
@@ -172,23 +195,27 @@ func newNode(s string, o []NodeOption) *Node {
 }
 
 func Html(o ...NodeOption) *Node {
-	return newNode("html", o)
+	return NewNode("html", o)
 }
 
 func Head(o ...NodeOption) *Node {
-	return newNode("head", o)
+	return NewNode("head", o)
 }
 
 func Meta(o ...NodeOption) *Node {
-	return newNode("meta", o)
+	return NewNode("meta", o)
 }
 
 func Body(o ...NodeOption) *Node {
-	return newNode("body", o)
+	return NewNode("body", o)
 }
 
 type TransformNode struct {
 	transform func(p *Node)
+}
+
+func (s *TransformNode) RenderGoCode() string {
+	return ""
 }
 
 func (s *TransformNode) Init(p *Node) {
@@ -208,87 +235,111 @@ func Class(s string) *TransformNode {
 }
 
 func Div(o ...NodeOption) *Node {
-	return newNode("div", o)
+	return NewNode("div", o)
 }
 
 func Header(o ...NodeOption) *Node {
-	return newNode("header", o)
+	return NewNode("header", o)
 }
 
 func Nav(o ...NodeOption) *Node {
-	return newNode("nav", o)
+	return NewNode("nav", o)
 }
 
 func Ul(o ...NodeOption) *Node {
-	return newNode("ul", o)
+	return NewNode("ul", o)
 }
 
 func Li(o ...NodeOption) *Node {
-	return newNode("li", o)
+	return NewNode("li", o)
 }
 
 func A(o ...NodeOption) *Node {
-	return newNode("a", o)
+	return NewNode("a", o)
 }
 
 func H1(o ...NodeOption) *Node {
-	return newNode("h1", o)
+	return NewNode("h1", o)
 }
 
 func H2(o ...NodeOption) *Node {
-	return newNode("h2", o)
+	return NewNode("h2", o)
 }
 
 func Form(o ...NodeOption) *Node {
-	return newNode("form", o)
+	return NewNode("form", o)
 }
 
 func Label(o ...NodeOption) *Node {
-	return newNode("label", o)
+	return NewNode("label", o)
 }
 
 func Input(o ...NodeOption) *Node {
-	return newNode("input", o)
+	return NewNode("input", o)
 }
 
 func TextArea(o ...NodeOption) *Node {
-	return newNode("textarea", o)
+	return NewNode("textarea", o)
 }
 
 func Button(o ...NodeOption) *Node {
-	return newNode("button", o)
+	return NewNode("button", o)
 }
 
 func Title(o ...NodeOption) *Node {
-	return newNode("title", o)
+	return NewNode("title", o)
 }
 
 func Link(o ...NodeOption) *Node {
-	return newNode("link", o)
+	return NewNode("link", o)
 }
 
 func Script(o ...NodeOption) *Node {
-	return newNode("script", o)
+	return NewNode("script", o)
 }
 
 func Img(o ...NodeOption) *Node {
-	return newNode("img", o)
+	return NewNode("img", o)
 }
 
 func P(o ...NodeOption) *Node {
-	return newNode("p", o)
+	return NewNode("p", o)
 }
 
 func Style(o ...NodeOption) *Node {
-	return newNode("style", o)
+	return NewNode("style", o)
 }
 
 func Main(o ...NodeOption) *Node {
-	return newNode("main", o)
+	return NewNode("main", o)
 }
 
 func Section(o ...NodeOption) *Node {
-	return newNode("section", o)
+	return NewNode("section", o)
+}
+
+func Span(o ...NodeOption) *Node {
+	return NewNode("span", o)
+}
+
+func Svg(o ...NodeOption) *Node {
+	return NewNode("svg", o)
+}
+
+func H4(o ...NodeOption) *Node {
+	return NewNode("h4", o)
+}
+
+func H3(o ...NodeOption) *Node {
+	return NewNode("h3", o)
+}
+
+func H5(o ...NodeOption) *Node {
+	return NewNode("h5", o)
+}
+
+func Path(o ...NodeOption) *Node {
+	return NewNode("path", o)
 }
 
 func Method(s string) *TransformNode {
@@ -351,6 +402,14 @@ func Name(s string) *TransformNode {
 	return &TransformNode{
 		transform: func(p *Node) {
 			p.Attrs["name"] = s
+		},
+	}
+}
+
+func Placeholder(s string) *TransformNode {
+	return &TransformNode{
+		transform: func(p *Node) {
+			p.Attrs["placeholder"] = s
 		},
 	}
 }
