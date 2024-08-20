@@ -86,7 +86,13 @@ func RenderHTML() string {
 	return Html(
 		Head(
 			Title(T("Recipe Site")),
-			Link(Href("https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"), At("rel", "stylesheet"), At("type", "text/css")),
+			Link(
+				Attrs(map[string]string{
+					"rel":  "stylesheet",
+					"type": "text/css",
+					"href": "https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css",
+				}),
+			),
 			Script(Src("https://cdn.tailwindcss.com")),
 			Style(T("body { font-family: 'Inter', sans-serif; }")),
 		),
@@ -382,6 +388,16 @@ func Attr(k, v string) *TransformNode {
 	}
 }
 
+func Attrs(m map[string]string) *TransformNode {
+	return &TransformNode{
+		transform: func(p *Node) {
+			for k, v := range m {
+				p.Attrs[k] = v
+			}
+		},
+	}
+}
+
 func For(s string) *TransformNode {
 	return &TransformNode{
 		transform: func(p *Node) {
@@ -402,6 +418,22 @@ func Name(s string) *TransformNode {
 	return &TransformNode{
 		transform: func(p *Node) {
 			p.Attrs["name"] = s
+		},
+	}
+}
+
+func Target(s string) *TransformNode {
+	return &TransformNode{
+		transform: func(p *Node) {
+			p.Attrs["target"] = s
+		},
+	}
+}
+
+func AriaLabel(s string) *TransformNode {
+	return &TransformNode{
+		transform: func(p *Node) {
+			p.Attrs["aria-label"] = s
 		},
 	}
 }
@@ -430,9 +462,80 @@ func Type(s string) *TransformNode {
 	}
 }
 
+func Footer(o ...NodeOption) *Node {
+	return NewNode("footer", o)
+}
+
+func Article(o ...NodeOption) *Node {
+	return NewNode("article", o)
+}
+
+func Charset(s string) *TransformNode {
+	return &TransformNode{
+		transform: func(p *Node) {
+			p.Attrs["charset"] = s
+		},
+	}
+}
+
+func Content(s string) *TransformNode {
+	return &TransformNode{
+		transform: func(p *Node) {
+			p.Attrs["content"] = s
+		},
+	}
+}
+
+func HttpEquiv(s string) *TransformNode {
+	return &TransformNode{
+		transform: func(p *Node) {
+			p.Attrs["http-equiv"] = s
+		},
+	}
+}
+
+func Rel(s string) *TransformNode {
+	return &TransformNode{
+		transform: func(p *Node) {
+			p.Attrs["rel"] = s
+		},
+	}
+}
+
+func Crossorigin(s string) *TransformNode {
+	return &TransformNode{
+		transform: func(p *Node) {
+			p.Attrs["crossorigin"] = s
+		},
+	}
+}
+
+func Sizes(s string) *TransformNode {
+	return &TransformNode{
+		transform: func(p *Node) {
+			p.Attrs["sizes"] = s
+		},
+	}
+}
+
+func Property(s string) *TransformNode {
+	return &TransformNode{
+		transform: func(p *Node) {
+			p.Attrs["property"] = s
+		},
+	}
+}
+
+func Accesskey(s string) *TransformNode {
+	return &TransformNode{
+		transform: func(p *Node) {
+			p.Attrs["accesskey"] = s
+		},
+	}
+}
+
 var (
-	At = Attr
-	T  = Text
+	T = Text
 )
 
 func render(w io.Writer, n *Node) (int, error) {

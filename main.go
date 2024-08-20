@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/html"
 	"github.com/breadchris/share/session"
 	"github.com/gomarkdown/markdown"
 	"github.com/google/uuid"
@@ -91,6 +92,7 @@ func startServer(useTLS bool, port int) {
 	setupWebauthn()
 	setupCursor()
 	setupRecipe()
+	fileUpload()
 	setupSpotify(appConfig)
 	oai := NewOpenAIService(appConfig)
 	c := NewChat(s, oai)
@@ -167,21 +169,50 @@ func main() {
 	}
 }
 
-func indexHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("blog.html")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	tmpl.Execute(w, nil)
-}
-
-func testHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "This is dynamically loaded content from the /test endpoint.")
+var u = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
+	switch r.Method {
+	case "GET":
+		w.Write([]byte(html.Upload().Render()))
+		return
+	case "POST":
+		f, _, err := r.FormFile("file")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer f.Close()
+
+		fn := r.FormValue("filename")
+		ext := filepath.Ext(fn)
+		name := "data/uploads/" + uuid.NewString() + ext
+		o, err := os.Create(name)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer o.Close()
+
+		if _, err = io.Copy(o, f); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Write([]byte(html.Div(html.A(html.Href(name), html.T("share"))).Render()))
+		return
+	}
+	w.Write([]byte("invalid method"))
+}
+
+func websocketHandler(w http.ResponseWriter, r *http.Request) {
+	conn, err := u.Upgrade(w, r, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -195,7 +226,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	filename := string(filenameMsg)
 
-	f, err := os.Create("./uploads/" + filename)
+	f, err := os.Create("./data/uploads/" + filename)
 	if err != nil {
 		conn.WriteMessage(websocket.TextMessage, []byte("Failed to create file"))
 		return
@@ -348,6 +379,42 @@ func codeHandler(w http.ResponseWriter, r *http.Request) {
 func fileServerHandler(w http.ResponseWriter, r *http.Request) {
 	host := r.Host
 
+	type l struct {
+		Name string
+		Path string
+	}
+
+	pathLookup := map[string]l{
+		"/": {
+			Path: "html/index.go",
+			Name: "html.Index",
+		},
+		"/breadchris": {
+			Path: "html/blog.go",
+			Name: "html.RenderBlog",
+		},
+	}
+
+	for p, f := range pathLookup {
+		if r.URL.Path == p {
+			i, err := runCode(f.Path)
+			if err != nil {
+				println("Error running code", err.Error())
+				return
+			}
+
+			v, err := i.Eval(f.Name)
+			if err != nil {
+				println("Error evaluating code", err.Error())
+				return
+			}
+
+			r := v.Interface().(func() string)
+			w.Write([]byte(r()))
+			return
+		}
+	}
+
 	fmt.Printf("path: %s\n", r.URL.Path)
 
 	// the host is in the form: *.justshare.io, extract the subdomain
@@ -403,16 +470,12 @@ func formatSize(size int64) string {
 }
 
 func fileUpload() {
-	os.MkdirAll("./uploads", os.ModePerm)
-
-	http.HandleFunc("/", indexHandler)
-	http.HandleFunc("/test", testHandler)
-	http.HandleFunc("/upload", uploadHandler)
-
-	fmt.Println("Starting server at port 8081")
-	if err := http.ListenAndServe(":8081", nil); err != nil {
-		fmt.Println(err)
+	err := os.MkdirAll("./data/uploads", os.ModePerm)
+	if err != nil {
+		log.Fatalf("Failed to create uploads directory: %v", err)
 	}
+
+	http.HandleFunc("/upload", uploadHandler)
 }
 
 func recipeHandler(w http.ResponseWriter, r *http.Request) {

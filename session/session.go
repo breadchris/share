@@ -2,7 +2,7 @@ package session
 
 import (
 	"context"
-	"github.com/breadchris/scs/v2"
+	"github.com/breadchris/share/scs"
 	"github.com/pkg/errors"
 	"time"
 )

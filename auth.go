@@ -468,6 +468,34 @@ func watchPaths() {
 	}
 }
 
+func runCode(file string) (*interp.Interpreter, error) {
+	i := interp.New(interp.Options{
+		//GoPath: build.Default.GOPATH,
+		//Env:    os.Environ(),
+	})
+
+	i.Use(stdlib.Symbols)
+
+	d, err := os.ReadFile("html/html.go")
+	if err != nil {
+		return nil, fmt.Errorf("Error reading file: %w", err)
+	}
+	_, err = i.Eval(string(d))
+	if err != nil {
+		return nil, fmt.Errorf("Error evaluating code: %w", err)
+	}
+
+	d, err = os.ReadFile(file)
+	if err != nil {
+		return nil, fmt.Errorf("Error reading file: %w", err)
+	}
+	_, err = i.Eval(string(d))
+	if err != nil {
+		return nil, fmt.Errorf("Error evaluating code: %w", err)
+	}
+	return i, nil
+}
+
 func (s *Auth) codeHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
@@ -489,46 +517,12 @@ func (s *Auth) codeHandler(w http.ResponseWriter, r *http.Request) {
 			Description: "Experienced hacker with a focus on cybersecurity, cryptography, and building robust systems. Passionate about exploring the unknown and solving complex challenges.",
 		}
 
-		i := interp.New(interp.Options{
-			//GoPath: build.Default.GOPATH,
-			//Env:    os.Environ(),
-		})
-
-		i.Use(stdlib.Symbols)
-
-		d, err := os.ReadFile("html/html.go")
+		i, err := runCode("html/form.go")
 		if err != nil {
-			println("Error reading file", err)
-			return
-		}
-		_, err = i.Eval(string(d))
-		if err != nil {
-			println("Error evaluating code", err.Error())
+			println("Error running code", err.Error())
 			return
 		}
 
-		d, err = os.ReadFile("html/form.go")
-		if err != nil {
-			println("Error reading file", err)
-			return
-		}
-		_, err = i.Eval(string(d))
-		if err != nil {
-			println("Error evaluating code", err.Error())
-			return
-		}
-
-		d, err = os.ReadFile("html/hacker.go")
-		if err != nil {
-			println("Error reading file", err)
-			return
-		}
-
-		_, err = i.Eval(string(d))
-		if err != nil {
-			println("Error evaluating code", err.Error())
-			return
-		}
 		v, err := i.Eval("html.RenderHacker")
 		if err != nil {
 			println("Error evaluating code", err.Error())
