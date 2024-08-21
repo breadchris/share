@@ -4,22 +4,12 @@ import (
 	"encoding/json"
 	"github.com/google/uuid"
 	"github.com/samber/lo"
-	"html/template"
 	"net/http"
 	"os"
 	"time"
 )
 
-type Entry struct {
-	ID        string
-	Text      template.HTML
-	Timestamp string
-	User      *User
-	UserID    string
-}
-
 var entries []Entry
-var tmpl = template.Must(template.ParseFiles("blog.html"))
 
 const dataFile = "data/entries.json"
 
@@ -65,8 +55,15 @@ func (s *Auth) blogHandler(w http.ResponseWriter, r *http.Request) {
 	if id != "" {
 		for _, e := range entries {
 			if e.ID == id {
-				e.User = users[e.UserID]
-				tmpl.Execute(w, []Entry{e})
+				ur, ok := users[e.UserID]
+				if !ok {
+					ur = &User{ID: e.UserID, Email: "unknown"}
+				}
+				e.User = EntryUser{
+					ID:    ur.ID,
+					Email: ur.Email,
+				}
+				w.Write([]byte(RenderBlog([]Entry{e})))
 				return
 			}
 		}
@@ -74,10 +71,32 @@ func (s *Auth) blogHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl.Execute(w, lo.Map(entries, func(e Entry, idx int) Entry {
-		e.User = users[e.UserID]
+	e := lo.Map(entries, func(e Entry, idx int) Entry {
+		ur, ok := users[e.UserID]
+		if !ok {
+			ur = &User{ID: e.UserID, Email: "unknown"}
+		}
+		e.User = EntryUser{
+			ID:    ur.ID,
+			Email: ur.Email,
+		}
 		return e
-	}))
+	})
+
+	//i, err := runCode("./blogview.go")
+	//if err != nil {
+	//	http.Error(w, err.Error(), http.StatusInternalServerError)
+	//	return
+	//}
+	//
+	//v, err := i.Eval("main.RenderBlog")
+	//if err != nil {
+	//	println("Error evaluating code", err.Error())
+	//	return
+	//}
+	//
+	//ren := v.Interface().(func(any) string)
+	w.Write([]byte(RenderBlog(e)))
 }
 
 func (s *Auth) submitHandler(w http.ResponseWriter, r *http.Request) {
@@ -92,7 +111,7 @@ func (s *Auth) submitHandler(w http.ResponseWriter, r *http.Request) {
 		text := r.FormValue("entry")
 		entry := Entry{
 			ID:        uuid.NewString(),
-			Text:      template.HTML(text),
+			Text:      text,
 			Timestamp: time.Now().Format("2006-01-02 15:04:05"),
 			UserID:    id,
 		}

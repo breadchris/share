@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"testing/fstest"
 )
 
 type Invite struct {
@@ -469,26 +470,32 @@ func watchPaths() {
 }
 
 func runCode(file string) (*interp.Interpreter, error) {
-	i := interp.New(interp.Options{
-		//GoPath: build.Default.GOPATH,
-		//Env:    os.Environ(),
-	})
-
-	i.Use(stdlib.Symbols)
-
 	d, err := os.ReadFile("html/html.go")
 	if err != nil {
 		return nil, fmt.Errorf("Error reading file: %w", err)
 	}
-	_, err = i.Eval(string(d))
-	if err != nil {
-		return nil, fmt.Errorf("Error evaluating code: %w", err)
-	}
+
+	i := interp.New(interp.Options{
+		GoPath: filepath.FromSlash("./"),
+		SourcecodeFilesystem: fstest.MapFS{
+			"src/main/vendor/github.com/breadchris/share/html/html.go": &fstest.MapFile{
+				Data: d,
+			},
+		},
+	})
+
+	i.Use(stdlib.Symbols)
+
+	//_, err = i.Eval(string(d))
+	//if err != nil {
+	//	return nil, fmt.Errorf("Error evaluating code: %w", err)
+	//}
 
 	d, err = os.ReadFile(file)
 	if err != nil {
 		return nil, fmt.Errorf("Error reading file: %w", err)
 	}
+
 	_, err = i.Eval(string(d))
 	if err != nil {
 		return nil, fmt.Errorf("Error evaluating code: %w", err)

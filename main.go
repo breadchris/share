@@ -397,6 +397,10 @@ func fileServerHandler(w http.ResponseWriter, r *http.Request) {
 
 	for p, f := range pathLookup {
 		if r.URL.Path == p {
+			if p == "/" {
+				w.Write([]byte(html.Index()))
+				return
+			}
 			i, err := runCode(f.Path)
 			if err != nil {
 				println("Error running code", err.Error())
@@ -469,6 +473,7 @@ func formatSize(size int64) string {
 	return fmt.Sprintf("%d GB", size/(1024*1024*1024))
 }
 
+// TODO breadchris auth
 func fileUpload() {
 	err := os.MkdirAll("./data/uploads", os.ModePerm)
 	if err != nil {

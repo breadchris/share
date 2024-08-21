@@ -114,6 +114,11 @@ type Node struct {
 	Children []RenderNode
 }
 
+func (s *Node) C(c []RenderNode) *Node {
+	s.Children = append(s.Children, c...)
+	return s
+}
+
 func (s *Node) Init(n *Node) {
 	n.Children = append(n.Children, s)
 }
@@ -195,6 +200,9 @@ func NewNode(s string, o []NodeOption) *Node {
 		Attrs: map[string]string{},
 	}
 	for _, op := range o {
+		if op == nil {
+			continue
+		}
 		op.Init(n)
 	}
 	return n
@@ -214,6 +222,15 @@ func Meta(o ...NodeOption) *Node {
 
 func Body(o ...NodeOption) *Node {
 	return NewNode("body", o)
+}
+
+type NilNode struct{}
+
+func (s *NilNode) Init(p *Node) {
+}
+
+func (s *NilNode) Render() string {
+	return ""
 }
 
 type TransformNode struct {
@@ -270,6 +287,13 @@ func H1(o ...NodeOption) *Node {
 
 func H2(o ...NodeOption) *Node {
 	return NewNode("h2", o)
+}
+
+func If(b bool, n func() *Node) NodeOption {
+	if b {
+		return n()
+	}
+	return &NilNode{}
 }
 
 func Form(o ...NodeOption) *Node {
