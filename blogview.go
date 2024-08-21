@@ -58,17 +58,17 @@ func RenderBlog(entries []Entry) string {
 						Attr("action", "/submit"),
 						Attr("method", "POST"),
 						Class("mb-4"),
-						Attr("onsubmit", "document.querySelector('#entry').value = editor.getValue()"),
-						Input(Type("hidden"), Id("entry"), Name("entry")),
-						RenderCode(Code{
-							C: "hello world!",
-						}),
-						//TextArea(
-						//	Class("textarea w-full"),
-						//	Id("entry"),
-						//	Placeholder("you know what to do..."),
-						//	Name("entry"),
-						//),
+						//Attr("onsubmit", "document.querySelector('#entry').value = editor.getValue()"),
+						//Input(Type("hidden"), Id("entry"), Name("entry")),
+						//RenderCode(Code{
+						//	C: "hello world!",
+						//}),
+						TextArea(
+							Class("textarea w-full"),
+							Id("entry"),
+							Placeholder("you know what to do..."),
+							Name("entry"),
+						),
 						Button(
 							Type("submit"),
 							Class("btn btn-primary"),

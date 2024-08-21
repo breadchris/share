@@ -31,7 +31,7 @@ window.MonacoEnvironment = {
 
 window.addEventListener('load', () => {
     const ydoc = new Y.Doc()
-    const provider = new WebsocketProvider('ws://justshare.io:1234', 'monaco', ydoc)
+    const provider = new WebsocketProvider('wss://justshare.io:1234', 'monaco', ydoc)
     const type = ydoc.getText('monaco')
 
     // TODO provide fallback
