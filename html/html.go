@@ -565,3 +565,35 @@ var (
 func render(w io.Writer, n *Node) (int, error) {
 	return w.Write([]byte(n.Render()))
 }
+
+func HxPost(s string) *TransformNode {
+	return &TransformNode{
+		transform: func(p *Node) {
+			p.Attrs["hx-post"] = s
+		},
+	}
+}
+
+func HxGet(s string) *TransformNode {
+	return &TransformNode{
+		transform: func(p *Node) {
+			p.Attrs["hx-get"] = s
+		},
+	}
+}
+
+func HxTarget(s string) *TransformNode {
+	return &TransformNode{
+		transform: func(p *Node) {
+			p.Attrs["hx-target"] = s
+		},
+	}
+}
+
+func HxSwap(s string) *TransformNode {
+	return &TransformNode{
+		transform: func(p *Node) {
+			p.Attrs["hx-swap"] = s
+		},
+	}
+}

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"github.com/google/uuid"
+	"github.com/russross/blackfriday/v2"
 	"github.com/samber/lo"
 	"net/http"
 	"os"
@@ -63,6 +64,10 @@ func (s *Auth) blogHandler(w http.ResponseWriter, r *http.Request) {
 					ID:    ur.ID,
 					Email: ur.Email,
 				}
+				renderer := blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{})
+
+				b := blackfriday.Run([]byte(e.Text), blackfriday.WithRenderer(renderer), blackfriday.WithExtensions(blackfriday.HardLineBreak))
+				e.Text = string(b)
 				w.Write([]byte(RenderBlog([]Entry{e})))
 				return
 			}
@@ -80,6 +85,10 @@ func (s *Auth) blogHandler(w http.ResponseWriter, r *http.Request) {
 			ID:    ur.ID,
 			Email: ur.Email,
 		}
+		renderer := blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{})
+
+		b := blackfriday.Run([]byte(e.Text), blackfriday.WithRenderer(renderer), blackfriday.WithExtensions(blackfriday.HardLineBreak))
+		e.Text = string(b)
 		return e
 	})
 

@@ -1,19 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/breadchris/share/session"
 	"github.com/sashabaranov/go-openai"
-	"html/template"
 	"net/http"
 	"strings"
 	"sync"
 )
-
-type Message struct {
-	Author  string `json:"author"`
-	Content string `json:"content"`
-}
 
 var messages []Message
 var mu sync.Mutex
@@ -39,7 +34,20 @@ func (s *Chat) NewMux() *http.ServeMux {
 	m.HandleFunc("/", s.chatHandler)
 	m.HandleFunc("/send", s.sendHandler)
 	m.HandleFunc("/sse", sseHandler)
+	m.HandleFunc("/stream", s.streamHandler)
+	m.HandleFunc("/ai", s.ai)
 	return m
+}
+
+func (s *Chat) ai(w http.ResponseWriter, r *http.Request) {
+	id, err := s.s.GetUserID(r.Context())
+	if err != nil {
+		http.Error(w, "User not logged in", http.StatusForbidden)
+		return
+	}
+	u := users[id]
+	h := fmt.Sprintf(`<div class="chat chat-start"><span class="font-semibold">%s:</span><span hx-></span></div>`, u.Email)
+	w.Write([]byte(h))
 }
 
 func (s *Chat) chatHandler(w http.ResponseWriter, r *http.Request) {
@@ -49,10 +57,21 @@ func (s *Chat) chatHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t := template.Must(template.ParseFiles("chat.html"))
-	mu.Lock()
-	defer mu.Unlock()
-	t.Execute(w, messages)
+	cs := chatState{
+		Messages: messages,
+	}
+
+	js, err := json.Marshal(cs)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	h, err := runCodeFunc("chatview.go", "main.RenderChat", js)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write([]byte(h))
 }
 
 func (s *Chat) sendHandler(w http.ResponseWriter, r *http.Request) {
@@ -91,6 +110,44 @@ func (s *Chat) sendHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			addMsg(Message{Author: "ChatGPT", Content: resp.Choices[0].Message.Content})
 		}
+	}
+}
+
+func (s *Chat) streamHandler(w http.ResponseWriter, r *http.Request) {
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
+		return
+	}
+
+	content := r.FormValue("content")
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	req := openai.ChatCompletionRequest{
+		Model: openai.GPT4o20240513,
+		Messages: []openai.ChatCompletionMessage{
+			{Role: "system", Content: "You are a helpful assistant."},
+			{Role: "user", Content: content},
+		},
+	}
+	resp, err := s.l.client.CreateChatCompletionStream(r.Context(), req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer resp.Close()
+
+	for {
+		re, err := resp.Recv()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		fmt.Fprintf(w, "data: %s\n\n", re.Choices[0].Delta.Content)
+		flusher.Flush()
 	}
 }
 

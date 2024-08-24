@@ -90,6 +90,7 @@ func startServer(useTLS bool, port int) {
 	}
 
 	setupWebauthn()
+	setupPrompt()
 	setupCursor()
 	setupRecipe()
 	fileUpload()
