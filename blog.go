@@ -89,7 +89,7 @@ func (s *Auth) blogHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		entries = append([]Entry{entry}, entries...)
 		saveJSON(dataFile, entries)
-		return
+		http.Redirect(w, r, "/blog", http.StatusFound)
 	}
 
 	id := r.URL.Query().Get("id")
