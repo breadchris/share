@@ -6,10 +6,10 @@ import (
 )
 
 type Message struct {
-	ID       string `json:"id"`
-	Author   string `json:"author"`
-	Content  string `json:"content"`
-	ThreadID string `json:"thread_id"`
+	ID      string `json:"id"`
+	Author  string `json:"author"`
+	Content string `json:"content"`
+	Type    string `json:"type"`
 }
 
 type chatState struct {
@@ -45,18 +45,25 @@ func RenderChat(s []byte) (string, error) {
 						Label(For("content"), Class("block text-sm font-medium text-gray-700"), T("Message")),
 						TextArea(Id("content"), Name("content"), Class("mt-1 p-2 block w-full shadow-sm sm:text-sm border border-gray-300 rounded-md")),
 					),
+					Label(For("ai"), Class("block text-sm font-medium text-gray-700"), T("ask AI")),
+					Input(Type("checkbox"), Class("toggle"), Name("ai")),
 					Div(
 						Class("flex flex-row space-x-4"),
 						Button(Type("submit"), Class("btn"), T("Send")),
-						Button(Class("btn"), T("AI"), HxTarget("#chat"), HxGet("/chat/ai"), HxSwap("afterbegin")),
 					),
 				),
 				Div(Class("bg-white p-4 rounded-lg shadow-md mb-4"),
 					Id("chat"),
 					Attr("hx-ext", "sse"),
 					Attr("sse-connect", "/chat/sse"),
-					Attr("sse-swap", "message"),
-					Attr("hx-swap", "afterbegin"),
+					Div(
+						Attr("sse-swap", "ai"),
+						Attr("hx-swap", "beforeend"),
+					),
+					Div(
+						Attr("sse-swap", "chat"),
+						Attr("hx-swap", "afterbegin"),
+					),
 					RenderMessages(cs.Messages),
 				),
 				Script(T(`
@@ -72,10 +79,15 @@ func RenderChat(s []byte) (string, error) {
 func RenderMessages(messages []Message) *Node {
 	var nodes []NodeOption
 	for _, msg := range messages {
-		nodes = append(nodes, Div(Class("chat chat-start"),
-			Span(Class("font-semibold"), T(msg.Author+":")),
-			Span(T(msg.Content)),
-		))
+		nodes = append(nodes, RenderMsg(msg))
 	}
 	return Div(nodes...)
+}
+
+func RenderMsg(m Message) *Node {
+	return Div(Class("chat chat-start"),
+		Span(Class("font-semibold"), T(m.Author+":")),
+		Span(T(m.Content)),
+		A(Href("/chat/thread?id="+m.ID), T("thread")),
+	)
 }

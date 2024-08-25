@@ -9,22 +9,38 @@ type EntryUser struct {
 	Email string
 }
 
+type Reaction struct {
+	UserID string
+	Emoji  string
+}
+
 type Entry struct {
 	ID        string
 	Text      string
 	Timestamp string
 	User      EntryUser
 	UserID    string
+	Reactions []Reaction
 }
 
 func RenderBlog(entries []Entry) string {
 	var en []RenderNode
 	for _, e := range entries {
+		var reacts []RenderNode
+		for _, r := range e.Reactions {
+			reacts = append(reacts, Span(Class("mr-2"), T(r.Emoji)))
+		}
 		en = append(en,
 			Div(Class("border p-4 rounded-lg"),
 				P(Class("mb-2"), T(e.Text)),
 				P(Class("text-sm text-gray-500"), T(e.Timestamp)),
 				P(Class("text-sm text-gray-500"), T(e.User.Email)),
+				Form(
+					Action("/blog/react"),
+					Method("POST"),
+					Input(Type("hidden"), Name("id"), Attr("value", e.ID)),
+					Button(Type("submit"), Class("text-blue-500"), T("👍")),
+				).C(reacts),
 				A(Href("/blog?id="+e.ID), Class("text-blue-500"), T("link")),
 			),
 		)
@@ -55,7 +71,7 @@ func RenderBlog(entries []Entry) string {
 				Div(Class("card shadow-lg compact p-6"),
 					H1(Class("text-2xl font-bold mb-4"), T("Journal")),
 					Form(
-						Attr("action", "/submit"),
+						Attr("action", "/blog"),
 						Attr("method", "POST"),
 						Class("mb-4"),
 						//Attr("onsubmit", "document.querySelector('#entry').value = editor.getValue()"),

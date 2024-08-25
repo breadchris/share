@@ -108,7 +108,7 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/invite", a.handleInvite)
 	http.HandleFunc("/qr", handleQR)
 	http.HandleFunc("/blog", a.blogHandler)
-	http.HandleFunc("/submit", a.submitHandler)
+	http.HandleFunc("/blog/react", a.reactHandler)
 	http.HandleFunc("/account", a.accountHandler)
 	http.HandleFunc("/code", a.codeHandler)
 	http.HandleFunc("/", fileServerHandler)

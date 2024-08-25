@@ -45,10 +45,50 @@ func saveJSON(f string, v any) {
 	}
 }
 
-func (s *Auth) blogHandler(w http.ResponseWriter, r *http.Request) {
-	_, err := s.s.GetUserID(r.Context())
+func (s *Auth) reactHandler(w http.ResponseWriter, r *http.Request) {
+	uid, err := s.s.GetUserID(r.Context())
 	if err != nil {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
+		return
+	}
+
+	if r.Method == http.MethodPost {
+		r.ParseForm()
+		id := r.FormValue("id")
+
+		entries = lo.Map(entries, func(e Entry, i int) Entry {
+			if e.ID != id {
+				return e
+			}
+			e.Reactions = append(e.Reactions, Reaction{
+				UserID: uid,
+				Emoji:  "👍",
+			})
+			return e
+		})
+		saveJSON(dataFile, entries)
+	}
+	http.Redirect(w, r, "/blog", http.StatusFound)
+}
+
+func (s *Auth) blogHandler(w http.ResponseWriter, r *http.Request) {
+	uid, err := s.s.GetUserID(r.Context())
+	if err != nil {
+		http.Error(w, "Not logged in", http.StatusUnauthorized)
+		return
+	}
+
+	if r.Method == http.MethodPost {
+		r.ParseForm()
+		text := r.FormValue("entry")
+		entry := Entry{
+			ID:        uuid.NewString(),
+			Text:      text,
+			Timestamp: time.Now().Format("2006-01-02 15:04:05"),
+			UserID:    uid,
+		}
+		entries = append([]Entry{entry}, entries...)
+		saveJSON(dataFile, entries)
 		return
 	}
 
@@ -106,26 +146,4 @@ func (s *Auth) blogHandler(w http.ResponseWriter, r *http.Request) {
 	//
 	//ren := v.Interface().(func(any) string)
 	w.Write([]byte(RenderBlog(e)))
-}
-
-func (s *Auth) submitHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := s.s.GetUserID(r.Context())
-	if err != nil {
-		http.Error(w, "Not logged in", http.StatusUnauthorized)
-		return
-	}
-
-	if r.Method == http.MethodPost {
-		r.ParseForm()
-		text := r.FormValue("entry")
-		entry := Entry{
-			ID:        uuid.NewString(),
-			Text:      text,
-			Timestamp: time.Now().Format("2006-01-02 15:04:05"),
-			UserID:    id,
-		}
-		entries = append([]Entry{entry}, entries...)
-		saveJSON(dataFile, entries)
-	}
-	http.Redirect(w, r, "/blog", http.StatusSeeOther)
 }
