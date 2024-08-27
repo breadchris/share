@@ -31,7 +31,8 @@ func ZineIndex() *Node {
 
 func PanelForm() *Node {
 	return Div(Id("panel_form_div"),
-		Form(Id("panel_form"), Attr("hx-post", "/zine/create-panel"), Attr("hx-target", "#panel_1"), Attr("hx-swap", "innerHTML"), Attr("enctype", "multipart/form-data"),
+		Form(Id("panel_form"), Attr("hx-post", "/zine/create-panel"), Attr("hx-target", "#panel_1"),
+			Attr("hx-swap", "innerHTML"), Attr("enctype", "multipart/form-data"), Attr("hx-on::after-request", "this.reset()"),
 			TextArea(Name("content"), Placeholder("Write your text here")),
 			Div(Input(Type("file"), Name("uploadfile"))),
 			Div(Button(Class("bg-blue-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-l"), Type("submit"),
