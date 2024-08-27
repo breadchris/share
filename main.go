@@ -5,13 +5,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"github.com/breadchris/share/html"
-	"github.com/breadchris/share/session"
-	"github.com/gomarkdown/markdown"
-	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
-	ignore "github.com/sabhiram/go-gitignore"
-	"github.com/urfave/cli/v2"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -21,6 +14,15 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/breadchris/share/html"
+	"github.com/breadchris/share/session"
+	"github.com/breadchris/share/zine"
+	"github.com/gomarkdown/markdown"
+	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
+	ignore "github.com/sabhiram/go-gitignore"
+	"github.com/urfave/cli/v2"
 )
 
 var upgrader = websocket.Upgrader{
@@ -111,6 +113,7 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/blog/react", a.reactHandler)
 	http.HandleFunc("/account", a.accountHandler)
 	http.HandleFunc("/code", a.codeHandler)
+	http.HandleFunc("zine/create-panel", zine.CreatePanelHandler)
 	http.HandleFunc("/", fileServerHandler)
 
 	dir := "data/justshare.io-ssl-bundle"
