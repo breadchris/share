@@ -38,6 +38,7 @@ func Index() string {
 		Head(
 			Title(T("justshare")),
 			Link(Href("https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"), Attr("rel", "stylesheet"), Attr("type", "text/css")),
+			Link(Attr("rel", "icon"), Attr("href", "/favicon.ico"), Attr("type", "image/x-icon")),
 			Script(Src("https://cdn.tailwindcss.com")),
 			Style(T("body { font-family: 'Inter', sans-serif; }")),
 		),

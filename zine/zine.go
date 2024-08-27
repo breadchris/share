@@ -1,8 +1,14 @@
 package zine
 
 import (
+	"net/http"
+
 	. "github.com/breadchris/share/html"
 )
+
+func RenderZine(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte(ZineIndex().Render()))
+}
 
 func ZineIndex() *Node {
 	return Html(
@@ -12,7 +18,7 @@ func ZineIndex() *Node {
 			Script(Src("https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js")),
 
 			Link(Rel("stylesheet"), Href("https://unpkg.com/tailwindcss@^1.0/dist/tailwind.min.css")),
-			Link(Rel("stylesheet"), Href("/static/styles.css")),
+			Link(Rel("stylesheet"), Href("/styles.css")),
 		),
 		Body(
 			Div(H1(T("Zine Creator"))),
@@ -25,7 +31,7 @@ func ZineIndex() *Node {
 
 func PanelForm() *Node {
 	return Div(Id("panel_form_div"),
-		Form(Id("panel_form"), Attr("hx-post", "zine/create-panel"), Attr("hx-target", "#panel_1"), Attr("hx-swap", "beforeend"), Attr("enctype", "multipart/form-data"),
+		Form(Id("panel_form"), Attr("hx-post", "/zine/create-panel"), Attr("hx-target", "#panel_1"), Attr("hx-swap", "innerHTML"), Attr("enctype", "multipart/form-data"),
 			TextArea(Name("content"), Placeholder("Write your text here")),
 			Div(Input(Type("file"), Name("uploadfile"))),
 			Div(Button(Class("bg-blue-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-l"), Type("submit"),

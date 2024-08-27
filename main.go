@@ -113,7 +113,8 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/blog/react", a.reactHandler)
 	http.HandleFunc("/account", a.accountHandler)
 	http.HandleFunc("/code", a.codeHandler)
-	http.HandleFunc("zine/create-panel", zine.CreatePanelHandler)
+	http.HandleFunc("/zine/", zine.RenderZine)
+	http.HandleFunc("/zine/create-panel", zine.CreatePanelHandler)
 	http.HandleFunc("/", fileServerHandler)
 
 	dir := "data/justshare.io-ssl-bundle"
