@@ -24,7 +24,7 @@ func CreatePanelHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Handle text content
 	content := r.FormValue("content")
-	fmt.Println("1")
+
 	// Handle file upload
 	file, handler, err := r.FormFile("uploadfile")
 	if err != nil && err != http.ErrMissingFile {
@@ -41,7 +41,7 @@ func CreatePanelHandler(w http.ResponseWriter, r *http.Request) {
 	var htmlContent string
 	if handler != nil {
 		// Save the uploaded file
-		filePath = "./static/" + handler.Filename
+		filePath = "./data/" + handler.Filename
 		out, err := os.Create(filePath)
 		if err != nil {
 			http.Error(w, "Error saving the file", http.StatusInternalServerError)
@@ -55,16 +55,12 @@ func CreatePanelHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if filePath != "" {
-			image = Img(Attr("src", "/static/"+handler.Filename), Attr("alt", "Uploaded Image"))
+			image = Img(Attr("src", "/data/"+handler.Filename), Attr("alt", "Uploaded Image"))
 		}
 		htmlContent = Div(image, P(T(content))).Render()
 	} else {
 		htmlContent = P(T(content)).Render()
 	}
-
-	// Combine the text and image HTML
-
-	// fmt.Sprintf("%s\n%s", content, imageHTML)
 
 	w.Write([]byte(htmlContent))
 }
