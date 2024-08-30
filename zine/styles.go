@@ -21,5 +21,5 @@ func PanelSelctionButton() *TransformNode {
 }
 
 func Image() *TransformNode {
-	return Attr("style", "max-width: 100%; max-height: 100%; object-fit: contain;")
+	return Attr("style", "max-width: 100%; object-fit: contain;")
 }

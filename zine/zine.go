@@ -52,9 +52,13 @@ func PanelForm() *Node {
 			Attr("hx-swap", "innerHTML"), Attr("enctype", "multipart/form-data"), Attr("hx-on::after-request", "this.reset()"),
 			Div(Class("flex justify-center space-x-4"),
 				TextArea(Name("content"), Placeholder("Write your text here")),
-				Div(Input(Type("file"), Name("uploadfile"))),
-				Div(Button(Class("bg-blue-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-l"), Type("submit"),
-					T("Create Panel")),
+				Div(Id("AddImage"), Input(Type("file"), Name("uploadfile"))),
+				Div(
+					Button(Class("bg-blue-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-l"), Type("submit"),
+						T("Create Panel")),
+					Button(Id("ImageGenButton"), Class("bg-green-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-r"), Type("button"),
+						Attr("hx-post", "/zine/generate-image"), Attr("hx-target", "#panel_1"),
+						Attr("hx-swap", "innerHTML"), T("Generate Image")),
 				),
 			),
 		),
@@ -76,7 +80,12 @@ func PanelNav() *Node {
 						for (var i = 0; i < buttons.length; i++) {
 							buttons[i].addEventListener("click", function() {
 								var dynamicElement = document.getElementById("panel_form");
+								var dynamicButton = document.getElementById("ImageGenButton");
+
 								dynamicElement.setAttribute("hx-target", "#panel_" + this.value);
+								dynamicButton.setAttribute("hx-target", "#panel_" + this.value);
+								
+
 								// Remove the "active" class from all buttons
 								for (var j = 0; j < buttons.length; j++) {
 									buttons[j].style.backgroundColor="rgb(16 185 129)";

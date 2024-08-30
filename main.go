@@ -116,6 +116,7 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/zine/generate-zine-image", zine.GenerateZineImage)
 	http.HandleFunc("/zine/create-zine", zine.RenderZine)
 	http.HandleFunc("/zine/create-panel", zine.CreatePanelHandler)
+	http.HandleFunc("/zine/generate-image", zine.GenerateImageHandler)
 	http.HandleFunc("/", fileServerHandler)
 
 	dir := "data/justshare.io-ssl-bundle"

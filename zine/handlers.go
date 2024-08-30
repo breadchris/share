@@ -5,9 +5,41 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 
 	. "github.com/breadchris/share/html"
 )
+
+func GenerateImageHandler(w http.ResponseWriter, r *http.Request) {
+	// Parse the form data
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Unable to parse form", http.StatusBadRequest)
+		return
+	}
+
+	// Get the content from the form
+	prompt := r.FormValue("content")
+	if prompt == "" {
+		http.Error(w, "No content provided", http.StatusBadRequest)
+		return
+	}
+
+	now := strconv.Itoa(time.Now().Nanosecond())
+	imageName := fmt.Sprintf("generated_image%s.png", now)
+	// Define the output path for the generated image
+	outputPath := fmt.Sprintf("./zine/" + imageName)
+
+	// Call the GenerateImage function
+	err := GenerateImage(prompt, outputPath)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error generating image: %v", err), http.StatusInternalServerError)
+		return
+	}
+	image := Img(Image(), Attr("src", "/zine/"+imageName), Attr("alt", "Uploaded Image"))
+
+	w.Write([]byte(image.Render()))
+}
 
 func GenerateZineImage(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Generating zine image")
