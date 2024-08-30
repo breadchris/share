@@ -2,6 +2,7 @@ package zine
 
 import (
 	"net/http"
+	"os"
 
 	. "github.com/breadchris/share/html"
 )
@@ -11,6 +12,10 @@ type ZineMaker struct {
 }
 
 func NewZineMaker(openAIKey string) *ZineMaker {
+	// create image folder in ./data if it doesn't exist
+	if _, err := os.Stat("./data/images"); os.IsNotExist(err) {
+		os.Mkdir("./data/images", 0755)
+	}
 	return &ZineMaker{OpenAIKey: openAIKey}
 }
 

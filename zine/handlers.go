@@ -29,7 +29,7 @@ func (z *ZineMaker) GenerateImageHandler(w http.ResponseWriter, r *http.Request)
 	now := strconv.Itoa(time.Now().Nanosecond())
 	imageName := fmt.Sprintf("generated_image%s.png", now)
 	// Define the output path for the generated image
-	outputPath := fmt.Sprintf("./zine/" + imageName)
+	outputPath := fmt.Sprintf("./data/images/" + imageName)
 
 	// Call the GenerateImage function
 	err := GenerateImage(prompt, outputPath, apiKey)
@@ -37,7 +37,7 @@ func (z *ZineMaker) GenerateImageHandler(w http.ResponseWriter, r *http.Request)
 		http.Error(w, fmt.Sprintf("Error generating image: %v", err), http.StatusInternalServerError)
 		return
 	}
-	image := Img(Image(), Attr("src", "/zine/"+imageName), Attr("alt", "Uploaded Image"))
+	image := Img(Image(), Attr("src", "/data/images/"+imageName), Attr("alt", "Uploaded Image"))
 
 	w.Write([]byte(image.Render()))
 }
@@ -56,13 +56,13 @@ func GenerateZineImage(w http.ResponseWriter, r *http.Request) {
 	divID := r.FormValue("div_id")
 	fmt.Println("content: ", content)
 	// Generate the image
-	err = captureDivScreenshotFromHTML(content, divID, "./data/zine.png")
+	err = captureDivScreenshotFromHTML(content, divID, "./data/images/zine.png")
 	if err != nil {
 		http.Error(w, "Error generating the image", http.StatusInternalServerError)
 		return
 	}
 
-	image := Img(Attr("src", "/data/zine.png"), Attr("alt", "Generated Zine")).Render()
+	image := Img(Attr("src", "/data/images/zine.png"), Attr("alt", "Generated Zine")).Render()
 
 	w.Write([]byte(image))
 }
@@ -98,7 +98,7 @@ func (z *ZineMaker) CreatePanelHandler(w http.ResponseWriter, r *http.Request) {
 	var htmlContent string
 	if handler != nil {
 		// Save the uploaded file
-		filePath = "./data/" + handler.Filename
+		filePath = "./data/images/" + handler.Filename
 		out, err := os.Create(filePath)
 		if err != nil {
 			http.Error(w, "Error saving the file", http.StatusInternalServerError)
@@ -112,7 +112,7 @@ func (z *ZineMaker) CreatePanelHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if filePath != "" {
-			image = Img(Image(), Attr("src", "/data/"+handler.Filename), Attr("alt", "Uploaded Image"))
+			image = Img(Image(), Attr("src", "/data/images/"+handler.Filename), Attr("alt", "Uploaded Image"))
 		}
 		htmlContent = Div(image, P(T(content))).Render()
 	} else {
