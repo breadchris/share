@@ -6,7 +6,15 @@ import (
 	. "github.com/breadchris/share/html"
 )
 
-func RenderZine(w http.ResponseWriter, r *http.Request) {
+type ZineMaker struct {
+	OpenAIKey string
+}
+
+func NewZineMaker(openAIKey string) *ZineMaker {
+	return &ZineMaker{OpenAIKey: openAIKey}
+}
+
+func (z *ZineMaker) RenderZine(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(ZineIndex().Render()))
 }
 

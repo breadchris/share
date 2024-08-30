@@ -11,7 +11,8 @@ import (
 	. "github.com/breadchris/share/html"
 )
 
-func GenerateImageHandler(w http.ResponseWriter, r *http.Request) {
+func (z *ZineMaker) GenerateImageHandler(w http.ResponseWriter, r *http.Request) {
+	apiKey := z.OpenAIKey
 	// Parse the form data
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Unable to parse form", http.StatusBadRequest)
@@ -31,7 +32,7 @@ func GenerateImageHandler(w http.ResponseWriter, r *http.Request) {
 	outputPath := fmt.Sprintf("./zine/" + imageName)
 
 	// Call the GenerateImage function
-	err := GenerateImage(prompt, outputPath)
+	err := GenerateImage(prompt, outputPath, apiKey)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error generating image: %v", err), http.StatusInternalServerError)
 		return
@@ -66,7 +67,7 @@ func GenerateZineImage(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(image))
 }
 
-func CreatePanelHandler(w http.ResponseWriter, r *http.Request) {
+func (z *ZineMaker) CreatePanelHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return

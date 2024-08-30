@@ -86,6 +86,8 @@ func startServer(useTLS bool, port int) {
 	}
 	e := NewSMTPEmail(&appConfig)
 	a := NewAuth(s, e, appConfig)
+	z := zine.NewZineMaker(appConfig.OpenAIKey)
+
 
 	p := func(p string, s *http.ServeMux) {
 		http.Handle(p+"/", http.StripPrefix(p, s))
@@ -114,9 +116,9 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/account", a.accountHandler)
 	http.HandleFunc("/code", a.codeHandler)
 	http.HandleFunc("/zine/generate-zine-image", zine.GenerateZineImage)
-	http.HandleFunc("/zine/create-zine", zine.RenderZine)
-	http.HandleFunc("/zine/create-panel", zine.CreatePanelHandler)
-	http.HandleFunc("/zine/generate-image", zine.GenerateImageHandler)
+	http.HandleFunc("/zine/create-zine", z.RenderZine)
+	http.HandleFunc("/zine/create-panel", z.CreatePanelHandler)
+	http.HandleFunc("/zine/generate-image", z.GenerateImageHandler)
 	http.HandleFunc("/", fileServerHandler)
 
 	dir := "data/justshare.io-ssl-bundle"

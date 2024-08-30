@@ -9,7 +9,7 @@ import (
 	"os"
 )
 
-func GenerateImage(prompt string, outputPath string) error {
+func GenerateImage(prompt string, outputPath string, apiKey string) error {
 	// Create the request payload
 	payload := map[string]interface{}{
 		"model":  "dall-e-3",
@@ -30,7 +30,7 @@ func GenerateImage(prompt string, outputPath string) error {
 
 	// Set the necessary headers
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+os.Getenv("OPENAI_API_KEY"))
+	req.Header.Set("Authorization", "Bearer "+apiKey)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
