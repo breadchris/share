@@ -23,3 +23,7 @@ func PanelSelctionButton() *TransformNode {
 func Image() *TransformNode {
 	return Attr("style", "max-width: 100%; object-fit: contain;")
 }
+
+func BodyStyle() *TransformNode {
+	return Attr("style", "font-family: Arial, sans-serif; margin: 20px; line-height: 1.5;")
+}

@@ -42,7 +42,7 @@ func (z *ZineMaker) GenerateImageHandler(w http.ResponseWriter, r *http.Request)
 	w.Write([]byte(image.Render()))
 }
 
-func GenerateZineImage(w http.ResponseWriter, r *http.Request) {
+func (z *ZineMaker) GenerateZineImage(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Generating zine image")
 
 	err := r.ParseForm()

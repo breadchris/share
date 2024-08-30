@@ -77,13 +77,3 @@ func GenerateImage(prompt string, outputPath string, apiKey string) error {
 	fmt.Printf("Image saved to %s\n", outputPath)
 	return nil
 }
-
-// func main() {
-// 	prompt := "A cute baby sea otter"
-// 	outputPath := "output_image.png"
-
-// 	err := GenerateImage(prompt, outputPath)
-// 	if err != nil {
-// 		fmt.Println(err)
-// 	}
-// }

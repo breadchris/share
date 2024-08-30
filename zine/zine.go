@@ -12,7 +12,6 @@ type ZineMaker struct {
 }
 
 func NewZineMaker(openAIKey string) *ZineMaker {
-	// create image folder in ./data if it doesn't exist
 	if _, err := os.Stat("./data/images"); os.IsNotExist(err) {
 		os.Mkdir("./data/images", 0755)
 	}
@@ -31,7 +30,7 @@ func ZineIndex() *Node {
 			Script(Src("https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js")),
 			Script(Src("https://cdn.tailwindcss.com")),
 			Link(Href("https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"), Attr("rel", "stylesheet"), Attr("type", "text/css")),
-			Link(Rel("stylesheet"), Href("/zine/styles.css")),
+			BodyStyle(),
 			Style(T("body { font-family: 'Inter', sans-serif; }")),
 		),
 		Body(Class("min-h-screen flex flex-col"),
@@ -51,7 +50,6 @@ func CreateZineButton() *Node {
 		Button(Class("bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"),
 			Attr("hx-post", "/zine/generate-zine-image"),
 			Attr("hx-include", "#new-zine"),
-			// Attr("hx-params", "content=#new-zine.outerHTML&div_id=new-zine"),
 			Attr("hx-target", "#zine-image"),
 			T("Generate Zine Image"),
 		),
@@ -113,7 +111,7 @@ func PanelNav() *Node {
 						if (newZineElement) {
 							const htmlContent = newZineElement.outerHTML;
 							event.detail.parameters['new-zine'] = htmlContent;
-							event.detail.parameters['div_id'] = 'new-zine'; // Add the div_id if needed
+							event.detail.parameters['div_id'] = 'new-zine';
 						}
 });
 					`),

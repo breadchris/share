@@ -16,7 +16,6 @@ func captureDivScreenshotFromHTML(htmlContent, divID, screenshotPath string) err
 
 	// Write the HTML content to a file
 	err := os.WriteFile("./zine/zine.html", []byte(htmlContent), 0644)
-	// defer os.Remove(tempFile.Name())
 
 	// Build the full file URL
 	fileURL := "http://localhost:8080/zine/zine.html"
@@ -41,17 +40,3 @@ func captureDivScreenshotFromHTML(htmlContent, divID, screenshotPath string) err
 
 	return nil
 }
-
-// func main() {
-// 	// Example usage
-// 	htmlContent := `<html><body><div id="myDiv" style="width: 300px; height: 200px; background-color: blue;"></div></body></html>`
-// 	divID := "myDiv"
-// 	screenshotPath := "screenshot.png"
-
-// 	err := captureDivScreenshotFromHTML(htmlContent, divID, screenshotPath)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-
-// 	fmt.Println("Screenshot saved to", screenshotPath)
-// }
