@@ -27,8 +27,22 @@ func ZineIndex() *Node {
 				PanelNav(),
 				PanelForm(),
 				Zine(),
+				CreateZineButton(),
 			),
 		),
+	)
+}
+
+func CreateZineButton() *Node {
+	return Div(Class("mt-8"),
+		Button(Class("bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"),
+			Attr("hx-post", "/zine/generate-zine-image"),
+			Attr("hx-include", "#new-zine"),
+			// Attr("hx-params", "content=#new-zine.outerHTML&div_id=new-zine"),
+			Attr("hx-target", "#zine-image"),
+			T("Generate Zine Image"),
+		),
+		Div(Id("zine-image"), Class("mt-4")),
 	)
 }
 
@@ -65,14 +79,21 @@ func PanelNav() *Node {
 								dynamicElement.setAttribute("hx-target", "#panel_" + this.value);
 								// Remove the "active" class from all buttons
 								for (var j = 0; j < buttons.length; j++) {
-									buttons[j].classList.remove("active");
+									buttons[j].style.backgroundColor="rgb(16 185 129)";
 								}
 
 								// Add the "active" class to the clicked button
-								this.classList.add("active");
+								this.style.backgroundColor="rgb(6 78 59)";
 							});
 						}
-
+						document.addEventListener('htmx:configRequest', (event) => {
+						const newZineElement = document.querySelector("#new-zine");
+						if (newZineElement) {
+							const htmlContent = newZineElement.outerHTML;
+							event.detail.parameters['new-zine'] = htmlContent;
+							event.detail.parameters['div_id'] = 'new-zine'; // Add the div_id if needed
+						}
+});
 					`),
 		),
 	)
@@ -83,14 +104,14 @@ type PanelData struct {
 }
 
 func Zine() *Node {
-	return Div(Class("zine-page text-black"),
-		Div(Id("panel_2"), Class("zine-panel"), T("Panel 2")),
-		Div(Id("panel_3"), Class("zine-panel"), T("Panel 3")),
-		Div(Id("panel_4"), Class("zine-panel"), T("Panel 4")),
-		Div(Id("panel_5"), Class("zine-panel"), T("Panel 5")),
-		Div(Id("panel_1"), Class("zine-panel upsidedown"), P(Class("upsidedown"), T("Panel 1"))),
-		Div(Id("panel_8"), Class("zine-panel upsidedown"), P(Class("upsidedown"), T("Panel 8"))),
-		Div(Id("panel_7"), Class("zine-panel upsidedown"), P(Class("upsidedown"), T("Panel 7"))),
-		Div(Id("panel_6"), Class("zine-panel upsidedown"), P(Class("upsidedown"), T("Panel 6"))),
+	return Div(Id("new-zine"), ZinePage(), Class("text-black"),
+		Div(Id("panel_2"), ZinePanel(), T("Panel 2")),
+		Div(Id("panel_3"), ZinePanel(), T("Panel 3")),
+		Div(Id("panel_4"), ZinePanel(), T("Panel 4")),
+		Div(Id("panel_5"), ZinePanel(), T("Panel 5")),
+		Div(Id("panel_1"), ZinePanelUpsideDown(), P(T("Panel 1"))),
+		Div(Id("panel_8"), ZinePanelUpsideDown(), P(T("Panel 8"))),
+		Div(Id("panel_7"), ZinePanelUpsideDown(), P(T("Panel 7"))),
+		Div(Id("panel_6"), ZinePanelUpsideDown(), P(T("Panel 6"))),
 	)
 }

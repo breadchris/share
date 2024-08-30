@@ -9,6 +9,31 @@ import (
 	. "github.com/breadchris/share/html"
 )
 
+func GenerateZineImage(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Generating zine image")
+
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Unable to parse form", http.StatusBadRequest)
+		return
+	}
+
+	// Get the HTML content from the request
+	content := r.FormValue("new-zine")
+	divID := r.FormValue("div_id")
+	fmt.Println("content: ", content)
+	// Generate the image
+	err = captureDivScreenshotFromHTML(content, divID, "./data/zine.png")
+	if err != nil {
+		http.Error(w, "Error generating the image", http.StatusInternalServerError)
+		return
+	}
+
+	image := Img(Attr("src", "/data/zine.png"), Attr("alt", "Generated Zine")).Render()
+
+	w.Write([]byte(image))
+}
+
 func CreatePanelHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
@@ -32,7 +57,6 @@ func CreatePanelHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != http.ErrMissingFile {
-		fmt.Println("err: ", err)
 		defer file.Close()
 	}
 
@@ -55,12 +79,11 @@ func CreatePanelHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if filePath != "" {
-			image = Img(Attr("src", "/data/"+handler.Filename), Attr("alt", "Uploaded Image"))
+			image = Img(Image(), Attr("src", "/data/"+handler.Filename), Attr("alt", "Uploaded Image"))
 		}
 		htmlContent = Div(image, P(T(content))).Render()
 	} else {
 		htmlContent = P(T(content)).Render()
 	}
-
 	w.Write([]byte(htmlContent))
 }
