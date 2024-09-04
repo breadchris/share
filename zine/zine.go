@@ -8,14 +8,13 @@ import (
 )
 
 type ZineMaker struct {
-	OpenAIKey string
 }
 
-func NewZineMaker(openAIKey string) *ZineMaker {
+func NewZineMaker() *ZineMaker {
 	if _, err := os.Stat("./data/images"); os.IsNotExist(err) {
 		os.Mkdir("./data/images", 0755)
 	}
-	return &ZineMaker{OpenAIKey: openAIKey}
+	return &ZineMaker{}
 }
 
 func (z *ZineMaker) RenderZine(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +67,7 @@ func PanelForm() *Node {
 					Button(Class("bg-blue-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-l"), Type("submit"),
 						T("Create Panel")),
 					Button(Id("ImageGenButton"), Class("bg-green-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-r"), Type("button"),
-						Attr("hx-post", "/zine/generate-image"), Attr("hx-target", "#panel_1"),
+						Attr("hx-post", "/llm/generate-image"), Attr("hx-target", "#panel_1"),
 						Attr("hx-swap", "innerHTML"), T("Generate Image")),
 				),
 			),

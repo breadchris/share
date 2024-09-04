@@ -50,6 +50,10 @@ type AppConfig struct {
 	ExternalURL string        `json:"external_url"`
 }
 
+type ZineConfig struct {
+	
+}
+
 func loadConfig() AppConfig {
 	// load the app config
 	var appConfig AppConfig
@@ -86,7 +90,7 @@ func startServer(useTLS bool, port int) {
 	}
 	e := NewSMTPEmail(&appConfig)
 	a := NewAuth(s, e, appConfig)
-	z := zine.NewZineMaker(appConfig.OpenAIKey)
+	z := zine.NewZineMaker()
 
 	p := func(p string, s *http.ServeMux) {
 		http.Handle(p+"/", http.StripPrefix(p, s))
@@ -118,7 +122,6 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/zine/generate-zine-image", z.GenerateZineImage)
 	http.HandleFunc("/zine/create-zine", z.RenderZine)
 	http.HandleFunc("/zine/create-panel", z.CreatePanelHandler)
-	http.HandleFunc("/zine/generate-image", z.GenerateImageHandler)
 
 	http.HandleFunc("/", fileServerHandler)
 
