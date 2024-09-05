@@ -5,13 +5,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"github.com/breadchris/share/html"
-	"github.com/breadchris/share/session"
-	"github.com/gomarkdown/markdown"
-	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
-	ignore "github.com/sabhiram/go-gitignore"
-	"github.com/urfave/cli/v2"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -21,6 +14,15 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/breadchris/share/html"
+	"github.com/breadchris/share/session"
+	"github.com/breadchris/share/zine"
+	"github.com/gomarkdown/markdown"
+	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
+	ignore "github.com/sabhiram/go-gitignore"
+	"github.com/urfave/cli/v2"
 )
 
 var upgrader = websocket.Upgrader{
@@ -46,6 +48,10 @@ type AppConfig struct {
 	SMTP        SMTPConfig    `json:"smtp"`
 	Spotify     SpotifyConfig `json:"spotify"`
 	ExternalURL string        `json:"external_url"`
+}
+
+type ZineConfig struct {
+	
 }
 
 func loadConfig() AppConfig {
@@ -84,6 +90,7 @@ func startServer(useTLS bool, port int) {
 	}
 	e := NewSMTPEmail(&appConfig)
 	a := NewAuth(s, e, appConfig)
+	z := zine.NewZineMaker()
 
 	p := func(p string, s *http.ServeMux) {
 		http.Handle(p+"/", http.StripPrefix(p, s))
@@ -111,6 +118,11 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/blog/react", a.reactHandler)
 	http.HandleFunc("/account", a.accountHandler)
 	http.HandleFunc("/code", a.codeHandler)
+
+	http.HandleFunc("/zine/generate-zine-image", z.GenerateZineImage)
+	http.HandleFunc("/zine/create-zine", z.RenderZine)
+	http.HandleFunc("/zine/create-panel", z.CreatePanelHandler)
+
 	http.HandleFunc("/", fileServerHandler)
 
 	dir := "data/justshare.io-ssl-bundle"

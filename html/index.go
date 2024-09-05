@@ -13,6 +13,7 @@ func Navbar() *Node {
 				A(Href("/chat"), Class("hover:underline"), T("Chat")),
 				A(Href("/llm"), Class("hover:underline"), T("LLM")),
 				A(Href("/spotify"), Class("hover:underline"), T("Spotify")),
+				A(Href("/zine/create-zine"), Class("hover:underline"), T("Zine")),
 			),
 		),
 	)
@@ -31,6 +32,7 @@ func Index() string {
 			A(Href("/chat"), Class("bg-teal-500 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded"), T("Chat")),
 			A(Href("/llm"), Class("bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded"), T("LLM")),
 			A(Href("/spotify"), Class("bg-pink-500 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded"), T("Spotify")),
+			A(Href("/zine/create-zine"), Class("bg-emerald-500 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded"), T("Zine")),
 		),
 	)
 
@@ -38,6 +40,7 @@ func Index() string {
 		Head(
 			Title(T("justshare")),
 			Link(Href("https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"), Attr("rel", "stylesheet"), Attr("type", "text/css")),
+			Link(Attr("rel", "icon"), Attr("href", "/favicon.ico"), Attr("type", "image/x-icon")),
 			Script(Src("https://cdn.tailwindcss.com")),
 			Style(T("body { font-family: 'Inter', sans-serif; }")),
 		),
