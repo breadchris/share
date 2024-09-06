@@ -118,9 +118,8 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/account", a.accountHandler)
 	http.HandleFunc("/code", a.codeHandler)
 
-	http.HandleFunc("/zine/generate-zine-image", z.GenerateZineImage)
-	http.HandleFunc("/zine", z.RenderZine)
-	http.HandleFunc("/zine/create-panel", z.CreatePanelHandler)
+
+	z.SetupZineRoutes()
 
 	http.HandleFunc("/", fileServerHandler)
 

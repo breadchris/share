@@ -1,6 +1,7 @@
 package zine
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -26,8 +27,12 @@ func (z *ZineMaker) GenerateZineImage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error generating the image", http.StatusInternalServerError)
 		return
 	}
+	screenshotPath = "/" + screenshotPath
+	fmt.Printf("Generated image: %s\n", screenshotPath)
 
-	image := Img(Attr("src", screenshotPath), Attr("alt", "Generated Zine")).Render()
+	image := Div(Id("zine-image"), Class("mt-4"),
+		Img(Attr("src", screenshotPath), Attr("alt", "Generated Zine")),
+	).Render()
 
 	w.Write([]byte(image))
 }

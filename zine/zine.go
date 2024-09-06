@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 
 	. "github.com/breadchris/share/html"
 	"github.com/google/uuid"
@@ -12,17 +14,39 @@ import (
 type ZineMaker struct {
 }
 
+func (z *ZineMaker) SetupZineRoutes() {
+	http.HandleFunc("/zine", func(w http.ResponseWriter, r *http.Request) {
+		// Generate a new UUID for the zine session
+		sessionID := uuid.New().String()
+
+		// Redirect the user to the new URL with the UUID
+		http.Redirect(w, r, "/zine-maker/"+sessionID, http.StatusSeeOther)
+	})
+
+	http.HandleFunc("/zine-maker/", func(w http.ResponseWriter, r *http.Request) {
+		// Extract the session ID from the URL
+		sessionID := strings.TrimPrefix(r.URL.Path, "/zine-maker/")
+
+		// You can validate the UUID if necessary
+		_, err := uuid.Parse(sessionID)
+		if err != nil {
+			http.Error(w, "Invalid session ID", http.StatusBadRequest)
+			return
+		}
+		sessionID = "Z-" + sessionID
+
+		w.Write([]byte(ZineIndex(sessionID).Render()))
+	})
+
+	http.HandleFunc("/zine/generate-zine-image", z.GenerateZineImage)
+	http.HandleFunc("/zine/create-panel", z.CreatePanelHandler)
+}
+
 func NewZineMaker() *ZineMaker {
 	if _, err := os.Stat("./data/images"); os.IsNotExist(err) {
 		os.Mkdir("./data/images", 0755)
 	}
 	return &ZineMaker{}
-}
-
-func (z *ZineMaker) RenderZine(w http.ResponseWriter, r *http.Request) {
-	sessionID := fmt.Sprintf("Z-%s", uuid.New().String())
-
-	w.Write([]byte(ZineIndex(sessionID).Render()))
 }
 
 func ZineIndex(sessionID string) *Node {
@@ -49,6 +73,11 @@ func ZineIndex(sessionID string) *Node {
 }
 
 func CreateZineButton(sessionID string) *Node {
+	_, version, _ := currentVersion(sessionID)
+	zineDir := fmt.Sprintf("./data/images/%s", sessionID)
+	screenshotName := fmt.Sprintf("zine-%d.png", version)
+	screenshotPath := "/" + filepath.Join(zineDir, screenshotName)
+
 	return Div(Class("mt-8"),
 		Button(Class("bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"),
 			Attr("hx-post", "/zine/generate-zine-image"),
@@ -56,7 +85,9 @@ func CreateZineButton(sessionID string) *Node {
 			Attr("hx-target", "#zine-image"),
 			T("Generate Zine Image"),
 		),
-		Div(Id("zine-image"), Class("mt-4")),
+		Div(Id("zine-image"), Class("mt-4"),
+			Img(Attr("src", screenshotPath), Attr("alt", "Generated Zine")),
+		),
 	)
 }
 

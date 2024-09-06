@@ -14,6 +14,35 @@ type Versions struct {
 	Screenshots []string `json:"screenshots"`
 }
 
+func currentVersion(zineId string) (error, int, Versions) {
+	zineDir := fmt.Sprintf("./data/images/%s", zineId)
+	var versions Versions
+	if err := os.MkdirAll(zineDir, os.ModePerm); err != nil {
+		return fmt.Errorf("failed to create zine directory: %w", err), 0, versions
+	}
+
+	versionsFile := filepath.Join(zineDir, "versions.json")
+
+	if _, err := os.Stat(versionsFile); os.IsNotExist(err) {
+		// If the file doesn't exist, create it
+		versions = Versions{Screenshots: []string{}}
+	} else {
+		// If the file exists, load the current versions
+		file, err := os.ReadFile(versionsFile)
+		if err != nil {
+			return fmt.Errorf("failed to read versions.json: %w", err), 0, versions
+		}
+		err = json.Unmarshal(file, &versions)
+		if err != nil {
+			return fmt.Errorf("failed to parse versions.json: %w", err), 0, versions
+		}
+	}
+
+	version := len(versions.Screenshots)
+
+	return nil, version, versions
+}
+
 // captureDivScreenshotFromHTML captures a screenshot of a specific zine section and saves it.
 func captureDivScreenshotFromHTML(htmlContent, zineId string) (error, string) {
 
@@ -32,34 +61,23 @@ func captureDivScreenshotFromHTML(htmlContent, zineId string) (error, string) {
 
 	// Load the versions.json file (or create it if it doesn't exist)
 	var versions Versions
-	if _, err := os.Stat(versionsFile); os.IsNotExist(err) {
-		// If the file doesn't exist, create it
-		versions = Versions{Screenshots: []string{}}
-	} else {
-		// If the file exists, load the current versions
-		file, err := os.ReadFile(versionsFile)
-		if err != nil {
-			return fmt.Errorf("failed to read versions.json: %w", err), ""
-		}
-		err = json.Unmarshal(file, &versions)
-		if err != nil {
-			return fmt.Errorf("failed to parse versions.json: %w", err), ""
-		}
-	}
 
-	// Get the next version number (the length of the screenshots array)
-	version := len(versions.Screenshots) + 1
-	screenshotName := fmt.Sprintf("zine-%d.png", version)
+	err, version, versions := currentVersion(zineId)
+	if err != nil {
+		return err, ""
+	}
+	screenshotName := fmt.Sprintf("zine-%d.png", version+1)
 	screenshotPath := filepath.Join(zineDir, screenshotName)
 
 	// Write the HTML content to a file (optional, to be used for Chrome navigation)
-	err := os.WriteFile(fmt.Sprintf("./zine/%s.html", zineId), []byte(htmlContent), 0644)
+	err = os.WriteFile(fmt.Sprintf("./zine/%s.html", zineId), []byte(htmlContent), 0644)
 	if err != nil {
 		return fmt.Errorf("failed to write HTML file: %w", err), ""
 	}
 
 	// Build the full file URL for ChromeDP
-	fileURL := fmt.Sprintf("http://justshare.io/zine/%s.html", zineId)
+	// fileURL := fmt.Sprintf("http://justshare.io/zine/%s.html", zineId)
+	fileURL := fmt.Sprintf("http://localhost:8080/zine/%s.html", zineId)
 
 	// Capture the screenshot using ChromeDP
 	var buf []byte
@@ -88,6 +106,6 @@ func captureDivScreenshotFromHTML(htmlContent, zineId string) (error, string) {
 	if err != nil {
 		return fmt.Errorf("failed to write versions.json: %w", err), ""
 	}
-
+	fmt.Printf("Saved screenshot: %s\n", screenshotPath)
 	return nil, screenshotPath
 }
