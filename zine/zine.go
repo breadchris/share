@@ -1,10 +1,12 @@
 package zine
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 
 	. "github.com/breadchris/share/html"
+	"github.com/google/uuid"
 )
 
 type ZineMaker struct {
@@ -18,10 +20,12 @@ func NewZineMaker() *ZineMaker {
 }
 
 func (z *ZineMaker) RenderZine(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(ZineIndex().Render()))
+	sessionID := fmt.Sprintf("Z-%s", uuid.New().String())
+
+	w.Write([]byte(ZineIndex(sessionID).Render()))
 }
 
-func ZineIndex() *Node {
+func ZineIndex(sessionID string) *Node {
 	return Html(
 		Head(
 			Title(T("Zine Maker!")),
@@ -35,20 +39,20 @@ func ZineIndex() *Node {
 		Body(Class("min-h-screen flex flex-col"),
 			Div(Class("container mx-auto text-center mt-16"),
 				H1(Class("text-4xl font-bold mb-4"), T("Zine Creator")),
-				PanelNav(),
+				PanelNav(sessionID),
 				PanelForm(),
-				Zine(),
-				CreateZineButton(),
+				Zine(sessionID),
+				CreateZineButton(sessionID),
 			),
 		),
 	)
 }
 
-func CreateZineButton() *Node {
+func CreateZineButton(sessionID string) *Node {
 	return Div(Class("mt-8"),
 		Button(Class("bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"),
 			Attr("hx-post", "/zine/generate-zine-image"),
-			Attr("hx-include", "#new-zine"),
+			Attr("hx-include", fmt.Sprintf("#%s", sessionID)),
 			Attr("hx-target", "#zine-image"),
 			T("Generate Zine Image"),
 		),
@@ -75,7 +79,7 @@ func PanelForm() *Node {
 	)
 }
 
-func PanelNav() *Node {
+func PanelNav(sessionID string) *Node {
 	return Div(Class("flex justify-center space-x-4"),
 		Button(Id("1"), Class("panelselctionbutton bg-emerald-500 hover:bg-emerald-700 active:bg-emerald-900 text-gray-800 font-bold py-2 px-4 rounded"), Attr("value", "1"), T("Page 1")),
 		Button(Id("2"), Class("panelselctionbutton bg-emerald-500 hover:bg-emerald-700 active:bg-emerald-900 text-gray-800 font-bold py-2 px-4 rounded"), Attr("value", "2"), T("Page 2")),
@@ -85,7 +89,7 @@ func PanelNav() *Node {
 		Button(Id("6"), Class("panelselctionbutton bg-emerald-500 hover:bg-emerald-700 active:bg-emerald-900 text-gray-800 font-bold py-2 px-4 rounded"), Attr("value", "6"), T("Page 6")),
 		Button(Id("7"), Class("panelselctionbutton bg-emerald-500 hover:bg-emerald-700 active:bg-emerald-900 text-gray-800 font-bold py-2 px-4 rounded"), Attr("value", "7"), T("Page 7")),
 		Button(Id("8"), Class("panelselctionbutton bg-emerald-500 hover:bg-emerald-700 active:bg-emerald-900 text-gray-800 font-bold py-2 px-4 rounded"), Attr("value", "8"), T("Page 8")),
-		Script(T(`
+		Script(T(fmt.Sprintf(`
 						buttons = document.getElementsByClassName("panelselctionbutton")
 						for (var i = 0; i < buttons.length; i++) {
 							buttons[i].addEventListener("click", function() {
@@ -106,14 +110,14 @@ func PanelNav() *Node {
 							});
 						}
 						document.addEventListener('htmx:configRequest', (event) => {
-						const newZineElement = document.querySelector("#new-zine");
+						const newZineElement = document.querySelector("#%s");
 						if (newZineElement) {
 							const htmlContent = newZineElement.outerHTML;
-							event.detail.parameters['new-zine'] = htmlContent;
-							event.detail.parameters['div_id'] = 'new-zine';
+							event.detail.parameters['%s'] = htmlContent;
+							event.detail.parameters['div_id'] = '%s';
 						}
-});
-					`),
+						});
+					`, sessionID, sessionID, sessionID)),
 		),
 	)
 }
@@ -122,8 +126,8 @@ type PanelData struct {
 	Content string
 }
 
-func Zine() *Node {
-	return Div(Id("new-zine"), ZinePage(), Class("text-black"),
+func Zine(sessionID string) *Node {
+	return Div(Id(sessionID), ZinePage(), Class("text-black"),
 		Div(Id("panel_2"), ZinePanel(), T("Panel 2")),
 		Div(Id("panel_3"), ZinePanel(), T("Panel 3")),
 		Div(Id("panel_4"), ZinePanel(), T("Panel 4")),

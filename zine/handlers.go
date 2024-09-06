@@ -1,7 +1,6 @@
 package zine
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -10,26 +9,25 @@ import (
 )
 
 func (z *ZineMaker) GenerateZineImage(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Generating zine image")
-
 	err := r.ParseForm()
 	if err != nil {
 		http.Error(w, "Unable to parse form", http.StatusBadRequest)
 		return
 	}
 
+	zineId := r.Form.Get("div_id")
+
 	// Get the HTML content from the request
-	content := r.FormValue("new-zine")
-	divID := r.FormValue("div_id")
-	fmt.Println("content: ", content)
+	content := r.FormValue(zineId)
+	screenshotPath := ""
 	// Generate the image
-	err = captureDivScreenshotFromHTML(content, divID, "./data/images/zine.png")
+	err, screenshotPath = captureDivScreenshotFromHTML(content, zineId)
 	if err != nil {
 		http.Error(w, "Error generating the image", http.StatusInternalServerError)
 		return
 	}
 
-	image := Img(Attr("src", "/data/images/zine.png"), Attr("alt", "Generated Zine")).Render()
+	image := Img(Attr("src", screenshotPath), Attr("alt", "Generated Zine")).Render()
 
 	w.Write([]byte(image))
 }

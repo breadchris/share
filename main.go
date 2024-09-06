@@ -51,7 +51,6 @@ type AppConfig struct {
 }
 
 type ZineConfig struct {
-	
 }
 
 func loadConfig() AppConfig {
@@ -120,7 +119,7 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/code", a.codeHandler)
 
 	http.HandleFunc("/zine/generate-zine-image", z.GenerateZineImage)
-	http.HandleFunc("/zine/create-zine", z.RenderZine)
+	http.HandleFunc("/zine", z.RenderZine)
 	http.HandleFunc("/zine/create-panel", z.CreatePanelHandler)
 
 	http.HandleFunc("/", fileServerHandler)

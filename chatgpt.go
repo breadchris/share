@@ -170,10 +170,8 @@ func saveChatState(chatID string, state ChatState) {
 }
 
 func (s *OpenAIService) GenerateImage(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Generating image")
 	r.ParseForm()
 	prompt := r.FormValue("content")
-	fmt.Println("Prompt: ", prompt)
 	req := openai.ImageRequest{
 		Model:          openai.CreateImageModelDallE3,
 		Prompt:         prompt,
