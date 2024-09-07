@@ -33,6 +33,7 @@ func Index() string {
 			A(Href("/llm"), Class("bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded"), T("LLM")),
 			A(Href("/spotify"), Class("bg-pink-500 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded"), T("Spotify")),
 			A(Href("/zine/create-zine"), Class("bg-emerald-500 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded"), T("Zine")),
+			A(Href("/graph"), Class("bg-pink-500 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded"), T("Graph")),
 		),
 	)
 

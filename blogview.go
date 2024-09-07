@@ -91,15 +91,18 @@ func RenderBlog(entries []Entry) string {
 							T("Submit"),
 						),
 					),
+					Form(Method("POST"), Action("/upload"), Attr("enctype", "multipart/form-data"),
+						Input(Type("file"), Id("file"), Name("file"), Attr("required", "true")),
+						Button(Type("submit"), T("Submit")),
+					),
+					P(T("1) upload a file 2) copy the link 3) make your post: ![](link)")),
 					Script(T(`
-						// restore entry from local storage
 						var entry = localStorage.getItem('entry');
 						if (entry) {
 							console.log('restoring entry from local storage')
 							document.querySelector('#entry').value = entry;
 						}
 
-						// when entry is changed, save it to local storage
 						document.querySelector('#entry').addEventListener('input', function(e) {
 							console.log('saving entry to local storage')
 							localStorage.setItem('entry', e.target.value);

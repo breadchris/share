@@ -43,6 +43,7 @@ type User struct {
 	Icon        string
 	Credentials []webauthn.Credential
 	Secrets     []string
+	Audiences   []string
 }
 
 func (u User) WebAuthnID() []byte {

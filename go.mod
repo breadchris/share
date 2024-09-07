@@ -6,6 +6,7 @@ require (
 	github.com/blevesearch/bleve v1.0.14
 	github.com/breadchris/scs/v2 v2.0.0-20230909081317-6125300685dd
 	github.com/chromedp/chromedp v0.10.0
+	github.com/dominikbraun/graph v0.23.0
 	github.com/evanw/esbuild v0.23.0
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/go-webauthn/webauthn v0.10.2
@@ -31,7 +32,7 @@ require (
 	github.com/sashabaranov/go-openai v1.26.3
 	github.com/spf13/pflag v1.0.5
 	github.com/traefik/yaegi v0.16.1
-	github.com/urfave/cli/v2 v2.27.2
+	github.com/urfave/cli/v2 v2.27.4
 	github.com/zmb3/spotify/v2 v2.4.2
 	golang.org/x/oauth2 v0.22.0
 	rogchap.com/v8go v0.9.0
