@@ -24,7 +24,6 @@ import (
 	ignore "github.com/sabhiram/go-gitignore"
 	"github.com/urfave/cli/v2"
 
-	"github.com/breadchris/share/ast"
 	"github.com/breadchris/share/chatgpt"
 	"github.com/breadchris/share/types"
 	"github.com/breadchris/share/zine"
@@ -125,7 +124,6 @@ func startServer(useTLS bool, port int) {
 }
 
 func main() {
-	ast.RunASTParser("main.go")
 	app := &cli.App{
 		Name: "share",
 		Commands: []*cli.Command{
