@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/breadchris/share/ast"
 	"github.com/breadchris/share/chatgpt"
 	"github.com/breadchris/share/html"
 	"github.com/breadchris/share/session"
@@ -114,6 +115,7 @@ func startServer(useTLS bool, port int) {
 }
 
 func main() {
+	ast.RunASTParser("main.go")
 	app := &cli.App{
 		Name: "share",
 		Commands: []*cli.Command{
