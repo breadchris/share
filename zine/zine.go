@@ -1,6 +1,7 @@
 package zine
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -12,6 +13,7 @@ import (
 )
 
 type ZineMaker struct {
+	zineID string
 }
 
 func (z *ZineMaker) SetupZineRoutes() {
@@ -27,6 +29,8 @@ func (z *ZineMaker) SetupZineRoutes() {
 		// Extract the session ID from the URL
 		sessionID := strings.TrimPrefix(r.URL.Path, "/zine-maker/")
 
+		z.zineID = sessionID
+
 		// You can validate the UUID if necessary
 		_, err := uuid.Parse(sessionID)
 		if err != nil {
@@ -40,6 +44,7 @@ func (z *ZineMaker) SetupZineRoutes() {
 
 	http.HandleFunc("/zine/generate-zine-image", z.GenerateZineImage)
 	http.HandleFunc("/zine/create-panel", z.CreatePanelHandler)
+	http.HandleFunc("/generate-image", z.GenerateImage)
 }
 
 func NewZineMaker() *ZineMaker {
@@ -94,7 +99,7 @@ func CreateZineButton(sessionID string) *Node {
 func PanelForm() *Node {
 	return Div(Id("panel_form_div"), Class("pt-4"),
 		Form(Id("panel_form"), Attr("hx-post", "/zine/create-panel"), Attr("hx-target", "#panel_1"),
-			Attr("hx-swap", "innerHTML"), Attr("enctype", "multipart/form-data"), Attr("hx-on::after-request", "this.reset()"),
+			Attr("hx-swap", "outerHTML"), Attr("enctype", "multipart/form-data"), Attr("hx-on::after-request", "this.reset()"),
 			Div(Class("flex justify-center space-x-4"),
 				TextArea(Name("content"), Placeholder("Write your text here")),
 				Div(Id("AddImage"), Input(Type("file"), Name("uploadfile"))),
@@ -102,7 +107,7 @@ func PanelForm() *Node {
 					Button(Class("bg-blue-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-l"), Type("submit"),
 						T("Create Panel")),
 					Button(Id("ImageGenButton"), Class("bg-green-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-r"), Type("button"),
-						Attr("hx-post", "/llm/generate-image"), Attr("hx-target", "#panel_1"),
+						Attr("hx-post", "/generate-image"), Attr("hx-target", "#panel_1"),
 						Attr("hx-swap", "innerHTML"), T("Generate Image")),
 				),
 			),
@@ -153,19 +158,39 @@ func PanelNav(sessionID string) *Node {
 	)
 }
 
-type PanelData struct {
-	Content string
+func Zine(sessionID string) *Node {
+	panels := loadPanelData(sessionID)
+
+	return Div(Id(sessionID), ZinePage(), Class("text-black"),
+		createPanel(panels["panel_2"], "panel_2"),
+		createPanel(panels["panel_3"], "panel_3"),
+		createPanel(panels["panel_4"], "panel_4"),
+		createPanel(panels["panel_5"], "panel_5"),
+		createPanel(panels["panel_1"], "panel_1"),
+		createPanel(panels["panel_8"], "panel_8"),
+		createPanel(panels["panel_7"], "panel_7"),
+		createPanel(panels["panel_6"], "panel_6"),
+	)
 }
 
-func Zine(sessionID string) *Node {
-	return Div(Id(sessionID), ZinePage(), Class("text-black"),
-		Div(Id("panel_2"), ZinePanel(), T("Panel 2")),
-		Div(Id("panel_3"), ZinePanel(), T("Panel 3")),
-		Div(Id("panel_4"), ZinePanel(), T("Panel 4")),
-		Div(Id("panel_5"), ZinePanel(), T("Panel 5")),
-		Div(Id("panel_1"), ZinePanelUpsideDown(), P(T("Panel 1"))),
-		Div(Id("panel_8"), ZinePanelUpsideDown(), P(T("Panel 8"))),
-		Div(Id("panel_7"), ZinePanelUpsideDown(), P(T("Panel 7"))),
-		Div(Id("panel_6"), ZinePanelUpsideDown(), P(T("Panel 6"))),
-	)
+func loadPanelData(zineId string) map[string]PanelData {
+	panelsFile := fmt.Sprintf("./data/zines/%s.json", zineId)
+
+	var panels map[string]PanelData
+
+	if _, err := os.Stat(panelsFile); os.IsNotExist(err) {
+		return panels
+	}
+
+	file, err := os.ReadFile(panelsFile)
+	if err != nil {
+		return panels
+	}
+
+	err = json.Unmarshal(file, &panels)
+	if err != nil {
+		return panels
+	}
+
+	return panels
 }

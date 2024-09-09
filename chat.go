@@ -3,14 +3,16 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/breadchris/share/session"
-	"github.com/google/uuid"
-	"github.com/pkg/errors"
-	"github.com/sashabaranov/go-openai"
 	"io"
 	"net/http"
 	"strings"
 	"sync"
+
+	"github.com/breadchris/share/chatgpt"
+	"github.com/breadchris/share/session"
+	"github.com/google/uuid"
+	"github.com/pkg/errors"
+	"github.com/sashabaranov/go-openai"
 )
 
 var messages []Message
@@ -19,12 +21,12 @@ var chatClients = make(map[chan Message]struct{})
 
 type Chat struct {
 	s *session.SessionManager
-	l *OpenAIService
+	l *chatgpt.OpenAIService
 }
 
 func NewChat(
 	s *session.SessionManager,
-	l *OpenAIService,
+	l *chatgpt.OpenAIService,
 ) *Chat {
 	return &Chat{
 		s: s,
@@ -98,7 +100,7 @@ func (s *Chat) sendHandler(w http.ResponseWriter, r *http.Request) {
 					{Role: "user", Content: content},
 				},
 			}
-			resp, err := s.l.client.CreateChatCompletionStream(r.Context(), req)
+			resp, err := s.l.Client.CreateChatCompletionStream(r.Context(), req)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return

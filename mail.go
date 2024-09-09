@@ -7,13 +7,15 @@ import (
 	"mime/multipart"
 	"net/smtp"
 	"net/textproto"
+
+	"github.com/breadchris/share/types"
 )
 
 type SMTPEmail struct {
-	a SMTPConfig
+	a types.SMTPConfig
 }
 
-func NewSMTPEmail(a *AppConfig) *SMTPEmail {
+func NewSMTPEmail(a *types.AppConfig) *SMTPEmail {
 	return &SMTPEmail{a: a.SMTP}
 }
 

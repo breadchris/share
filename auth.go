@@ -7,15 +7,6 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
-	"github.com/breadchris/share/html"
-	"github.com/breadchris/share/session"
-	"github.com/fsnotify/fsnotify"
-	"github.com/google/uuid"
-	"github.com/makiuchi-d/gozxing"
-	"github.com/makiuchi-d/gozxing/qrcode"
-	"github.com/samber/lo"
-	"github.com/traefik/yaegi/interp"
-	"github.com/traefik/yaegi/stdlib"
 	"html/template"
 	"image/png"
 	"log"
@@ -24,6 +15,17 @@ import (
 	"path/filepath"
 	"strings"
 	"testing/fstest"
+
+	"github.com/breadchris/share/html"
+	"github.com/breadchris/share/session"
+	"github.com/breadchris/share/types"
+	"github.com/fsnotify/fsnotify"
+	"github.com/google/uuid"
+	"github.com/makiuchi-d/gozxing"
+	"github.com/makiuchi-d/gozxing/qrcode"
+	"github.com/samber/lo"
+	"github.com/traefik/yaegi/interp"
+	"github.com/traefik/yaegi/stdlib"
 )
 
 type Invite struct {
@@ -54,10 +56,10 @@ func init() {
 type Auth struct {
 	s *session.SessionManager
 	e *SMTPEmail
-	c AppConfig
+	c types.AppConfig
 }
 
-func NewAuth(s *session.SessionManager, e *SMTPEmail, c AppConfig) *Auth {
+func NewAuth(s *session.SessionManager, e *SMTPEmail, c types.AppConfig) *Auth {
 	return &Auth{
 		s: s,
 		e: e,

@@ -69,15 +69,18 @@ func captureDivScreenshotFromHTML(htmlContent, zineId string) (error, string) {
 	screenshotName := fmt.Sprintf("zine-%d.png", version+1)
 	screenshotPath := filepath.Join(zineDir, screenshotName)
 
+	htmlName := fmt.Sprintf("zine-%d.html", version+1)
+	htmlPath := filepath.Join(zineDir, htmlName)
+	fmt.Println("htmlPath: ", htmlPath)
 	// Write the HTML content to a file (optional, to be used for Chrome navigation)
-	err = os.WriteFile(fmt.Sprintf("./zine/%s.html", zineId), []byte(htmlContent), 0644)
+	err = os.WriteFile(fmt.Sprintf("./%s", htmlPath), []byte(htmlContent), 0644)
 	if err != nil {
 		return fmt.Errorf("failed to write HTML file: %w", err), ""
 	}
 
 	// Build the full file URL for ChromeDP
-	// fileURL := fmt.Sprintf("http://justshare.io/zine/%s.html", zineId)
-	fileURL := fmt.Sprintf("http://localhost:8080/zine/%s.html", zineId)
+	// fileURL := fmt.Sprintf("http://justshare.io/%s.html", zineId)
+	fileURL := fmt.Sprintf("http://localhost:8080/%s", htmlPath)
 
 	// Capture the screenshot using ChromeDP
 	var buf []byte

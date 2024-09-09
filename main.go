@@ -15,8 +15,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/breadchris/share/chatgpt"
 	"github.com/breadchris/share/html"
 	"github.com/breadchris/share/session"
+	"github.com/breadchris/share/types"
 	"github.com/breadchris/share/zine"
 	"github.com/gomarkdown/markdown"
 	"github.com/google/uuid"
@@ -31,46 +33,8 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-type SMTPConfig struct {
-	Host     string `json:"host"`
-	Port     string `json:"port"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-type SpotifyConfig struct {
-	ClientID     string `json:"client_id"`
-	ClientSecret string `json:"client_secret"`
-}
-
-type AppConfig struct {
-	OpenAIKey   string        `json:"openai_key"`
-	SMTP        SMTPConfig    `json:"smtp"`
-	Spotify     SpotifyConfig `json:"spotify"`
-	ExternalURL string        `json:"external_url"`
-}
-
-type ZineConfig struct {
-}
-
-func loadConfig() AppConfig {
-	// load the app config
-	var appConfig AppConfig
-	configFile, err := os.Open("data/config.json")
-	if err != nil {
-		log.Fatalf("Failed to open config file: %v", err)
-	}
-	defer configFile.Close()
-
-	err = json.NewDecoder(configFile).Decode(&appConfig)
-	if err != nil {
-		log.Fatalf("Failed to decode config file: %v", err)
-	}
-	return appConfig
-}
-
 func startServer(useTLS bool, port int) {
-	appConfig := loadConfig()
+	appConfig := types.LoadConfig()
 
 	loadJSON(dataFile, &entries)
 	var newEntries []Entry
@@ -101,13 +65,16 @@ func startServer(useTLS bool, port int) {
 	setupRecipe()
 	fileUpload()
 	setupSpotify(appConfig)
-	oai := NewOpenAIService(appConfig)
+
+	oai := chatgpt.NewOpenAIService(appConfig)
 	c := NewChat(s, oai)
-	p("/llm", setupChatgpt(oai))
+	p("/llm", chatgpt.SetupChatgpt(oai))
 	p("/chat", c.NewMux())
 
 	//text.Setup(upgrader)
 	go watchPaths()
+
+	z.SetupZineRoutes()
 
 	http.HandleFunc("/register", a.handleRegister)
 	http.HandleFunc("/login", a.handleLogin)
@@ -117,10 +84,6 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/blog/react", a.reactHandler)
 	http.HandleFunc("/account", a.accountHandler)
 	http.HandleFunc("/code", a.codeHandler)
-
-
-	z.SetupZineRoutes()
-
 	http.HandleFunc("/", fileServerHandler)
 
 	dir := "data/justshare.io-ssl-bundle"
