@@ -8,6 +8,9 @@
             height: 100%;
             overflow: hidden;
         }
+        #graph {
+            overscroll-behavior-x: contain;
+        }
         #board {
             width: 200%;
             height: 200%;
@@ -32,6 +35,7 @@
     </style>
 </head>
 <body>
+    <script src="https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js"></script>
     <script type="module" src="./graph/graph.js"></script>
 {{/*    <script type="module" src="./graph/mingraph.js"></script>*/}}
     <link rel="stylesheet" type="text/css" href="./graph/graph.css">

@@ -15,17 +15,19 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/breadchris/share/ast"
-	"github.com/breadchris/share/chatgpt"
+	"github.com/breadchris/share/graph"
 	"github.com/breadchris/share/html"
 	"github.com/breadchris/share/session"
-	"github.com/breadchris/share/types"
-	"github.com/breadchris/share/zine"
 	"github.com/gomarkdown/markdown"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	ignore "github.com/sabhiram/go-gitignore"
 	"github.com/urfave/cli/v2"
+
+	"github.com/breadchris/share/ast"
+	"github.com/breadchris/share/chatgpt"
+	"github.com/breadchris/share/types"
+	"github.com/breadchris/share/zine"
 )
 
 var upgrader = websocket.Upgrader{
@@ -74,6 +76,14 @@ func startServer(useTLS bool, port int) {
 
 	//text.Setup(upgrader)
 	go watchPaths()
+	go func() {
+		paths := []string{
+			"./graph/graph.tsx",
+		}
+		if err := WatchFilesAndFolders(paths, graph.Build); err != nil {
+			log.Fatalf("Failed to watch files: %v", err)
+		}
+	}()
 
 	z.SetupZineRoutes()
 
@@ -84,7 +94,7 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/blog", a.blogHandler)
 	http.HandleFunc("/blog/react", a.reactHandler)
 	http.HandleFunc("/account", a.accountHandler)
-	http.HandleFunc("/code", a.codeHandler)
+	http.HandleFunc("/code", codeHandler)
 	http.HandleFunc("/", fileServerHandler)
 
 	dir := "data/justshare.io-ssl-bundle"
@@ -159,15 +169,24 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(html.Upload().Render()))
 		return
 	case "POST":
-		f, _, err := r.FormFile("file")
+		f, h, err := r.FormFile("file")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		defer f.Close()
 
-		fn := r.FormValue("filename")
-		ext := filepath.Ext(fn)
+		//if !strings.HasPrefix(h.Header.Get("Content-Type"), "image/") {
+		//	http.Error(w, "must be image", http.StatusBadRequest)
+		//	return
+		//}
+
+		if h.Size > 10*1024*1024 {
+			http.Error(w, "File is too large must be < 10mb", http.StatusBadRequest)
+			return
+		}
+
+		ext := filepath.Ext(h.Filename)
 		name := "data/uploads/" + uuid.NewString() + ext
 		o, err := os.Create(name)
 		if err != nil {
@@ -181,7 +200,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		w.Write([]byte(html.Div(html.A(html.Href(name), html.T("share"))).Render()))
+		w.Write([]byte(name))
 		return
 	}
 	w.Write([]byte("invalid method"))

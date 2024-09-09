@@ -119,6 +119,11 @@ func (s *Node) C(c []RenderNode) *Node {
 	return s
 }
 
+func (s *Node) Ch(c ...RenderNode) *Node {
+	s.Children = append(s.Children, c...)
+	return s
+}
+
 func (s *Node) Init(n *Node) {
 	n.Children = append(n.Children, s)
 }
@@ -222,6 +227,10 @@ func Meta(o ...NodeOption) *Node {
 
 func Body(o ...NodeOption) *Node {
 	return NewNode("body", o)
+}
+
+func Dialog(o ...NodeOption) *Node {
+	return NewNode("dialog", o)
 }
 
 type NilNode struct{}
@@ -554,6 +563,22 @@ func Accesskey(s string) *TransformNode {
 	return &TransformNode{
 		transform: func(p *Node) {
 			p.Attrs["accesskey"] = s
+		},
+	}
+}
+
+func Select(o ...NodeOption) *Node {
+	return NewNode("select", o)
+}
+
+func Option(o ...NodeOption) *Node {
+	return NewNode("option", o)
+}
+
+func Value(s string) *TransformNode {
+	return &TransformNode{
+		transform: func(p *Node) {
+			p.Attrs["value"] = s
 		},
 	}
 }

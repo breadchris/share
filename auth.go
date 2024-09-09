@@ -16,7 +16,6 @@ import (
 	"strings"
 	"testing/fstest"
 
-	"github.com/breadchris/share/html"
 	"github.com/breadchris/share/session"
 	"github.com/breadchris/share/types"
 	"github.com/fsnotify/fsnotify"
@@ -130,7 +129,8 @@ func (s *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 		if f != "" {
 			for _, user := range users {
 				if user.Email == f {
-					msg := fmt.Sprintf("Click <a href=\"%s/login?sec=%s\">here</a> to login.", s.c.ExternalURL, user.Secrets[0])
+					msg := fmt.Sprintf(
+						"Click <a href=\"%s/login?sec=%s\">here</a> to login.", s.c.ExternalURL, user.Secrets[0])
 					e := s.e.SendRecoveryEmail(user.Email, "Recover your account", msg, user.Secrets[0])
 					if e != nil {
 						fmt.Printf("Error sending email: %v\n", e)
@@ -503,48 +503,4 @@ func runCode(file string) (*interp.Interpreter, error) {
 		return nil, fmt.Errorf("Error evaluating code: %w", err)
 	}
 	return i, nil
-}
-
-func (s *Auth) codeHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodPost:
-		err := r.ParseForm()
-		if err != nil {
-			http.Error(w, "Error parsing form data", http.StatusBadRequest)
-			return
-		}
-
-		w.Write([]byte("Code submitted: " + r.FormValue("description")))
-	case http.MethodGet:
-		mu.Lock()
-		defer mu.Unlock()
-
-		profile := html.State{
-			Title:       r.URL.Query().Get("title"),
-			Skills:      []string{"Go", "Python", "Reverse Engineering", "Cryptography"},
-			Projects:    []string{"Project X", "Deep Dive", "SecureComm"},
-			Description: "Experienced hacker with a focus on cybersecurity, cryptography, and building robust systems. Passionate about exploring the unknown and solving complex challenges.",
-		}
-
-		i, err := runCode("html/form.go")
-		if err != nil {
-			println("Error running code", err.Error())
-			return
-		}
-
-		v, err := i.Eval("html.RenderHacker")
-		if err != nil {
-			println("Error evaluating code", err.Error())
-			return
-		}
-
-		r := v.Interface().(func(struct {
-			Title       string
-			Skills      []string
-			Projects    []string
-			Description string
-		}) string)
-
-		w.Write([]byte(r(profile)))
-	}
 }

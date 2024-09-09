@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -15,9 +15,25 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
-var messages []Message
-var mu sync.Mutex
-var chatClients = make(map[chan Message]struct{})
+var (
+	nodeLookup  = make(map[string]MessageNode)
+	edgeLookup  = make(map[string]map[string]Edge)
+	reverseEdge = make(map[string]map[string]struct{})
+	mu          sync.Mutex
+	chatClients = make(map[chan MessageNode]struct{})
+)
+
+type Edge struct {
+	Audiences []string
+}
+
+func init() {
+	nodeLookup["root"] = MessageNode{
+		ID:      "root",
+		Author:  "system",
+		Content: "welcome!",
+	}
+}
 
 type Chat struct {
 	s *session.SessionManager
@@ -42,6 +58,26 @@ func (s *Chat) NewMux() *http.ServeMux {
 	return m
 }
 
+func graphToFlattenedGraph(nodeID string) (FlattenedGraph, error) {
+	node := nodeLookup[nodeID]
+
+	var fg FlattenedGraph
+	fg.Node = node
+	for id := range edgeLookup[nodeID] {
+		child, ok := nodeLookup[id]
+		if !ok {
+			return FlattenedGraph{}, fmt.Errorf("node %s not found", id)
+		}
+		fgc, err := graphToFlattenedGraph(id)
+		if err != nil {
+			return FlattenedGraph{}, err
+		}
+		fgc.Node = child
+		fg.Children = append(fg.Children, fgc)
+	}
+	return fg, nil
+}
+
 func (s *Chat) chatHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := s.s.GetUserID(r.Context())
 	if err != nil {
@@ -49,21 +85,39 @@ func (s *Chat) chatHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cs := chatState{
-		Messages: messages,
+	id := r.FormValue("id")
+	if id == "" {
+		id = "root"
 	}
 
-	js, err := json.Marshal(cs)
+	g, err := graphToFlattenedGraph(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	h, err := runCodeFunc("chatview.go", "main.RenderChat", js)
+
+	var nodesFrom []string
+	for k := range reverseEdge[id] {
+		nodesFrom = append(nodesFrom, k)
+	}
+	var nodesTo []string
+	for k := range edgeLookup[id] {
+		nodesTo = append(nodesTo, k)
+	}
+
+	cs := chatState{
+		Graph:     g,
+		ParentID:  id,
+		NodesFrom: nodesFrom,
+		NodesTo:   nodesTo,
+	}
+	sb, err := RenderChat(cs)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Write([]byte(h))
+
+	w.Write([]byte(sb))
 }
 
 func (s *Chat) sendHandler(w http.ResponseWriter, r *http.Request) {
@@ -74,65 +128,95 @@ func (s *Chat) sendHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	u := users[id]
 
-	addMsg := func(m Message) {
-		if m.Type == "chat" {
-			notifyClients(m)
-		}
-	}
-
+	var parentNodeID string
 	if r.Method == "POST" {
 		r.ParseForm()
 		content := r.FormValue("content")
-		ai := r.FormValue("ai")
+		parentNodeID = r.FormValue("parent_id")
+		if parentNodeID == "" {
+			parentNodeID = "root"
+		}
 
-		addMsg(Message{
+		messageNode := MessageNode{
+			ID:      uuid.NewString(),
 			Author:  u.Email,
 			Content: content,
 			Type:    "chat",
-		})
+		}
 
-		if ai == "on" {
-			req := openai.ChatCompletionRequest{
-				Model:     openai.GPT4o20240513,
-				MaxTokens: 1024,
-				Messages: []openai.ChatCompletionMessage{
-					{Role: "system", Content: "You are a helpful assistant."},
-					{Role: "user", Content: content},
-				},
-			}
-			resp, err := s.l.Client.CreateChatCompletionStream(r.Context(), req)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			defer resp.Close()
+		mu.Lock()
+		nodeLookup[messageNode.ID] = messageNode
+		if _, ok := edgeLookup[parentNodeID]; !ok {
+			edgeLookup[parentNodeID] = make(map[string]struct{})
+		}
+		edgeLookup[parentNodeID][messageNode.ID] = struct{}{}
+		if _, ok := reverseEdge[messageNode.ID]; !ok {
+			reverseEdge[messageNode.ID] = make(map[string]struct{})
+		}
+		reverseEdge[messageNode.ID][parentNodeID] = struct{}{}
+		mu.Unlock()
 
-			var c string
-			for {
-				re, err := resp.Recv()
-				if errors.Is(err, io.EOF) {
-					notifyClients(Message{
-						Author:  "ChatGPT",
-						Content: c,
-						Type:    "ai",
-					})
-					break
-				}
+		notifyClients(messageNode)
 
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
-
-				notifyClients(Message{
-					Author:  "ChatGPT",
-					Content: re.Choices[0].Delta.Content,
-					Type:    "ai",
-				})
-				c += re.Choices[0].Delta.Content
-			}
+		if ai := r.FormValue("ai"); ai == "on" {
+			go s.handleAIResponse(context.TODO(), content, messageNode.ID)
 		}
 	}
+}
+
+func (s *Chat) handleAIResponse(ctx context.Context, userInput, parentNodeID string) error {
+	req := openai.ChatCompletionRequest{
+		Model:     openai.GPT4o20240513,
+		MaxTokens: 1024,
+		Messages: []openai.ChatCompletionMessage{
+			{Role: "system", Content: "You are a helpful assistant."},
+			{Role: "user", Content: userInput},
+		},
+	}
+	resp, err := s.l.Client.CreateChatCompletionStream(ctx, req)
+	if err != nil {
+		return err
+	}
+	defer resp.Close()
+
+	var c string
+	for {
+		re, err := resp.Recv()
+		if errors.Is(err, io.EOF) {
+			aiNode := MessageNode{
+				ID:      uuid.NewString(),
+				Author:  "ChatGPT",
+				Content: c,
+				Type:    "ai-done",
+			}
+
+			mu.Lock()
+			nodeLookup[aiNode.ID] = aiNode
+			if _, ok := edgeLookup[parentNodeID]; !ok {
+				edgeLookup[parentNodeID] = make(map[string]struct{})
+			}
+			edgeLookup[parentNodeID][aiNode.ID] = struct{}{}
+			if _, ok := reverseEdge[aiNode.ID]; !ok {
+				reverseEdge[aiNode.ID] = make(map[string]struct{})
+			}
+			reverseEdge[aiNode.ID][parentNodeID] = struct{}{}
+			mu.Unlock()
+
+			notifyClients(aiNode)
+			break
+		}
+
+		if err != nil {
+			return err
+		}
+
+		c += re.Choices[0].Delta.Content
+		notifyClients(MessageNode{
+			Type:    "ai",
+			Content: re.Choices[0].Delta.Content,
+		})
+	}
+	return nil
 }
 
 func sseHandler(w http.ResponseWriter, r *http.Request) {
@@ -142,7 +226,7 @@ func sseHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	messageChan := make(chan Message)
+	messageChan := make(chan MessageNode)
 	mu.Lock()
 	chatClients[messageChan] = struct{}{}
 	mu.Unlock()
@@ -154,22 +238,18 @@ func sseHandler(w http.ResponseWriter, r *http.Request) {
 	for {
 		select {
 		case msg := <-messageChan:
-			if msg.Type == "chat" {
+			if msg.Type == "ai" {
+				//fmt.Fprintf(w, "event: ai\ndata: %s\n\n", msg.Content)
+				//flusher.Flush()
+			} else {
 				lines := strings.Split(msg.Content, "\n\n")
 				for _, c := range lines {
-					m := Message{
-						ID:      msg.ID,
-						Author:  msg.Author,
-						Content: c,
-						Type:    msg.Type,
-					}
-					fmt.Fprintf(w, "event: chat\ndata: %s\n\n", RenderMsg(m))
+					msg.Content = c
+					fmt.Fprintf(w, "event: chat\ndata: %s\n\n", RenderMsg(FlattenedGraph{
+						Node: msg,
+					}).Render())
 					flusher.Flush()
 				}
-			}
-			if msg.Type == "ai" {
-				fmt.Fprintf(w, "event: ai\ndata: %s\n\n", msg.Content)
-				flusher.Flush()
 			}
 		case <-r.Context().Done():
 			delete(chatClients, messageChan)
@@ -178,13 +258,9 @@ func sseHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func notifyClients(m Message) {
-	m.ID = uuid.NewString()
+func notifyClients(m MessageNode) {
 	mu.Lock()
 	defer mu.Unlock()
-	if m.Type == "chat" {
-		messages = append(messages, m)
-	}
 
 	for client := range chatClients {
 		client <- m
