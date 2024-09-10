@@ -1,0 +1,14 @@
+{
+  "Interface - General": [
+    {
+      "issueId": 400,
+      "url": "issues/400",
+      "description": "Disable auto save by default."
+    },
+    {
+      "issueId": 401,
+      "url": "pull/401",
+      "description": "Improve settings menu."
+    }
+  ]
+}
