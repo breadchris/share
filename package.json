@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "build": "GOOS=js GOARCH=wasm go build -o dist/editor.wasm editor.go && cp $(go env GOROOT)/misc/wasm/wasm_exec.js js/site/wasm_exec.js"
+  },
   "dependencies": {
     "@blueprintjs/core": "4.13.0",
     "@types/dagre": "0.7.48",
