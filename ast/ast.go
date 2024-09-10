@@ -9,13 +9,11 @@ import (
 	"strings"
 )
 
-type FunctionCallGraph map[string][]string
-
 // Global graph to store all function calls
-var callGraph = make(FunctionCallGraph)
+var visitedCalls = make(map[string]bool)
 
-// TraverseAST parses a Go file and returns the function call graph for the specified method
-func TraverseAST(filename string, targetMethod string) FunctionCallGraph {
+// TraverseAST parses a Go file and starts processing the AST for the specified method
+func TraverseAST(filename string, targetMethod string) {
 	// Create a new file set
 	fset := token.NewFileSet()
 
@@ -36,30 +34,28 @@ func TraverseAST(filename string, targetMethod string) FunctionCallGraph {
 
 				// Get the receiver object (e.g., z)
 				if ident, ok := selector.X.(*ast.Ident); ok {
-					receiver := ident.Name
-					fullMethod := fmt.Sprintf("%s.%s", receiver, methodName)
+					fullMethod := fmt.Sprintf("%s.%s", ident.Name, methodName)
 
 					// If this is the target method call (z.SetupZineRoutes), analyze it further
 					if fullMethod == targetMethod {
 						fmt.Printf("Found call to %s\n", fullMethod)
-						// Analyze the external package (zine package) where SetupZineRoutes is defined
+						// Analyze the external package where SetupZineRoutes is defined
 						AnalyzeExternalMethod("zine/zine.go", "SetupZineRoutes", 0)
 					}
 				}
 			}
 		}
-		return true
+		return true // Ensure traversal continues
 	})
-	return callGraph
 }
 
-// AnalyzeExternalMethod analyzes a specific function in an external file (e.g., SetupZineRoutes in zine package)
-// It recursively analyzes functions, extracts parameters, and adds them to the call graph
+// AnalyzeExternalMethod recursively analyzes functions, extracts parameters, and avoids reprocessing nodes
 func AnalyzeExternalMethod(filename string, methodName string, depth int) {
-	// Avoid re-analyzing functions
-	if _, visited := callGraph[methodName]; visited {
+	if visitedCalls[methodName] {
 		return
 	}
+
+	visitedCalls[methodName] = true // Mark the method as visited to avoid duplication
 
 	fset := token.NewFileSet()
 
@@ -69,44 +65,44 @@ func AnalyzeExternalMethod(filename string, methodName string, depth int) {
 		log.Fatalf("Failed to parse external file: %v", err)
 	}
 
-	// Initialize the call graph entry for this function
-	callGraph[methodName] = []string{}
-
-	// Traverse the AST and find the method implementation for SetupZineRoutes or other functions
+	// Traverse the AST to find the method implementation for SetupZineRoutes or other functions
 	ast.Inspect(node, func(n ast.Node) bool {
 		if fn, ok := n.(*ast.FuncDecl); ok {
-			// Check if this is the method we're analyzing
 			if fn.Name.Name == methodName {
 				// Print the function name with indentation based on depth
-				fmt.Printf("%s%s\n", strings.Repeat("   ", depth), methodName)
+				fmt.Printf("%s%s\n", strings.Repeat("    ", depth), methodName)
 
 				// Extract function parameters
 				printFunctionParams(fn, depth)
 
 				// Recursively inspect the body of the function to find function calls
 				ast.Inspect(fn.Body, func(n ast.Node) bool {
-					// Look for function calls within the method body
 					if call, ok := n.(*ast.CallExpr); ok {
 						if funIdent, ok := call.Fun.(*ast.Ident); ok {
 							// Get the name of the called function
 							calledFunc := funIdent.Name
 
-							// Extract and print function call arguments with indentation
-							fmt.Printf("%sCalls %s\n", strings.Repeat("   ", depth+1), calledFunc)
+							// Print the nested function call with its arguments
+							fmt.Printf("%s%s\n", strings.Repeat("    ", depth+1), calledFunc)
 							printFunctionCallArgs(call, depth+2)
 
-							// Add the called function to the graph
-							callGraph[methodName] = append(callGraph[methodName], calledFunc)
+							// Process nested calls only if they're not reprocessed already
+							for _, arg := range call.Args {
+								if innerCall, ok := arg.(*ast.CallExpr); ok {
+									// Handle nested function calls (arguments that are themselves function calls)
+									printNestedFunctionCall(innerCall, depth+2)
+								}
+							}
 
-							// Recursively analyze the called function with increased depth
+							// Recursively analyze the called function at a deeper level
 							AnalyzeExternalMethod(filename, calledFunc, depth+1)
 						}
 					}
-					return true
+					return true // Ensure traversal continues
 				})
 			}
 		}
-		return true
+		return true // Ensure traversal continues
 	})
 }
 
@@ -115,7 +111,7 @@ func printFunctionParams(fn *ast.FuncDecl, depth int) {
 	if fn.Type.Params != nil && len(fn.Type.Params.List) > 0 {
 		for _, param := range fn.Type.Params.List {
 			for _, name := range param.Names {
-				fmt.Printf("%sTakes %s (%s)\n", strings.Repeat("   ", depth+1), name, paramType(param.Type))
+				fmt.Printf("%sTakes %s (%s)\n", strings.Repeat("    ", depth+1), name, paramType(param.Type))
 			}
 		}
 	}
@@ -125,7 +121,25 @@ func printFunctionParams(fn *ast.FuncDecl, depth int) {
 func printFunctionCallArgs(call *ast.CallExpr, depth int) {
 	if len(call.Args) > 0 {
 		for _, arg := range call.Args {
-			fmt.Printf("%sArg: %s\n", strings.Repeat("   ", depth), exprString(arg))
+			if _, ok := arg.(*ast.CallExpr); !ok { // Avoid printing *ast.CallExpr nodes
+				fmt.Printf("%sArg: %s\n", strings.Repeat("    ", depth), exprString(arg))
+			}
+		}
+	}
+}
+
+// Print a nested function call (used when a function is passed as an argument)
+func printNestedFunctionCall(call *ast.CallExpr, depth int) {
+	if funIdent, ok := call.Fun.(*ast.Ident); ok {
+		// Print the nested function name and its arguments
+		fmt.Printf("%s%s\n", strings.Repeat("    ", depth), funIdent.Name)
+		printFunctionCallArgs(call, depth+1)
+
+		// Process nested function calls further
+		for _, arg := range call.Args {
+			if innerCall, ok := arg.(*ast.CallExpr); ok {
+				printNestedFunctionCall(innerCall, depth+1)
+			}
 		}
 	}
 }
@@ -155,3 +169,4 @@ func paramType(expr ast.Expr) string {
 		return fmt.Sprintf("%T", expr)
 	}
 }
+
