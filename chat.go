@@ -16,7 +16,7 @@ import (
 var (
 	nodeLookup  = make(map[string]MessageNode)
 	edgeLookup  = make(map[string]map[string]Edge)
-	reverseEdge = make(map[string]map[string]struct{})
+	reverseEdge = make(map[string]map[string]Edge)
 	mu          sync.Mutex
 	chatClients = make(map[chan MessageNode]struct{})
 )
@@ -145,13 +145,13 @@ func (s *Chat) sendHandler(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		nodeLookup[messageNode.ID] = messageNode
 		if _, ok := edgeLookup[parentNodeID]; !ok {
-			edgeLookup[parentNodeID] = make(map[string]struct{})
+			edgeLookup[parentNodeID] = make(map[string]Edge)
 		}
-		edgeLookup[parentNodeID][messageNode.ID] = struct{}{}
+		edgeLookup[parentNodeID][messageNode.ID] = Edge{}
 		if _, ok := reverseEdge[messageNode.ID]; !ok {
-			reverseEdge[messageNode.ID] = make(map[string]struct{})
+			reverseEdge[messageNode.ID] = make(map[string]Edge)
 		}
-		reverseEdge[messageNode.ID][parentNodeID] = struct{}{}
+		reverseEdge[messageNode.ID][parentNodeID] = Edge{}
 		mu.Unlock()
 
 		notifyClients(messageNode)
@@ -191,13 +191,13 @@ func (s *Chat) handleAIResponse(ctx context.Context, userInput, parentNodeID str
 			mu.Lock()
 			nodeLookup[aiNode.ID] = aiNode
 			if _, ok := edgeLookup[parentNodeID]; !ok {
-				edgeLookup[parentNodeID] = make(map[string]struct{})
+				edgeLookup[parentNodeID] = make(map[string]Edge)
 			}
-			edgeLookup[parentNodeID][aiNode.ID] = struct{}{}
+			edgeLookup[parentNodeID][aiNode.ID] = Edge{}
 			if _, ok := reverseEdge[aiNode.ID]; !ok {
-				reverseEdge[aiNode.ID] = make(map[string]struct{})
+				reverseEdge[aiNode.ID] = make(map[string]Edge)
 			}
-			reverseEdge[aiNode.ID][parentNodeID] = struct{}{}
+			reverseEdge[aiNode.ID][parentNodeID] = Edge{}
 			mu.Unlock()
 
 			notifyClients(aiNode)

@@ -125,6 +125,7 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/blog", a.blogHandler)
 	http.HandleFunc("/blog/react", a.reactHandler)
 	http.HandleFunc("/account", a.accountHandler)
+	http.HandleFunc("/files", fileHandler)
 
 	http.HandleFunc("/zine/generate-zine-image", z.GenerateZineImage)
 	http.HandleFunc("/zine/create-zine", z.RenderZine)

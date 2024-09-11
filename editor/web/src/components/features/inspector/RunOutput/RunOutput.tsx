@@ -69,9 +69,9 @@ const RunOutput: React.FC<StateProps & {}> = ({ status, monaco, terminal }) => {
             Press &quot;Run&quot; to compile program.
           </div>
         ) : (
-            <div
-                dangerouslySetInnerHTML={{ __html: status?.events?.map((e) => e.Message).join('<br />')}}
-            />
+            <iframe
+                srcDoc={status?.events?.map((e) => e.Message).join('')} style={{height: '600px'}}>
+            </iframe>
           // <Console fontFamily={fontFamily} fontSize={fontSize} status={status} backend={renderingBackend} />
         )}
       </div>

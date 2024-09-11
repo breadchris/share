@@ -313,6 +313,10 @@ func Label(o ...NodeOption) *Node {
 	return NewNode("label", o)
 }
 
+func Details(o ...NodeOption) *Node {
+	return NewNode("details", o)
+}
+
 func Input(o ...NodeOption) *Node {
 	return NewNode("input", o)
 }
@@ -379,6 +383,20 @@ func H5(o ...NodeOption) *Node {
 
 func Path(o ...NodeOption) *Node {
 	return NewNode("path", o)
+}
+
+func Summary(o ...NodeOption) *Node {
+	return NewNode("summary", o)
+}
+
+func Open(b bool) *TransformNode {
+	return &TransformNode{
+		transform: func(p *Node) {
+			if b {
+				p.Attrs["open"] = "open"
+			}
+		},
+	}
 }
 
 func Method(s string) *TransformNode {
