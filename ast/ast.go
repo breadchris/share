@@ -6,6 +6,7 @@ import (
 	"go/parser"
 	"go/token"
 	"log"
+	"slices"
 	"strings"
 )
 
@@ -13,28 +14,29 @@ import (
 var visitedCalls = make(map[string]bool)
 
 func TraverseAST(filename string, targetMethod string) {
+	functionInFile := getAllFileFunctions(filename)
+
+	walkFunctionGraph(filename, targetMethod, 0, functionInFile)
+}
+
+func getAllFileFunctions(filename string) []string {
 	fset := token.NewFileSet()
 	node, err := parser.ParseFile(fset, filename, nil, parser.AllErrors)
 	if err != nil {
 		log.Fatalf("Failed to parse file: %v", err)
 	}
 
+	var functions []string
 	ast.Inspect(node, func(n ast.Node) bool {
-		if call, ok := n.(*ast.CallExpr); ok {
-			if selector, ok := call.Fun.(*ast.SelectorExpr); ok {
-				if ident, ok := selector.X.(*ast.Ident); ok {
-					fullMethod := fmt.Sprintf("%s.%s", ident.Name, selector.Sel.Name)
-					if fullMethod == targetMethod {
-						walkFunctionGraph("zine/zine.go", "ZineIndex", 0)
-					}
-				}
-			}
+		if fn, ok := n.(*ast.FuncDecl); ok {
+			functions = append(functions, fn.Name.Name)
 		}
 		return true
 	})
+	return functions
 }
 
-func walkFunctionGraph(filename string, methodName string, depth int) {
+func walkFunctionGraph(filename string, methodName string, depth int, functionInFile []string) {
 	fset := token.NewFileSet()
 
 	node, err := parser.ParseFile(fset, filename, nil, parser.AllErrors)
@@ -51,7 +53,7 @@ func walkFunctionGraph(filename string, methodName string, depth int) {
 							if call, ok := result.(*ast.CallExpr); ok {
 								fmt.Printf("%s%s\n", strings.Repeat("    ", depth+1), call.Fun)
 							}
-							helper(result, depth)
+							helper(result, depth, functionInFile)
 						}
 					}
 					return true
@@ -62,15 +64,21 @@ func walkFunctionGraph(filename string, methodName string, depth int) {
 	})
 }
 
-func helper(result ast.Expr, depth int) {
+func helper(result ast.Expr, depth int, functionInFile []string) {
 	if args, ok := result.(*ast.CallExpr); ok {
 		for _, arg := range args.Args {
 			if call, ok := arg.(*ast.CallExpr); ok {
-				fmt.Printf("%s%s\n", strings.Repeat("    ", depth+2), call.Fun)
-				fmt.Printf("%s%s\n", strings.Repeat("    ", depth+3), getFunctionCallArgs(call))
-				helper(arg, depth+1)
+                if slices.Contains(functionInFile, fmt.Sprintf("%s", call.Fun)) {
+					walkFunctionGraph("zine/zine.go", fmt.Sprintf("%s", call.Fun), depth+1, functionInFile)
+				} else {
+                    fmt.Printf("%s%s\n", strings.Repeat("    ", depth+2), call.Fun)
+                    functionArgs := getFunctionCallArgs(call)
+                    if functionArgs != "" {
+                        fmt.Printf("%s%s\n", strings.Repeat("    ", depth+3), functionArgs)
+                    }
+                    helper(arg, depth+1, functionInFile)
+                }
 			}
-
 		}
 	}
 }

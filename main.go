@@ -125,8 +125,8 @@ func startServer(useTLS bool, port int) {
 }
 
 func main() {
-	filename := "main.go"
-	ast.TraverseAST(filename, "z.SetupZineRoutes")
+	filename := "zine/zine.go"
+	ast.TraverseAST(filename, "ZineIndex")
 	// ast.PrintCallGraph(callGraph)
 	app := &cli.App{
 		Name: "share",
