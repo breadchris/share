@@ -1,10 +1,25 @@
 package server
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/breadchris/share/html"
+	"github.com/traefik/yaegi/interp"
+	"github.com/traefik/yaegi/stdlib"
+	"go/ast"
+	"go/format"
+	"go/parser"
+	"go/printer"
+	"go/token"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing/fstest"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -148,6 +163,62 @@ func (h *APIv2Handler) HandleFormat(w http.ResponseWriter, r *http.Request) erro
 }
 
 func (h *APIv2Handler) HandleRun(w http.ResponseWriter, r *http.Request) error {
+	body, err := filesPayloadFromRequest(r)
+	if err != nil {
+		return NewBadRequestError(err)
+	}
+
+	baseHTML, err := os.ReadFile("html/html.go")
+	if err != nil {
+		return NewBadRequestError(err)
+	}
+
+	i := interp.New(interp.Options{
+		GoPath: filepath.FromSlash("./"),
+		SourcecodeFilesystem: fstest.MapFS{
+			"src/main/vendor/github.com/breadchris/share/html/html.go": &fstest.MapFile{
+				Data: baseHTML,
+			},
+		},
+	})
+
+	i.Use(stdlib.Symbols)
+
+	for name, contents := range body.Files {
+		h.logger.Debug("evaluating code", zap.String("name", name))
+		_, err := i.Eval(contents)
+		if err != nil {
+			return NewBadRequestError(err)
+		}
+	}
+
+	_, err = i.Eval(string(baseHTML))
+	if err != nil {
+		return NewBadRequestError(err)
+	}
+
+	v, err := i.Eval("Render")
+	if err != nil {
+		return NewBadRequestError(err)
+	}
+
+	res := v.Interface().(func() string)
+
+	h.logger.Debug("response from compiler", zap.Any("res", res))
+	WriteJSON(w, RunResponse{
+		Events: []*goplay.CompileEvent{
+			{
+				Message: res(),
+				Kind:    "stdout",
+				Delay:   0,
+			},
+		},
+	})
+
+	return nil
+}
+
+func (h *APIv2Handler) HandleRunGoPlayground(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 
 	params, err := RunParamsFromQuery(r.URL.Query())
@@ -215,10 +286,166 @@ func (h *APIv2Handler) HandleCompile(w http.ResponseWriter, r *http.Request) err
 	return nil
 }
 
+type ConvertRequest struct {
+	HTML string `json:"html"`
+}
+
+type ConvertResponse struct {
+	Code string `json:"code"`
+}
+
+func (h *APIv2Handler) HandleConvert(w http.ResponseWriter, r *http.Request) error {
+	var req ConvertRequest
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		return NewBadRequestError(err)
+	}
+	if err := json.Unmarshal(b, &req); err != nil {
+		return NewBadRequestError(err)
+	}
+	n, err := html.ParseHTMLString(req.HTML)
+	if err != nil {
+		return NewBadRequestError(err)
+	}
+
+	var buf bytes.Buffer
+
+	fset := token.NewFileSet()
+
+	cfg := &printer.Config{
+		Mode:     printer.TabIndent,
+		Tabwidth: 4,
+	}
+
+	err = cfg.Fprint(&buf, fset, n.RenderGoCode(fset))
+	if err != nil {
+		return err
+	}
+
+	formattedCode, err := format.Source(buf.Bytes())
+	if err != nil {
+		return err
+	}
+
+	WriteJSON(w, ConvertResponse{Code: string(formattedCode)})
+	return nil
+}
+
+type ModifyRequest struct {
+	Code   string `json:"code"`
+	Cursor struct {
+		Line int `json:"line"`
+		Pos  int `json:"col"`
+	} `json:"cursor"`
+}
+
+type ModifyResponse struct {
+	Code string `json:"code"`
+}
+
+func (h *APIv2Handler) HandleModify(w http.ResponseWriter, r *http.Request) error {
+	var req ModifyRequest
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		return NewBadRequestError(err)
+	}
+	if err := json.Unmarshal(b, &req); err != nil {
+		return NewBadRequestError(err)
+	}
+
+	newCode, err := modifyFunction(req.Code, req.Cursor.Line, req.Cursor.Pos)
+	if err != nil {
+		return NewBadRequestError(err)
+	}
+
+	WriteJSON(w, ModifyResponse{Code: newCode})
+	return nil
+}
+
+// modifyFunction modifies the parameters in the function by either adding or modifying "Class" calls.
+func modifyFunction(source string, line, pos int) (string, error) {
+	// Create a new file set for tracking positions
+	fset := token.NewFileSet()
+
+	// Parse the source code into an AST
+	node, err := parser.ParseFile(fset, "", source, parser.AllErrors)
+	if err != nil {
+		return "", err
+	}
+
+	// Track if we modified any function
+	modified := false
+
+	// Walk the AST to find the function at the specified line and position
+	ast.Inspect(node, func(n ast.Node) bool {
+		// We're interested in function declarations
+		if fn, ok := n.(*ast.FuncDecl); ok {
+			fnStart := fset.Position(fn.Pos())
+			fnEnd := fset.Position(fn.End())
+
+			// Check if the cursor is within the bounds of this function
+			if fnStart.Line <= line && fnEnd.Line >= line {
+				// Now look through the function body for a call to "Class"
+				foundClassCall := false
+
+				ast.Inspect(fn.Body, func(n ast.Node) bool {
+					// Look for function calls
+					if callExpr, ok := n.(*ast.CallExpr); ok {
+						if funIdent, ok := callExpr.Fun.(*ast.Ident); ok && funIdent.Name == "Class" {
+							// Found a call to "Class"
+							foundClassCall = true
+
+							// Modify the first argument by appending "text-red-500"
+							if len(callExpr.Args) > 0 {
+								if arg, ok := callExpr.Args[0].(*ast.BasicLit); ok && arg.Kind == token.STRING {
+									// Append "text-red-500" to the first parameter
+									arg.Value = strings.TrimSuffix(arg.Value, "\"") + " text-red-500\""
+								}
+							}
+							return false // No need to keep searching
+						}
+					}
+					return true
+				})
+
+				// If no "Class" call was found, we add a new call
+				if !foundClassCall {
+					// Create a new call to Class("text-red-500")
+					classCall := &ast.CallExpr{
+						Fun:  ast.NewIdent("Class"),
+						Args: []ast.Expr{&ast.BasicLit{Kind: token.STRING, Value: "\"text-red-500\""}},
+					}
+					// Append this new call to the function body
+					fn.Body.List = append(fn.Body.List, &ast.ExprStmt{X: classCall})
+				}
+
+				modified = true
+				return false // No need to inspect further functions
+			}
+		}
+		return true
+	})
+
+	// If no modifications were made, return the original source
+	if !modified {
+		return source, nil
+	}
+
+	// Use the printer package to convert the modified AST back to source code
+	var buf bytes.Buffer
+	if err := printer.Fprint(&buf, fset, node); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
 func (h *APIv2Handler) Mount(r *mux.Router) {
 	r.Path("/run").Methods(http.MethodPost).HandlerFunc(WrapHandler(h.HandleRun))
 	r.Path("/format").Methods(http.MethodPost).HandlerFunc(WrapHandler(h.HandleFormat))
 	r.Path("/share").Methods(http.MethodPost).HandlerFunc(WrapHandler(h.HandleShare))
 	r.Path("/share/{id}").Methods(http.MethodGet).HandlerFunc(WrapHandler(h.HandleGetSnippet))
 	r.Path("/compile").Methods(http.MethodPost).HandlerFunc(WrapHandler(h.HandleCompile))
+	r.Path("/convert").Methods(http.MethodPost).HandlerFunc(WrapHandler(h.HandleConvert))
+	r.Path("/modify").Methods(http.MethodPost).HandlerFunc(WrapHandler(h.HandleModify))
 }

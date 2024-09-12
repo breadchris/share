@@ -1,4 +1,8 @@
-package html
+package main
+
+import (
+	. "github.com/breadchris/share/html"
+)
 
 type State struct {
 	Title       string
@@ -7,7 +11,13 @@ type State struct {
 	Description string
 }
 
-func RenderHacker(profile State) string {
+func Render() string {
+	profile := State{
+		Title:       "Hacker Profile",
+		Description: "I'm a hacker who loves to code and build things.",
+		Skills:      []string{"Go", "JavaScript", "Python", "Ruby", "C++"},
+		Projects:    []string{"Project 1", "Project 2", "Project 3"},
+	}
 	skills := Div(Class("mb-4"),
 		H2(Text("Skills")),
 	)
@@ -35,7 +45,6 @@ func RenderHacker(profile State) string {
 					Class("textarea"), Placeholder("Enter description")),
 				Button(Type("submit"), Class("btn btn-primary"), Text("Submit")),
 			),
-			BuildHTMLForm(profile),
 			//RenderPricingPage(),
 			Div(Class("flex justify-center mt-4"),
 				Img(Src("https://example.com/hacker-profile.jpg"), Class("w-48 h-48 rounded-full")),
