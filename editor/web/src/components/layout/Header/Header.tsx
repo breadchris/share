@@ -6,7 +6,6 @@ import apiClient, { type VersionsInfo } from '~/services/api'
 import { newAddNotificationAction, NotificationType } from '~/store/notifications'
 import { ConnectedSettingsModal, type SettingsChanges } from '~/components/features/settings/SettingsModal'
 import { ThemeableComponent } from '~/components/utils/ThemeableComponent'
-import { AboutModal } from '~/components/modals/AboutModal'
 import { ExamplesModal } from '~/components/features/examples/ExamplesModal'
 import { RunTargetSelector } from '~/components/elements/inputs/RunTargetSelector'
 import { SharePopup } from '~/components/utils/SharePopup'
@@ -29,6 +28,7 @@ import {
 } from '~/store'
 
 import './Header.css'
+import {AboutModal} from "~/components/modals/AboutModal/AboutModal.tsx";
 
 /**
  * Unique class name for share button to use as popover target.

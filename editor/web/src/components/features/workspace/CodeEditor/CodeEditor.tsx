@@ -133,6 +133,22 @@ class CodeEditor extends React.Component<Props> {
           this.props.dispatch(dispatchFormatFile())
         },
       },
+      {
+        id: 'cursor-position',
+        label: 'Cursor Position',
+        contextMenuGroupId: 'navigation',
+        keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyC],
+        run: (ed, ...args) => {
+          const pos = ed.getPosition()
+          console.log(ed.getValue())
+          console.log(`Cursor position: ${pos.lineNumber}:${pos.column}`)
+          apiClient.modify(ed.getValue(), { line: pos.lineNumber, col: pos.column }).then((res) => {
+            ed.setValue(res.code)
+          }).catch((err) => {
+            console.error(err)
+          })
+        }
+      }
     ]
 
     // Persist font size on zoom

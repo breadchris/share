@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, {useMemo, useState} from 'react'
 import {
   MotionAnimations,
   MotionDurations,
@@ -11,9 +11,8 @@ import {
   DefaultButton,
 } from '@fluentui/react'
 import { Modal } from '@fluentui/react/lib/Modal'
-import { Link } from '@fluentui/react/lib/Link'
+import client from '~/services/api'
 
-import { ChangeLog } from './ChangeLog'
 import { getContentStyles, getIconButtonStyles } from '~/styles/modal'
 import environment from '~/environment'
 
@@ -28,6 +27,12 @@ export const AboutModal: React.FC<AboutModalProps> = (props: AboutModalProps) =>
   const theme = useTheme()
   const contentStyles = getContentStyles(theme)
   const iconButtonStyles = getIconButtonStyles(theme)
+
+  const [state, setState] = useState({
+      html: "",
+      code: "",
+      error: ""
+  });
 
   const modalStyles = useMemo(
     () =>
@@ -81,67 +86,28 @@ export const AboutModal: React.FC<AboutModalProps> = (props: AboutModalProps) =>
         />
       </div>
       <div className={contentStyles.body}>
-        <div id={TITLE_ID} className={modalStyles.title}>
-          Better Go Playground
-        </div>
-        <div className={modalStyles.info}>
-          <Link href={environment.urls.github} target="_blank">
-            <b>GitHub</b>
-          </Link>
-          <span>Version: {environment.appVersion}</span>
-        </div>
-        <div className={modalStyles.footer}>
-          <div>
-            {/* eslint-disable-next-line react/no-unescaped-entities */}
-            <h3>What's New</h3>
-            <ChangeLog />
-          </div>
-          <Stack
-            horizontal
-            wrap
-            horizontalAlign="end"
-            tokens={{
-              childrenGap: 'm',
-            }}
-            style={{
-              marginTop: '1.5rem',
-            }}
-          >
-            <Stack.Item grow={1}>
-              <DefaultButton
-                href={environment.urls.issue}
-                target="_blank"
-                iconProps={{
-                  iconName: 'Bug',
-                }}
-              >
-                Report Bug
-              </DefaultButton>
-            </Stack.Item>
-            <DefaultButton
-              href={environment.urls.github}
-              target="_blank"
-              iconProps={{
-                iconName: 'OpenSource',
-              }}
-            >
-              Source
-            </DefaultButton>
-
-            <DefaultButton
-              href={environment.urls.donate}
-              target="_blank"
-              iconProps={{
-                iconName: 'Heart',
-              }}
-            >
-              Donate
-            </DefaultButton>
-          </Stack>
-        </div>
+        <textarea style={{width: "100%"}} className="textarea" placeholder="html" value={state.html} onChange={(e) => {
+            setState((prev) => ({
+                ...prev,
+                html: e.target.value
+            }))
+        }}></textarea>
+        <button className={"btn"} onClick={() => {
+            client.convert(state.html).then((res) => {
+                setState((prev) => ({
+                    ...prev,
+                    code: res.code
+                }))
+            }).catch((err) => {
+                setState((prev) => ({
+                    ...prev,
+                    error: err.toString()
+                }))
+            });
+        }}>submit</button>
+        <textarea style={{width: "100%"}} className="textarea" placeholder="code" value={state.code} readOnly></textarea>
+        <textarea style={{width: "100%"}} className="textarea" placeholder="error" value={state.error} readOnly></textarea>
       </div>
     </Modal>
   )
 }
-
-AboutModal.defaultProps = { isOpen: false }
