@@ -48,6 +48,7 @@ export interface Cursor {
 
 export interface ModifyRequest {
   code: string
+  change: string
   cursor: Cursor
 }
 

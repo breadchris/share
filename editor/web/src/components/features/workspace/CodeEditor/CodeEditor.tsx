@@ -1,4 +1,4 @@
-import React from 'react'
+import React, {createContext, useContext} from 'react'
 import { Spinner } from '@fluentui/react'
 import MonacoEditor, { type Monaco } from '@monaco-editor/react'
 import * as monaco from 'monaco-editor'
@@ -56,6 +56,8 @@ interface Props extends CodeEditorState {
   dispatch: StateDispatch
 }
 
+export let editor: monaco.editor.IStandaloneCodeEditor | undefined = undefined;
+
 class CodeEditor extends React.Component<Props> {
   private analyzer?: Analyzer
   private editorInstance?: monaco.editor.IStandaloneCodeEditor
@@ -79,6 +81,7 @@ class CodeEditor extends React.Component<Props> {
   editorDidMount(editorInstance: monaco.editor.IStandaloneCodeEditor, monacoInstance: Monaco) {
     this.disposables = registerGoLanguageProviders(apiClient, this.props.dispatch)
     this.editorInstance = editorInstance
+    editor = editorInstance;
     this.monaco = monacoInstance
 
     editorInstance.onKeyDown((e) => this.onKeyDown(e))
@@ -267,17 +270,19 @@ class CodeEditor extends React.Component<Props> {
   render() {
     const options = stateToOptions(this.props.options)
     return (
-      <MonacoEditor
-        language={LANGUAGE_GOLANG}
-        theme={this.props.darkMode ? 'vs-dark' : 'vs-light'}
-        value={this.props.code}
-        defaultValue={this.props.code}
-        path={this.props.fileName}
-        options={options}
-        onChange={(newVal, e) => this.onChange(newVal, e)}
-        onMount={(e, m) => this.editorDidMount(e, m)}
-        loading={<Spinner key="spinner" label="Loading editor..." labelPosition="right" />}
-      />
+      <>
+        <MonacoEditor
+            language={LANGUAGE_GOLANG}
+            theme={this.props.darkMode ? 'vs-dark' : 'vs-light'}
+            value={this.props.code}
+            defaultValue={this.props.code}
+            path={this.props.fileName}
+            options={options}
+            onChange={(newVal, e) => this.onChange(newVal, e)}
+            onMount={(e, m) => this.editorDidMount(e, m)}
+            loading={<Spinner key="spinner" label="Loading editor..." labelPosition="right" />}
+        />
+      </>
     )
   }
 }

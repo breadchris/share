@@ -55,8 +55,8 @@ export class Client implements IAPIClient {
     return await this.post<FilesPayload>(`/v2/format?backend=${backend}`, { files })
   }
 
-  async modify(code: string, cursor: Cursor): Promise<ModifyResponse> {
-    return await this.post<ModifyResponse>(`/v2/modify`, { code, cursor })
+  async modify(code: string, change: string, cursor: Cursor): Promise<ModifyResponse> {
+    return await this.post<ModifyResponse>(`/v2/modify`, { code, change, cursor })
   }
 
   async getSnippet(id: string): Promise<FilesPayload> {

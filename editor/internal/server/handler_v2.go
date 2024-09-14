@@ -333,6 +333,7 @@ func (h *APIv2Handler) HandleConvert(w http.ResponseWriter, r *http.Request) err
 
 type ModifyRequest struct {
 	Code   string `json:"code"`
+	Change string `json:"change"`
 	Cursor struct {
 		Line int `json:"line"`
 		Pos  int `json:"col"`
@@ -353,7 +354,7 @@ func (h *APIv2Handler) HandleModify(w http.ResponseWriter, r *http.Request) erro
 		return NewBadRequestError(err)
 	}
 
-	newCode, err := modifyFunction(req.Code, req.Cursor.Line, req.Cursor.Pos)
+	newCode, err := modifyFunction(req.Code, req.Change, req.Cursor.Line, req.Cursor.Pos)
 	if err != nil {
 		return NewBadRequestError(err)
 	}
@@ -363,64 +364,53 @@ func (h *APIv2Handler) HandleModify(w http.ResponseWriter, r *http.Request) erro
 }
 
 // modifyFunction modifies the parameters in the function by either adding or modifying "Class" calls.
-func modifyFunction(source string, line, pos int) (string, error) {
-	// Create a new file set for tracking positions
+func modifyFunction(source string, change string, line, pos int) (string, error) {
 	fset := token.NewFileSet()
 
-	// Parse the source code into an AST
 	node, err := parser.ParseFile(fset, "", source, parser.AllErrors)
 	if err != nil {
 		return "", err
 	}
 
-	// Track if we modified any function
 	modified := false
 
-	// Walk the AST to find the function at the specified line and position
 	ast.Inspect(node, func(n ast.Node) bool {
-		// We're interested in function declarations
-		if fn, ok := n.(*ast.FuncDecl); ok {
+		if fn, ok := n.(*ast.CallExpr); ok {
 			fnStart := fset.Position(fn.Pos())
-			fnEnd := fset.Position(fn.End())
 
-			// Check if the cursor is within the bounds of this function
-			if fnStart.Line <= line && fnEnd.Line >= line {
-				// Now look through the function body for a call to "Class"
+			var i *ast.Ident
+			if i, ok = fn.Fun.(*ast.Ident); !ok {
+				return true
+			}
+
+			if fnStart.Line == line && fnStart.Column < pos && fnStart.Column+len(i.Name) >= pos {
 				foundClassCall := false
 
-				ast.Inspect(fn.Body, func(n ast.Node) bool {
-					// Look for function calls
-					if callExpr, ok := n.(*ast.CallExpr); ok {
+				for _, arg := range fn.Args {
+					if callExpr, ok := arg.(*ast.CallExpr); ok {
 						if funIdent, ok := callExpr.Fun.(*ast.Ident); ok && funIdent.Name == "Class" {
-							// Found a call to "Class"
 							foundClassCall = true
 
-							// Modify the first argument by appending "text-red-500"
 							if len(callExpr.Args) > 0 {
-								if arg, ok := callExpr.Args[0].(*ast.BasicLit); ok && arg.Kind == token.STRING {
-									// Append "text-red-500" to the first parameter
-									arg.Value = strings.TrimSuffix(arg.Value, "\"") + " text-red-500\""
+								if aa, ok := callExpr.Args[0].(*ast.BasicLit); ok && aa.Kind == token.STRING {
+									aa.Value = strings.TrimSuffix(aa.Value, "\"") + " " + change + "\""
 								}
 							}
-							return false // No need to keep searching
+							break
 						}
 					}
-					return true
-				})
+				}
 
-				// If no "Class" call was found, we add a new call
 				if !foundClassCall {
-					// Create a new call to Class("text-red-500")
 					classCall := &ast.CallExpr{
 						Fun:  ast.NewIdent("Class"),
-						Args: []ast.Expr{&ast.BasicLit{Kind: token.STRING, Value: "\"text-red-500\""}},
+						Args: []ast.Expr{&ast.BasicLit{Kind: token.STRING, Value: fmt.Sprintf("\"%s\"", change)}},
 					}
-					// Append this new call to the function body
-					fn.Body.List = append(fn.Body.List, &ast.ExprStmt{X: classCall})
+					fn.Args = append(fn.Args, classCall)
 				}
 
 				modified = true
-				return false // No need to inspect further functions
+				return false
 			}
 		}
 		return true
