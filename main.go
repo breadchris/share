@@ -5,14 +5,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"github.com/breadchris/share/graph"
-	"github.com/breadchris/share/html"
-	"github.com/breadchris/share/session"
-	"github.com/gomarkdown/markdown"
-	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
-	ignore "github.com/sabhiram/go-gitignore"
-	"github.com/urfave/cli/v2"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -23,7 +15,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/breadchris/share/zine"
+	"github.com/breadchris/share/graph"
+	"github.com/breadchris/share/html"
+	"github.com/breadchris/share/session"
+	"github.com/gomarkdown/markdown"
+	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
+	ignore "github.com/sabhiram/go-gitignore"
+	"github.com/urfave/cli/v2"
 )
 
 var upgrader = websocket.Upgrader{
@@ -54,7 +53,7 @@ type AppConfig struct {
 type ZineConfig struct {
 }
 
-func loadConfig() AppConfig {
+func LoadConfig() AppConfig {
 	// load the app config
 	var appConfig AppConfig
 	configFile, err := os.Open("data/config.json")
@@ -71,7 +70,7 @@ func loadConfig() AppConfig {
 }
 
 func startServer(useTLS bool, port int) {
-	appConfig := loadConfig()
+	appConfig := LoadConfig()
 
 	loadJSON(dataFile, &entries)
 	var newEntries []Entry
@@ -90,7 +89,7 @@ func startServer(useTLS bool, port int) {
 	}
 	e := NewSMTPEmail(&appConfig)
 	a := NewAuth(s, e, appConfig)
-	z := zine.NewZineMaker()
+	z := NewZineMaker()
 
 	p := func(p string, s *http.ServeMux) {
 		http.Handle(p+"/", http.StripPrefix(p, s))
@@ -102,9 +101,10 @@ func startServer(useTLS bool, port int) {
 	setupRecipe()
 	fileUpload()
 	setupSpotify(appConfig)
+
 	oai := NewOpenAIService(appConfig)
 	c := NewChat(s, oai)
-	p("/llm", setupChatgpt(oai))
+	p("/llm", SetupChatgpt(oai))
 	p("/chat", c.NewMux())
 
 	//text.Setup(upgrader)
@@ -118,6 +118,8 @@ func startServer(useTLS bool, port int) {
 		}
 	}()
 
+	z.SetupZineRoutes()
+
 	http.HandleFunc("/register", a.handleRegister)
 	http.HandleFunc("/login", a.handleLogin)
 	http.HandleFunc("/invite", a.handleInvite)
@@ -126,10 +128,6 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/blog/react", a.reactHandler)
 	http.HandleFunc("/account", a.accountHandler)
 	http.HandleFunc("/files", fileHandler)
-
-	http.HandleFunc("/zine/generate-zine-image", z.GenerateZineImage)
-	http.HandleFunc("/zine/create-zine", z.RenderZine)
-	http.HandleFunc("/zine/create-panel", z.CreatePanelHandler)
 
 	http.HandleFunc("/code", a.handleCode)
 	http.HandleFunc("/", fileServerHandler)

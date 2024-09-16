@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"golang.org/x/oauth2/clientcredentials"
 	"html/template"
 	"log"
 	"net/http"
 	"sync"
+
+	"golang.org/x/oauth2/clientcredentials"
 
 	"github.com/zmb3/spotify/v2"
 	auth "github.com/zmb3/spotify/v2/auth"

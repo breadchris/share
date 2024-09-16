@@ -7,14 +7,6 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
-	"github.com/breadchris/share/session"
-	"github.com/fsnotify/fsnotify"
-	"github.com/google/uuid"
-	"github.com/makiuchi-d/gozxing"
-	"github.com/makiuchi-d/gozxing/qrcode"
-	"github.com/samber/lo"
-	"github.com/traefik/yaegi/interp"
-	"github.com/traefik/yaegi/stdlib"
 	"html/template"
 	"image/png"
 	"log"
@@ -23,6 +15,15 @@ import (
 	"path/filepath"
 	"strings"
 	"testing/fstest"
+
+	"github.com/breadchris/share/session"
+	"github.com/fsnotify/fsnotify"
+	"github.com/google/uuid"
+	"github.com/makiuchi-d/gozxing"
+	"github.com/makiuchi-d/gozxing/qrcode"
+	"github.com/samber/lo"
+	"github.com/traefik/yaegi/interp"
+	"github.com/traefik/yaegi/stdlib"
 )
 
 type Invite struct {
@@ -433,7 +434,7 @@ var (
 )
 
 func watchPaths() {
-	paths := []string{"./html/hacker.go", "./html/html.go"}
+	paths := []string{"./html/html.go"}
 	callback := func(path string) {
 		fmt.Printf("Change detected: %s\n", path)
 		i := interp.New(interp.Options{

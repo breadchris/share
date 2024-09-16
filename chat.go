@@ -3,14 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/breadchris/share/session"
-	"github.com/google/uuid"
-	"github.com/pkg/errors"
-	"github.com/sashabaranov/go-openai"
 	"io"
 	"net/http"
 	"strings"
 	"sync"
+
+	"github.com/breadchris/share/session"
+	"github.com/google/uuid"
+	"github.com/pkg/errors"
+	"github.com/sashabaranov/go-openai"
 )
 
 var (
@@ -171,7 +172,7 @@ func (s *Chat) handleAIResponse(ctx context.Context, userInput, parentNodeID str
 			{Role: "user", Content: userInput},
 		},
 	}
-	resp, err := s.l.client.CreateChatCompletionStream(ctx, req)
+	resp, err := s.l.Client.CreateChatCompletionStream(ctx, req)
 	if err != nil {
 		return err
 	}
