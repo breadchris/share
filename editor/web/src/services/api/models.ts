@@ -23,6 +23,10 @@ export enum EvalEventKind {
   Stderr = 'stderr',
 }
 
+export interface ConvertResponse {
+    code: string
+}
+
 export interface ShareResponse {
   snippetID: string
 }
@@ -35,6 +39,21 @@ export interface EvalEvent {
 
 export interface RunResponse {
   events: EvalEvent[]
+}
+
+export interface Cursor {
+  line: number
+  col: number
+}
+
+export interface ModifyRequest {
+  code: string
+  change: string
+  cursor: Cursor
+}
+
+export interface ModifyResponse {
+  code: string
 }
 
 export interface FilesPayload {

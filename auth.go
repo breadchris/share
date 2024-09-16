@@ -17,7 +17,6 @@ import (
 	"testing/fstest"
 
 	"github.com/breadchris/share/session"
-	"github.com/breadchris/share/types"
 	"github.com/fsnotify/fsnotify"
 	"github.com/google/uuid"
 	"github.com/makiuchi-d/gozxing"
@@ -55,10 +54,10 @@ func init() {
 type Auth struct {
 	s *session.SessionManager
 	e *SMTPEmail
-	c types.AppConfig
+	c AppConfig
 }
 
-func NewAuth(s *session.SessionManager, e *SMTPEmail, c types.AppConfig) *Auth {
+func NewAuth(s *session.SessionManager, e *SMTPEmail, c AppConfig) *Auth {
 	return &Auth{
 		s: s,
 		e: e,
@@ -435,7 +434,7 @@ var (
 )
 
 func watchPaths() {
-	paths := []string{"./html/hacker.go", "./html/html.go"}
+	paths := []string{"./html/html.go"}
 	callback := func(path string) {
 		fmt.Printf("Change detected: %s\n", path)
 		i := interp.New(interp.Options{

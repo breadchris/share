@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/breadchris/share/chatgpt"
 	"github.com/breadchris/share/session"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -18,7 +17,7 @@ import (
 var (
 	nodeLookup  = make(map[string]MessageNode)
 	edgeLookup  = make(map[string]map[string]Edge)
-	reverseEdge = make(map[string]map[string]struct{})
+	reverseEdge = make(map[string]map[string]Edge)
 	mu          sync.Mutex
 	chatClients = make(map[chan MessageNode]struct{})
 )
@@ -37,12 +36,12 @@ func init() {
 
 type Chat struct {
 	s *session.SessionManager
-	l *chatgpt.OpenAIService
+	l *OpenAIService
 }
 
 func NewChat(
 	s *session.SessionManager,
-	l *chatgpt.OpenAIService,
+	l *OpenAIService,
 ) *Chat {
 	return &Chat{
 		s: s,
@@ -151,9 +150,9 @@ func (s *Chat) sendHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		edgeLookup[parentNodeID][messageNode.ID] = Edge{}
 		if _, ok := reverseEdge[messageNode.ID]; !ok {
-			reverseEdge[messageNode.ID] = make(map[string]struct{})
+			reverseEdge[messageNode.ID] = make(map[string]Edge)
 		}
-		reverseEdge[messageNode.ID][parentNodeID] = struct{}{}
+		reverseEdge[messageNode.ID][parentNodeID] = Edge{}
 		mu.Unlock()
 
 		notifyClients(messageNode)
@@ -197,9 +196,9 @@ func (s *Chat) handleAIResponse(ctx context.Context, userInput, parentNodeID str
 			}
 			edgeLookup[parentNodeID][aiNode.ID] = Edge{}
 			if _, ok := reverseEdge[aiNode.ID]; !ok {
-				reverseEdge[aiNode.ID] = make(map[string]struct{})
+				reverseEdge[aiNode.ID] = make(map[string]Edge)
 			}
-			reverseEdge[aiNode.ID][parentNodeID] = struct{}{}
+			reverseEdge[aiNode.ID][parentNodeID] = Edge{}
 			mu.Unlock()
 
 			notifyClients(aiNode)

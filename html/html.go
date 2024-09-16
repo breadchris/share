@@ -2,10 +2,13 @@ package html
 
 import (
 	"fmt"
+	"go/ast"
+	"go/token"
 	"io"
+	"strings"
 )
 
-func RenderHTML() string {
+func RenderHTML() *Node {
 	type state struct {
 		Title        string
 		Ingredients  []string
@@ -105,7 +108,7 @@ func RenderHTML() string {
 				),
 			),
 		),
-	).Render()
+	)
 }
 
 type Node struct {
@@ -150,23 +153,30 @@ func (s *Node) Render() string {
 	return fmt.Sprintf("<%s %s>%s</%s>", s.Name, a, c, s.Name)
 }
 
-//
-//func (s *Node) RenderGoCode() string {
-//	c := ""
-//	for _, t := range s.Children {
-//		c += t.RenderGoCode()
-//	}
-//	caser := cases.Title(language.AmericanEnglish)
-//	if len(s.Attrs) == 0 {
-//		return fmt.Sprintf("%s(\n%s,\n)", caser.String(s.Name), c)
-//	}
-//
-//	var attrs []string
-//	for k, v := range s.Attrs {
-//		attrs = append(attrs, fmt.Sprintf("%s(\"%s\"),\n", caser.String(k), v))
-//	}
-//	return fmt.Sprintf("%s(\n%s,\n%s\n,),\n", s.Name, strings.Join(attrs, ",\n"), c)
-//}
+func (n *Node) RenderGoCode(fset *token.FileSet) ast.Stmt {
+	call := &ast.CallExpr{
+		Fun:  ast.NewIdent(strings.Title(n.Name)), // Capitalize to match Go function names like Div(), Ul()
+		Args: []ast.Expr{},
+	}
+
+	for k, v := range n.Attrs {
+		call.Args = append(call.Args, &ast.CallExpr{
+			Fun: ast.NewIdent(strings.Title(k)), // Assuming function names map to attribute names (e.g., Class())
+			Args: []ast.Expr{
+				&ast.BasicLit{
+					Kind:  token.STRING,
+					Value: fmt.Sprintf("\"%s\"", v),
+				},
+			},
+		})
+	}
+
+	for _, child := range n.Children {
+		childAST := child.RenderGoCode(fset)
+		call.Args = append(call.Args, childAST.(*ast.ExprStmt).X)
+	}
+	return &ast.ExprStmt{X: call}
+}
 
 type TextNode struct {
 	text string
@@ -186,13 +196,17 @@ func (s *TextNode) Render() string {
 	return s.text
 }
 
-func (s *TextNode) RenderGoCode() string {
-	return fmt.Sprintf("Text(\"%s\")", s.text)
+func (s *TextNode) RenderGoCode(fset *token.FileSet) ast.Stmt {
+	c := &ast.CallExpr{
+		Fun:  ast.NewIdent("Text"),
+		Args: []ast.Expr{&ast.BasicLit{Kind: token.STRING, Value: fmt.Sprintf("\"%s\"", s.text)}},
+	}
+	return &ast.ExprStmt{X: c}
 }
 
 type RenderNode interface {
 	Render() string
-	//RenderGoCode() string
+	RenderGoCode(fset *token.FileSet) ast.Stmt
 }
 
 type NodeOption interface {
@@ -313,6 +327,10 @@ func Label(o ...NodeOption) *Node {
 	return NewNode("label", o)
 }
 
+func Details(o ...NodeOption) *Node {
+	return NewNode("details", o)
+}
+
 func Input(o ...NodeOption) *Node {
 	return NewNode("input", o)
 }
@@ -379,6 +397,20 @@ func H5(o ...NodeOption) *Node {
 
 func Path(o ...NodeOption) *Node {
 	return NewNode("path", o)
+}
+
+func Summary(o ...NodeOption) *Node {
+	return NewNode("summary", o)
+}
+
+func Open(b bool) *TransformNode {
+	return &TransformNode{
+		transform: func(p *Node) {
+			if b {
+				p.Attrs["open"] = "open"
+			}
+		},
+	}
 }
 
 func Method(s string) *TransformNode {

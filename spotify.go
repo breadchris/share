@@ -10,7 +10,6 @@ import (
 
 	"golang.org/x/oauth2/clientcredentials"
 
-	"github.com/breadchris/share/types"
 	"github.com/zmb3/spotify/v2"
 	auth "github.com/zmb3/spotify/v2/auth"
 )
@@ -32,7 +31,7 @@ type Spotify struct {
 	a      *auth.Authenticator
 }
 
-func NewSpotify(c types.AppConfig) *Spotify {
+func NewSpotify(c AppConfig) *Spotify {
 	config := &clientcredentials.Config{
 		ClientID:     c.Spotify.ClientID,
 		ClientSecret: c.Spotify.ClientSecret,
@@ -70,7 +69,7 @@ var (
 	codeChallenge = "ZhZJzPQXYBMjH8FlGAdYK5AndohLzFfZT-8J7biT7ig"
 )
 
-func setupSpotify(c types.AppConfig) *http.ServeMux {
+func setupSpotify(c AppConfig) *http.ServeMux {
 	s := NewSpotify(c)
 	if s != nil {
 		http.HandleFunc("/spotify", s.homeHandler)

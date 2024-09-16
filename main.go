@@ -23,10 +23,6 @@ import (
 	"github.com/gorilla/websocket"
 	ignore "github.com/sabhiram/go-gitignore"
 	"github.com/urfave/cli/v2"
-
-	"github.com/breadchris/share/chatgpt"
-	"github.com/breadchris/share/types"
-	"github.com/breadchris/share/zine"
 )
 
 var upgrader = websocket.Upgrader{
@@ -35,8 +31,46 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+type SMTPConfig struct {
+	Host     string `json:"host"`
+	Port     string `json:"port"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type SpotifyConfig struct {
+	ClientID     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+}
+
+type AppConfig struct {
+	OpenAIKey   string        `json:"openai_key"`
+	SMTP        SMTPConfig    `json:"smtp"`
+	Spotify     SpotifyConfig `json:"spotify"`
+	ExternalURL string        `json:"external_url"`
+}
+
+type ZineConfig struct {
+}
+
+func LoadConfig() AppConfig {
+	// load the app config
+	var appConfig AppConfig
+	configFile, err := os.Open("data/config.json")
+	if err != nil {
+		log.Fatalf("Failed to open config file: %v", err)
+	}
+	defer configFile.Close()
+
+	err = json.NewDecoder(configFile).Decode(&appConfig)
+	if err != nil {
+		log.Fatalf("Failed to decode config file: %v", err)
+	}
+	return appConfig
+}
+
 func startServer(useTLS bool, port int) {
-	appConfig := types.LoadConfig()
+	appConfig := LoadConfig()
 
 	loadJSON(dataFile, &entries)
 	var newEntries []Entry
@@ -55,7 +89,7 @@ func startServer(useTLS bool, port int) {
 	}
 	e := NewSMTPEmail(&appConfig)
 	a := NewAuth(s, e, appConfig)
-	z := zine.NewZineMaker()
+	z := NewZineMaker()
 
 	p := func(p string, s *http.ServeMux) {
 		http.Handle(p+"/", http.StripPrefix(p, s))
@@ -68,9 +102,9 @@ func startServer(useTLS bool, port int) {
 	fileUpload()
 	setupSpotify(appConfig)
 
-	oai := chatgpt.NewOpenAIService(appConfig)
+	oai := NewOpenAIService(appConfig)
 	c := NewChat(s, oai)
-	p("/llm", chatgpt.SetupChatgpt(oai))
+	p("/llm", SetupChatgpt(oai))
 	p("/chat", c.NewMux())
 
 	//text.Setup(upgrader)
@@ -93,7 +127,9 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/blog", a.blogHandler)
 	http.HandleFunc("/blog/react", a.reactHandler)
 	http.HandleFunc("/account", a.accountHandler)
-	http.HandleFunc("/code", codeHandler)
+	http.HandleFunc("/files", fileHandler)
+
+	http.HandleFunc("/code", a.handleCode)
 	http.HandleFunc("/", fileServerHandler)
 
 	dir := "data/justshare.io-ssl-bundle"
