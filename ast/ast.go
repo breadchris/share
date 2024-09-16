@@ -14,6 +14,7 @@ import (
 var visitedCalls = make(map[string]bool)
 
 func TraverseAST(filename string, targetMethod string) {
+
 	functionInFile := getAllFileFunctions(filename)
 
 	walkFunctionGraph(filename, targetMethod, 0, functionInFile)
