@@ -11,8 +11,6 @@ import (
 	"strconv"
 	"time"
 
-	. "github.com/breadchris/share/html2"
-
 	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
 )
@@ -33,7 +31,7 @@ var (
 	tmmsg *template.Template
 )
 
-func setupChatgpt(s *OpenAIService) *http.ServeMux {
+func SetupChatgpt(s *OpenAIService) *http.ServeMux {
 	m := http.NewServeMux()
 	tm = template.Must(template.ParseFiles("chatgpt.html"))
 	tmmsg = template.Must(template.ParseFiles("chatgptmsg.html"))
@@ -42,18 +40,17 @@ func setupChatgpt(s *OpenAIService) *http.ServeMux {
 	m.HandleFunc("/{id}", s.homeHandler)
 	m.HandleFunc("/send", s.sendMessageHandler)
 	m.HandleFunc("/chat", s.chatgptHandler)
-	m.HandleFunc("/generate-image", s.GenerateImage)
 	return m
 }
 
 type OpenAIService struct {
-	client *openai.Client
+	Client *openai.Client
 }
 
 func NewOpenAIService(config AppConfig) *OpenAIService {
 	c := openai.NewClient(config.OpenAIKey)
 	return &OpenAIService{
-		client: c,
+		Client: c,
 	}
 }
 
@@ -98,7 +95,7 @@ func (s *OpenAIService) sendMessageHandler(w http.ResponseWriter, r *http.Reques
 			{Role: "user", Content: message},
 		},
 	}
-	resp, err := s.client.CreateChatCompletion(r.Context(), req)
+	resp, err := s.Client.CreateChatCompletion(r.Context(), req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -169,11 +166,9 @@ func saveChatState(chatID string, state ChatState) {
 	os.WriteFile(fmt.Sprintf("data/chatgpt/%s.json", chatID), data, 0644)
 }
 
-func (s *OpenAIService) GenerateImage(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Generating image")
+func (s *OpenAIService) GenerateImage(w http.ResponseWriter, r *http.Request) string {
 	r.ParseForm()
 	prompt := r.FormValue("content")
-	fmt.Println("Prompt: ", prompt)
 	req := openai.ImageRequest{
 		Model:          openai.CreateImageModelDallE3,
 		Prompt:         prompt,
@@ -183,10 +178,11 @@ func (s *OpenAIService) GenerateImage(w http.ResponseWriter, r *http.Request) {
 		Style:          openai.CreateImageStyleVivid,
 		ResponseFormat: openai.CreateImageResponseFormatURL,
 	}
-	resp, err := s.client.CreateImage(r.Context(), req)
+	resp, err := s.Client.CreateImage(r.Context(), req)
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "Error generating image", http.StatusInternalServerError)
-		return
+		return ""
 	}
 	imageURL := resp.Data[0].URL
 	fmt.Println(imageURL)
@@ -215,7 +211,9 @@ func (s *OpenAIService) GenerateImage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Error writing image", http.StatusInternalServerError)
 	}
-	image := Img(Attr("style", "max-width: 100%; object-fit: contain;"), Attr("src", "/data/images/"+imageName), Attr("alt", "Uploaded Image"))
 
-	w.Write([]byte(image.Render()))
+	return imageName
+	// image := Img(Attr("style", "max-width: 100%; object-fit: contain;"), Attr("src", "/data/images/"+imageName), Attr("alt", "Uploaded Image"))
+
+	// w.Write([]byte(image.Render()))
 }
