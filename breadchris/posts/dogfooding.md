@@ -1,0 +1,10 @@
+---
+created_at: "2024-01-09T23:34:26Z"
+tags:
+- 100daystooffload
+title: Dogfooding
+---
+
+I think there are some really cool things that you get when you dogfood the thing you are building. For those who are unfamiliar with "dogfood", as it relates to the tech world, it means to use it yourself. I have not had much focus on the projects that I have been working on, and now that I am directly dogfooding the app, which aims to help me increase the frequency and quality of how I write, I am held accountable. If my app sucks, I will not want to use it, I will have to resort to another workflow for writing. If the app is good, then I have achieved my goal. I have tried many different workflows for writing over the years and none of them really quite "get me". I think something like [Substack](https://substack.com/) has come the closest, but it is still not quite there. I want to write completely free of distractions, but when I want to connect my ideas with other people I want it to be effortless. I don't just want to blast people with my ideas, I want to have feedback so that I can improve my writing. And beyond just writing ideas, I want the tool to help me identify prior rabbit holes I have gone down and surface them again when they are relevant. Browsing history is rich with this information, yet it is rarely referred to. Is the information not useful? I don't think so. Someone probably found some helpful resources on "how to program" when they were looking, but they probably opened too many tabs and the window eventually closed, losing their journey.
+
+I want to help people discover just how awesome their minds are. We are all so incredibly interesting, we just need a way to communicate how cool we are with others. It isn't easy to do, being a content creator is a full time job, but I think with some better tooling we can all start to share more of our ideas.

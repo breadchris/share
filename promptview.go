@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	. "github.com/breadchris/share/html"
+	. "github.com/breadchris/share/html2"
 )
 
 type PromptState struct {

@@ -76,12 +76,6 @@ const RunOutput: React.FC<StateProps & {}> = ({ status, monaco, terminal }) => {
 
   return (
     <div className="RunOutput" style={styles}>
-      <div style={{
-        height: "300px",
-        overflowY: "scroll",
-      }}>
-        <TailwindHelpers />
-      </div>
       {/*<div style={{*/}
       {/*  display: 'flex',*/}
       {/*  flexDirection: 'row',*/}

@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	. "github.com/breadchris/share/html"
+	. "github.com/breadchris/share/html2"
 
 	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"

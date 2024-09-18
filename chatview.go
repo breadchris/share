@@ -1,26 +1,27 @@
 package main
 
 import (
-	. "github.com/breadchris/share/html"
+	. "github.com/breadchris/share/html2"
+	"github.com/samber/lo"
 )
 
 type MessageNode struct {
-	ID      string `json:"id"`
-	Author  string `json:"author"`
-	Content string `json:"content"`
-	Type    string `json:"type"`
+	ID	string	`json:"id"`
+	Author	string	`json:"author"`
+	Content	string	`json:"content"`
+	Type	string	`json:"type"`
 }
 
 type FlattenedGraph struct {
-	Node     MessageNode      `json:"node"`
-	Children []FlattenedGraph `json:"children"`
+	Node		MessageNode		`json:"node"`
+	Children	[]FlattenedGraph	`json:"children"`
 }
 
 type chatState struct {
-	Graph     FlattenedGraph `json:"graph"`
-	ParentID  string         `json:"parent_id"`
-	NodesFrom []string       `json:"nodes_from"`
-	NodesTo   []string       `json:"nodes_to"`
+	Graph		FlattenedGraph	`json:"graph"`
+	ParentID	string		`json:"parent_id"`
+	NodesFrom	[]string	`json:"nodes_from"`
+	NodesTo		[]string	`json:"nodes_to"`
 }
 
 func RenderChat(cs chatState) (string, error) {
@@ -30,15 +31,10 @@ func RenderChat(cs chatState) (string, error) {
 		Class("bg-white p-4 rounded-lg shadow-md"),
 		Div(Class("mb-4"),
 			Label(For("content"), Class("block text-sm font-medium text-gray-700"), T("Message")),
-			TextArea(Id("content"), Name("content"), Class("mt-1 p-2 block w-full shadow-sm sm:text-sm border border-gray-300 rounded-md")),
+			TextArea(Id("content"), Name("content"), Class("mt-1 p-6 block w-full shadow-sm sm:text-sm border border-gray-300 rounded-md m-3")),
 		),
 		Input(Type("hidden"), Name("parent_id"), Value(cs.ParentID)),
-		//Div(Class("mb-4"),
-		//	Label(For("parent_id"), Class("block text-sm font-medium text-gray-700"), T("Reply to")),
-		//	Select(Name("parent_id"), Class("mt-1 p-2 block w-full shadow-sm sm:text-sm border border-gray-300 rounded-md"),
-		//		Option(Value(""), T("New Message")),
-		//	).C(RenderParentOptions(cs.Graph)),
-		//),
+
 		Label(For("ai"), Class("block text-sm font-medium text-gray-700"), T("ask AI")),
 		Input(Type("checkbox"), Class("toggle"), Name("ai")),
 		Div(
@@ -47,16 +43,6 @@ func RenderChat(cs chatState) (string, error) {
 		),
 		P(Id("result")),
 	)
-
-	nodesFrom := Div()
-	for _, node := range cs.NodesFrom {
-		nodesFrom = nodesFrom.Ch(A(Href("/chat?id="+node), T(node)))
-	}
-
-	nodesTo := Div()
-	for _, node := range cs.NodesTo {
-		nodesTo = nodesTo.Ch(A(Href("/chat?id="+node), T(node)))
-	}
 
 	head := Head(
 		Meta(Charset("UTF-8")),
@@ -71,7 +57,7 @@ func RenderChat(cs chatState) (string, error) {
 	return Html(
 		Attr("lang", "en"),
 		head,
-		Body(Class("bg-gray-100"),
+		Body(Class("bg-gray-100 vsc-initialized"),
 			Div(Class("container mx-auto p-4"),
 				H1(Class("text-2xl font-bold mb-4"), T("Chat Room")),
 				form,
@@ -87,8 +73,12 @@ func RenderChat(cs chatState) (string, error) {
 						Attr("sse-swap", "chat"),
 						Attr("hx-swap", "afterbegin"),
 					),
-					nodesFrom,
-					//nodesTo,
+					Div(
+						Ch(lo.Map(cs.NodesFrom, func(node string, i int) *Node {
+							return A(Href("/chat?id="+node), T(node))
+						})),
+					),
+
 					RenderGraph(cs.Graph),
 				),
 				Script(T(`
@@ -101,8 +91,8 @@ func RenderChat(cs chatState) (string, error) {
 	).Render(), nil
 }
 
-func RenderParentOptions(graph FlattenedGraph) []RenderNode {
-	var options []RenderNode
+func RenderParentOptions(graph FlattenedGraph) []*Node {
+	var options []*Node
 	for _, msg := range graph.Children {
 		options = append(options, Option(Value(msg.Node.ID), T(msg.Node.Author+": "+msg.Node.Content)))
 	}
@@ -110,13 +100,17 @@ func RenderParentOptions(graph FlattenedGraph) []RenderNode {
 }
 
 func RenderGraph(graph FlattenedGraph) *Node {
-	nodes := []RenderNode{
+	return Div(Class("ml-2"),
 		RenderMsg(graph),
-	}
-	for _, node := range graph.Children {
-		nodes = append(nodes, RenderGraph(node))
-	}
-	return Div(Class("ml-2")).C(nodes)
+		Ch(
+			lo.Map(
+				graph.Children,
+				func(node FlattenedGraph, i int) *Node {
+					return RenderGraph(node)
+				},
+			),
+		),
+	)
 }
 
 func RenderMsg(m FlattenedGraph) *Node {
@@ -139,7 +133,7 @@ func RenderMsg(m FlattenedGraph) *Node {
 		),
 	)
 
-	btn := Button(Class("btn btn-ghost"), Attr("onclick", "my_modal_1.showModal()"), gear)
+	btn := Button(Class("btn btn-ghost p-px"), Attr("onclick", "my_modal_1.showModal()"), gear)
 	modal := Dialog(Id("my_modal_1"), Class("modal"),
 		Div(Class("modal-box"),
 			H3(Class("text-lg font-bold"), T("Hello!")),

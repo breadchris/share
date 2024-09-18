@@ -5,8 +5,8 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"github.com/breadchris/share/graph"
-	"github.com/breadchris/share/html"
+	"github.com/breadchris/share/breadchris"
+	html "github.com/breadchris/share/html2"
 	"github.com/breadchris/share/session"
 	"github.com/gomarkdown/markdown"
 	"github.com/google/uuid"
@@ -17,10 +17,12 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/breadchris/share/zine"
@@ -108,24 +110,27 @@ func startServer(useTLS bool, port int) {
 	p("/chat", c.NewMux())
 
 	//text.Setup(upgrader)
-	go watchPaths()
+	//go watchPaths()
 	go func() {
 		paths := []string{
-			"./graph/graph.tsx",
+			"./breadchris/editor.tsx",
 		}
-		if err := WatchFilesAndFolders(paths, graph.Build); err != nil {
+		if err := WatchFilesAndFolders(paths, breadchris.Build); err != nil {
 			log.Fatalf("Failed to watch files: %v", err)
 		}
 	}()
 
+	m := breadchris.New()
+	p("/breadchris", m)
+
 	http.HandleFunc("/register", a.handleRegister)
 	http.HandleFunc("/login", a.handleLogin)
 	http.HandleFunc("/invite", a.handleInvite)
-	http.HandleFunc("/qr", handleQR)
 	http.HandleFunc("/blog", a.blogHandler)
 	http.HandleFunc("/blog/react", a.reactHandler)
 	http.HandleFunc("/account", a.accountHandler)
 	http.HandleFunc("/files", fileHandler)
+	http.HandleFunc("/modify", modifyHandler)
 
 	http.HandleFunc("/zine/generate-zine-image", z.GenerateZineImage)
 	http.HandleFunc("/zine/create-zine", z.RenderZine)
@@ -164,6 +169,10 @@ func startServer(useTLS bool, port int) {
 func main() {
 	app := &cli.App{
 		Name: "share",
+		Action: func(context *cli.Context) error {
+			startServer(false, 8080)
+			return nil
+		},
 		Commands: []*cli.Command{
 			{
 				Name: "start",
@@ -177,7 +186,6 @@ func main() {
 					},
 				},
 				Action: func(c *cli.Context) error {
-					startServer(c.Bool("tls"), c.Int("port"))
 					return nil
 				},
 			},
@@ -197,6 +205,43 @@ var u = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
+}
+
+type ModifyRequest struct {
+	Class     string `json:"class"`
+	DataGodom string `json:"dataGodom"`
+}
+
+func modifyHandler(w http.ResponseWriter, r *http.Request) {
+	var req ModifyRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	fmt.Printf("Class: %s, DataGodom: %s\n", req.Class, req.DataGodom)
+
+	parts := strings.Split(req.DataGodom, ":")
+	if len(parts) != 2 {
+		slog.Error("invalid data godom", "dataGodom", req.DataGodom)
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	line, err := strconv.Atoi(parts[1])
+	if err != nil {
+		slog.Error("error converting line to int", "err", err)
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	if err = html.ModifyFunction(parts[0], req.Class, line, -1); err != nil {
+		slog.Error("error modifying function", "err", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {

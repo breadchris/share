@@ -1,26 +1,22 @@
 {
-  "manifest_version": 2,
-
-  "name": "TabFS",
-  "description": "Mount your browser tabs as a filesystem",
+  "manifest_version": 3,
+  "name": "DOM Class Watcher",
   "version": "1.0",
-
+  "description": "Watches for changes to class attributes and sends them to localhost:8080/modify.",
   "permissions": [
-    "tabs", "tabCapture", "debugger", "nativeMessaging", "management",
-    "unlimitedStorage",
-    "<all_urls>"
+    "webRequest",
+    "activeTab"
   ],
-
-  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
-
   "background": {
-    "scripts": ["vendor/browser-polyfill.js", "background.js"],
-    "persistent": true
+    "service_worker": "background.js"
   },
-
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "tabfs@rsnous.com"
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
     }
-  }
+  ],
+  "host_permissions": [
+    "http://localhost:8080/*"
+  ]
 }

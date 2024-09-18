@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"os"
 
-	. "github.com/breadchris/share/html"
+	. "github.com/breadchris/share/html2"
 )
 
 type ZineMaker struct {

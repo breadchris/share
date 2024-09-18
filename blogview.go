@@ -1,7 +1,7 @@
 package main
 
 import (
-	. "github.com/breadchris/share/html"
+	. "github.com/breadchris/share/html2"
 )
 
 type EntryUser struct {
@@ -24,9 +24,9 @@ type Entry struct {
 }
 
 func RenderBlog(entries []Entry) string {
-	var en []RenderNode
+	var en []*Node
 	for _, e := range entries {
-		var reacts []RenderNode
+		var reacts []*Node
 		for _, r := range e.Reactions {
 			reacts = append(reacts, Span(Class("mr-2"), T(r.Emoji)))
 		}
@@ -40,7 +40,8 @@ func RenderBlog(entries []Entry) string {
 					Method("POST"),
 					Input(Type("hidden"), Name("id"), Attr("value", e.ID)),
 					Button(Type("submit"), Class("text-blue-500"), T("👍")),
-				).C(reacts),
+					Ch(reacts),
+				),
 				A(Href("/blog?id="+e.ID), Class("text-blue-500"), T("link")),
 			),
 		)
@@ -108,7 +109,9 @@ func RenderBlog(entries []Entry) string {
 							localStorage.setItem('entry', e.target.value);
 						});
 					`)),
-					Div(Class("space-y-4")).C(en),
+					Div(Class("space-y-4"),
+						Ch(en),
+					),
 				),
 			),
 		),

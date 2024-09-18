@@ -1,7 +1,7 @@
 package main
 
 import (
-	. "github.com/breadchris/share/html"
+	. "github.com/breadchris/share/html2"
 	"net/http"
 )
 

@@ -10,18 +10,14 @@ import (
 	"github.com/breadchris/share/session"
 	"github.com/fsnotify/fsnotify"
 	"github.com/google/uuid"
-	"github.com/makiuchi-d/gozxing"
-	"github.com/makiuchi-d/gozxing/qrcode"
 	"github.com/samber/lo"
 	"github.com/traefik/yaegi/interp"
 	"github.com/traefik/yaegi/stdlib"
 	"html/template"
-	"image/png"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing/fstest"
 )
 
@@ -61,21 +57,6 @@ func NewAuth(s *session.SessionManager, e *SMTPEmail, c AppConfig) *Auth {
 		s: s,
 		e: e,
 		c: c,
-	}
-}
-
-func handleQR(w http.ResponseWriter, r *http.Request) {
-	pk := r.URL.Query().Get("data")
-	m, err := qrcode.NewQRCodeWriter().Encode(pk, gozxing.BarcodeFormat_QR_CODE, 256, 256, nil)
-	if err != nil {
-		http.Error(w, "Unable to generate QR code", http.StatusInternalServerError)
-		return
-	}
-
-	err = png.Encode(w, m)
-	if err != nil {
-		http.Error(w, "Unable to encode QR code", http.StatusInternalServerError)
-		return
 	}
 }
 
@@ -147,34 +128,6 @@ func (s *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 		}
 
 		sec := r.FormValue("id")
-
-		if sec == "" {
-			file, _, err := r.FormFile("file")
-			if err != nil {
-				http.Error(w, "Error retrieving the file", http.StatusBadRequest)
-				return
-			}
-			defer file.Close()
-
-			img, err := png.Decode(file)
-			if err != nil {
-				http.Error(w, "Error decoding PNG image", http.StatusBadRequest)
-				return
-			}
-			qrCode, err := gozxing.NewBinaryBitmapFromImage(img)
-			if err != nil {
-				http.Error(w, "Error decoding QR code", http.StatusBadRequest)
-				return
-			}
-
-			qrReader := qrcode.NewQRCodeReader()
-			result, err := qrReader.Decode(qrCode, nil)
-			if err != nil {
-				http.Error(w, "Error reading QR code", http.StatusBadRequest)
-				return
-			}
-			sec = result.String()
-		}
 
 		for _, user := range users {
 			for _, secret := range user.Secrets {
@@ -296,58 +249,6 @@ func (s *Auth) handleAuth(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		http.ServeFile(w, r, "auth.html")
-	case http.MethodPost:
-		err := r.ParseMultipartForm(10 << 20) // 10 MB
-		if err != nil {
-			http.Error(w, "Error parsing form data", http.StatusBadRequest)
-			return
-		}
-
-		file, _, err := r.FormFile("file")
-		if err != nil {
-			http.Error(w, "Error retrieving the file", http.StatusBadRequest)
-			return
-		}
-		defer file.Close()
-
-		img, err := png.Decode(file)
-		if err != nil {
-			http.Error(w, "Error decoding PNG image", http.StatusBadRequest)
-			return
-		}
-		qrCode, err := gozxing.NewBinaryBitmapFromImage(img)
-		if err != nil {
-			http.Error(w, "Error decoding QR code", http.StatusBadRequest)
-			return
-		}
-
-		qrReader := qrcode.NewQRCodeReader()
-		result, err := qrReader.Decode(qrCode, nil)
-		if err != nil {
-			http.Error(w, "Error reading QR code", http.StatusBadRequest)
-			return
-		}
-
-		// remove newlines
-		s := result.String()
-		s = strings.Replace(s, " ", "+", -1)
-		privKeyPEM, err := base64.StdEncoding.DecodeString(s)
-		if err != nil {
-			http.Error(w, "Error decoding base64 content", http.StatusBadRequest)
-			return
-		}
-
-		privateKey, err := x509.ParseECPrivateKey(privKeyPEM)
-		if err != nil {
-			http.Error(w, "Error parsing EC private key", http.StatusBadRequest)
-			return
-		}
-
-		publicKey := &privateKey.PublicKey
-
-		fmt.Fprintf(w, "Private Key: %x\n", privateKey)
-		fmt.Fprintf(w, "Public Key: %x\n", publicKey)
-		return
 	case http.MethodPut:
 		privateKey, _, err := generateKeyPair()
 		if err != nil {
@@ -433,7 +334,7 @@ var (
 )
 
 func watchPaths() {
-	paths := []string{"./html/hacker.go", "./html/html.go"}
+	paths := []string{"./html/html.go"}
 	callback := func(path string) {
 		fmt.Printf("Change detected: %s\n", path)
 		i := interp.New(interp.Options{

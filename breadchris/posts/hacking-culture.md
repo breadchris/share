@@ -1,0 +1,8 @@
+---
+created_at: "2024-01-14T23:34:45Z"
+tags:
+- 100daystooffload
+title: Hacking Culture
+---
+
+I had a call with a friend who was a hacker in the golden days of hacking. There were lots of exciting things happening in security as problems were unearthed, and solutions theorized. Over time, these problems that came up became solved. Buffers got compiler and runtime checks. SQL injection doesn't exist when you use prepared statements. XSS doesn't exist if you use React. The bread and butter of what hackers were poking at slowly shrunk as companies changed their development practices. This isn't to say that security is solved. You could argue that the world is more vulnerable than it has ever been, as a whole, because of the shear amount of technology that exists. The thing that has shifted security has been the "juicy targets" requiring more and more time to hack. Less people are trying to hack banks because there are actually a number of protections that exist. These checks don't stop someone from committing fraud, that is still super easy, but they stop attacks en masse. Commercializing security is antithetical to the core ethos of what it means to be a "hacker". Hackers challenge the status quo. They operate where the interface meets the implementation. They will understand things that no one in their right mind should understand. Driven by purpose and meaning a hacker finds and exposes what is possible. Their "exploits" provoke questions and our lives are changed as a result. I used to think hacking was exclusive to security, but I couldn't be any more wrong. There are so many hackers that exist in different disciplines.

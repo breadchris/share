@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
-	"io"
+	"net/http"
 	"strings"
 )
 
@@ -111,18 +111,28 @@ func RenderHTML() *Node {
 	)
 }
 
+func ServeNode(n *Node) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, err := fmt.Fprint(w, n.Render())
+		if err != nil {
+			http.Error(w, "Error rendering HTML", http.StatusInternalServerError)
+		}
+	}
+}
+
 type Node struct {
 	Name     string
 	Attrs    map[string]string
 	Children []RenderNode
 }
 
-func (s *Node) C(c []RenderNode) *Node {
+func (s *Node) Ch(c []RenderNode) *Node {
 	s.Children = append(s.Children, c...)
 	return s
 }
 
-func (s *Node) Ch(c ...RenderNode) *Node {
+func (s *Node) C(c ...RenderNode) *Node {
 	s.Children = append(s.Children, c...)
 	return s
 }
@@ -270,6 +280,16 @@ func (s *TransformNode) Init(p *Node) {
 
 func (s *TransformNode) Render() string {
 	return ""
+}
+
+func Chl(c ...*Node) *TransformNode {
+	return &TransformNode{
+		transform: func(p *Node) {
+			for _, n := range c {
+				p.Children = append(p.Children, n)
+			}
+		},
+	}
 }
 
 func Class(s string) *TransformNode {
@@ -618,10 +638,6 @@ func Value(s string) *TransformNode {
 var (
 	T = Text
 )
-
-func render(w io.Writer, n *Node) (int, error) {
-	return w.Write([]byte(n.Render()))
-}
 
 func HxPost(s string) *TransformNode {
 	return &TransformNode{

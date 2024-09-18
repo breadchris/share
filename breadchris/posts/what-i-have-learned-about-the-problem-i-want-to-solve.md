@@ -1,0 +1,20 @@
+---
+created_at: "2024-01-10T23:35:36Z"
+tags:
+- 100daystooffload
+title: what i have learned about the problem i want to solve
+---
+
+There are many things that I could be doing. I have spent a lot of time doing cyber security, I have spent a lot of time coding, maybe if I am lucky I could be a baker from all the time I have spent baking. But there is only so much time in the day. There are only so many things that you can get 10,000 hours of mastery over. And even if you have "mastered" it, have you felt good doing it? My attention wanders a lot during the day. "Why did those eggs stick the pan?"; "What if you didn't have to write code in Javascript?"; "Maybe I want to play some guitar now." It is hard to narrow in on what exactly I should do, let alone what I want to do. But, if you treat life like a game, you can start to come up with answers that are more "right" than others.
+
+You are just gamifying your life. Your life goals are just the things in your video game that you are trying to achieve. Setting goals for yourself is quite tricky, especially at a time when there are so many goals that you could be setting. Maybe you want to do what your friend is doing, maybe you want to learn that thing you saw on Instagram, or maybe you will get into yoga this year. You can do a lot of things, but the choice is crippling. I think most people are paralyzed by the options and end up choosing none. There are no perfect life goals to set, they are different for everyone. I like to think of it as people just trying to figure out what their "art" is.
+
+I wanted to get really good at bass because I thought that it would be cool to be good at some form of "art". My life didn't feel satisfying unless I had learned some type of "art". I was jealous of people I saw on Youtube who could lay down crazy bass licks, all the while feeling completely incapable of playing simple songs. But the jealously slowly turned into realization. These people have spent ungodly hours on this instrument to be able to play like that. Even if I had happened to have picked up this instrument when I was they did, what are the odds that I would still be playing today?
+
+You don't just need time to practice, you need energy. You need intrinsic motivation that pushes you through the point where any normal person would stop, and then you continue to break through. To me, someone who practices that is an "artist" and it applies to anything. I think people think I am crazy when I say this but I tell them anyways "a janitor could be into the art of cleaning!" And why not? Maybe they janitor with such passion that it would make an Olympian look like they perform half-heartedly. Maybe the odds are low on that one, but hopefully you see my point. I started to rethink some things I thought about myself.
+
+I though programming was too nerdy. I had spent a lot of my life being "too nerdy" meaning I answered questions in class or spent too long explaining things I was passionate about, I guess. And typical judgement on nerds is that they aren't valuable to be around, maybe their existence is so oppressive that you need to beat them up, who knows. This fear of judgement led me to always distance myself somewhat from coding. It was a means to an end. The job I would do to "become successful" by working 9 to 5 at a job that I will complain about every day, and realize there is no fixing the crippling problems of the company.
+
+So I made programming my art. I decided it was the thing that I would spend an ungodly amount of time thinking about and doing.
+
+I am so far down a rabbit hole, maybe this is somewhat coherent. If not, I am not sorry. It is your fault for reading until here without having stopped reading. Maybe you should have a better hobby than reading SHIT CONTENT. If you are still reading then you are definitely a masochist who HAS to finish what they are reading, no matter how bad this content becomes. I could start writing erotica and you would like it, wouldn't you. Jesus stop reading this. I know how to piss you
