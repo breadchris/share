@@ -183,6 +183,7 @@ func main() {
 					},
 				},
 				Action: func(c *cli.Context) error {
+					startServer(c.Bool("tls"), c.Int("port"))
 					return nil
 				},
 			},
