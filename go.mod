@@ -8,6 +8,7 @@ require (
 	github.com/Jeffail/gabs v1.4.0
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
 	github.com/TheZeroSlave/zapsentry v1.23.0
+	github.com/adrg/frontmatter v0.2.0
 	github.com/amir/raidman v0.0.0-20170415203553-1ccc43bfb9c9
 	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/azure/azure-sdk-for-go v68.0.0+incompatible
