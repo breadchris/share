@@ -6,11 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/breadchris/share/breadchris"
+	"github.com/breadchris/share/graph"
 	html "github.com/breadchris/share/html2"
 	"github.com/breadchris/share/session"
 	"github.com/gomarkdown/markdown"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"github.com/protoflow-labs/protoflow/pkg/util/reload"
 	ignore "github.com/sabhiram/go-gitignore"
 	"github.com/urfave/cli/v2"
 	"html/template"
@@ -118,6 +120,14 @@ func startServer(useTLS bool, port int) {
 			log.Fatalf("Failed to watch files: %v", err)
 		}
 	}()
+	go func() {
+		paths := []string{
+			"./graph/graph.tsx",
+		}
+		if err := WatchFilesAndFolders(paths, graph.Build); err != nil {
+			log.Fatalf("Failed to watch files: %v", err)
+		}
+	}()
 
 	m := breadchris.New()
 	p("/breadchris", m)
@@ -166,7 +176,15 @@ func startServer(useTLS bool, port int) {
 func main() {
 	app := &cli.App{
 		Name: "share",
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name: "debug",
+			},
+		},
 		Action: func(context *cli.Context) error {
+			if context.Bool("debug") {
+				liveReload()
+			}
 			startServer(false, 8080)
 			return nil
 		},
@@ -195,6 +213,15 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func liveReload() error {
+	c := reload.Config{
+		Cmd:      []string{"go", "run", "."},
+		Targets:  []string{"./breadchris", "./chat.go"},
+		Patterns: []string{"**/*.go", "*.go"},
+	}
+	return reload.Reload(c)
 }
 
 var u = websocket.Upgrader{

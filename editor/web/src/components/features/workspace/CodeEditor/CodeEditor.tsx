@@ -137,6 +137,15 @@ class CodeEditor extends React.Component<Props> {
         },
       },
       {
+        id: 'run-code',
+        label: 'Run Code',
+        contextMenuGroupId: 'navigation',
+        run: (ed, ...args) => {
+          const { fileName} = this.props
+          void this.runCode(fileName, ed.getValue());
+        },
+      },
+      {
         id: 'cursor-position',
         label: 'Cursor Position',
         contextMenuGroupId: 'navigation',
@@ -226,6 +235,14 @@ class CodeEditor extends React.Component<Props> {
     this.props.dispatch(dispatchUpdateFile(this.props.fileName, newValue))
     const { fileName, code } = this.props
     void this.debouncedAnalyzeFunc(fileName, code)
+  }
+
+  private async runCode(fileName: string, code: string) {
+    this.analyzer?.runCode(code).then((result) => {
+        console.log('Run result:', result)
+    }).catch((err) => {
+        console.error('Run error:', err)
+    });
   }
 
   private async doAnalyze(fileName: string, code: string) {

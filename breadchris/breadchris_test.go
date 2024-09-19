@@ -1,10 +1,78 @@
 package breadchris
 
 import (
+	"encoding/json"
 	"github.com/traefik/yaegi/interp"
 	"github.com/traefik/yaegi/stdlib"
+	"os"
+	"path/filepath"
 	"testing"
+	"testing/fstest"
 )
+
+func Render(s string) string {
+	var state HomeState
+	if err := json.Unmarshal([]byte(s), &state); err != nil {
+		return "error"
+	}
+	return RenderHome(state).Render()
+}
+
+func TestHome(t *testing.T) {
+	d, err := os.ReadFile("../html2/html.go")
+	if err != nil {
+		println("Error reading file", err)
+		return
+	}
+
+	f, err := os.ReadFile("home.go")
+	if err != nil {
+		println("Error reading file", err)
+		return
+	}
+
+	i := interp.New(interp.Options{
+		GoPath: filepath.FromSlash("./"),
+		SourcecodeFilesystem: fstest.MapFS{
+			"src/breadchris/vendor/github.com/breadchris/share/html2/html.go": &fstest.MapFile{
+				Data: d,
+			},
+		},
+	})
+
+	i.Use(stdlib.Symbols)
+
+	_, err = i.Eval(string(f))
+	if err != nil {
+		t.Fatalf("Eval error: %v", err)
+	}
+
+	v, err := i.Eval("breadchris.Render")
+	if err != nil {
+		t.Fatalf("Eval error: %v", err)
+	}
+
+	s := HomeState{
+		Posts: []Post{
+			{
+				Title: "Hello, World!",
+				Tags:  []string{"blog"},
+			},
+			{
+				Title: "2",
+				Tags:  []string{"blog2"},
+			},
+		},
+	}
+
+	ss, err := json.Marshal(s)
+	if err != nil {
+		t.Fatalf("Marshal error: %v", err)
+	}
+
+	r := v.Interface().(func(string) string)
+	println(r(string(ss)))
+}
 
 func TestHTML(t *testing.T) {
 	i := interp.New(interp.Options{})

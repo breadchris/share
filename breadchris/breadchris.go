@@ -2,7 +2,6 @@ package breadchris
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	. "github.com/breadchris/share/html2"
 	"github.com/gosimple/slug"
@@ -121,10 +120,10 @@ func New() *http.ServeMux {
 			tags := strings.Split(r.FormValue("tags"), ",")
 			content := r.FormValue("content")
 			posts = append(posts, Post{
-				Title:     title,
-				Tags:      tags,
-				CreatedAt: time.Now().Format(time.RFC3339),
-				Content:   content,
+				Title:		title,
+				Tags:		tags,
+				CreatedAt:	time.Now().Format(time.RFC3339),
+				Content:	content,
 			})
 			http.Redirect(w, r, "/breadchris", http.StatusSeeOther)
 			return
@@ -210,40 +209,16 @@ func ArticleView(state Post) *Node {
 }
 
 type Post struct {
-	Slug            string    `yaml:"-"`
-	Title           string    `yaml:"title"`
-	Tags            []string  `yaml:"tags"`
-	CreatedAt       string    `yaml:"created_at"`
-	Content         string    `yaml:"-"`
-	CreatedAtParsed time.Time `yaml:"-"`
+	Slug		string		`yaml:"-"`
+	Title		string		`yaml:"title"`
+	Tags		[]string	`yaml:"tags"`
+	CreatedAt	string		`yaml:"created_at"`
+	Content		string		`yaml:"-"`
+	CreatedAtParsed	time.Time	`yaml:"-"`
 }
 
 type HomeState struct {
 	Posts []Post
-}
-
-func TestRender(s string) string {
-	var state HomeState
-	if err := json.Unmarshal([]byte(s), &state); err != nil {
-		return Div(T("Error: "), T(err.Error())).Render()
-	}
-	return RenderHome(state).Render()
-}
-
-func newArticlePreview(a Post) *Node {
-	return Article(Class("post-entry"),
-		Header(Class("entry-header"),
-			H2(Class("entry-hint-parent"), T(a.Title)),
-		),
-		Div(Class("entry-content"),
-			P(T(a.Content)),
-		),
-		Footer(Class("entry-footer"),
-			Span(Attr("title", a.CreatedAt), T(a.CreatedAtParsed.Format("January 2, 2006"))),
-			Span(T(" · breadchris")),
-		),
-		A(Class("entry-link"), Href(fmt.Sprintf("/breadchris/blog/%s", a.Slug))),
-	)
 }
 
 func RenderHome(state HomeState) *Node {
@@ -344,6 +319,22 @@ func PageLayout(section *Node) *Node {
 				T("↑"),
 			),
 		),
+	)
+}
+
+func newArticlePreview(a Post) *Node {
+	return Article(Class("post-entry m-64"),
+		Header(Class("entry-header"),
+			H2(Class("entry-hint-parent"), T(a.Title)),
+		),
+		Div(Class("entry-content"),
+			P(T(a.Content)),
+		),
+		Footer(Class("entry-footer"),
+			Span(Attr("title", a.CreatedAt), T(a.CreatedAtParsed.Format("January 2, 2006"))),
+			Span(T(" · breadchris")),
+		),
+		A(Class("entry-link m-12"), Href(fmt.Sprintf("/breadchris/blog/%s", a.Slug))),
 	)
 }
 

@@ -1,23 +1,28 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
-    ReactFlow,
-    MiniMap,
-    Controls,
+    addEdge,
     Background,
-    useNodesState,
-    useEdgesState,
-    Node,
+    Controls,
     Handle,
+    MiniMap,
     Position,
-    addEdge, useReactFlow, Connection, ReactFlowProvider,
+    ReactFlow,
+    ReactFlowProvider,
+    useEdgesState,
+    useNodesState,
+    useReactFlow,
 } from '@xyflow/react';
-import { ReactReader } from 'react-reader'
-import type { Contents, Rendition } from 'epubjs'
+import {ReactReader} from 'react-reader'
+import type {Contents, Rendition} from 'epubjs'
 import ReactPlayer from 'react-player/youtube'
+import {ScrollMode, Viewer, Worker} from '@react-pdf-viewer/core';
+import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
 
 import '@xyflow/react/dist/style.css';
-import {useNodesStateSynced} from "./useNodesStateSynced";
-import {useEdgesStateSynced} from "./useEdgesStateSynced";
+import '@react-pdf-viewer/core/lib/styles/index.css';
+import '@react-pdf-viewer/default-layout/lib/styles/index.css';
+
+import {createRoot} from 'react-dom/client';
 
 const initialNodes = [
     { id: '1', position: { x: 0, y: 0 }, data: { label: '1' } },
@@ -28,12 +33,18 @@ const initialNodes = [
         position: { x: 100, y: 100 },
         data: { value: 123 },
     },
-    // {
-    //     id: '4',
-    //     type: 'epub',
-    //     position: { x: 100, y: 600 },
-    //     data: { value: 123 },
-    // },
+    {
+        id: '4',
+        type: 'epub',
+        position: { x: 100, y: 600 },
+        data: { value: 123 },
+    },
+    {
+        id: '5',
+        type: 'pdf',
+        position: { x: 400, y: 100 },
+        data: { value: 123 },
+    },
     // {
     //     id: '5',
     //     type: 'youtube',
@@ -128,10 +139,30 @@ function YoutubeNode(data) {
     );
 }
 
+// https://react-pdf-viewer.dev/docs/options/
+function PDFNode({ data }) {
+    const defaultLayoutPluginInstance = defaultLayoutPlugin();
+    return (
+        <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js">
+            <div
+                style={{
+                    border: '1px solid rgba(0, 0, 0, 0.3)',
+                    height: '400px',
+                    width: '300px',
+                }}
+            >
+                <Viewer plugins={[defaultLayoutPluginInstance]} scrollMode={ScrollMode.Page} fileUrl="/books/Hypermedia Systems.pdf" />
+            </div>
+        </Worker>
+    )
+}
+
+
 function EpubNode({ data }) {
     const onChange = useCallback((evt) => {
         console.log(evt.target.value);
     }, []);
+
 
     return (
         <>
@@ -225,6 +256,7 @@ export default function App() {
                 nodeTypes={{
                     textUpdater: TextUpdaterNode,
                     epub: EpubNode,
+                    pdf: PDFNode,
                     youtube: YoutubeNode,
                 }}
             >
@@ -317,7 +349,6 @@ export const EpubReader: React.FC<{url: string}> = ({url}) => {
     )
 }
 
-import {createRoot} from 'react-dom/client';
 const root = createRoot(document.getElementById('graph'));
 root.render((
     <ReactFlowProvider>

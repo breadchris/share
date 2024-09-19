@@ -37,21 +37,22 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/libp2p/go-libp2p v0.36.2
 	github.com/libp2p/go-libp2p-pubsub v0.12.0
-	github.com/makiuchi-d/gozxing v0.1.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/multiformats/go-multiaddr v0.13.0
 	github.com/nlnwa/gowarc v1.6.0
 	github.com/pkg/errors v0.9.1
+	github.com/protoflow-labs/protoflow v0.0.0-20240311165601-da789b0b04e2
 	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/samber/lo v1.46.0
 	github.com/sashabaranov/go-openai v1.26.3
-	github.com/spf13/cobra v0.0.5
+	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0
 	github.com/tevino/abool v1.2.0
 	github.com/traefik/yaegi v0.16.1
 	github.com/urfave/cli/v2 v2.27.4
+	github.com/wasmerio/wasmer-go v1.0.4
 	github.com/x1unix/foundation v1.0.0
 	github.com/yuin/goldmark v1.7.1
 	github.com/zmb3/spotify/v2 v2.4.2
@@ -97,6 +98,7 @@ require (
 	github.com/blevesearch/zap/v13 v13.0.6 // indirect
 	github.com/blevesearch/zap/v14 v14.0.5 // indirect
 	github.com/blevesearch/zap/v15 v15.0.3 // indirect
+	github.com/bmatcuk/doublestar v1.3.4 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chromedp/cdproto v0.0.0-20240801214329-3f85d328b335 // indirect
@@ -142,7 +144,7 @@ require (
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/huin/goupnp v1.3.0 // indirect
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/ipfs/bbloom v0.0.4 // indirect
 	github.com/ipfs/boxo v0.22.0 // indirect
 	github.com/ipfs/go-bitfield v1.1.0 // indirect
@@ -181,6 +183,7 @@ require (
 	github.com/libp2p/go-yamux/v4 v4.0.1 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/marten-seemann/tcp v0.0.0-20210406111302-dfbc87cc63fd // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/miekg/dns v1.1.62 // indirect
@@ -234,6 +237,7 @@ require (
 	github.com/quic-go/webtransport-go v0.8.0 // indirect
 	github.com/raulk/go-watchdog v1.3.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/rs/zerolog v1.30.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/steveyen/gtreap v0.1.0 // indirect
 	github.com/whyrusleeping/chunker v0.0.0-20181014151217-fe64bd25879f // indirect

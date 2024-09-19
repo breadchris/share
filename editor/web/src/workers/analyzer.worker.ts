@@ -5,8 +5,9 @@ import { getWasmUrl } from '~/services/api/resources'
 declare const self: DedicatedWorkerGlobalScope
 
 const FN_EXIT = 'exit'
-const TYPE_ANALYZE = 'ANALYZE'
-const TYPE_EXIT = 'EXIT'
+export const TYPE_ANALYZE = 'ANALYZE'
+export const TYPE_RUN = 'RUN'
+export const TYPE_EXIT = 'EXIT'
 
 function wrapModule(mod) {
   const wrapped = {
@@ -50,6 +51,16 @@ function onModuleInit(module) {
   onmessage = (msg) => {
     const { id, type, data } = msg.data
     switch (type) {
+      case TYPE_RUN:
+        module
+            .runCode(data)
+            .then((result) => {
+              postMessage({ id, type, result })
+            })
+            .catch((error) => {
+              postMessage({ id, type, error })
+            })
+        break
       case TYPE_ANALYZE:
         module
           .analyzeCode(data)

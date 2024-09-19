@@ -1,9 +1,11 @@
 import { v4 as uuid } from 'uuid'
 import type * as monaco from 'monaco-editor'
+import {TYPE_ANALYZE, TYPE_EXIT, TYPE_RUN} from "~/workers/analyzer.worker.ts";
 
 enum MessageType {
-  Exit = 'EXIT',
-  Analyze = 'ANALYZE',
+  Exit = TYPE_EXIT,
+  Analyze = TYPE_ANALYZE,
+  Run = TYPE_RUN,
 }
 
 interface PromiseSubscription<T> {
@@ -29,6 +31,11 @@ export interface AnalyzeResult {
   markers: monaco.editor.IMarkerData[]
 }
 
+export interface RunResult {
+    output: string
+    error: string
+}
+
 export class Analyzer {
   private terminated = false
   private readonly worker: Worker
@@ -45,6 +52,10 @@ export class Analyzer {
 
   async analyzeCode(code: string) {
     return await this.request<string, AnalyzeResult>(MessageType.Analyze, code)
+  }
+
+  async runCode(code: string) {
+    return await this.request<string, RunResult>(MessageType.Run, code)
   }
 
   async getMarkers(code: string) {

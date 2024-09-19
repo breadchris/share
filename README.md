@@ -3,6 +3,11 @@ you know what makes me annoyed. when I can't share something easily. i am going 
 
 ## hack
 
+### build wasm
+```bash
+GOOS=js GOARCH=wasm go build -buildvcs=false -ldflags "-s -w" -o editor/web/public/wasm/analyzer@v1.wasm ./editor/cmd/wasm/analyzer
+```
+
 run the code yourself.
 
 ```bash
