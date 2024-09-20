@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func parseHTML(n *html.Node) *Node {
+func ParseHTML(n *html.Node) *Node {
 	if n.Type == html.ElementNode {
 		goNode := NewNode(n.Data, nil) // Handle other tags generically
 
@@ -14,7 +14,7 @@ func parseHTML(n *html.Node) *Node {
 		}
 
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			childNode := parseHTML(c)
+			childNode := ParseHTML(c)
 			if childNode != nil {
 				goNode.C(childNode)
 			}
@@ -57,5 +57,5 @@ func ParseHTMLString(htmlStr string) (*Node, error) {
 	}
 
 	// Convert the HTML nodes to the Go library format
-	return parseHTML(body), nil
+	return ParseHTML(body), nil
 }

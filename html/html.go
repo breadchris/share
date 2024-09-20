@@ -163,7 +163,37 @@ func (s *Node) Render() string {
 	return fmt.Sprintf("<%s %s>%s</%s>", s.Name, a, c, s.Name)
 }
 
-func (n *Node) RenderGoCode(fset *token.FileSet) ast.Stmt {
+// RenderGoFunction renders a Go function for the node in the form: func Render{NodeName}() *Node { ... }
+// the body should contain one return statement with the node and its children
+/*
+func Render{NodeName}() *Node {
+	return Div(
+		Class("mb-4"),
+		Label(For("ingredients"), T("Ingredients")),
+	)
+}
+*/
+func (n *Node) RenderGoFunction(fset *token.FileSet, name string) ast.Decl {
+	return &ast.FuncDecl{
+		Name: ast.NewIdent(fmt.Sprintf("Render%s", strings.Title(name))),
+		Type: &ast.FuncType{
+			Results: &ast.FieldList{
+				List: []*ast.Field{
+					{Type: &ast.StarExpr{X: &ast.Ident{Name: "Node"}}},
+				},
+			},
+		},
+		Body: &ast.BlockStmt{
+			List: []ast.Stmt{
+				&ast.ReturnStmt{
+					Results: []ast.Expr{n.RenderGoCall(fset)},
+				},
+			},
+		},
+	}
+}
+
+func (n *Node) RenderGoCall(fset *token.FileSet) *ast.CallExpr {
 	call := &ast.CallExpr{
 		Fun:  ast.NewIdent(strings.Title(n.Name)), // Capitalize to match Go function names like Div(), Ul()
 		Args: []ast.Expr{},
@@ -185,7 +215,11 @@ func (n *Node) RenderGoCode(fset *token.FileSet) ast.Stmt {
 		childAST := child.RenderGoCode(fset)
 		call.Args = append(call.Args, childAST.(*ast.ExprStmt).X)
 	}
-	return &ast.ExprStmt{X: call}
+	return call
+}
+
+func (n *Node) RenderGoCode(fset *token.FileSet) ast.Stmt {
+	return &ast.ExprStmt{X: n.RenderGoCall(fset)}
 }
 
 type TextNode struct {

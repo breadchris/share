@@ -120,10 +120,10 @@ func New() *http.ServeMux {
 			tags := strings.Split(r.FormValue("tags"), ",")
 			content := r.FormValue("content")
 			posts = append(posts, Post{
-				Title:		title,
-				Tags:		tags,
-				CreatedAt:	time.Now().Format(time.RFC3339),
-				Content:	content,
+				Title:     title,
+				Tags:      tags,
+				CreatedAt: time.Now().Format(time.RFC3339),
+				Content:   content,
 			})
 			http.Redirect(w, r, "/breadchris", http.StatusSeeOther)
 			return
@@ -209,12 +209,12 @@ func ArticleView(state Post) *Node {
 }
 
 type Post struct {
-	Slug		string		`yaml:"-"`
-	Title		string		`yaml:"title"`
-	Tags		[]string	`yaml:"tags"`
-	CreatedAt	string		`yaml:"created_at"`
-	Content		string		`yaml:"-"`
-	CreatedAtParsed	time.Time	`yaml:"-"`
+	Slug            string    `yaml:"-"`
+	Title           string    `yaml:"title"`
+	Tags            []string  `yaml:"tags"`
+	CreatedAt       string    `yaml:"created_at"`
+	Content         string    `yaml:"-"`
+	CreatedAtParsed time.Time `yaml:"-"`
 }
 
 type HomeState struct {

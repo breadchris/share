@@ -19,4 +19,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 .catch((error) => console.error('Error:', error));
         })();
     }
+    if (message.action === 'sendElement') {
+        const { element, name } = message;
+
+        // Send the data to the server
+        fetch('http://localhost:8080/extension', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ element, name })
+        })
+            .then(response => {
+                if (response.ok) {
+                    console.log('Element sent successfully!');
+                } else {
+                    console.error('Failed to send element.');
+                }
+            })
+            .catch(error => {
+                console.error('Error while sending element:', error);
+            });
+    }
 });

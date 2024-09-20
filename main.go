@@ -1,13 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"github.com/breadchris/share/breadchris"
 	"github.com/breadchris/share/graph"
-	html "github.com/breadchris/share/html2"
+	"github.com/breadchris/share/html"
+	"github.com/breadchris/share/html2"
 	"github.com/breadchris/share/session"
 	"github.com/gomarkdown/markdown"
 	"github.com/google/uuid"
@@ -15,6 +17,9 @@ import (
 	"github.com/protoflow-labs/protoflow/pkg/util/reload"
 	ignore "github.com/sabhiram/go-gitignore"
 	"github.com/urfave/cli/v2"
+	"go/format"
+	"go/printer"
+	"go/token"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -22,6 +27,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -142,6 +148,9 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/account", a.accountHandler)
 	http.HandleFunc("/files", fileHandler)
 	http.HandleFunc("/modify", modifyHandler)
+	http.HandleFunc("/extension", extensionHandler)
+
+	http.HandleFunc("/components", html2.ServeNode(RenderComponents()))
 
 	http.HandleFunc("/code", a.handleCode)
 	http.HandleFunc("/", fileServerHandler)
@@ -232,6 +241,82 @@ var u = websocket.Upgrader{
 	},
 }
 
+type ExtensionRequest struct {
+	Name    string `json:"name"`
+	Element string `json:"element"`
+}
+
+func extensionHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, fmt.Sprintf("Method %s not allowed", r.Method), http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req ExtensionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to decode request: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	if req.Element == "" {
+		http.Error(w, "Element is required", http.StatusBadRequest)
+		return
+	}
+
+	n, err := html.ParseHTMLString(req.Element)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to parse element: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	var buf bytes.Buffer
+
+	fset := token.NewFileSet()
+
+	// TODO breadchris https://github.com/segmentio/golines
+	cfg := &printer.Config{
+		Mode:     printer.TabIndent,
+		Tabwidth: 4,
+	}
+
+	err = cfg.Fprint(&buf, fset, n.RenderGoFunction(fset, req.Name))
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to format code: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	formattedCode, err := format.Source(buf.Bytes())
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to format code: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	f, err := os.OpenFile("scratch.go", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to open scratch.go: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	if _, err = f.Write([]byte("\n" + string(formattedCode))); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to write to scratch.go: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	if _, err := exec.LookPath("golines"); err != nil {
+		println("golines is not installed")
+		http.Error(w, fmt.Sprintf("golines is not installed: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	cmd := exec.Command("golines", "-w", "scratch.go")
+	if err := cmd.Run(); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to run golines: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
 type ModifyRequest struct {
 	Class     string `json:"class"`
 	DataGodom string `json:"dataGodom"`
@@ -260,7 +345,7 @@ func modifyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = html.ModifyFunction(parts[0], req.Class, line, -1); err != nil {
+	if err = html2.ModifyFunction(parts[0], req.Class, line, -1); err != nil {
 		slog.Error("error modifying function", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -269,10 +354,19 @@ func modifyHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func convertMovToMp4(inputFile, outputFile string) error {
+	cmd := exec.Command("ffmpeg", "-i", inputFile, "-c:v", "libx264", "-c:a", "aac", outputFile)
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to convert video: %w", err)
+	}
+	return nil
+}
+
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		w.Write([]byte(html.Upload().Render()))
+		w.Write([]byte(html2.Upload().Render()))
 		return
 	case "POST":
 		f, h, err := r.FormFile("file")
@@ -293,6 +387,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		ext := filepath.Ext(h.Filename)
+
 		name := "data/uploads/" + uuid.NewString() + ext
 		o, err := os.Create(name)
 		if err != nil {
@@ -306,7 +401,21 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		w.Write([]byte(name))
+		if ext == ".mov" {
+			outputFile := "data/uploads/" + uuid.NewString() + ".mp4"
+			if err := convertMovToMp4(name, outputFile); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if err = os.Remove(name); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			http.Redirect(w, r, outputFile, http.StatusSeeOther)
+			return
+		}
+		http.Redirect(w, r, name, http.StatusSeeOther)
 		return
 	}
 	w.Write([]byte("invalid method"))
@@ -499,7 +608,7 @@ func fileServerHandler(w http.ResponseWriter, r *http.Request) {
 	for p, f := range pathLookup {
 		if r.URL.Path == p {
 			if p == "/" {
-				w.Write([]byte(html.Index()))
+				w.Write([]byte(html2.Index()))
 				return
 			}
 			i, err := runCode(f.Path)

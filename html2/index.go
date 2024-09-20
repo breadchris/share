@@ -21,9 +21,9 @@ func Navbar() *Node {
 
 func Index() string {
 	bodyContent := Div(Class("container mx-auto text-center mt-16"),
-		H1(Class("text-4xl font-bold mb-4"), T("Welcome to justshare")),
+		H1(Class("text-xl font-bold mb-4"), T("Welcome to justshare")),
 		P(Class("text-lg text-gray-700 mb-8"), T("it is a site i guess")),
-		Div(Class("flex justify-center space-x-4"),
+		Div(Class("flex justify-center space-x-4 m-1.5 p-7"),
 			A(Href("/data/recipes/"), Class("bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"), T("Recipes")),
 			A(Href("/login"), Class("bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"), T("Login")),
 			A(Href("/register"), Class("bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded"), T("Register")),
