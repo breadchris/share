@@ -2,11 +2,11 @@ package gowasm
 
 import (
 	"fmt"
+	"github.com/breadchris/share/editor/pkg/util/syncx"
 	"sync"
 	"syscall"
 
-	"github.com/breadchris/share/editor/internal/gowasm/wlog"
-	"github.com/breadchris/share/editor/internal/util/syncx"
+	"github.com/breadchris/share/editor/gowasm/wlog"
 )
 
 var (

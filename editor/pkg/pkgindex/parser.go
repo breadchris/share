@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/breadchris/share/editor/internal/analyzer"
+	"github.com/breadchris/share/editor/pkg/analyzer"
 	"github.com/breadchris/share/editor/pkg/monaco"
 )
 

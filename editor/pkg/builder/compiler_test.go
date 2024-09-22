@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"testing"
 
-	"github.com/breadchris/share/editor/internal/builder/storage"
+	"github.com/breadchris/share/editor/pkg/builder/storage"
 	"github.com/breadchris/share/editor/pkg/testutil"
 	"github.com/breadchris/share/editor/pkg/util/osutil"
 	"github.com/stretchr/testify/require"

@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/breadchris/share/breadchris"
+	"github.com/breadchris/share/editor/cmd/playground"
+	"github.com/breadchris/share/editor/pkg"
 	"github.com/breadchris/share/html"
 	"github.com/breadchris/share/html2"
 	"github.com/breadchris/share/session"
@@ -66,17 +68,17 @@ type ZineConfig struct {
 }
 
 func LoadConfig() AppConfig {
-	// load the app config
+	// load the app dbconfig
 	var appConfig AppConfig
-	configFile, err := os.Open("data/config.json")
+	configFile, err := os.Open("data/dbconfig.json")
 	if err != nil {
-		log.Fatalf("Failed to open config file: %v", err)
+		log.Fatalf("Failed to open dbconfig file: %v", err)
 	}
 	defer configFile.Close()
 
 	err = json.NewDecoder(configFile).Decode(&appConfig)
 	if err != nil {
-		log.Fatalf("Failed to decode config file: %v", err)
+		log.Fatalf("Failed to decode dbconfig file: %v", err)
 	}
 	return appConfig
 }
@@ -269,6 +271,16 @@ func main() {
 				},
 				Action: func(c *cli.Context) error {
 					startServer(c.Bool("tls"), c.Int("port"))
+					return nil
+				},
+			},
+			{
+				Name: "editor",
+				Action: func(c *cli.Context) error {
+					cfg := pkg.DefaultConfig()
+					cfg.Build.PackagesFile = "./editor/packages.json"
+					cfg.HTTP.Addr = "localhost:8000"
+					playground.StartEditor(cfg)
 					return nil
 				},
 			},

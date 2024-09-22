@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/breadchris/share/editor/internal/analyzer"
+	"github.com/breadchris/share/editor/pkg/analyzer"
 	"github.com/breadchris/share/editor/pkg/goplay"
 )
 

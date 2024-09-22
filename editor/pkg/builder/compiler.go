@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/breadchris/share/editor/internal/builder/storage"
+	"github.com/breadchris/share/editor/pkg/builder/storage"
 	"github.com/breadchris/share/editor/pkg/util/osutil"
 	"go.uber.org/zap"
 )

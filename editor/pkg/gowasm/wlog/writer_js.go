@@ -13,7 +13,7 @@ var (
 	StdDebug io.Writer = newLogWriter(logLevelDebug)
 )
 
-//go:wasmimport gojs github.com/breadchris/share/editor/internal/gowasm/wlog.logWrite
+//go:wasmimport gojs github.com/breadchris/share/editor/gowasm/wlog.logWrite
 func logWrite(level uint8, data []byte)
 
 const (

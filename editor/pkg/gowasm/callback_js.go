@@ -3,13 +3,13 @@ package gowasm
 import (
 	"syscall/js"
 
-	"github.com/breadchris/share/editor/internal/gowasm/wlog"
+	"github.com/breadchris/share/editor/gowasm/wlog"
 )
 
 // registerCallbackHandler registers a global callback
 // to receive capture async operations from JavaScript side.
 //
-//go:wasmimport gojs github.com/breadchris/share/editor/internal/gowasm.registerCallbackHandler
+//go:wasmimport gojs github.com/breadchris/share/editor/gowasm.registerCallbackHandler
 func registerCallbackHandler(fn js.Func)
 
 var callbackHandler = js.FuncOf(func(_ js.Value, args []js.Value) any {

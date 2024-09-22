@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"syscall/js"
 
-	"github.com/breadchris/share/editor/internal/gowasm/wlog"
+	"github.com/breadchris/share/editor/gowasm/wlog"
 	"github.com/samber/lo"
 )
 

@@ -37,7 +37,7 @@ var (
 	listen, _ = multiaddr.NewMultiaddr("/ip4/0.0.0.0/tcp/33123")
 	topicName = "globaldb-example"
 	netTopic  = "globaldb-example-net"
-	config    = "globaldb-example"
+	dbconfig  = "globaldb-example"
 )
 
 func setupCRDT() {
@@ -53,7 +53,7 @@ func setupCRDT() {
 	if err != nil {
 		logger.Fatal(err)
 	}
-	data := filepath.Join(dir, config)
+	data := filepath.Join(dir, dbconfig)
 
 	store, err := badger.NewDatastore(data, &badger.DefaultOptions)
 	if err != nil {

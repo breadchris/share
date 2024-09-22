@@ -6,7 +6,7 @@ package main
 import (
 	"syscall/js"
 
-	"github.com/breadchris/share/editor/internal/analyzer/check"
+	"github.com/breadchris/share/editor/pkg/analyzer/check"
 	"github.com/breadchris/share/editor/pkg/worker"
 	"github.com/traefik/yaegi/interp"
 	"github.com/traefik/yaegi/stdlib"

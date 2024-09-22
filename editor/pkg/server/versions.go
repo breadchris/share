@@ -5,13 +5,13 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"github.com/breadchris/share/editor/pkg/util/syncx"
 	"golang.org/x/sync/errgroup"
 	"runtime"
 	"strings"
 	"time"
 
 	"github.com/avast/retry-go"
-	"github.com/breadchris/share/editor/internal/util/syncx"
 	"github.com/breadchris/share/editor/pkg/goplay"
 	"go.uber.org/zap"
 )

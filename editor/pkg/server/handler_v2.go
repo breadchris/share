@@ -24,7 +24,7 @@ import (
 
 	"golang.org/x/time/rate"
 
-	"github.com/breadchris/share/editor/internal/builder"
+	"github.com/breadchris/share/editor/pkg/builder"
 	"github.com/breadchris/share/editor/pkg/goplay"
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"

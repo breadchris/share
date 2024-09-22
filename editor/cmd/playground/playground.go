@@ -1,21 +1,21 @@
-package main
+package playground
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/breadchris/share/editor/pkg"
 	"net/http"
 	"path/filepath"
 	"sync"
 	"time"
 
-	"github.com/breadchris/share/editor/internal/analyzer"
-	"github.com/breadchris/share/editor/internal/builder"
-	"github.com/breadchris/share/editor/internal/builder/storage"
-	"github.com/breadchris/share/editor/internal/config"
-	"github.com/breadchris/share/editor/internal/server"
-	"github.com/breadchris/share/editor/internal/server/webutil"
+	"github.com/breadchris/share/editor/pkg/analyzer"
+	"github.com/breadchris/share/editor/pkg/builder"
+	"github.com/breadchris/share/editor/pkg/builder/storage"
 	"github.com/breadchris/share/editor/pkg/goplay"
+	"github.com/breadchris/share/editor/pkg/server"
+	"github.com/breadchris/share/editor/pkg/server/webutil"
 	"github.com/breadchris/share/editor/pkg/util/cmdutil"
 	"github.com/breadchris/share/editor/pkg/util/osutil"
 	"github.com/gorilla/mux"
@@ -26,12 +26,7 @@ import (
 // Version is server version symbol. Should be replaced by linker during build
 var Version = "testing"
 
-func main() {
-	cfg, err := config.FromEnv(config.FromFlags())
-	if err != nil {
-		cmdutil.FatalOnError(err)
-	}
-
+func StartEditor(cfg *pkg.Config) {
 	logger, err := cfg.Log.ZapLogger()
 	if err != nil {
 		cmdutil.FatalOnError(err)
@@ -54,7 +49,7 @@ func main() {
 	}
 }
 
-func start(goRoot string, logger *zap.Logger, cfg *config.Config) error {
+func start(goRoot string, logger *zap.Logger, cfg *pkg.Config) error {
 	logger.Info("Starting service",
 		zap.String("version", Version), zap.Any("config", cfg))
 

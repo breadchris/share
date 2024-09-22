@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/breadchris/share/editor/internal/analyzer"
-	"github.com/breadchris/share/editor/internal/builder"
-	"github.com/breadchris/share/editor/internal/builder/storage"
+	"github.com/breadchris/share/editor/pkg/analyzer"
+	"github.com/breadchris/share/editor/pkg/builder"
+	"github.com/breadchris/share/editor/pkg/builder/storage"
 	"github.com/breadchris/share/editor/pkg/goplay"
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
