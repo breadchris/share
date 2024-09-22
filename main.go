@@ -7,15 +7,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/breadchris/share/breadchris"
-	"github.com/breadchris/share/graph"
 	"github.com/breadchris/share/html"
 	"github.com/breadchris/share/html2"
 	"github.com/breadchris/share/session"
+	"github.com/breadchris/share/symbol"
 	"github.com/gomarkdown/markdown"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/protoflow-labs/protoflow/pkg/util/reload"
 	ignore "github.com/sabhiram/go-gitignore"
+	"github.com/traefik/yaegi/interp"
+	"github.com/traefik/yaegi/stdlib"
 	"github.com/urfave/cli/v2"
 	"go/format"
 	"go/printer"
@@ -30,6 +32,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -118,39 +121,94 @@ func startServer(useTLS bool, port int) {
 
 	//text.Setup(upgrader)
 	//go watchPaths()
-	go func() {
-		paths := []string{
-			"./breadchris/editor.tsx",
-		}
-		if err := WatchFilesAndFolders(paths, breadchris.Build); err != nil {
-			log.Fatalf("Failed to watch files: %v", err)
-		}
-	}()
-	go func() {
-		paths := []string{
-			"./graph/graph.tsx",
-		}
-		if err := WatchFilesAndFolders(paths, graph.Build); err != nil {
-			log.Fatalf("Failed to watch files: %v", err)
-		}
-	}()
+	//go func() {
+	//	paths := []string{
+	//		"./breadchris/editor.tsx",
+	//	}
+	//	if err := WatchFilesAndFolders(paths, breadchris.Build); err != nil {
+	//		log.Fatalf("Failed to watch files: %v", err)
+	//	}
+	//}()
+	//go func() {
+	//	paths := []string{
+	//		"./graph/graph.tsx",
+	//	}
+	//	if err := WatchFilesAndFolders(paths, graph.Build); err != nil {
+	//		log.Fatalf("Failed to watch files: %v", err)
+	//	}
+	//}()
 
 	m := breadchris.New()
 	p("/breadchris", m)
 
+	mx := setupReload("./scratch.go")
+	p("/reload", mx)
+
 	z.SetupZineRoutes()
+
+	db, err := html2.NewDBAny("data/testdb/")
+	if err != nil {
+		log.Fatalf("Failed to create db: %v", err)
+	}
+
+	getScriptFunc := func(path, name string) (reflect.Value, error) {
+		i := interp.New(interp.Options{
+			GoPath: "/dev/null",
+		})
+
+		i.Use(stdlib.Symbols)
+		i.Use(symbol.Symbols)
+
+		if _, err := i.EvalPath(path); err != nil {
+			return reflect.Value{}, err
+		}
+
+		v, err := i.Eval(name)
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		return v, nil
+	}
+
+	http.HandleFunc("/scratch", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "POST" {
+			db.Set(uuid.NewString(), map[string]any{
+				"ID":    0,
+				"Value": r.FormValue("value"),
+			})
+
+			v, err := getScriptFunc("./scratch.go", "main.RenderList")
+			if err != nil {
+				http.Error(w, "Failed to get script func", http.StatusInternalServerError)
+				return
+			}
+			rf := v.Interface().(func(db *html2.DBAny) *html2.Node)
+			n := rf(db)
+			n.RenderPage(w, r)
+			return
+		}
+
+		v, err := getScriptFunc("./scratch.go", "main.RenderComponents")
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to get script func: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		rf := v.Interface().(func(db *html2.DBAny) *html2.Node)
+		n := rf(db)
+		n.RenderPage(w, r)
+	})
 
 	http.HandleFunc("/register", a.handleRegister)
 	http.HandleFunc("/login", a.handleLogin)
 	http.HandleFunc("/invite", a.handleInvite)
 	http.HandleFunc("/blog", a.blogHandler)
+	http.HandleFunc("/blog/editor", a.blogHandlerEditor)
 	http.HandleFunc("/blog/react", a.reactHandler)
 	http.HandleFunc("/account", a.accountHandler)
 	http.HandleFunc("/files", fileHandler)
 	http.HandleFunc("/modify", modifyHandler)
 	http.HandleFunc("/extension", extensionHandler)
-
-	http.HandleFunc("/components", html2.ServeNode(RenderComponents()))
 
 	http.HandleFunc("/code", a.handleCode)
 	http.HandleFunc("/", fileServerHandler)

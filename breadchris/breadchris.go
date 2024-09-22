@@ -2,6 +2,7 @@ package breadchris
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	. "github.com/breadchris/share/html2"
 	"github.com/gosimple/slug"
@@ -19,10 +20,11 @@ import (
 	"time"
 )
 
-func New() *http.ServeMux {
-	mux := http.NewServeMux()
+var posts []Post
 
-	posts, err := loadPostsFromDir("breadchris/posts")
+func init() {
+	var err error
+	posts, err = loadPostsFromDir("breadchris/posts")
 	if err != nil {
 		log.Fatalf("Error loading posts: %v", err)
 	}
@@ -33,6 +35,7 @@ func New() *http.ServeMux {
 			log.Fatalf("Error parsing time: %v", err)
 		}
 	}
+
 	slices.SortFunc(posts, func(i, j Post) int {
 		if i.CreatedAtParsed.Before(j.CreatedAtParsed) {
 			return 1
@@ -40,6 +43,24 @@ func New() *http.ServeMux {
 			return -1
 		}
 	})
+}
+
+func Home(w http.ResponseWriter, r *http.Request) {
+	var newPosts []Post
+	for _, post := range posts {
+		for _, tag := range post.Tags {
+			if strings.HasPrefix(tag, "blog") {
+				newPosts = append(newPosts, post)
+			}
+		}
+	}
+	ServeNode(RenderHome(HomeState{
+		Posts: newPosts,
+	}))(w, r)
+}
+
+func New() *http.ServeMux {
+	mux := http.NewServeMux()
 
 	for _, post := range posts {
 		if lo.Contains(post.Tags, "page") {
@@ -94,7 +115,7 @@ func New() *http.ServeMux {
 		}
 		ServeNode(PageLayout(
 			Div(
-				H1(Class("my-6"), T(t)),
+				H1(Class("my-6 text-4xl"), T(t)),
 				Ch(lo.Map(p, func(post Post, i int) *Node {
 					return newArticlePreview(post)
 				})),
@@ -120,10 +141,10 @@ func New() *http.ServeMux {
 			tags := strings.Split(r.FormValue("tags"), ",")
 			content := r.FormValue("content")
 			posts = append(posts, Post{
-				Title:     title,
-				Tags:      tags,
-				CreatedAt: time.Now().Format(time.RFC3339),
-				Content:   content,
+				Title:		title,
+				Tags:		tags,
+				CreatedAt:	time.Now().Format(time.RFC3339),
+				Content:	content,
 			})
 			http.Redirect(w, r, "/breadchris", http.StatusSeeOther)
 			return
@@ -209,16 +230,24 @@ func ArticleView(state Post) *Node {
 }
 
 type Post struct {
-	Slug            string    `yaml:"-"`
-	Title           string    `yaml:"title"`
-	Tags            []string  `yaml:"tags"`
-	CreatedAt       string    `yaml:"created_at"`
-	Content         string    `yaml:"-"`
-	CreatedAtParsed time.Time `yaml:"-"`
+	Slug		string		`yaml:"-"`
+	Title		string		`yaml:"title"`
+	Tags		[]string	`yaml:"tags"`
+	CreatedAt	string		`yaml:"created_at"`
+	Content		string		`yaml:"-"`
+	CreatedAtParsed	time.Time	`yaml:"-"`
 }
 
 type HomeState struct {
 	Posts []Post
+}
+
+func Render(s string) string {
+	var state HomeState
+	if err := json.Unmarshal([]byte(s), &state); err != nil {
+		return "error"
+	}
+	return RenderHome(state).Render()
 }
 
 func RenderHome(state HomeState) *Node {

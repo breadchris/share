@@ -251,6 +251,14 @@ func Dialog(o ...*Node) *Node {
 	return NewNode("dialog", o)
 }
 
+func Time(o ...*Node) *Node {
+	return NewNode("time", o)
+}
+
+func Ol(o ...*Node) *Node {
+	return NewNode("ol", o)
+}
+
 type NilNode struct{}
 
 func (s *NilNode) Init(p *Node) {
@@ -288,6 +296,70 @@ func Class(s string) *Node {
 			if ok {
 				p.locator = fmt.Sprintf("%s:%d", file, line)
 			}
+		},
+	}
+}
+
+func FileRule(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["fill-rule"] = s
+		},
+	}
+}
+
+func Datetime(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["datetime"] = s
+		},
+	}
+}
+
+func ViewBox(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["viewBox"] = s
+		},
+	}
+}
+
+func Fill(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["fill"] = s
+		},
+	}
+}
+
+func AriaHidden(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["aria-hidden"] = s
+		},
+	}
+}
+
+func ClipRule(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["clip-rule"] = s
+		},
+	}
+}
+
+func FillRule(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["fill-rule"] = s
+		},
+	}
+}
+
+func D(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["d"] = s
 		},
 	}
 }
@@ -400,6 +472,10 @@ func H5(o ...*Node) *Node {
 	return NewNode("h5", o)
 }
 
+func Progress(o ...*Node) *Node {
+	return NewNode("progress", o)
+}
+
 func Path(o ...*Node) *Node {
 	return NewNode("path", o)
 }
@@ -422,6 +498,14 @@ func Method(s string) *Node {
 	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["method"] = s
+		},
+	}
+}
+
+func Max(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["max"] = s
 		},
 	}
 }
@@ -628,6 +712,14 @@ func HxPost(s string) *Node {
 	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["hx-post"] = s
+		},
+	}
+}
+
+func HxTrigger(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["hx-trigger"] = s
 		},
 	}
 }

@@ -3,9 +3,9 @@
     "build": "GOOS=js GOARCH=wasm go build -o dist/editor.wasm editor.go && cp $(go env GOROOT)/misc/wasm/wasm_exec.js js/site/wasm_exec.js"
   },
   "dependencies": {
-    "@blocknote/core": "^0.15.0",
-    "@blocknote/mantine": "^0.15.0",
-    "@blocknote/react": "^0.15.0",
+    "@blocknote/core": "^0.15.9",
+    "@blocknote/mantine": "^0.15.9",
+    "@blocknote/react": "^0.15.9",
     "@blueprintjs/core": "4.13.0",
     "@react-pdf-viewer/core": "^3.12.0",
     "@react-pdf-viewer/default-layout": "^3.12.0",
@@ -25,6 +25,7 @@
     "react-player": "^2.16.0",
     "react-reader": "^2.0.11",
     "react-scripts": "4.0.3",
+    "reveal.js": "^5.1.0",
     "valtio": "1.7.6",
     "valtio-yjs": "0.4.0",
     "y-monaco": "^0.1.6",
@@ -33,6 +34,7 @@
     "yjs": "^13.6.18"
   },
   "devDependencies": {
-    "@types/react": "^18.3.3"
+    "@types/react": "^18.3.3",
+    "@types/reveal.js": "^5.0.3"
   }
 }

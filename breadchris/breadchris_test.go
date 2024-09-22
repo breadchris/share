@@ -2,6 +2,7 @@ package breadchris
 
 import (
 	"encoding/json"
+	"github.com/breadchris/share/symbol"
 	"github.com/traefik/yaegi/interp"
 	"github.com/traefik/yaegi/stdlib"
 	"os"
@@ -10,12 +11,43 @@ import (
 	"testing/fstest"
 )
 
-func Render(s string) string {
-	var state HomeState
-	if err := json.Unmarshal([]byte(s), &state); err != nil {
-		return "error"
+func TestRun(t *testing.T) {
+	i := interp.New(interp.Options{
+		GoPath: "/dev/null",
+	})
+
+	i.Use(stdlib.Symbols)
+	i.Use(symbol.Symbols)
+
+	if _, err := i.EvalPath("./breadchris.go"); err != nil {
+		t.Fatalf("Eval error: %v", err)
 	}
-	return RenderHome(state).Render()
+
+	v, err := i.Eval("breadchris.Render")
+	if err != nil {
+		t.Fatalf("Eval error: %v", err)
+	}
+
+	s := HomeState{
+		Posts: []Post{
+			{
+				Title: "Hello, World!",
+				Tags:  []string{"blog"},
+			},
+			{
+				Title: "2",
+				Tags:  []string{"blog2"},
+			},
+		},
+	}
+
+	ss, err := json.Marshal(s)
+	if err != nil {
+		t.Fatalf("Marshal error: %v", err)
+	}
+
+	r := v.Interface().(func(string) string)
+	println(r(string(ss)))
 }
 
 func TestHome(t *testing.T) {

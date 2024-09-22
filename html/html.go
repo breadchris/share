@@ -163,16 +163,6 @@ func (s *Node) Render() string {
 	return fmt.Sprintf("<%s %s>%s</%s>", s.Name, a, c, s.Name)
 }
 
-// RenderGoFunction renders a Go function for the node in the form: func Render{NodeName}() *Node { ... }
-// the body should contain one return statement with the node and its children
-/*
-func Render{NodeName}() *Node {
-	return Div(
-		Class("mb-4"),
-		Label(For("ingredients"), T("Ingredients")),
-	)
-}
-*/
 func (n *Node) RenderGoFunction(fset *token.FileSet, name string) ast.Decl {
 	return &ast.FuncDecl{
 		Name: ast.NewIdent(fmt.Sprintf("Render%s", strings.Title(name))),
