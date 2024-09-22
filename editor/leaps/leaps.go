@@ -2,7 +2,6 @@ package leaps
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"github.com/breadchris/share/editor/acl"
 	"github.com/breadchris/share/editor/api"
@@ -53,7 +52,6 @@ var (
 	debugWWWDir string
 	logLevel    string
 	subdirPath  string
-	showVersion bool
 	cmds        cmdList
 )
 
@@ -64,22 +62,16 @@ var (
 )
 
 func init() {
-	flag.BoolVar(&showVersion, "version", false, "Show version information")
-	flag.BoolVar(&safeMode, "safe", false, `Do not write changes directly to local files. Instead, store them in a temporary file that can be
-	committed afterwards with the --commit flag`)
-	flag.BoolVar(&applyLcot, "commit", false, "Commit changes made from leaps in safe mode to your local files and then exit (look at --safe)")
-	flag.BoolVar(&discardLcot, "discard", false, "Discard changes made from leaps in safe mode and then exit (look at --safe)")
-	flag.StringVar(&httpAddress, "address", "localhost:8080", "The HTTP address to bind to")
-	flag.BoolVar(&showHidden, "all", false, "Display all files, including hidden")
-	flag.StringVar(&debugWWWDir, "use_www", "", "Serve alternative web files from this dir")
-	flag.StringVar(&logLevel, "log_level", "INFO", "Log level (NONE, ERROR, WARM, INFO, DEBUG, TRACE)")
-	flag.StringVar(&subdirPath, "path", "/", "Subdirectory (when running leaps in a webserver subdirectory as example.com/myleaps)")
-	flag.Var(&cmds, "cmd", "Set commands that can be executed from the web UI, e.g. (-cmd 'make build' -cmd 'make test')")
-
+	safeMode = false
+	applyLcot = false
+	discardLcot = false
+	showHidden = false
+	httpAddress = "localhost:8080"
+	logLevel = "INFO"
+	subdirPath = "/"
+	cmds = cmdList{}
 	debugWWWDir = "./editor/javascript"
 }
-
-//------------------------------------------------------------------------------
 
 var endpoints = []interface{}{}
 
@@ -114,8 +106,6 @@ func readAudit(path string, auditor *audit.ToJSON, docStore store.Type) error {
 	return auditor.Reapply(docStore)
 }
 
-//------------------------------------------------------------------------------
-
 type shellRunner struct{}
 
 func (s shellRunner) CMDRun(cmdStr string) (stdout, stderr []byte, err error) {
@@ -148,37 +138,49 @@ func (s shellRunner) CMDRun(cmdStr string) (stdout, stderr []byte, err error) {
 
 func NewLeaps() {
 	var (
-		err       error
 		closeChan = make(chan bool)
 	)
 
-	flag.Usage = func() {
-		fmt.Println(`Usage: leaps [flags...] [path/to/share]
-
-If a path is not specified the current directory is shared instead.`)
-		flag.PrintDefaults()
-	}
-
-	flag.Parse()
-
-	if showVersion {
-		fmt.Printf("Version: %v\nDate: %v\n", version, dateBuilt)
-		os.Exit(0)
-	}
-
-	targetPath := "."
-	if flag.NArg() == 1 {
-		targetPath = flag.Arg(0)
-	}
-
-	leapsCOTPath := filepath.Join(targetPath, ".leaps_cot.json")
-
-	// Logging and metrics aggregation
 	logConf := log.NewLoggerConfig()
 	logConf.Prefix = "leaps"
 	logConf.LogLevel = logLevel
-
 	logger := log.NewLogger(os.Stdout, logConf)
+
+	RegisterRoutes(logger, closeChan)
+
+	logger.Infoln("Launching a leaps instance, use CTRL+C to close.")
+
+	go func() {
+		logger.Infof("Serving HTTP requests at: %v%v\n", httpAddress, subdirPath)
+		if httperr := http.ListenAndServe(httpAddress, nil); httperr != nil {
+			fmt.Fprintln(os.Stderr, fmt.Sprintf("HTTP listen error: %v\n", httperr))
+		}
+		closeChan <- true
+	}()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	// Wait for termination signal
+	select {
+	case <-sigChan:
+		close(closeChan)
+	case <-closeChan:
+	}
+}
+
+func RegisterRoutes(logger log.Modular, closeChan chan bool) {
+	var (
+		err error
+	)
+
+	// path t
+	targetPath := "."
+	//if flag.NArg() == 1 {
+	//	targetPath = flag.Arg(0)
+	//}
+
+	leapsCOTPath := filepath.Join(targetPath, ".leaps_cot.json")
 
 	statConf := metrics.NewConfig()
 	statConf.Type = "http"
@@ -355,26 +357,4 @@ If a path is not specified the current directory is shared instead.`)
 
 		jsonEmitter.ListenAndEmit()
 	})
-
-	logger.Infoln("Launching a leaps instance, use CTRL+C to close.")
-
-	go func() {
-		logger.Infof("Serving HTTP requests at: %v%v\n", httpAddress, subdirPath)
-		if httperr := http.ListenAndServe(httpAddress, nil); httperr != nil {
-			fmt.Fprintln(os.Stderr, fmt.Sprintf("HTTP listen error: %v\n", httperr))
-		}
-		closeChan <- true
-	}()
-
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-
-	// Wait for termination signal
-	select {
-	case <-sigChan:
-		close(closeChan)
-	case <-closeChan:
-	}
 }
-
-//------------------------------------------------------------------------------

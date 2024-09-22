@@ -15,7 +15,6 @@ import (
 	"github.com/breadchris/share/editor/builder/storage"
 	"github.com/breadchris/share/editor/goplay"
 	"github.com/breadchris/share/editor/server"
-	"github.com/breadchris/share/editor/server/webutil"
 	"github.com/breadchris/share/editor/util/cmdutil"
 	"github.com/breadchris/share/editor/util/osutil"
 	"github.com/gorilla/mux"
@@ -99,21 +98,9 @@ func start(goRoot string, logger *zap.Logger, cfg *config.Config) error {
 	}).Mount(apiv2Router)
 	//server.NewAPIv2Handler(playgroundClient, buildSvc).Mount(apiv2Router)
 
-	// Web UI routes
-	tplVars := server.TemplateArguments{
-		GoogleTagID: cfg.Services.GoogleAnalyticsID,
-	}
-	if tplVars.GoogleTagID != "" {
-		if err := webutil.ValidateGTag(tplVars.GoogleTagID); err != nil {
-			logger.Error("invalid GTag ID value, parameter will be ignored",
-				zap.String("gtag", tplVars.GoogleTagID), zap.Error(err))
-			tplVars.GoogleTagID = ""
-		}
-	}
-
 	assetsDir := cfg.HTTP.AssetsDir
-	indexHandler := server.NewTemplateFileServer(zap.L(), filepath.Join(assetsDir, server.IndexFileName), tplVars)
-	spaHandler := server.NewSpaFileServer(assetsDir, tplVars)
+	indexHandler := server.NewTemplateFileServer(zap.L(), filepath.Join(assetsDir, server.IndexFileName))
+	spaHandler := server.NewSpaFileServer(assetsDir)
 	r.Path("/").
 		Handler(indexHandler)
 	r.Path("/snippet/{snippetID:[A-Za-z0-9_-]+}").

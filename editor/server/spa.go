@@ -27,7 +27,6 @@ func (i httpStatusInterceptor) WriteHeader(_ int) {
 type SpaFileServer struct {
 	root            string
 	NotFoundHandler http.Handler
-	templateVars    TemplateArguments
 }
 
 // ServeHTTP implements http.Handler
@@ -82,12 +81,11 @@ func containsDotDot(v string) bool {
 func isSlashRune(r rune) bool { return r == '/' || r == '\\' }
 
 // NewSpaFileServer returns SPA handler
-func NewSpaFileServer(root string, tplVars TemplateArguments) *SpaFileServer {
+func NewSpaFileServer(root string) *SpaFileServer {
 	notFoundHandler := NewFileServerWithStatus(filepath.Join(root, NotFoundFileName), http.StatusNotFound)
 	return &SpaFileServer{
 		NotFoundHandler: notFoundHandler,
 		root:            root,
-		templateVars:    tplVars,
 	}
 }
 

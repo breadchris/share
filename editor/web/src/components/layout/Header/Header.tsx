@@ -7,7 +7,6 @@ import { newAddNotificationAction, NotificationType } from '~/store/notification
 import { ConnectedSettingsModal, type SettingsChanges } from '~/components/features/settings/SettingsModal'
 import { ThemeableComponent } from '~/components/utils/ThemeableComponent'
 import { ExamplesModal } from '~/components/features/examples/ExamplesModal'
-import { RunTargetSelector } from '~/components/elements/inputs/RunTargetSelector'
 import { SharePopup } from '~/components/utils/SharePopup'
 
 import { dispatchTerminalSettingsChange } from '~/store/terminal'
@@ -29,6 +28,7 @@ import {
 
 import './Header.css'
 import {AboutModal} from "~/components/modals/AboutModal/AboutModal.tsx";
+import {RunTargetSelector} from "~/components/elements/inputs/RunTargetSelector/RunTargetSelector";
 
 /**
  * Unique class name for share button to use as popover target.

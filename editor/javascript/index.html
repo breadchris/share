@@ -22,6 +22,6 @@
             client.connect("ws://" + window.location.host + "/leaps/ws?username=foo");
         }
         const t = document.getElementById("leaps-textarea");
-        client.bind_textarea(t);
+        client.bind_textarea(t, "main.go");
     </script>
 </html>

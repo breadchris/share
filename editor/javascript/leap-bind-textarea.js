@@ -32,10 +32,10 @@ THE SOFTWARE.
  * interactive editor for the leaps document the client connects to. Returns the bound object, and
  * places any errors in the obj.error field to be checked after construction.
  */
-var leap_bind_textarea = function(leap_client, text_area) {
+var leap_bind_textarea = function(leap_client, text_area, document_id) {
 	this._text_area = text_area;
 	this._leap_client = leap_client;
-	this._document_id = undefined;
+	this._document_id = document_id;
 
 	this._content = "";
 	this._ready = false;
@@ -105,7 +105,7 @@ leap_bind_textarea.prototype._apply_transform = function(transform) {
  */
 leap_bind_textarea.prototype._trigger_diff = function() {
 	var new_content = new leap_str(this._text_area.value);
-	var old_content = this._content;
+	var old_content = new leap_str(this._content);
 
 	if ( !(this._ready) || new_content.str() === old_content.str() ) {
 		return;
@@ -142,8 +142,8 @@ leap_bind_textarea.prototype._trigger_diff = function() {
 
 try {
 	if ( window.leap_client !== undefined && typeof(window.leap_client) === "function" ) {
-		window.leap_client.prototype.bind_textarea = function(text_area) {
-			this._textarea = new leap_bind_textarea(this, text_area);
+		window.leap_client.prototype.bind_textarea = function(text_area, document_id) {
+			this._textarea = new leap_bind_textarea(this, text_area, document_id);
 		};
 	}
 } catch (e) {

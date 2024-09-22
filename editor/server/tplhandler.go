@@ -13,26 +13,20 @@ import (
 	"go.uber.org/zap"
 )
 
-type TemplateArguments struct {
-	GoogleTagID string
-}
-
 type TemplateFileServer struct {
-	log          *zap.Logger
-	filePath     string
-	templateVars TemplateArguments
-	once         *sync.Once
-	buffer       io.ReadSeeker
-	modTime      time.Time
+	log      *zap.Logger
+	filePath string
+	once     *sync.Once
+	buffer   io.ReadSeeker
+	modTime  time.Time
 }
 
 // NewTemplateFileServer returns handler which compiles and serves HTML page template.
-func NewTemplateFileServer(logger *zap.Logger, filePath string, tplVars TemplateArguments) *TemplateFileServer {
+func NewTemplateFileServer(logger *zap.Logger, filePath string) *TemplateFileServer {
 	return &TemplateFileServer{
-		log:          logger,
-		once:         new(sync.Once),
-		filePath:     filePath,
-		templateVars: tplVars,
+		log:      logger,
+		once:     new(sync.Once),
+		filePath: filePath,
 	}
 }
 
@@ -62,7 +56,7 @@ func (fs *TemplateFileServer) precompileTemplate() {
 
 	buff := new(bytes.Buffer)
 	buff.Grow(int(stat.Size()))
-	if err := tpl.Execute(buff, fs.templateVars); err != nil {
+	if err := tpl.Execute(buff, nil); err != nil {
 		fs.log.Error("failed to execute page template", zap.Error(err), zap.String("filePath", fs.filePath))
 		return
 	}
