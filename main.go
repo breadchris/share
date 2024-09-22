@@ -7,8 +7,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/breadchris/share/breadchris"
-	"github.com/breadchris/share/editor/cmd/playground"
-	"github.com/breadchris/share/editor/pkg"
+	"github.com/breadchris/share/editor/config"
+	"github.com/breadchris/share/editor/leaps"
+	"github.com/breadchris/share/editor/playground"
 	"github.com/breadchris/share/html"
 	"github.com/breadchris/share/html2"
 	"github.com/breadchris/share/session"
@@ -238,7 +239,7 @@ func startServer(useTLS bool, port int) {
 		}
 	} else {
 		log.Printf("Starting HTTP server on port: %d", port)
-		http.ListenAndServe(fmt.Sprintf(":%d", port), h)
+		http.ListenAndServe(fmt.Sprintf("localhost:%d", port), h)
 	}
 }
 
@@ -277,10 +278,17 @@ func main() {
 			{
 				Name: "editor",
 				Action: func(c *cli.Context) error {
-					cfg := pkg.DefaultConfig()
+					cfg := config.DefaultConfig()
 					cfg.Build.PackagesFile = "./editor/packages.json"
 					cfg.HTTP.Addr = "localhost:8000"
 					playground.StartEditor(cfg)
+					return nil
+				},
+			},
+			{
+				Name: "leaps",
+				Action: func(c *cli.Context) error {
+					leaps.NewLeaps()
 					return nil
 				},
 			},

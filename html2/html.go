@@ -272,6 +272,9 @@ func Ch(c []*Node) *Node {
 	return &Node{
 		transform: func(p *Node) {
 			for _, n := range c {
+				if n == nil {
+					continue
+				}
 				p.Children = append(p.Children, n)
 			}
 		},
@@ -282,6 +285,9 @@ func Chl(c ...*Node) *Node {
 	return &Node{
 		transform: func(p *Node) {
 			for _, n := range c {
+				if c == nil {
+					continue
+				}
 				p.Children = append(p.Children, n)
 			}
 		},
@@ -438,6 +444,10 @@ func Img(o ...*Node) *Node {
 
 func P(o ...*Node) *Node {
 	return NewNode("p", o)
+}
+
+func Hr(o ...*Node) *Node {
+	return NewNode("hr", o)
 }
 
 func Style(o ...*Node) *Node {
