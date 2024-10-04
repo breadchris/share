@@ -25,7 +25,7 @@ import (
 // Version is server version symbol. Should be replaced by linker during build
 var Version = "testing"
 
-func StartEditor(cfg *config.Config) {
+func StartEditor(cfg *config.Config, lr *http.ServeMux) {
 	logger, err := cfg.Log.ZapLogger()
 	if err != nil {
 		cmdutil.FatalOnError(err)
@@ -43,12 +43,17 @@ func StartEditor(cfg *config.Config) {
 		logger.Fatal("Failed to find GOROOT environment variable value", zap.Error(err))
 	}
 
-	if err := start(goRoot, logger, cfg); err != nil {
+	if err := start(goRoot, logger, cfg, lr); err != nil {
 		logger.Fatal("Failed to start application", zap.Error(err))
 	}
 }
 
-func start(goRoot string, logger *zap.Logger, cfg *config.Config) error {
+func start(
+	goRoot string,
+	logger *zap.Logger,
+	cfg *config.Config,
+	lr *http.ServeMux,
+) error {
 	logger.Info("Starting service",
 		zap.String("version", Version), zap.Any("config", cfg))
 
@@ -85,6 +90,8 @@ func start(goRoot string, logger *zap.Logger, cfg *config.Config) error {
 
 	// Initialize API endpoints
 	r := mux.NewRouter()
+	r.PathPrefix("/leaps/").Handler(http.StripPrefix("/leaps", lr))
+
 	apiRouter := r.PathPrefix("/api").Subrouter()
 	svcCfg := server.ServiceConfig{Version: Version}
 	server.NewAPIv1Handler(svcCfg, playgroundClient, packages, buildSvc).

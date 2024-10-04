@@ -12,6 +12,8 @@
     <link rel="manifest" href="/manifest.json" />
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.css" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/leaps/static/leapclient.js"></script>
+    <script src="/leaps/static/leap-bind-textarea.js"></script>
     <title>Better Go Playground</title>
     <style>
       .app-preloader {
@@ -105,6 +107,49 @@
         .app-preloader-progress {
           background: #ccc;
         }
+      }
+
+      .monaco-remote-cursor {
+        position: absolute;
+        pointer-events: none;
+        z-index: 4000;
+        width: 2px;
+      }
+
+      .monaco-remote-cursor:before {
+        content: "";
+        width: 6px;
+        height: 5px;
+        display: block;
+        margin-left: -2px;
+        margin-top: 0;
+        z-index: 4000;
+        background: inherit;
+      }
+
+      .monaco-remote-cursor-tooltip {
+        position: absolute;
+        white-space: nowrap;
+        color: #FFFFFF;
+        text-shadow: 0 0 1px #000000;
+        opacity: 1.0;
+        font-size: 12px;
+        padding: 2px;
+        font-family: sans-serif;
+        z-index: 4000;
+
+        transition: opacity 0.5s ease-out;
+        -webkit-transition: opacity 0.5s ease-out;
+        -moz-transition: opacity 0.5s ease-out;
+        -ms-transition: opacity 0.5s ease-out;
+        -o-transition: opacity 0.5s ease-out;
+      }
+
+      .monaco-remote-selection {
+        position: absolute;
+        pointer-events: auto;
+        opacity: 0.3;
+        background: blue;
       }
     </style>
   </head>

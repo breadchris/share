@@ -3,7 +3,7 @@ package binder
 import (
 	"errors"
 	"fmt"
-	"github.com/breadchris/share/editor/audit"
+	"github.com/breadchris/share/editor/auditor"
 	"github.com/breadchris/share/editor/store"
 	"github.com/breadchris/share/editor/text"
 	"github.com/breadchris/share/editor/util/service/log"
@@ -135,7 +135,7 @@ type impl struct {
 	config   Config
 	otBuffer TransformSink
 	block    store.Type
-	auditor  audit.Auditor
+	auditor  auditor.Auditor
 
 	log   log.Modular
 	stats metrics.Type
@@ -162,7 +162,7 @@ func New(
 	errorChan chan<- Error,
 	log log.Modular,
 	stats metrics.Type,
-	auditor audit.Auditor,
+	auditor auditor.Auditor,
 ) (Type, error) {
 	binder := impl{
 		id:            id,

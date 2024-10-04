@@ -1,29 +1,32 @@
-import { TargetType } from '~/services/config'
-import { getImportObject, goRun } from '~/services/go'
-import { setTimeoutNanos, SECOND } from '~/utils/duration'
-import { instantiateStreaming } from '~/lib/go'
-import { buildGoTestFlags, requiresWasmEnvironment } from '~/lib/sourceutil'
-import client, { type EvalEvent, EvalEventKind } from '~/services/api'
-import { isProjectRequiresGoMod, goModFile, goModTemplate } from '~/services/examples'
+import {TargetType} from '~/services/config'
+import {getImportObject, goRun} from '~/services/go'
+import {SECOND, setTimeoutNanos} from '~/utils/duration'
+import {instantiateStreaming} from '~/lib/go'
+import {buildGoTestFlags, requiresWasmEnvironment} from '~/lib/sourceutil'
+import client, {type EvalEvent, EvalEventKind} from '~/services/api'
+import {goModFile, goModTemplate, isProjectRequiresGoMod} from '~/services/examples'
 
-import { type DispatchFn, type StateProvider } from '../helpers'
+import {type DispatchFn, type StateProvider} from '../helpers'
 import {
-  newAddNotificationAction,
-  newRemoveNotificationAction,
-  NotificationType,
-  NotificationIDs,
+    newAddNotificationAction,
+    newRemoveNotificationAction,
+    NotificationIDs,
+    NotificationType,
 } from '../notifications'
 import {
-  newErrorAction,
-  newLoadingAction,
-  newProgramFinishAction,
-  newProgramStartAction,
-  newProgramWriteAction,
+    newErrorAction,
+    newLoadingAction,
+    newProgramFinishAction,
+    newProgramStartAction,
+    newProgramWriteAction,
 } from '../actions'
 
-import { type Dispatcher } from './utils'
-import { wrapResponseWithProgress } from '~/utils/http'
-import { type BulkFileUpdatePayload, type FileUpdatePayload, WorkspaceAction } from '~/store/workspace/actions'
+import {type Dispatcher} from './utils'
+import {wrapResponseWithProgress} from '~/utils/http'
+import {type BulkFileUpdatePayload, type FileUpdatePayload, WorkspaceAction} from '~/store/workspace/actions'
+import { Analyzer } from '~/services/analyzer'
+
+const analyzer = new Analyzer();
 
 /**
  * Go program execution timeout in nanoseconds
@@ -227,6 +230,12 @@ export const runFileDispatcher: Dispatcher = async (dispatch: DispatchFn, getSta
     }
 
     switch (runTarget) {
+      case TargetType.Interpreter: {
+          console.log(files)
+          // const res = await analyzer?.runCode(files[0])
+          // console.log(res)
+          break
+      }
       case TargetType.Server: {
         // TODO: vet
         const res = await client.run(files, false, backend)

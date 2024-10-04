@@ -1,7 +1,5 @@
 package acl
 
-//--------------------------------------------------------------------------------------------------
-
 // Anarchy - Most basic implementation of an ACL, everyone has access to everything.
 type Anarchy struct {
 	AllowCreate bool
@@ -19,5 +17,3 @@ func (a Anarchy) Authenticate(_ interface{}, _, _ string) AccessLevel {
 	}
 	return CreateAccess
 }
-
-//--------------------------------------------------------------------------------------------------

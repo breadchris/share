@@ -7,7 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
-	. "github.com/breadchris/share/html2"
+	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/session"
 	"github.com/fsnotify/fsnotify"
 	"github.com/google/uuid"
@@ -330,6 +330,10 @@ func WatchFilesAndFolders(paths []string, callback func(string)) error {
 				if !ok {
 					return
 				}
+				if event.Op != fsnotify.Write {
+					continue
+				}
+
 				absPath, err := filepath.Abs(event.Name)
 				if err != nil {
 					log.Printf("failed to get absolute path for %s: %v", event.Name, err)

@@ -1,19 +1,17 @@
 package curator
 
 import (
-	"github.com/breadchris/share/editor/audit"
+	"github.com/breadchris/share/editor/auditor"
 	"github.com/breadchris/share/editor/binder"
 	"github.com/breadchris/share/editor/store"
 	"time"
 )
 
-//------------------------------------------------------------------------------
-
 // AuditorContainer - A type responsible for creating and managing auditors for
 // string identified operational transform binders.
 type AuditorContainer interface {
 	// Get - Return a managed Auditor type for a binder ID.
-	Get(binderID string) (audit.Auditor, error)
+	Get(binderID string) (auditor.Auditor, error)
 }
 
 //------------------------------------------------------------------------------

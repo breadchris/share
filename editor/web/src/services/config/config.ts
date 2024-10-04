@@ -66,10 +66,7 @@ const Config = {
 
   get runTargetConfig(): RunTargetConfig {
     const cfg = this.getObject<RunTargetConfig>(RUN_TARGET_KEY, defaultRunTarget)
-    if (cfg.target === TargetType.Interpreter) {
-      // Yaegi is unsupported anymode, see #348
-      cfg.target = TargetType.WebAssembly
-    }
+    cfg.target = TargetType.Interpreter
 
     return cfg
   },

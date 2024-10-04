@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	. "github.com/breadchris/share/html2"
+	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/session"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"

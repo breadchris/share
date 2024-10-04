@@ -16,7 +16,7 @@ func ParseHTML(n *html.Node) *Node {
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
 			childNode := ParseHTML(c)
 			if childNode != nil {
-				goNode.C(childNode)
+				goNode.Children = append(goNode.Children, childNode)
 			}
 		}
 		return goNode

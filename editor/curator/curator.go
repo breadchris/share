@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/breadchris/share/editor/acl"
-	"github.com/breadchris/share/editor/audit"
+	auditor2 "github.com/breadchris/share/editor/auditor"
 	"github.com/breadchris/share/editor/binder"
 	store3 "github.com/breadchris/share/editor/store"
 	"github.com/breadchris/share/editor/util/service/log"
@@ -140,7 +140,7 @@ func (c *Impl) loop() {
 }
 
 func (c *Impl) newBinder(id string) (binder.Type, error) {
-	var auditor audit.Auditor
+	var auditor auditor2.Auditor
 	var err error
 	if c.auditors != nil {
 		if auditor, err = c.auditors.Get(id); err != nil {

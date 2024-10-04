@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/breadchris/share/html"
+	"github.com/breadchris/share/symbol"
 	"github.com/traefik/yaegi/interp"
 	"github.com/traefik/yaegi/stdlib"
 	"go/ast"
@@ -16,10 +17,7 @@ import (
 	"go/token"
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
-	"testing/fstest"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -168,33 +166,19 @@ func (h *APIv2Handler) HandleRun(w http.ResponseWriter, r *http.Request) error {
 		return NewBadRequestError(err)
 	}
 
-	baseHTML, err := os.ReadFile("html/html.go")
-	if err != nil {
-		return NewBadRequestError(err)
-	}
-
 	i := interp.New(interp.Options{
-		GoPath: filepath.FromSlash("./"),
-		SourcecodeFilesystem: fstest.MapFS{
-			"src/main/vendor/github.com/breadchris/share/html/html.go": &fstest.MapFile{
-				Data: baseHTML,
-			},
-		},
+		GoPath: "/dev/null",
 	})
 
 	i.Use(stdlib.Symbols)
+	i.Use(symbol.Symbols)
 
 	for name, contents := range body.Files {
-		h.logger.Debug("evaluating code", zap.String("name", name))
+		h.logger.Info("evaluating code", zap.String("name", name))
 		_, err := i.Eval(contents)
 		if err != nil {
 			return NewBadRequestError(err)
 		}
-	}
-
-	_, err = i.Eval(string(baseHTML))
-	if err != nil {
-		return NewBadRequestError(err)
 	}
 
 	v, err := i.Eval("Render")
@@ -202,13 +186,13 @@ func (h *APIv2Handler) HandleRun(w http.ResponseWriter, r *http.Request) error {
 		return NewBadRequestError(err)
 	}
 
-	res := v.Interface().(func() string)
+	res := v.Interface().(func() *html.Node)
 
 	h.logger.Debug("response from compiler", zap.Any("res", res))
 	WriteJSON(w, RunResponse{
 		Events: []*goplay.CompileEvent{
 			{
-				Message: res(),
+				Message: res().Render(),
 				Kind:    "stdout",
 				Delay:   0,
 			},

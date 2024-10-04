@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	. "github.com/breadchris/share/html2"
+	. "github.com/breadchris/share/html"
 	"github.com/google/uuid"
 	"github.com/russross/blackfriday/v2"
 	"github.com/samber/lo"

@@ -2,203 +2,226 @@ package breadchris
 
 import (
 	"bytes"
-	"encoding/json"
+	"context"
 	"fmt"
-	. "github.com/breadchris/share/html2"
+	. "github.com/breadchris/share/html"
 	"github.com/gosimple/slug"
 	"github.com/samber/lo"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/parser"
 	"go.abhg.dev/goldmark/frontmatter"
+	"golang.org/x/net/html"
+	"gopkg.in/yaml.v3"
 	"io/fs"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
-	"slices"
+	"sort"
 	"strings"
 	"time"
 )
 
-var posts []Post
-
-func init() {
-	var err error
-	posts, err = loadPostsFromDir("breadchris/posts")
+func loadPosts() ([]Post, error) {
+	var posts []Post
+	posts, err := loadPostsFromDir("breadchris/posts")
 	if err != nil {
-		log.Fatalf("Error loading posts: %v", err)
+		return nil, fmt.Errorf("failed to load posts: %w", err)
 	}
 
 	for i := range posts {
 		posts[i].CreatedAtParsed, err = time.Parse(time.RFC3339, posts[i].CreatedAt)
 		if err != nil {
-			log.Fatalf("Error parsing time: %v", err)
+			return nil, fmt.Errorf("failed to parse created at: %w", err)
 		}
 	}
 
-	slices.SortFunc(posts, func(i, j Post) int {
-		if i.CreatedAtParsed.Before(j.CreatedAtParsed) {
-			return 1
-		} else {
-			return -1
-		}
+	sort.Slice(posts, func(i, j int) bool {
+		return posts[i].CreatedAtParsed.After(posts[j].CreatedAtParsed)
 	})
+	return posts, nil
 }
 
-func Home(w http.ResponseWriter, r *http.Request) {
-	var newPosts []Post
+func NewRoutes(baseURL string) []Route {
+	posts, err := loadPosts()
+	if err != nil {
+		log.Fatalf("Failed to load posts: %v", err)
+	}
+	tags := map[string]any{}
 	for _, post := range posts {
 		for _, tag := range post.Tags {
-			if strings.HasPrefix(tag, "blog") {
-				newPosts = append(newPosts, post)
-			}
+			tags[tag] = struct{}{}
 		}
 	}
-	ServeNode(RenderHome(HomeState{
-		Posts: newPosts,
-	}))(w, r)
-}
 
-func New() *http.ServeMux {
-	mux := http.NewServeMux()
+	ctx := context.WithValue(context.Background(), "baseURL", baseURL)
 
-	for _, post := range posts {
-		if lo.Contains(post.Tags, "page") {
-			mux.HandleFunc("/"+post.Title, func(w http.ResponseWriter, r *http.Request) {
-				ServeNode(ArticleView(post))(w, r)
-			})
-		}
-	}
-	mux.HandleFunc("/", ServeNode(RenderHome(HomeState{
-		Posts: lo.Filter(posts, func(post Post, i int) bool {
-			for _, tag := range post.Tags {
+	routes := []Route{
+		NewRoute(
+			"/", ServeNodeCtx(ctx, RenderHome(HomeState{
+				Posts: lo.Filter(posts, func(post Post, i int) bool {
+					for _, tag := range post.Tags {
 
-				if strings.HasPrefix(tag, "blog") {
-					return true
+						if strings.HasPrefix(tag, "blog") {
+							return true
+						}
+					}
+					return false
+				}),
+			})),
+		),
+		NewRoute("/static/", func(w http.ResponseWriter, r *http.Request) {
+			http.StripPrefix(
+				"/static/",
+				http.FileServer(http.Dir("breadchris/static")),
+			).ServeHTTP(w, r)
+		}, Ignore()),
+		NewRoute("/tags/{tag...}", func(w http.ResponseWriter, r *http.Request) {
+			t := r.PathValue("tag")
+			if t == "" {
+				var tagNodes []*Node
+				for tag := range tags {
+					tagNodes = append(tagNodes, Li(Class("post-tag"),
+						A(Href(fmt.Sprintf("/tags/%s", tag)), T(tag)),
+					))
 				}
+
+				ServeNodeCtx(ctx, PageLayout(
+					Div(
+						H1(Class("my-6"), T("Tags")),
+						Ul(Class("post-tags"), Ch(tagNodes)),
+					),
+				))(w, r)
+				return
 			}
-			return false
-		}),
-	})))
-	mux.HandleFunc("/tags/", func(w http.ResponseWriter, r *http.Request) {
-		t := strings.TrimPrefix(r.URL.Path, "/tags/")
-		if t == "" {
-			tags := map[string]any{}
+
+			var p []Post
 			for _, post := range posts {
 				for _, tag := range post.Tags {
-					tags[tag] = struct{}{}
+					if tag == t {
+						p = append(p, post)
+					}
 				}
 			}
-			var tagNodes []*Node
-			for tag := range tags {
-				tagNodes = append(tagNodes, Li(Class("post-tag"),
-					A(Href(fmt.Sprintf("/breadchris/tags/%s", tag)), T(tag)),
-				))
-			}
-
-			ServeNode(PageLayout(
+			PageLayout(
 				Div(
-					H1(Class("my-6"), T("Tags")),
-					Ul(Class("post-tags"), Ch(tagNodes)),
+					H1(Class("my-6 text-4xl"), T(t)),
+					Ch(lo.Map(p, func(post Post, i int) *Node {
+						return newArticlePreview(post)
+					})),
 				),
-			))(w, r)
-			return
-		}
-
-		var p []Post
-		for _, post := range posts {
-			for _, tag := range post.Tags {
-				if tag == t {
-					p = append(p, post)
-				}
-			}
-		}
-		ServeNode(PageLayout(
-			Div(
-				H1(Class("my-6 text-4xl"), T(t)),
-				Ch(lo.Map(p, func(post Post, i int) *Node {
-					return newArticlePreview(post)
-				})),
-			),
-		))(w, r)
-	})
-	mux.HandleFunc("/new/render", func(w http.ResponseWriter, r *http.Request) {
-		content := r.FormValue("content")
-		md := goldmark.New()
-		var buf bytes.Buffer
-		if err := md.Convert([]byte(content), &buf); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		Div(
-			T(buf.String()),
-			Script(T("hljs.highlightAll();")),
-		).RenderPage(w, r)
-	})
-	mux.HandleFunc("/new", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "POST" {
-			title := r.FormValue("title")
-			tags := strings.Split(r.FormValue("tags"), ",")
+			).RenderPageCtx(ctx, w, r)
+		}, WithValues(map[string][]string{
+			"tag": lo.Keys(tags),
+		})),
+		NewRoute("/new/render", func(w http.ResponseWriter, r *http.Request) {
 			content := r.FormValue("content")
-			posts = append(posts, Post{
-				Title:		title,
-				Tags:		tags,
-				CreatedAt:	time.Now().Format(time.RFC3339),
-				Content:	content,
-			})
-			http.Redirect(w, r, "/breadchris", http.StatusSeeOther)
-			return
-		}
-		PageLayout(
+			md := goldmark.New()
+			var buf bytes.Buffer
+			if err := md.Convert([]byte(content), &buf); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 			Div(
-				Link(Href("https://cdn.jsdelivr.net/npm/daisyui@4.12.2/dist/full.min.css"), Rel("stylesheet"), Type("text/css")),
-				Script(Src("https://cdn.tailwindcss.com")),
-				Script(Src("https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js")),
-				Script(Src("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js")),
-				Style(T(`
+				T(buf.String()),
+				Script(T("hljs.highlightAll();")),
+			).RenderPageCtx(ctx, w, r)
+		}),
+		NewRoute("/new", func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == "POST" {
+				title := r.FormValue("title")
+				tags := strings.Split(r.FormValue("tags"), ",")
+				content := r.FormValue("markdown")
+				blocknote := r.FormValue("blocknote")
+				p := Post{
+					Title:     title,
+					Tags:      tags,
+					CreatedAt: time.Now().Format(time.RFC3339),
+					Content:   content,
+					Blocknote: blocknote,
+				}
+				posts = append(posts, p)
+				err := writeMarkdownFile(fmt.Sprintf("breadchris/posts/%s.md", slug.Make(title)), p)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+				}
+				http.Redirect(w, r, "/", http.StatusSeeOther)
+				return
+			}
+			PageLayout(
+				Div(
+					Link(Href("https://cdn.jsdelivr.net/npm/daisyui@4.12.2/dist/full.min.css"), Rel("stylesheet"), Type("text/css")),
+					Link(Href("/static/editor.css"), Rel("stylesheet"), Type("text/css")),
+					Script(Src("https://cdn.tailwindcss.com")),
+					Script(Src("https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js")),
+					Script(Src("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js")),
+					Style(T(`
 					 h1 { font-size: 2em; }
 					 h2 { font-size: 1.5em; }
 					 h3 { font-size: 1.17em; }
 					 h4 { font-size: 1.00em; }
 					 h5 { font-size: 0.8em; }
-					 a {
-						 color: blue;
-						 text-decoration: underline;
-					 }
 				 `)),
-				Class("w-full max-w-2xl mx-auto"),
-				H1(Class("my-6"), T("New Post")),
-				Form(
-					Method("POST"),
-					Action("/breadchris/new"),
-					Class("flex flex-col"),
-					Input(Type("text"), Class("input w-full"), Name("title"), Placeholder("Title")),
-					Input(Type("text"), Class("input w-full"), Name("tags"), Placeholder("Tags")),
-					TextArea(
-						Name("content"),
-						Class("textarea w-full"),
-						Placeholder("Content"),
-						Attr("hx-post", "/breadchris/new/render"),
-						Attr("hx-trigger", "keyup changed delay:500ms"),
-						Attr("hx-target", "#preview"),
+					Class("w-full max-w-2xl mx-auto"),
+					Form(
+						Method("POST"),
+						Action("/new"),
+						Class("flex flex-col space-y-4"),
+						//TextArea(
+						//	Name("content"),
+						//	Class("textarea w-full"),
+						//	Placeholder("Content"),
+						//	Attr("hx-post", "/new/render"),
+						//	Attr("hx-trigger", "keyup changed delay:500ms"),
+						//	Attr("hx-target", "#preview"),
+						//),
+						Input(Type("hidden"), Name("markdown"), Id("markdown")),
+						Input(Type("hidden"), Name("blocknote"), Id("blocknote")),
+						Div(Id("editor")),
+						Div(Class("flex flex-row space-x-4"),
+							Input(Type("text"), Class("input w-full"), Name("title"), Placeholder("Title")),
+							Input(Type("text"), Class("input w-full"), Name("tags"), Placeholder("Tags")),
+						),
+						Div(Class("flex justify-end"),
+							Button(Type("submit"), Class("btn"), T("Submit")),
+						),
 					),
-					Button(Type("submit"), Class("btn"), T("Submit")),
+					Div(Class("mt-4"), Id("preview")),
+					Script(Src("/static/editor.js")),
 				),
-				Div(Class("mt-4"), Id("preview")),
-			),
-		).RenderPage(w, r)
-	})
-	mux.HandleFunc("/blog/{slug}", func(w http.ResponseWriter, r *http.Request) {
-		s := r.PathValue("slug")
-		for _, post := range posts {
-			if post.Slug == s {
-				ServeNode(ArticleView(post))(w, r)
-				return
+			).RenderPageCtx(ctx, w, r)
+		}),
+		NewRoute("/blog/{slug}", func(w http.ResponseWriter, r *http.Request) {
+			s := r.PathValue("slug")
+			for _, post := range posts {
+				if post.Slug == s {
+					ServeNodeCtx(ctx, ArticleView(post))(w, r)
+					return
+				}
 			}
+			http.NotFound(w, r)
+		}, WithValues(map[string][]string{
+			"slug": lo.Map(posts, func(post Post, i int) string {
+				return post.Slug
+			}),
+		})),
+	}
+	for _, post := range posts {
+		if lo.Contains(post.Tags, "page") {
+			routes = append(routes, NewRoute("/"+post.Title, func(w http.ResponseWriter, r *http.Request) {
+				ServeNodeCtx(ctx, ArticleView(post))(w, r)
+			}))
 		}
-		http.NotFound(w, r)
-	})
+	}
+	return routes
+}
 
+func New(baseURL string) *http.ServeMux {
+	mux := http.NewServeMux()
+	for _, route := range NewRoutes(baseURL) {
+		mux.HandleFunc(route.Path, route.Handler)
+	}
 	return mux
 }
 
@@ -208,19 +231,27 @@ func ArticleView(state Post) *Node {
 			Header(Class("post-header"),
 				H1(Class("post-title entry-hint-parent"), T(state.Title)),
 				Div(Class("post-meta"),
-					Span(Attr("title", state.CreatedAt), T(state.CreatedAt)),
-					Span(T(" · breadchris")),
+					Span(Attr("title", state.CreatedAt), T(state.CreatedAtParsed.Format("January 2, 2006"))),
+					Span(Class("ml-3"), T("| breadchris")),
 				),
 			),
+			Style(T(`
+			pre,code {
+				tab-size: 2; /* Set the tab width to 4 spaces */
+				/*white-space: pre; Preserve whitespace and line breaks */
+			}
+			`)),
 			Div(Class("post-content"),
-				Div(T(state.Content)),
+				T(state.Content),
 			),
+			Script(Src("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js")),
+			Script(T("hljs.highlightAll();")),
 			Footer(Class("post-footer"),
 				Ul(
 					Class("post-tags"),
 					Ch(lo.Map(state.Tags, func(tag string, i int) *Node {
 						return Li(Class("post-tag"),
-							A(Href(fmt.Sprintf("/breadchris/tags/%s", tag)), T(tag)),
+							A(Href(fmt.Sprintf("/tags/%s", tag)), T(tag)),
 						)
 					})),
 				),
@@ -230,24 +261,19 @@ func ArticleView(state Post) *Node {
 }
 
 type Post struct {
-	Slug		string		`yaml:"-"`
-	Title		string		`yaml:"title"`
-	Tags		[]string	`yaml:"tags"`
-	CreatedAt	string		`yaml:"created_at"`
-	Content		string		`yaml:"-"`
-	CreatedAtParsed	time.Time	`yaml:"-"`
+	Slug            string     `yaml:"-"`
+	Title           string     `yaml:"title"`
+	Tags            []string   `yaml:"tags"`
+	CreatedAt       string     `yaml:"created_at"`
+	Content         string     `yaml:"-"`
+	TextContent     string     `yaml:"-"`
+	Blocknote       string     `yaml:"blocknote"`
+	CreatedAtParsed time.Time  `yaml:"-"`
+	DOMNode         *html.Node `yaml:"-"`
 }
 
 type HomeState struct {
 	Posts []Post
-}
-
-func Render(s string) string {
-	var state HomeState
-	if err := json.Unmarshal([]byte(s), &state); err != nil {
-		return "error"
-	}
-	return RenderHome(state).Render()
 }
 
 func RenderHome(state HomeState) *Node {
@@ -287,30 +313,32 @@ func RenderHome(state HomeState) *Node {
 
 func PageLayout(section *Node) *Node {
 	return Html(
+		Attr("lang", "en"),
+		Attr("dir", "auto"),
 		Head(
 			Meta(Charset("UTF-8")),
-			Meta(Name("generator"), Content("Hugo 0.119.0")),
+			Meta(Name("generator"), Content("justshare")),
 			Meta(HttpEquiv("X-UA-Compatible"), Content("IE=edge")),
 			Meta(Name("viewport"), Content("width=device-width, initial-scale=1, shrink-to-fit=no")),
 			Meta(Name("robots"), Content("index, follow")),
 			Title(T("breadchris")),
 			Meta(Name("description"), Content("")),
 			Meta(Name("author"), Content("breadchris")),
-			Link(Rel("canonical"), Href("https://breadchris.com/")),
-			Link(Crossorigin("anonymous"), Href("https://breadchris.com/assets/css/stylesheet.7d0dbc7bebc97247baddbf44f81f3261912c9f64c3f03500922375b9988f4ea9.css"), Rel("preload stylesheet"), Attr("as", "style")),
-			Link(Rel("icon"), Href("https://breadchris.com/favicon.ico")),
-			Link(Rel("icon"), Type("image/png"), Sizes("16x16"), Href("https://breadchris.com/favicon-16x16.png")),
-			Link(Rel("icon"), Type("image/png"), Sizes("32x32"), Href("https://breadchris.com/favicon-32x32.png")),
-			Link(Rel("apple-touch-icon"), Href("https://breadchris.com/apple-touch-icon.png")),
-			Link(Rel("mask-icon"), Href("https://breadchris.com/safari-pinned-tab.svg")),
+			Link(Rel("canonical"), Href("/")),
+			Link(Crossorigin("anonymous"), Href("/static/styles.css"), Rel("preload stylesheet"), Attr("as", "style")),
+			Link(Rel("icon"), Href("/favicon.ico")),
+			Link(Rel("icon"), Type("image/png"), Sizes("16x16"), Href("/favicon-16x16.png")),
+			Link(Rel("icon"), Type("image/png"), Sizes("32x32"), Href("/favicon-32x32.png")),
+			Link(Rel("apple-touch-icon"), Href("/apple-touch-icon.png")),
+			Link(Rel("mask-icon"), Href("/safari-pinned-tab.svg")),
 			Meta(Name("theme-color"), Content("#2e2e33")),
 			Meta(Name("msapplication-TileColor"), Content("#2e2e33")),
-			Link(Rel("alternate"), Type("application/rss+xml"), Href("https://breadchris.com/index.xml")),
-			Link(Rel("alternate"), Type("application/json"), Href("https://breadchris.com/index.json")),
+			Link(Rel("alternate"), Type("application/rss+xml"), Href("/index.xml")),
+			Link(Rel("alternate"), Type("application/json"), Href("/index.json")),
 			Meta(Property("og:title"), Content("breadchris")),
 			Meta(Property("og:description"), Content("")),
 			Meta(Property("og:type"), Content("website")),
-			Meta(Property("og:url"), Content("https://breadchris.com/")),
+			Meta(Property("og:url"), AttrCtx("content", "baseURL")),
 			Meta(Name("twitter:card"), Content("summary")),
 			Meta(Name("twitter:title"), Content("breadchris")),
 			Meta(Name("twitter:description"), Content("")),
@@ -319,36 +347,41 @@ func PageLayout(section *Node) *Node {
 			Header(Class("header"),
 				Nav(Class("nav"),
 					Div(Class("logo"),
-						A(Href("/breadchris"), Accesskey("h"), Attr("title", "breadchris (Alt + H)"), T("breadchris")),
+						A(Href("/"), Accesskey("h"), Attr("title", "breadchris (Alt + H)"), T("breadchris")),
 						Div(Class("entry-header"),
 							Button(Id("theme-toggle"), Accesskey("t"), Attr("title", "(Alt + T)")),
 						),
 					),
 					Ul(Id("menu"),
-						Li(A(Href("/breadchris/blog"), Attr("title", "blog"), Span(T("blog")))),
-						Li(A(Href("/breadchris/resume"), Attr("title", "resume"), Span(T("resume")))),
-						Li(A(Href("/breadchris/tags/"), Attr("title", "tags"), Span(T("tags")))),
-						Li(A(Href("/breadchris/talks"), Attr("title", "talks"), Span(T("talks")))),
+						Li(A(Href("/blog"), Attr("title", "blog"), Span(T("blog")))),
+						Li(A(Href("/resume"), Attr("title", "resume"), Span(T("resume")))),
+						Li(A(Href("/tags/"), Attr("title", "tags"), Span(T("tags")))),
+						Li(A(Href("/talks"), Attr("title", "talks"), Span(T("talks")))),
 					),
 				),
 			),
 			Main(Class("main"),
 				section,
 			),
-			Footer(Class("page-footer"),
-				Nav(Class("pagination"),
-					A(Class("next"), Href("https://breadchris.com/page/2/"), T("Next »")),
-				),
-			),
+			Footer(Class("page-footer")), //Nav(Class("pagination"),
+			//	A(Class("next"), Href("https://breadchris.com/page/2/"), T("Next »")),
+			//),
+
 			Footer(Class("footer"),
 				Span(T("© 2024 "), A(Href("/"), T("breadchris"))),
-				Span(T("Powered by "), A(Href("https://gohugo.io/"), Rel("noopener noreferrer"), Target("_blank"), T("Hugo")), T(" & "), A(Href("https://github.com/adityatelange/hugo-PaperMod/"), Rel("noopener"), Target("_blank"), T("PaperMod"))),
 			),
-			A(Href("/#top"), AriaLabel("go to top"), Attr("title", "Go to Top (Alt + G)"), Class("top-link"), Id("top-link"), Attr("style", "visibility: hidden; opacity: 0;"),
-				T("↑"),
-			),
+			//A(Href("/#top"), AriaLabel("go to top"), Attr("title", "Go to Top (Alt + G)"), Class("top-link"), Id("top-link"), Attr("style", "visibility: hidden; opacity: 0;"),
+			//	T("↑"),
+			//),
 		),
 	)
+}
+
+func shortText(n int, s string) string {
+	if n < len(s) {
+		return s[:n]
+	}
+	return s
 }
 
 func newArticlePreview(a Post) *Node {
@@ -357,13 +390,14 @@ func newArticlePreview(a Post) *Node {
 			H2(Class("entry-hint-parent"), T(a.Title)),
 		),
 		Div(Class("entry-content"),
-			P(T(a.Content)),
+			// TODO breadchris limit content length
+			P(T(shortText(200, a.TextContent))),
 		),
 		Footer(Class("entry-footer"),
 			Span(Attr("title", a.CreatedAt), T(a.CreatedAtParsed.Format("January 2, 2006"))),
 			Span(T(" · breadchris")),
 		),
-		A(Class("entry-link m-12"), Href(fmt.Sprintf("/breadchris/blog/%s", a.Slug))),
+		A(Class("entry-link m-12"), Href(fmt.Sprintf("/blog/%s", a.Slug))),
 	)
 }
 
@@ -395,6 +429,20 @@ func loadPostsFromDir(dir string) ([]Post, error) {
 	return posts, nil
 }
 
+func writeMarkdownFile(path string, post Post) error {
+	yml, err := yaml.Marshal(post)
+	if err != nil {
+		return fmt.Errorf("json marshal: %w", err)
+	}
+
+	content := fmt.Sprintf("---\n%s\n---\n%s", yml, post.Content)
+
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		return fmt.Errorf("write file: %w", err)
+	}
+	return nil
+}
+
 func parseMarkdownFile(path string) (Post, error) {
 	var post Post
 
@@ -424,6 +472,24 @@ func parseMarkdownFile(path string) (Post, error) {
 	}
 
 	post.Content = buf.String()
-
+	post.DOMNode, err = html.Parse(strings.NewReader(post.Content))
+	if err != nil {
+		return post, fmt.Errorf("error parsing HTML: %v", err)
+	}
+	post.TextContent = ExtractText(post.DOMNode)
 	return post, nil
+}
+
+// ExtractText extracts and returns all the text from an HTML node tree.
+func ExtractText(n *html.Node) string {
+	if n.Type == html.TextNode {
+		return n.Data
+	}
+
+	text := ""
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		text += ExtractText(c)
+	}
+
+	return text
 }

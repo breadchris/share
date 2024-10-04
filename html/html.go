@@ -1,11 +1,23 @@
 package html
 
 import (
+	"context"
 	"fmt"
 	"go/ast"
 	"go/token"
 	"net/http"
+	"runtime"
 	"strings"
+)
+
+var (
+	DaisyUI = Link(
+		Href("https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"),
+		Attr("rel", "stylesheet"),
+		Attr("type", "text/css"),
+	)
+	TailwindCSS = Script(Src("https://cdn.tailwindcss.com"))
+	HTMX        = Script(Src("https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js"))
 )
 
 func RenderHTML() *Node {
@@ -114,7 +126,19 @@ func RenderHTML() *Node {
 func ServeNode(n *Node) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
-		_, err := fmt.Fprint(w, n.Render())
+		w.WriteHeader(http.StatusOK)
+		_, err := w.Write([]byte(n.Render()))
+		if err != nil {
+			http.Error(w, "Error rendering HTML", http.StatusInternalServerError)
+		}
+	}
+}
+
+func ServeNodeCtx(ctx context.Context, n *Node) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+		_, err := w.Write([]byte(n.RenderCtx(ctx)))
 		if err != nil {
 			http.Error(w, "Error rendering HTML", http.StatusInternalServerError)
 		}
@@ -122,38 +146,75 @@ func ServeNode(n *Node) http.HandlerFunc {
 }
 
 type Node struct {
-	Name     string
-	Attrs    map[string]string
-	Children []RenderNode
-}
-
-func (s *Node) Ch(c []RenderNode) *Node {
-	s.Children = append(s.Children, c...)
-	return s
-}
-
-func (s *Node) C(c ...RenderNode) *Node {
-	s.Children = append(s.Children, c...)
-	return s
+	Name         string
+	Attrs        map[string]string
+	DynamicAttrs map[string]func(ctx context.Context) string
+	Children     []*Node
+	transform    func(p *Node)
+	text         string
+	locator      string
+	baseURL      string
 }
 
 func (s *Node) Init(n *Node) {
-	n.Children = append(n.Children, s)
+	if n.transform != nil {
+		n.transform(s)
+		return
+	}
+	s.Children = append(s.Children, n)
 }
 
-func (s *Node) Render() string {
-	c := ""
-	for _, t := range s.Children {
-		c += t.Render()
+func (s *Node) RenderPage(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
+	_, err := fmt.Fprint(w, s.Render())
+	if err != nil {
+		http.Error(w, "Error rendering HTML", http.StatusInternalServerError)
 	}
-	if len(s.Attrs) == 0 {
+}
+
+func (s *Node) RenderPageCtx(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
+	_, err := w.Write([]byte(s.RenderCtx(ctx)))
+	if err != nil {
+		http.Error(w, "Error rendering HTML", http.StatusInternalServerError)
+	}
+}
+
+func (s *Node) RenderCtx(ctx context.Context) string {
+	c := ""
+	if s.text != "" {
+		c += s.text
+	}
+
+	if s.baseURL != "" {
+		ctx = context.WithValue(ctx, "baseURL", s.baseURL)
+	}
+
+	for _, t := range s.Children {
+		c += t.RenderCtx(ctx)
+	}
+
+	if s.locator != "" && len(s.Attrs) == 0 && len(s.DynamicAttrs) == 0 {
 		return fmt.Sprintf("<%s>%s</%s>", s.Name, c, s.Name)
+	}
+
+	attrs := map[string]string{}
+	if s.locator != "" {
+		attrs["data-godom"] = s.locator
+	}
+	for k, v := range s.DynamicAttrs {
+		attrs[k] = v(ctx)
+	}
+	for k, v := range s.Attrs {
+		attrs[k] = v
 	}
 
 	a := ""
 	var i int
-	for k, v := range s.Attrs {
-		if i == len(s.Attrs)-1 {
+	for k, v := range attrs {
+		if i == len(attrs)-1 {
 			a += fmt.Sprintf("%s=\"%s\"", k, v)
 			break
 		}
@@ -163,35 +224,59 @@ func (s *Node) Render() string {
 	return fmt.Sprintf("<%s %s>%s</%s>", s.Name, a, c, s.Name)
 }
 
-func (n *Node) RenderGoFunction(fset *token.FileSet, name string) ast.Decl {
+func (s *Node) Render() string {
+	return s.RenderCtx(context.Background())
+}
+
+func RenderGoFunction(fset *token.FileSet, name string, s ast.Expr) *ast.FuncDecl {
 	return &ast.FuncDecl{
-		Name: ast.NewIdent(fmt.Sprintf("Render%s", strings.Title(name))),
+		Name: ast.NewIdent(name),
 		Type: &ast.FuncType{
+			Params: &ast.FieldList{
+				List: []*ast.Field{},
+			},
 			Results: &ast.FieldList{
 				List: []*ast.Field{
-					{Type: &ast.StarExpr{X: &ast.Ident{Name: "Node"}}},
+					{
+						Type: &ast.StarExpr{
+							X: ast.NewIdent("Node"),
+						},
+					},
 				},
 			},
 		},
 		Body: &ast.BlockStmt{
 			List: []ast.Stmt{
 				&ast.ReturnStmt{
-					Results: []ast.Expr{n.RenderGoCall(fset)},
+					Results: []ast.Expr{
+						s,
+					},
 				},
 			},
 		},
 	}
 }
 
-func (n *Node) RenderGoCall(fset *token.FileSet) *ast.CallExpr {
+func (s *Node) RenderGoCode(fset *token.FileSet) *ast.CallExpr {
+	if s.text != "" {
+		return &ast.CallExpr{
+			Fun:  ast.NewIdent("Text"),
+			Args: []ast.Expr{&ast.BasicLit{Kind: token.STRING, Value: fmt.Sprintf("\"%s\"", s.text)}},
+		}
+	}
+
 	call := &ast.CallExpr{
-		Fun:  ast.NewIdent(strings.Title(n.Name)), // Capitalize to match Go function names like Div(), Ul()
+		Fun:  ast.NewIdent(strings.Title(s.Name)),
 		Args: []ast.Expr{},
 	}
 
-	for k, v := range n.Attrs {
+	for k, v := range s.Attrs {
+		var cased []string
+		for _, st := range strings.Split(k, "-") {
+			cased = append(cased, strings.Title(st))
+		}
 		call.Args = append(call.Args, &ast.CallExpr{
-			Fun: ast.NewIdent(strings.Title(k)), // Assuming function names map to attribute names (e.g., Class())
+			Fun: ast.NewIdent(strings.Join(cased, "")),
 			Args: []ast.Expr{
 				&ast.BasicLit{
 					Kind:  token.STRING,
@@ -201,84 +286,62 @@ func (n *Node) RenderGoCall(fset *token.FileSet) *ast.CallExpr {
 		})
 	}
 
-	for _, child := range n.Children {
+	for _, child := range s.Children {
 		childAST := child.RenderGoCode(fset)
-		call.Args = append(call.Args, childAST.(*ast.ExprStmt).X)
+		call.Args = append(call.Args, childAST)
 	}
 	return call
 }
 
-func (n *Node) RenderGoCode(fset *token.FileSet) ast.Stmt {
-	return &ast.ExprStmt{X: n.RenderGoCall(fset)}
-}
-
-type TextNode struct {
-	text string
-}
-
-func Text(s string) *TextNode {
-	return &TextNode{
-		text: s,
+func Text(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.text = s
+		},
 	}
 }
 
-func (s *TextNode) Init(n *Node) {
-	n.Children = append(n.Children, s)
-}
-
-func (s *TextNode) Render() string {
-	return s.text
-}
-
-func (s *TextNode) RenderGoCode(fset *token.FileSet) ast.Stmt {
-	c := &ast.CallExpr{
-		Fun:  ast.NewIdent("Text"),
-		Args: []ast.Expr{&ast.BasicLit{Kind: token.STRING, Value: fmt.Sprintf("\"%s\"", s.text)}},
-	}
-	return &ast.ExprStmt{X: c}
-}
-
-type RenderNode interface {
-	Render() string
-	RenderGoCode(fset *token.FileSet) ast.Stmt
-}
-
-type NodeOption interface {
-	Init(n *Node)
-}
-
-func NewNode(s string, o []NodeOption) *Node {
+func NewNode(s string, o []*Node) *Node {
 	n := &Node{
-		Name:  s,
-		Attrs: map[string]string{},
+		Name:         s,
+		Attrs:        map[string]string{},
+		DynamicAttrs: map[string]func(ctx context.Context) string{},
 	}
 	for _, op := range o {
 		if op == nil {
 			continue
 		}
-		op.Init(n)
+		n.Init(op)
 	}
 	return n
 }
 
-func Html(o ...NodeOption) *Node {
+func Html(o ...*Node) *Node {
 	return NewNode("html", o)
 }
 
-func Head(o ...NodeOption) *Node {
+func Head(o ...*Node) *Node {
 	return NewNode("head", o)
 }
 
-func Meta(o ...NodeOption) *Node {
+func Meta(o ...*Node) *Node {
 	return NewNode("meta", o)
 }
 
-func Body(o ...NodeOption) *Node {
+func Body(o ...*Node) *Node {
 	return NewNode("body", o)
 }
 
-func Dialog(o ...NodeOption) *Node {
+func Dialog(o ...*Node) *Node {
 	return NewNode("dialog", o)
+}
+
+func Time(o ...*Node) *Node {
+	return NewNode("time", o)
+}
+
+func Ol(o ...*Node) *Node {
+	return NewNode("ol", o)
 }
 
 type NilNode struct{}
@@ -290,165 +353,292 @@ func (s *NilNode) Render() string {
 	return ""
 }
 
-type TransformNode struct {
-	transform func(p *Node)
-}
-
-func (s *TransformNode) RenderGoCode() string {
-	return ""
-}
-
-func (s *TransformNode) Init(p *Node) {
-	s.transform(p)
-}
-
-func (s *TransformNode) Render() string {
-	return ""
-}
-
-func Chl(c ...*Node) *TransformNode {
-	return &TransformNode{
+func Ch(c []*Node) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			for _, n := range c {
+				if n == nil {
+					continue
+				}
 				p.Children = append(p.Children, n)
 			}
 		},
 	}
 }
 
-func Class(s string) *TransformNode {
-	return &TransformNode{
+func Chl(c ...*Node) *Node {
+	return &Node{
 		transform: func(p *Node) {
-			p.Attrs["class"] = s
+			for _, n := range c {
+				if c == nil {
+					continue
+				}
+				p.Children = append(p.Children, n)
+			}
 		},
 	}
 }
 
-func Div(o ...NodeOption) *Node {
+func Checked(b bool) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			if b {
+				p.Attrs["checked"] = "checked"
+			}
+		},
+	}
+}
+
+func Role(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["role"] = s
+		},
+	}
+}
+
+func Class(s string) *Node {
+	_, file, line, ok := runtime.Caller(1)
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["class"] = s
+			if ok {
+				p.locator = fmt.Sprintf("%s:%d", file, line)
+			}
+		},
+	}
+}
+
+func Xmlns(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["xmlns"] = s
+		},
+	}
+}
+
+func StrokeWidth(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["stroke-width"] = s
+		},
+	}
+}
+
+func Stroke(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["stroke"] = s
+		},
+	}
+}
+
+func StrokeLinecap(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["stroke-linecap"] = s
+		},
+	}
+}
+
+func StrokeLinejoin(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["stroke-linejoin"] = s
+		},
+	}
+}
+
+func FileRule(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["fill-rule"] = s
+		},
+	}
+}
+
+func Datetime(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["datetime"] = s
+		},
+	}
+}
+
+func ViewBox(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["viewBox"] = s
+		},
+	}
+}
+
+func Fill(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["fill"] = s
+		},
+	}
+}
+
+func AriaHidden(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["aria-hidden"] = s
+		},
+	}
+}
+
+func ClipRule(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["clip-rule"] = s
+		},
+	}
+}
+
+func FillRule(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["fill-rule"] = s
+		},
+	}
+}
+
+func D(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["d"] = s
+		},
+	}
+}
+
+func Div(o ...*Node) *Node {
 	return NewNode("div", o)
 }
 
-func Header(o ...NodeOption) *Node {
+func Header(o ...*Node) *Node {
 	return NewNode("header", o)
 }
 
-func Nav(o ...NodeOption) *Node {
+func Nav(o ...*Node) *Node {
 	return NewNode("nav", o)
 }
 
-func Ul(o ...NodeOption) *Node {
+func Ul(o ...*Node) *Node {
 	return NewNode("ul", o)
 }
 
-func Li(o ...NodeOption) *Node {
+func Li(o ...*Node) *Node {
 	return NewNode("li", o)
 }
 
-func A(o ...NodeOption) *Node {
+func A(o ...*Node) *Node {
 	return NewNode("a", o)
 }
 
-func H1(o ...NodeOption) *Node {
+func H1(o ...*Node) *Node {
 	return NewNode("h1", o)
 }
 
-func H2(o ...NodeOption) *Node {
+func H2(o ...*Node) *Node {
 	return NewNode("h2", o)
 }
 
-func If(b bool, n func() *Node) NodeOption {
-	if b {
-		return n()
-	}
-	return &NilNode{}
-}
-
-func Form(o ...NodeOption) *Node {
+func Form(o ...*Node) *Node {
 	return NewNode("form", o)
 }
 
-func Label(o ...NodeOption) *Node {
+func Label(o ...*Node) *Node {
 	return NewNode("label", o)
 }
 
-func Details(o ...NodeOption) *Node {
+func Details(o ...*Node) *Node {
 	return NewNode("details", o)
 }
 
-func Input(o ...NodeOption) *Node {
+func Input(o ...*Node) *Node {
 	return NewNode("input", o)
 }
 
-func TextArea(o ...NodeOption) *Node {
+func TextArea(o ...*Node) *Node {
 	return NewNode("textarea", o)
 }
 
-func Button(o ...NodeOption) *Node {
+func Button(o ...*Node) *Node {
 	return NewNode("button", o)
 }
 
-func Title(o ...NodeOption) *Node {
+func Title(o ...*Node) *Node {
 	return NewNode("title", o)
 }
 
-func Link(o ...NodeOption) *Node {
+func Link(o ...*Node) *Node {
 	return NewNode("link", o)
 }
 
-func Script(o ...NodeOption) *Node {
+func Script(o ...*Node) *Node {
 	return NewNode("script", o)
 }
 
-func Img(o ...NodeOption) *Node {
+func Img(o ...*Node) *Node {
 	return NewNode("img", o)
 }
 
-func P(o ...NodeOption) *Node {
+func P(o ...*Node) *Node {
 	return NewNode("p", o)
 }
 
-func Style(o ...NodeOption) *Node {
+func Hr(o ...*Node) *Node {
+	return NewNode("hr", o)
+}
+
+func Style(o ...*Node) *Node {
 	return NewNode("style", o)
 }
 
-func Main(o ...NodeOption) *Node {
+func Main(o ...*Node) *Node {
 	return NewNode("main", o)
 }
 
-func Section(o ...NodeOption) *Node {
+func Section(o ...*Node) *Node {
 	return NewNode("section", o)
 }
 
-func Span(o ...NodeOption) *Node {
+func Span(o ...*Node) *Node {
 	return NewNode("span", o)
 }
 
-func Svg(o ...NodeOption) *Node {
+func Svg(o ...*Node) *Node {
 	return NewNode("svg", o)
 }
 
-func H4(o ...NodeOption) *Node {
+func H4(o ...*Node) *Node {
 	return NewNode("h4", o)
 }
 
-func H3(o ...NodeOption) *Node {
+func H3(o ...*Node) *Node {
 	return NewNode("h3", o)
 }
 
-func H5(o ...NodeOption) *Node {
+func H5(o ...*Node) *Node {
 	return NewNode("h5", o)
 }
 
-func Path(o ...NodeOption) *Node {
+func Progress(o ...*Node) *Node {
+	return NewNode("progress", o)
+}
+
+func Path(o ...*Node) *Node {
 	return NewNode("path", o)
 }
 
-func Summary(o ...NodeOption) *Node {
+func Summary(o ...*Node) *Node {
 	return NewNode("summary", o)
 }
 
-func Open(b bool) *TransformNode {
-	return &TransformNode{
+func Open(b bool) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			if b {
 				p.Attrs["open"] = "open"
@@ -457,48 +647,101 @@ func Open(b bool) *TransformNode {
 	}
 }
 
-func Method(s string) *TransformNode {
-	return &TransformNode{
+func Method(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["method"] = s
 		},
 	}
 }
 
-func Action(s string) *TransformNode {
-	return &TransformNode{
+func Max(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
-			p.Attrs["action"] = s
+			p.Attrs["max"] = s
 		},
 	}
 }
 
-func Src(s string) *TransformNode {
-	return &TransformNode{
+func Action(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
-			p.Attrs["src"] = s
+			p.DynamicAttrs["action"] = func(ctx context.Context) string {
+				if strings.HasPrefix(s, "/") {
+					if baseURL, ok := ctx.Value("baseURL").(string); ok {
+						return baseURL + s
+					}
+				}
+				return s
+			}
 		},
 	}
 }
 
-func Href(s string) *TransformNode {
-	return &TransformNode{
+func Src(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
-			p.Attrs["href"] = s
+			p.DynamicAttrs["src"] = func(ctx context.Context) string {
+				if strings.HasPrefix(s, "/") {
+					if baseURL, ok := ctx.Value("baseURL").(string); ok {
+						return baseURL + s
+					}
+				}
+				return s
+			}
 		},
 	}
 }
 
-func Attr(k, v string) *TransformNode {
-	return &TransformNode{
+func Href(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.DynamicAttrs["href"] = func(ctx context.Context) string {
+				if strings.HasPrefix(s, "/") {
+					if baseURL, ok := ctx.Value("baseURL").(string); ok {
+						return baseURL + s
+					}
+				}
+				return s
+			}
+		},
+	}
+}
+
+func If(c bool, trueNode *Node, falseNode *Node) *Node {
+	if c {
+		return trueNode
+	}
+	return falseNode
+}
+
+func Nil() *Node {
+	return &Node{}
+}
+
+func Attr(k, v string) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			p.Attrs[k] = v
 		},
 	}
 }
 
-func Attrs(m map[string]string) *TransformNode {
-	return &TransformNode{
+func AttrCtx(attr, key string) *Node {
+	return &Node{
+		transform: func(n *Node) {
+			n.DynamicAttrs[attr] = func(ctx context.Context) string {
+				if v, ok := ctx.Value(key).(string); ok {
+					return v
+				}
+				return ""
+			}
+		},
+	}
+}
+
+func Attrs(m map[string]string) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			for k, v := range m {
 				p.Attrs[k] = v
@@ -507,152 +750,152 @@ func Attrs(m map[string]string) *TransformNode {
 	}
 }
 
-func For(s string) *TransformNode {
-	return &TransformNode{
+func For(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["for"] = s
 		},
 	}
 }
 
-func Id(s string) *TransformNode {
-	return &TransformNode{
+func Id(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["id"] = s
 		},
 	}
 }
 
-func Name(s string) *TransformNode {
-	return &TransformNode{
+func Name(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["name"] = s
 		},
 	}
 }
 
-func Target(s string) *TransformNode {
-	return &TransformNode{
+func Target(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["target"] = s
 		},
 	}
 }
 
-func AriaLabel(s string) *TransformNode {
-	return &TransformNode{
+func AriaLabel(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["aria-label"] = s
 		},
 	}
 }
 
-func Placeholder(s string) *TransformNode {
-	return &TransformNode{
+func Placeholder(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["placeholder"] = s
 		},
 	}
 }
 
-func Rows(i int) *TransformNode {
-	return &TransformNode{
+func Rows(i int) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["rows"] = fmt.Sprintf("%d", i)
 		},
 	}
 }
 
-func Type(s string) *TransformNode {
-	return &TransformNode{
+func Type(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["type"] = s
 		},
 	}
 }
 
-func Footer(o ...NodeOption) *Node {
+func Footer(o ...*Node) *Node {
 	return NewNode("footer", o)
 }
 
-func Article(o ...NodeOption) *Node {
+func Article(o ...*Node) *Node {
 	return NewNode("article", o)
 }
 
-func Charset(s string) *TransformNode {
-	return &TransformNode{
+func Charset(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["charset"] = s
 		},
 	}
 }
 
-func Content(s string) *TransformNode {
-	return &TransformNode{
+func Content(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["content"] = s
 		},
 	}
 }
 
-func HttpEquiv(s string) *TransformNode {
-	return &TransformNode{
+func HttpEquiv(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["http-equiv"] = s
 		},
 	}
 }
 
-func Rel(s string) *TransformNode {
-	return &TransformNode{
+func Rel(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["rel"] = s
 		},
 	}
 }
 
-func Crossorigin(s string) *TransformNode {
-	return &TransformNode{
+func Crossorigin(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["crossorigin"] = s
 		},
 	}
 }
 
-func Sizes(s string) *TransformNode {
-	return &TransformNode{
+func Sizes(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["sizes"] = s
 		},
 	}
 }
 
-func Property(s string) *TransformNode {
-	return &TransformNode{
+func Property(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["property"] = s
 		},
 	}
 }
 
-func Accesskey(s string) *TransformNode {
-	return &TransformNode{
+func Accesskey(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["accesskey"] = s
 		},
 	}
 }
 
-func Select(o ...NodeOption) *Node {
+func Select(o ...*Node) *Node {
 	return NewNode("select", o)
 }
 
-func Option(o ...NodeOption) *Node {
+func Option(o ...*Node) *Node {
 	return NewNode("option", o)
 }
 
-func Value(s string) *TransformNode {
-	return &TransformNode{
+func Value(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["value"] = s
 		},
@@ -663,32 +906,40 @@ var (
 	T = Text
 )
 
-func HxPost(s string) *TransformNode {
-	return &TransformNode{
+func HxPost(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["hx-post"] = s
 		},
 	}
 }
 
-func HxGet(s string) *TransformNode {
-	return &TransformNode{
+func HxTrigger(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["hx-trigger"] = s
+		},
+	}
+}
+
+func HxGet(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["hx-get"] = s
 		},
 	}
 }
 
-func HxTarget(s string) *TransformNode {
-	return &TransformNode{
+func HxTarget(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["hx-target"] = s
 		},
 	}
 }
 
-func HxSwap(s string) *TransformNode {
-	return &TransformNode{
+func HxSwap(s string) *Node {
+	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["hx-swap"] = s
 		},

@@ -1,26 +1,105 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
-
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import "@blocknote/core/fonts/inter.css";
-import { useCreateBlockNote } from "@blocknote/react";
+import {getDefaultReactSlashMenuItems, SuggestionMenuController, useCreateBlockNote} from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import Reveal from 'reveal.js';
 import 'reveal.js/dist/reveal.css';
 import 'reveal.js/dist/theme/black.css';
 
-export const Editor = () => {
-    // Creates a new editor instance.
-    const editor = useCreateBlockNote();
+import {
+    Block,
+    BlockNoteEditor,
+    BlockNoteSchema,
+    defaultBlockSpecs,
+    filterSuggestionItems,
+    PartialBlock
+} from "@blocknote/core";
 
+async function saveToStorage(jsonBlocks: Block[]) {
+    // Save contents to local storage. You might want to debounce this or replace
+    // with a call to your API / database.
+    localStorage.setItem("editorContent", JSON.stringify(jsonBlocks));
+}
+
+async function loadFromStorage() {
+    // Gets the previously stored editor contents.
+    const storageString = localStorage.getItem("editorContent");
+    return storageString
+        ? (JSON.parse(storageString) as PartialBlock[])
+        : undefined;
+}
+
+export const Editor = () => {
+    const [initialContent, setInitialContent] = useState<
+        PartialBlock[] | undefined | "loading"
+    >("loading");
+
+    // Loads the previously stored editor contents.
+    useEffect(() => {
+        loadFromStorage().then((content) => {
+            setInitialContent(content);
+        });
+    }, []);
+    // Creates a new editor instance.
+    // We use useMemo + createBlockNoteEditor instead of useCreateBlockNote so we
+    // can delay the creation of the editor until the initial content is loaded.
+    const editor = useMemo(() => {
+        if (initialContent === "loading") {
+            return undefined;
+        }
+        // TODO breadchris when content is loaded, set the form inputs
+        return BlockNoteEditor.create({
+            initialContent,
+            uploadFile: async (file: File) => {
+                const body = new FormData();
+                body.append("file", file);
+
+                const ret = await fetch("/upload", {
+                    method: "POST",
+                    body: body,
+                });
+                return await ret.text();
+            },
+            schema: BlockNoteSchema.create({
+                blockSpecs: {
+                    ...defaultBlockSpecs,
+                    procode: CodeBlock,
+                }
+            }),
+        });
+    }, [initialContent]);
+
+    if (editor === undefined) {
+        return "Loading content...";
+    }
+
+    // Renders the editor instance.
     return (
-        <div>
-            <BlockNoteView editor={editor} />
-            <Slides />
-        </div>
+        <BlockNoteView
+            editor={editor}
+            onChange={async () => {
+                saveToStorage(editor.document);
+                document.getElementById("markdown").value = await editor.blocksToMarkdownLossy()
+                document.getElementById("blocknote").value = JSON.stringify(editor.document);
+            }}
+            slashMenu={false}
+        >
+            <SuggestionMenuController
+                triggerCharacter={"/"}
+                getItems={async (query) =>
+                    filterSuggestionItems(
+                        [...getDefaultReactSlashMenuItems(editor), insertCode()],
+                        query
+                    )
+                }
+            />
+        </BlockNoteView>
     );
 }
 
-const Slides = () => {
+
+export const Slides = () => {
     const deckDivRef = useRef<HTMLDivElement>(null); // reference to deck container div
     const deckRef = useRef<Reveal.Api | null>(null); // reference to deck reveal instance
 
@@ -61,9 +140,20 @@ const Slides = () => {
     );
 }
 
-
 import {createRoot} from 'react-dom/client';
-const root = createRoot(document.getElementById('editor'));
-root.render((
-    <Editor />
-));
+import {CodeBlock, insertCode} from "./CodeBlock";
+const e = document.getElementById('editor');
+if (e) {
+    const r = createRoot(e);
+    r.render((
+        <Editor />
+    ));
+}
+
+const s = document.getElementById('slides');
+if (s) {
+    const r = createRoot(s);
+    r.render((
+        <Slides />
+    ));
+}

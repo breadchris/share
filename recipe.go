@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	. "github.com/breadchris/share/html2"
+	. "github.com/breadchris/share/html"
 	"log"
 	"net/http"
 	"os"
