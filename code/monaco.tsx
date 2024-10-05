@@ -237,10 +237,11 @@ const CodeEditor = ({ fileName, darkMode, vimModeEnabled, isServerEnvironment, c
     const runCode = async () => {
         console.log("Running code", editorInstance.current.getValue());
         // get select value from "#function"
-        const func = document.getElementById("function").value;
+        // const func = document.getElementById("function").value;
+        
         const res = await fetch('/code/', {
             method: 'POST',
-            body: JSON.stringify({ code: editorInstance.current?.getValue(), func: func }),
+            body: JSON.stringify({ code: editorInstance.current?.getValue(), func: "main.Render" }),
             headers: {
                 'Content-Type': 'application/json',
             },
