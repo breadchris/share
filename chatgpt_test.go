@@ -78,7 +78,7 @@ func TestRunConversation(t *testing.T) {
 
 	messages := []openai.ChatCompletionMessage{message}
 
-	cfg := loadConfig()
+	cfg := LoadConfig()
 	client := openai.NewClient(cfg.OpenAIKey)
 	resp, err := client.CreateChatCompletion(
 		context.Background(),

@@ -1,0 +1,27 @@
+<html>
+    <head>
+        <script src="leapclient.js"></script>
+        <script src="leap-bind-textarea.js"></script>
+    </head>
+    <textarea id="leaps-textarea"></textarea>
+    <script>
+        var client = new leap_client();
+        client.on("error", function(body) {
+            console.error(body)
+        });
+
+        client.on("disconnect", function() {
+            console.log("we are disconnected and stuff");
+        });
+
+        client.on("connect", function() {
+            client.subscribe("main.go");
+        });
+
+        window.onload = function() {
+            client.connect("ws://" + window.location.host + "/leaps/ws?username=foo");
+        }
+        const t = document.getElementById("leaps-textarea");
+        client.bind_textarea(t, "main.go");
+    </script>
+</html>

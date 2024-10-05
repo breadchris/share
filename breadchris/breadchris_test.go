@@ -11,6 +11,12 @@ import (
 	"testing/fstest"
 )
 
+func TestGenerate(t *testing.T) {
+	if err := StaticSiteGenerator(); err != nil {
+		t.Fatalf("Error: %v", err)
+	}
+}
+
 func TestRun(t *testing.T) {
 	i := interp.New(interp.Options{
 		GoPath: "/dev/null",

@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
+	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/session"
 	"github.com/fsnotify/fsnotify"
 	"github.com/google/uuid"
@@ -144,11 +145,6 @@ func (s *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Auth) accountHandler(w http.ResponseWriter, r *http.Request) {
-	t, err := template.ParseFiles("account.html")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 	id, err := s.s.GetUserID(r.Context())
 	if err != nil {
 		http.Error(w, "Not logged in", http.StatusUnauthorized)
@@ -165,29 +161,54 @@ func (s *Auth) accountHandler(w http.ResponseWriter, r *http.Request) {
 			inv = append(inv, k)
 		}
 	}
-
-	err = t.Execute(w, struct {
-		User         *User
-		Invites      []string
-		InvitedUsers []*User
-	}{
-		User: user,
-		InvitedUsers: lo.Filter(
-			lo.Map(
-				lo.Filter(invites, func(i Invite, idx int) bool {
-					return i.From == id
-				}),
-				func(i Invite, idx int) *User {
-					return users[i.To]
-				},
-			), func(u *User, idx int) bool {
-				return u != nil
-			}),
-		Invites: inv,
-	})
-	if err != nil {
-		println(err.Error())
-	}
+	Html(
+		Head(
+			Meta(Charset("UTF-8")),
+			Meta(Name("viewport"), Content("width=device-width, initial-scale=1.0")),
+			Title(T("Authentication")),
+			Script(Src("https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js")),
+			Link(Rel("stylesheet"), Href("https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.css")),
+			Script(Src("https://cdn.tailwindcss.com")),
+		),
+		Body(Class("bg-gray-100 flex items-center justify-center min-h-screen"),
+			Div(Class("bg-white p-8 rounded shadow-md w-full max-w-md"),
+				H1(Class("text-2xl font-bold mb-4"), T("Home")),
+				P(T("Hello "+user.Email)),
+				Hr(Class("my-5")),
+				Text("User Invites"),
+				Ch(
+					lo.Map(
+						lo.Filter(invites, func(i Invite, idx int) bool {
+							return i.From == id
+						}),
+						func(i Invite, idx int) *Node {
+							if us, ok := users[i.To]; ok {
+								return Div(Class("border p-4 rounded-lg bg-gray-50"),
+									Text(us.Email),
+								)
+							}
+							return nil
+						},
+					),
+				),
+				Hr(Class("my-5")),
+				P(Class("text-lg"), T("Invites")),
+				Form(
+					HxPost("/invite"),
+					HxTarget("#result"),
+					Button(Class("btn"), Type("submit"), T("Invite")),
+				),
+				Div(Id("result")),
+				Ch(
+					lo.Map(inv, func(i string, idx int) *Node {
+						return Div(Class("border p-4 rounded-lg bg-gray-50"),
+							A(Href("/register?invite="+i), T("/register?invite="+i)),
+						)
+					}),
+				),
+			),
+		),
+	).RenderPage(w, r)
 }
 
 func (s *Auth) handleRegister(w http.ResponseWriter, r *http.Request) {
@@ -309,6 +330,10 @@ func WatchFilesAndFolders(paths []string, callback func(string)) error {
 				if !ok {
 					return
 				}
+				if event.Op != fsnotify.Write {
+					continue
+				}
+
 				absPath, err := filepath.Abs(event.Name)
 				if err != nil {
 					log.Printf("failed to get absolute path for %s: %v", event.Name, err)

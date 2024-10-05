@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"html/template"
+	. "github.com/breadchris/share/html"
 	"log"
 	"net/http"
 	"os"
@@ -26,13 +26,6 @@ func setupRecipe() {
 	http.HandleFunc("/recipe/search", h.searchHandler)
 }
 
-// SearchResult represents a single search result item
-type SearchResult struct {
-	Title       string
-	Description string
-	URL         string
-}
-
 type Handler struct {
 	index *SearchIndex
 }
@@ -44,14 +37,13 @@ func (s *Handler) searchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var results []SearchResult
-
 	res, err := s.index.Search(query)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	var results []*Node
 	for _, h := range res.Hits {
 		f, err := os.ReadFile(path.Join("data/recipes", h.ID))
 		if err != nil {
@@ -65,17 +57,18 @@ func (s *Handler) searchHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		results = append(results, SearchResult{
-			Title:       data["name"].(string),
-			Description: data["source"].(string),
-			URL:         fmt.Sprintf("/data/recipes/%s", h.ID),
-		})
+		results = append(results,
+			Div(Class("border p-4 mb-4 bg-white rounded shadow"),
+				H1(Class("text-xl font-semibold"), T(data["name"].(string))),
+				P(T(data["source"].(string))),
+				A(Class("text-blue-500"), Href(fmt.Sprintf("/data/recipes/%s", h.ID)), T("Read more")),
+			))
 	}
 
 	w.Header().Set("Content-Type", "text/html")
-	searchTmpl := template.Must(template.ParseFiles("searchresults.html"))
-	err = searchTmpl.Execute(w, results)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if len(results) == 0 {
+		P(T("No results found")).RenderPage(w, r)
+		return
 	}
+	Div(Ch(results)).RenderPage(w, r)
 }

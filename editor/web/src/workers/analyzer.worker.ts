@@ -49,6 +49,7 @@ function onModuleInit(module) {
   console.log('analyzer: started')
   module = wrapModule(module)
   onmessage = (msg) => {
+
     const { id, type, data } = msg.data
     switch (type) {
       case TYPE_RUN:

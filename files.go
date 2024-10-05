@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	html "github.com/breadchris/share/html2"
+	html "github.com/breadchris/share/html"
 	"io/fs"
 	"net/http"
 	"os"

@@ -1,7 +1,7 @@
 package main
 
 import (
-	. "github.com/breadchris/share/html2"
+	. "github.com/breadchris/share/html"
 )
 
 type Item struct {
@@ -40,17 +40,30 @@ ws.onerror = function (error) {
 `))
 }
 
+func Render() *Node {
+	db, _ := NewDBAny("a")
+	db.Set("1", map[string]any{
+		"Value": "asd",
+	})
+	db.Set("2", map[string]any{
+		"Value": "list",
+	})
+	db.Set("3", map[string]any{
+		"Value": "list34",
+	})
+	db.Set("4", map[string]any{
+		"Value": "list345",
+	})
+	return RenderComponents(db)
+}
+
 func RenderComponents(db *DBAny) *Node {
 	return Html(
 		Head(
 			Title(T("Hacker Profile")),
-			Link(
-				Href("https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"),
-				Attr("rel", "stylesheet"),
-				Attr("type", "text/css"),
-			),
-			Script(Src("https://cdn.tailwindcss.com")),
-			Script(Src("https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js")),
+			DaisyUI,
+			TailwindCSS,
+			HTMX,
 			Style(T("body { font-family: 'Inter', sans-serif; }")),
 			ReloadNode(),
 		),
@@ -62,14 +75,15 @@ func RenderComponents(db *DBAny) *Node {
 			Input(Name("value")),
 			Button(Type("submit"), T("Submit")),
 		),
-		RenderList(db),
-		//RenderButtons(),
+		//RenderReviews(),
+		//RenderList(db),
+		RenderButtons(),
 		//RenderHero(),
 		//RenderListWithCheckbox(),
 		//RenderNameOfTheComponent(),
 		RenderCarousel(),
 		//RenderDoubleCalendar(),
-		//RenderChatBubble(),
+		RenderChatBubble(),
 		//RenderProgress2(),
 	)
 }
@@ -2027,6 +2041,127 @@ func RenderProgress2() *Node {
 				Progress(Class("progress progress-primary w-56"), Value("40"), Max("100")),
 				Progress(Class("progress progress-primary w-56"), Value("70"), Max("100")),
 				Progress(Class("progress progress-primary w-56"), Value("100"), Max("100")),
+			),
+		),
+	)
+}
+
+func RenderReviews() *Node {
+	return Div(
+		Class("bg-white py-6 sm:py-8 lg:py-12"),
+		Div(
+			Class("mx-auto max-w-screen-xl px-4 md:px-8"),
+			H2(
+				Class("mb-8 text-center text-2xl font-bold text-gray-800 md:mb-12 lg:text-3xl"),
+				Text("What others say about us"),
+			),
+			Div(
+				Class("grid gap-y-10 sm:grid-cols-2 sm:gap-y-12 lg:grid-cols-3 lg:divide-x"),
+				Div(
+					Class("flex flex-col items-center gap-4 sm:px-4 md:gap-6 lg:px-8"),
+					Div(
+						Class("text-center text-gray-600"),
+						Text(
+							"“This is a section of some simple filler text, also known as placeholder text.”",
+						),
+					),
+					Div(
+						Class("flex flex-col items-center gap-2 sm:flex-row md:gap-3"),
+						Div(
+							Class(
+								"h-12 w-12 overflow-hidden rounded-full bg-gray-100 shadow-lg md:h-14 md:w-14",
+							),
+							Img(
+								Src(
+									"https://images.unsplash.com/photo-1567515004624-219c11d31f2e??auto=format&q=75&fit=crop&w=112",
+								),
+								Class("h-full w-full object-cover object-center"),
+							),
+						),
+						Div(
+							Div(
+								Class(
+									"text-center text-sm font-bold text-indigo-500 sm:text-left md:text-base",
+								),
+								Text("John McCulling"),
+							),
+							P(
+								Class("text-center text-sm text-gray-500 sm:text-left md:text-sm"),
+								Text("CEO / Datadrift"),
+							),
+						),
+					),
+				),
+				Div(
+					Class("flex flex-col items-center gap-4 sm:px-4 md:gap-6 lg:px-8"),
+					Div(
+						Class("text-center text-gray-600"),
+						Text(
+							"“This is a section of some simple filler text, also known as placeholder text.”",
+						),
+					),
+					Div(
+						Class("flex flex-col items-center gap-2 sm:flex-row md:gap-3"),
+						Div(
+							Class(
+								"h-12 w-12 overflow-hidden rounded-full bg-gray-100 shadow-lg md:h-14 md:w-14",
+							),
+							Img(
+								Src(
+									"https://images.unsplash.com/photo-1532073150508-0c1df022bdd1?auto=format&q=75&fit=crop&w=112",
+								),
+								Class("h-full w-full object-cover object-center"),
+							),
+						),
+						Div(
+							Div(
+								Class(
+									"text-center text-sm font-bold text-indigo-500 sm:text-left md:text-base",
+								),
+								Text("Kate Berg"),
+							),
+							P(
+								Class("text-center text-sm text-gray-500 sm:text-left md:text-sm"),
+								Text("CFO / Dashdash"),
+							),
+						),
+					),
+				),
+				Div(
+					Class("flex flex-col items-center gap-4 sm:px-4 md:gap-6 lg:px-8"),
+					Div(
+						Class("text-center text-gray-600"),
+						Text(
+							"“This is a section of some simple filler text, also known as placeholder text.”",
+						),
+					),
+					Div(
+						Class("flex flex-col items-center gap-2 sm:flex-row md:gap-3"),
+						Div(
+							Class(
+								"h-12 w-12 overflow-hidden rounded-full bg-gray-100 shadow-lg md:h-14 md:w-14",
+							),
+							Img(
+								Src(
+									"https://images.unsplash.com/photo-1463453091185-61582044d556?auto=format&q=75&fit=crop&w=500",
+								),
+								Class("h-full w-full object-cover object-center"),
+							),
+						),
+						Div(
+							Div(
+								Class(
+									"text-center text-sm font-bold text-indigo-500 sm:text-left md:text-base",
+								),
+								Text("Greg Jackson"),
+							),
+							P(
+								Class("text-center text-sm text-gray-500 sm:text-left md:text-sm"),
+								Text("CTO / Uptime"),
+							),
+						),
+					),
+				),
 			),
 		),
 	)

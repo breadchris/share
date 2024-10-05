@@ -26,6 +26,11 @@ export default defineConfig({
     host: '0.0.0.0',
     proxy: {
       '/api': `http://${PROXY_HOST}`,
+      '/leaps/static': `http://${PROXY_HOST}`,
+      '/leaps/ws': {
+        target: `ws://${PROXY_HOST}`,
+        ws: true,
+      }
     }
   },
   build: {

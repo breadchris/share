@@ -7,8 +7,8 @@ import { configureStore, createGoConsoleAdapter, createGoLifecycleAdapter } from
 import { history } from '~/store/configure'
 import { bootstrapGo } from '~/services/go'
 import config from './services/config'
-import { PlaygroundPage } from '~/components/pages/PlaygroundPage'
-import { NotFoundPage } from '~/components/pages/NotFoundPage'
+import { PlaygroundPage } from 'components/PlaygroundPage'
+import { NotFoundPage } from 'components/NotFoundPage'
 import { ConnectedThemeProvider } from '~/components/utils/ConnectedThemeProvider'
 import { ApiClientProvider } from '~/services/api'
 

@@ -33,18 +33,19 @@ const initialNodes = [
         position: { x: 100, y: 100 },
         data: { value: 123 },
     },
-    {
-        id: '4',
-        type: 'epub',
-        position: { x: 100, y: 600 },
-        data: { value: 123 },
-    },
-    {
-        id: '5',
-        type: 'pdf',
-        position: { x: 400, y: 100 },
-        data: { value: 123 },
-    },
+
+    // {
+    //     id: '4',
+    //     type: 'epub',
+    //     position: { x: 100, y: 600 },
+    //     data: { value: 123 },
+    // },
+    // {
+    //     id: '5',
+    //     type: 'pdf',
+    //     position: { x: 400, y: 100 },
+    //     data: { value: 123 },
+    // },
     // {
     //     id: '5',
     //     type: 'youtube',
@@ -60,34 +61,11 @@ const getId = () => `${id++}`;
 const handleStyle = { left: 10 };
 
 function TextUpdaterNode({ data }) {
-    const dynamicContentDiv = useRef(null);
-    const onChange = useCallback((evt) => {
-        console.log(evt.target.value);
-    }, []);
-
-    useEffect(() => {
-        const fetchHTMLContent = async () => {
-            try {
-                const response = await fetch('/chat');
-                const htmlContent = await response.text();
-                if (dynamicContentDiv.current) {
-                    dynamicContentDiv.current.innerHTML = htmlContent;
-                }
-            } catch (error) {
-                console.error('Error fetching HTML content:', error);
-            }
-        };
-
-        fetchHTMLContent();
-    }, []);
-
     return (
         <>
             <Handle type="target" position={Position.Top} />
-            <div>
-                <label htmlFor="text">Text:</label>
-                <input id="text" name="text" onChange={onChange} className="nodrag" />
-                <div ref={dynamicContentDiv} id={"dynamic-content"} style={{width: '100%', height: '100%'}}></div>
+            <div className={"p-6"}>
+                <iframe src={"/breadchris/new"} className={"h-96 w-full"}></iframe>
             </div>
             <Handle type="source" position={Position.Bottom} id="a" />
         </>

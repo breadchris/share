@@ -7,10 +7,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/breadchris/share/breadchris"
+	"github.com/breadchris/share/code"
+	"github.com/breadchris/share/editor/config"
+	"github.com/breadchris/share/editor/leaps"
+	"github.com/breadchris/share/editor/playground"
 	"github.com/breadchris/share/html"
-	"github.com/breadchris/share/html2"
 	"github.com/breadchris/share/session"
 	"github.com/breadchris/share/symbol"
+	"github.com/evanw/esbuild/pkg/api"
 	"github.com/gomarkdown/markdown"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -66,17 +70,17 @@ type ZineConfig struct {
 }
 
 func LoadConfig() AppConfig {
-	// load the app config
+	// load the app dbconfig
 	var appConfig AppConfig
 	configFile, err := os.Open("data/config.json")
 	if err != nil {
-		log.Fatalf("Failed to open config file: %v", err)
+		log.Fatalf("Failed to open dbconfig file: %v", err)
 	}
 	defer configFile.Close()
 
 	err = json.NewDecoder(configFile).Decode(&appConfig)
 	if err != nil {
-		log.Fatalf("Failed to decode config file: %v", err)
+		log.Fatalf("Failed to decode dbconfig file: %v", err)
 	}
 	return appConfig
 }
@@ -119,16 +123,94 @@ func startServer(useTLS bool, port int) {
 	p("/llm", SetupChatgpt(oai))
 	p("/chat", c.NewMux())
 
+	lm := leaps.RegisterRoutes(leaps.NewLogger())
+	p("/leaps", lm.Mux)
+
 	//text.Setup(upgrader)
 	//go watchPaths()
-	//go func() {
-	//	paths := []string{
-	//		"./breadchris/editor.tsx",
-	//	}
-	//	if err := WatchFilesAndFolders(paths, breadchris.Build); err != nil {
-	//		log.Fatalf("Failed to watch files: %v", err)
-	//	}
-	//}()
+	go func() {
+		paths := []string{
+			"./breadchris/editor.tsx",
+		}
+		if err := WatchFilesAndFolders(paths, func(s string) {
+			result := api.Build(api.BuildOptions{
+				EntryPoints: paths,
+				Loader: map[string]api.Loader{
+					".js":    api.LoaderJS,
+					".jsx":   api.LoaderJSX,
+					".ts":    api.LoaderTS,
+					".tsx":   api.LoaderTSX,
+					".woff":  api.LoaderFile,
+					".woff2": api.LoaderFile,
+					".ttf":   api.LoaderFile,
+					".eot":   api.LoaderFile,
+					".css":   api.LoaderCSS,
+				},
+				//Outfile:   "graph.js",
+				Outdir:    "breadchris/static",
+				Bundle:    true,
+				Write:     true,
+				Sourcemap: api.SourceMapInline,
+				LogLevel:  api.LogLevelInfo,
+			})
+
+			for _, warning := range result.Warnings {
+				fmt.Println(warning.Text)
+			}
+
+			for _, e := range result.Errors {
+				fmt.Println(e.Text)
+			}
+
+			for _, f := range result.OutputFiles {
+				fmt.Println(f.Path)
+			}
+		}); err != nil {
+			log.Fatalf("Failed to watch files: %v", err)
+		}
+	}()
+	go func() {
+		paths := []string{
+			"./graph/graph.tsx",
+			"./code/monaco.tsx",
+		}
+		if err := WatchFilesAndFolders(paths, func(s string) {
+			result := api.Build(api.BuildOptions{
+				EntryPoints: paths,
+				Loader: map[string]api.Loader{
+					".js":    api.LoaderJS,
+					".jsx":   api.LoaderJSX,
+					".ts":    api.LoaderTS,
+					".tsx":   api.LoaderTSX,
+					".woff":  api.LoaderFile,
+					".woff2": api.LoaderFile,
+					".ttf":   api.LoaderFile,
+					".eot":   api.LoaderFile,
+					".css":   api.LoaderCSS,
+				},
+				//Outfile:   "graph.js",
+				Outdir:    "dist/",
+				Bundle:    true,
+				Write:     true,
+				Sourcemap: api.SourceMapInline,
+				LogLevel:  api.LogLevelInfo,
+			})
+
+			for _, warning := range result.Warnings {
+				fmt.Println(warning.Text)
+			}
+
+			for _, e := range result.Errors {
+				fmt.Println(e.Text)
+			}
+
+			for _, f := range result.OutputFiles {
+				fmt.Println(f.Path)
+			}
+		}); err != nil {
+			log.Fatalf("Failed to watch files: %v", err)
+		}
+	}()
 	//go func() {
 	//	paths := []string{
 	//		"./graph/graph.tsx",
@@ -138,15 +220,15 @@ func startServer(useTLS bool, port int) {
 	//	}
 	//}()
 
-	m := breadchris.New()
-	p("/breadchris", m)
+	p("/breadchris", breadchris.New("/breadchris"))
 
-	mx := setupReload("./scratch.go")
-	p("/reload", mx)
+	p("/reload", setupReload("./scratch.go"))
+
+	p("/code", code.New(lm))
 
 	z.SetupZineRoutes()
 
-	db, err := html2.NewDBAny("data/testdb/")
+	db, err := html.NewDBAny("data/testdb/")
 	if err != nil {
 		log.Fatalf("Failed to create db: %v", err)
 	}
@@ -182,7 +264,7 @@ func startServer(useTLS bool, port int) {
 				http.Error(w, "Failed to get script func", http.StatusInternalServerError)
 				return
 			}
-			rf := v.Interface().(func(db *html2.DBAny) *html2.Node)
+			rf := v.Interface().(func(db *html.DBAny) *html.Node)
 			n := rf(db)
 			n.RenderPage(w, r)
 			return
@@ -194,7 +276,7 @@ func startServer(useTLS bool, port int) {
 			return
 		}
 
-		rf := v.Interface().(func(db *html2.DBAny) *html2.Node)
+		rf := v.Interface().(func(db *html.DBAny) *html.Node)
 		n := rf(db)
 		n.RenderPage(w, r)
 	})
@@ -210,7 +292,6 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/modify", modifyHandler)
 	http.HandleFunc("/extension", extensionHandler)
 
-	http.HandleFunc("/code", a.handleCode)
 	http.HandleFunc("/", fileServerHandler)
 
 	dir := "data/justshare.io-ssl-bundle"
@@ -236,7 +317,7 @@ func startServer(useTLS bool, port int) {
 		}
 	} else {
 		log.Printf("Starting HTTP server on port: %d", port)
-		http.ListenAndServe(fmt.Sprintf(":%d", port), h)
+		http.ListenAndServe(fmt.Sprintf("localhost:%d", port), h)
 	}
 }
 
@@ -269,6 +350,25 @@ func main() {
 				},
 				Action: func(c *cli.Context) error {
 					startServer(c.Bool("tls"), c.Int("port"))
+					return nil
+				},
+			},
+			{
+				Name: "editor",
+				Action: func(c *cli.Context) error {
+					m := leaps.RegisterRoutes(leaps.NewLogger())
+
+					cfg := config.DefaultConfig()
+					cfg.Build.PackagesFile = "./editor/packages.json"
+					cfg.HTTP.Addr = "localhost:8000"
+					playground.StartEditor(cfg, m.Mux)
+					return nil
+				},
+			},
+			{
+				Name: "leaps",
+				Action: func(c *cli.Context) error {
+					leaps.NewLeaps()
 					return nil
 				},
 			},
@@ -337,7 +437,7 @@ func extensionHandler(w http.ResponseWriter, r *http.Request) {
 		Tabwidth: 4,
 	}
 
-	err = cfg.Fprint(&buf, fset, n.RenderGoFunction(fset, req.Name))
+	err = cfg.Fprint(&buf, fset, html.RenderGoFunction(fset, "Render"+strings.Title(req.Name), n.RenderGoCode(fset)))
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to format code: %v", err), http.StatusInternalServerError)
 		return
@@ -361,7 +461,7 @@ func extensionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := exec.LookPath("golines"); err != nil {
-		println("golines is not installed")
+		println("golines is not installed: go install github.com/segmentio/golines@latest")
 		http.Error(w, fmt.Sprintf("golines is not installed: %v", err), http.StatusInternalServerError)
 		return
 	}
@@ -403,7 +503,7 @@ func modifyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = html2.ModifyFunction(parts[0], req.Class, line, -1); err != nil {
+	if err = html.ModifyFunction(parts[0], req.Class, line, -1); err != nil {
 		slog.Error("error modifying function", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -424,9 +524,11 @@ func convertMovToMp4(inputFile, outputFile string) error {
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		w.Write([]byte(html2.Upload().Render()))
+		w.Write([]byte(html.Upload().Render()))
 		return
 	case "POST":
+		r.ParseMultipartForm(10 << 20)
+
 		f, h, err := r.FormFile("file")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -469,11 +571,11 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-
-			http.Redirect(w, r, outputFile, http.StatusSeeOther)
+			w.Write([]byte("/" + outputFile))
 			return
 		}
-		http.Redirect(w, r, name, http.StatusSeeOther)
+		// TODO https
+		w.Write([]byte(fmt.Sprintf("/%s", name)))
 		return
 	}
 	w.Write([]byte("invalid method"))
@@ -647,46 +749,6 @@ func codeHandler(w http.ResponseWriter, r *http.Request) {
 func fileServerHandler(w http.ResponseWriter, r *http.Request) {
 	host := r.Host
 
-	type l struct {
-		Name string
-		Path string
-	}
-
-	pathLookup := map[string]l{
-		"/": {
-			Path: "html/index.go",
-			Name: "html.Index",
-		},
-		"/breadchris": {
-			Path: "html/blog.go",
-			Name: "html.RenderBlog",
-		},
-	}
-
-	for p, f := range pathLookup {
-		if r.URL.Path == p {
-			if p == "/" {
-				w.Write([]byte(html2.Index()))
-				return
-			}
-			i, err := runCode(f.Path)
-			if err != nil {
-				println("Error running code", err.Error())
-				return
-			}
-
-			v, err := i.Eval(f.Name)
-			if err != nil {
-				println("Error evaluating code", err.Error())
-				return
-			}
-
-			r := v.Interface().(func() string)
-			w.Write([]byte(r()))
-			return
-		}
-	}
-
 	fmt.Printf("path: %s\n", r.URL.Path)
 
 	// the host is in the form: *.justshare.io, extract the subdomain
@@ -766,7 +828,7 @@ func fileServe(r *http.Request, w http.ResponseWriter, baseDir string) {
 	// remove the leading slash
 	path = path[1:]
 
-	fileInfo, err := ioutil.ReadDir(path)
+	fileInfo, err := os.ReadDir(path)
 	if err == nil {
 		type File struct {
 			Name  string
@@ -777,24 +839,21 @@ func fileServe(r *http.Request, w http.ResponseWriter, baseDir string) {
 			fileNames = append(fileNames, File{file.Name(), file.IsDir()})
 		}
 
-		data := map[string]any{
-			"files": fileNames,
-		}
-
 		indexPath := filepath.Join(path, "index.html")
-		indexTemplate, err := template.ParseFiles(indexPath)
-		if err == nil {
-			indexTemplate.Execute(w, data)
+		if _, err := os.Stat(indexPath); err == nil {
+			http.ServeFile(w, r, indexPath)
 			return
 		}
 
-		indexTemplate, err = template.ParseFiles("dir.html")
+		indexTemplate, err := template.ParseFiles("dir.html")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		err = indexTemplate.Execute(w, data)
+		err = indexTemplate.Execute(w, map[string]any{
+			"files": fileNames,
+		})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/breadchris/share/editor/internal/pkgindex"
+	"github.com/breadchris/share/editor/pkgindex"
 	"github.com/spf13/cobra"
 )
 
