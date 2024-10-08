@@ -6,23 +6,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"github.com/breadchris/share/breadchris"
-	"github.com/breadchris/share/code"
-	"github.com/breadchris/share/editor/config"
-	"github.com/breadchris/share/editor/leaps"
-	"github.com/breadchris/share/editor/playground"
-	"github.com/breadchris/share/html"
-	"github.com/breadchris/share/session"
-	"github.com/breadchris/share/symbol"
-	"github.com/evanw/esbuild/pkg/api"
-	"github.com/gomarkdown/markdown"
-	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
-	"github.com/protoflow-labs/protoflow/pkg/util/reload"
-	ignore "github.com/sabhiram/go-gitignore"
-	"github.com/traefik/yaegi/interp"
-	"github.com/traefik/yaegi/stdlib"
-	"github.com/urfave/cli/v2"
 	"go/format"
 	"go/printer"
 	"go/token"
@@ -39,6 +22,25 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/breadchris/share/breadchris"
+	"github.com/breadchris/share/code"
+	"github.com/breadchris/share/editor/config"
+	"github.com/breadchris/share/editor/leaps"
+	"github.com/breadchris/share/editor/playground"
+	"github.com/breadchris/share/game"
+	"github.com/breadchris/share/html"
+	"github.com/breadchris/share/session"
+	"github.com/breadchris/share/symbol"
+	"github.com/evanw/esbuild/pkg/api"
+	"github.com/gomarkdown/markdown"
+	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
+	"github.com/protoflow-labs/protoflow/pkg/util/reload"
+	ignore "github.com/sabhiram/go-gitignore"
+	"github.com/traefik/yaegi/interp"
+	"github.com/traefik/yaegi/stdlib"
+	"github.com/urfave/cli/v2"
 )
 
 var upgrader = websocket.Upgrader{
@@ -115,6 +117,8 @@ func startServer(useTLS bool, port int) {
 	p := func(p string, s *http.ServeMux) {
 		http.Handle(p+"/", http.StripPrefix(p, s))
 	}
+
+	game.Setup()
 
 	setupWebauthn()
 	setupPrompt()
