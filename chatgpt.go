@@ -3,14 +3,18 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/websocket"
+	"github.com/samber/lo"
 	"html/template"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strconv"
 	"time"
 
+	. "github.com/breadchris/share/html"
 	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
 )
@@ -27,19 +31,18 @@ type ChatState struct {
 }
 
 var (
-	tm    *template.Template
 	tmmsg *template.Template
 )
 
 func SetupChatgpt(s *OpenAIService) *http.ServeMux {
 	m := http.NewServeMux()
-	tm = template.Must(template.ParseFiles("chatgpt.html"))
 	tmmsg = template.Must(template.ParseFiles("chatgptmsg.html"))
 
 	m.HandleFunc("/", s.homeHandler)
 	m.HandleFunc("/{id}", s.homeHandler)
 	m.HandleFunc("/send", s.sendMessageHandler)
 	m.HandleFunc("/chat", s.chatgptHandler)
+	m.HandleFunc("/stream", s.streamHandler)
 	return m
 }
 
@@ -56,17 +59,64 @@ func NewOpenAIService(config AppConfig) *OpenAIService {
 
 func (s *OpenAIService) homeHandler(w http.ResponseWriter, r *http.Request) {
 	i := r.PathValue("id")
-	var chatState ChatState
+	var cs ChatState
 	if i != "" {
-		chatState = loadChatState(i)
+		cs = loadChatState(i)
 	}
-	chats := loadChats()
-	err := tm.Execute(w, struct {
-		Chats    []ChatState
-		Messages []ChatMessage
-	}{Chats: chats, Messages: chatState.Messages})
+	Div(
+		Ch(lo.Map(cs.Messages, func(m ChatMessage, i int) *Node {
+			b := "mb-2"
+			bs := "inline-block px-4 py-2 rounded "
+			return Div(
+				If(m.Role == "user", Class("text-right "+b), Class("text-left "+b)),
+				Div(
+					If(m.Role == "user", Class(bs+"bg-blue"), Class(bs+"bg-gray")),
+					T(m.Content),
+				),
+			)
+		})),
+	).RenderPage(w, r)
+}
+
+func (s *OpenAIService) streamHandler(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Println("Error upgrading to websocket:", err)
+		return
+	}
+	defer conn.Close()
+
+	var req InferRequest
+	if err := conn.ReadJSON(&req); err != nil {
+		log.Println("Error reading request:", err)
+		return
+	}
+
+	rq := openai.ChatCompletionRequest{
+		Model: openai.GPT4o20240513,
+		Messages: []openai.ChatCompletionMessage{
+			{Role: "user", Content: req.Prompt},
+		},
+	}
+	stream, err := s.Client.CreateChatCompletionStream(r.Context(), rq)
+	if err != nil {
+		log.Println("Error creating stream:", err)
+		return
+	}
+
+	for {
+		sr, err := stream.Recv()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			log.Println("Error receiving response:", err)
+			return
+		}
+		if err := conn.WriteMessage(websocket.TextMessage, []byte(sr.Choices[0].Delta.Content)); err != nil {
+			log.Println("Error writing message:", err)
+			return
+		}
 	}
 }
 

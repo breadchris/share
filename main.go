@@ -131,6 +131,9 @@ func startServer(useTLS bool, port int) {
 	lm := leaps.RegisterRoutes(leaps.NewLogger())
 	p("/leaps", lm.Mux)
 
+	fb := NewForm()
+	p("/form", fb)
+
 	//text.Setup(upgrader)
 	//go watchPaths()
 	go func() {
@@ -403,6 +406,10 @@ var u = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
+}
+
+type InferRequest struct {
+	Prompt string `json:"prompt"`
 }
 
 type ExtensionRequest struct {
