@@ -11,11 +11,14 @@ import (
 	"github.com/breadchris/share/session"
 	"github.com/fsnotify/fsnotify"
 	"github.com/google/uuid"
+	"github.com/gorilla/sessions"
+	"github.com/markbates/goth/gothic"
+	"github.com/markbates/goth/providers/google"
 	"github.com/samber/lo"
 	"github.com/traefik/yaegi/interp"
 	"github.com/traefik/yaegi/stdlib"
-	"html/template"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -48,17 +51,73 @@ func init() {
 }
 
 type Auth struct {
-	s *session.SessionManager
-	e *SMTPEmail
-	c AppConfig
+	s   *session.SessionManager
+	e   *SMTPEmail
+	c   AppConfig
+	h   *gothic.Handler
+	cfg AppConfig
 }
 
 func NewAuth(s *session.SessionManager, e *SMTPEmail, c AppConfig) *Auth {
 	return &Auth{
-		s: s,
-		e: e,
-		c: c,
+		s:   s,
+		e:   e,
+		c:   c,
+		cfg: c,
+		h: gothic.NewHandler(
+			sessions.NewCookieStore([]byte(c.SessionSecret)),
+			gothic.WithProviders(
+				google.New(
+					c.GoogleClientID,
+					c.GoogleClientSecret,
+					fmt.Sprintf("%s/auth/google/callback", c.ExternalURL),
+					"email", "profile"),
+			),
+		),
 	}
+}
+
+func (a *Auth) startGoogleAuth(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+
+	q.Set("provider", "google")
+	// TODO breadchris update this path to take the "next url"
+	// aren't their security concerns here?
+	q.Set("redirect_to", fmt.Sprintf("%s/auth/google/callback", a.cfg.ExternalURL))
+	r.URL.RawQuery = q.Encode()
+	a.h.BeginAuthHandler(w, r)
+}
+
+func (a *Auth) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	q.Set("provider", "google")
+	r.URL.RawQuery = q.Encode()
+	u, err := a.h.CompleteUserAuth(w, r)
+	if err != nil {
+		slog.Error("failed to complete user auth", "error", err)
+		return
+	}
+
+	// find user by email
+	var id string
+	for _, user := range users {
+		if user.Email == u.Email {
+			id = user.ID
+			break
+		}
+	}
+
+	if id == "" {
+		id = uuid.NewString()
+		users[id] = &User{
+			ID:    id,
+			Email: u.Email,
+		}
+		saveJSON(authFile, users)
+	}
+	a.s.SetUserID(r.Context(), id)
+
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 func (s *Auth) handleInvite(w http.ResponseWriter, r *http.Request) {
@@ -75,18 +134,16 @@ func (s *Auth) handleInvite(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
-	type state struct {
-		Msg string
-	}
-	sta := state{}
+type AuthState struct {
+	Msg string
+}
 
-	t := template.Must(template.ParseFiles("login.html"))
+func (s *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		sec := r.URL.Query().Get("sec")
 		if sec == "" {
-			t.Execute(w, nil)
+			LoginPage(AuthState{}).RenderPage(w, r)
 			return
 		}
 		for _, user := range users {
@@ -114,17 +171,20 @@ func (s *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 					e := s.e.SendRecoveryEmail(user.Email, "Recover your account", msg, user.Secrets[0])
 					if e != nil {
 						fmt.Printf("Error sending email: %v\n", e)
-						sta.Msg = "Error sending email"
-						t.Execute(w, sta)
+						LoginPage(AuthState{
+							Msg: "Error sending email",
+						}).RenderPage(w, r)
 						return
 					}
-					sta.Msg = "check your email"
-					t.Execute(w, sta)
+					LoginPage(AuthState{
+						Msg: "check your email",
+					})
 					return
 				}
 			}
-			sta.Msg = "no user with that email"
-			t.Execute(w, sta)
+			LoginPage(AuthState{
+				Msg: "no user with that email",
+			}).RenderPage(w, r)
 			return
 		}
 
@@ -142,6 +202,47 @@ func (s *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid secret", http.StatusBadRequest)
 		return
 	}
+}
+
+func LoginPage(s AuthState) *Node {
+	return Html(
+		Head(
+			Meta(Charset("UTF-8")),
+			Meta(Attr("name", "viewport"), Content("width=device-width, initial-scale=1.0")),
+			Title(T("Login")),
+			Link(Href("https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"), Rel("stylesheet")),
+			Script(Src("https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js")),
+		),
+		Body(Class("bg-gray-100 flex items-center justify-center min-h-screen"),
+			Div(Class("bg-white p-8 rounded shadow-md w-full max-w-md"),
+				H1(Class("text-2xl font-bold mb-4"), T("Login")),
+
+				If(len(s.Msg) > 0,
+					Div(Class("bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"), Role("alert"),
+						Span(Class("block sm:inline"), T(s.Msg)),
+					),
+					Nil(),
+				),
+
+				A(Href("/auth/google"), Class("bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"), T("Login with Google")),
+
+				//Form(Method("POST"), Action("/login"), Attr("enctype", "multipart/form-data"),
+				//	Div(Class("mb-4"),
+				//		Hr(Class("my-5")),
+				//		Label(Class("block text-gray-700 text-sm font-bold mb-2"), For("secret"), T("Secret")),
+				//		Input(Type("password"), Id("secret"), Name("secret"), Placeholder("secret"), Class("shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline")),
+				//		Hr(Class("my-5")),
+				//		Input(Type("email"), Id("email"), Name("email"), Placeholder("email"), Class("shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline")),
+				//	),
+				//	Div(Class("flex items-center justify-between"),
+				//		Button(Class("bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"), Type("submit"), T("Submit")),
+				//	),
+				//),
+
+				Div(Id("result"), Class("mt-4")),
+			),
+		),
+	)
 }
 
 func (s *Auth) accountHandler(w http.ResponseWriter, r *http.Request) {
@@ -215,12 +316,9 @@ func (s *Auth) handleRegister(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		i := r.URL.Query().Get("invite")
-		t := template.Must(template.ParseFiles("register.html"))
-		t.Execute(w, struct {
-			Invite string
-		}{
+		RegisterPage(RegisterState{
 			Invite: i,
-		})
+		}).RenderPage(w, r)
 	case http.MethodPost:
 		email := r.FormValue("email")
 		invite := r.FormValue("invite")
@@ -244,7 +342,6 @@ func (s *Auth) handleRegister(w http.ResponseWriter, r *http.Request) {
 		})
 		saveJSON(invitesFile, invites)
 
-		// find user by email
 		for _, user := range users {
 			if user.Email == email {
 				http.Error(w, "User already exists", http.StatusBadRequest)
@@ -262,14 +359,81 @@ func (s *Auth) handleRegister(w http.ResponseWriter, r *http.Request) {
 		}
 		saveJSON(authFile, users)
 		s.s.SetUserID(r.Context(), id)
-		fmt.Fprintf(w, "<img src=\"/qr?data=%s\"/><hr /><a href=\"/\">go home</a>", sec)
+		Div(
+			Img(Src("/qr?data="+sec)),
+			Hr(),
+			A(Href("/"), T("go home")),
+		).RenderPage(w, r)
 	}
+}
+
+type RegisterState struct {
+	Invite string
+}
+
+func RegisterPage(state RegisterState) *Node {
+	return Html(
+		Head(
+			Meta(Charset("UTF-8")),
+			Meta(Attr("name", "viewport"), Content("width=device-width, initial-scale=1.0")),
+			Title(T("Login")),
+			Link(Href("https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"), Rel("stylesheet")),
+			Script(Src("https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js")),
+		),
+		Body(Class("bg-gray-100 flex items-center justify-center h-screen"),
+			Div(Class("w-full max-w-md"),
+				Form(HxPost("/register"), HxTarget("#result"), HxSwap("innerHTML"),
+					Input(Type("hidden"), Name("invite"), Value(state.Invite)),
+					Div(Class("mb-4"),
+						Label(Class("block text-gray-700 text-sm font-bold mb-2"), For("email"), T("Email")),
+						Input(Class("shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"), Id("email"), Type("email"), Name("email"), Placeholder("Email")),
+					),
+					Div(Class("flex items-center justify-between"),
+						Button(Class("bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"), Type("submit"), T("Register")),
+					),
+					Div(Id("result"), Class("mt-4")),
+				),
+				P(Class("text-center text-gray-500 text-xs"), T("share")),
+			),
+		),
+	)
 }
 
 func (s *Auth) handleAuth(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		http.ServeFile(w, r, "auth.html")
+		Html(
+			Head(
+				Meta(Charset("UTF-8")),
+				Meta(Attr("name", "viewport"), Content("width=device-width, initial-scale=1.0")),
+				Title(T("Authentication")),
+				Link(Href("https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"), Rel("stylesheet")),
+				Script(Src("https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js")),
+			),
+			Body(Class("bg-gray-100 flex items-center justify-center min-h-screen"),
+				Div(Class("bg-white p-8 rounded shadow-md w-full max-w-md"),
+					H1(Class("text-2xl font-bold mb-4"), T("Authentication")),
+
+					Form(Id("uploadForm"), HxPost("/auth"), Attr("hx-encoding", "multipart/form-data"), HxTarget("#result"), HxSwap("innerHTML"),
+						Div(Class("mb-4"),
+							Label(Class("block text-gray-700 text-sm font-bold mb-2"), For("file"), T("Upload QR Code")),
+							Input(Type("file"), Id("file"), Name("file"), Class("shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline")),
+						),
+						Div(Class("flex items-center justify-between"),
+							Button(Class("bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"), Type("submit"), T("Submit")),
+						),
+					),
+
+					Div(Id("result"), Class("mt-4")),
+
+					Hr(Class("my-4")),
+
+					Button(Class("bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"), HxPut("/auth"), HxTarget("#qrCode"), HxSwap("outerHTML"), T("Generate QR Code")),
+
+					Div(Id("qrCode"), Class("mt-4")),
+				),
+			),
+		).RenderPage(w, r)
 	case http.MethodPut:
 		privateKey, _, err := generateKeyPair()
 		if err != nil {

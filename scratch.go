@@ -1843,6 +1843,10 @@ func RenderChatBubble() *Node {
 						Div(Text("I cant believe you've done this")),
 					),
 				),
+				Div(
+					Class("chat chat-end"),
+					Div(Class("chat-bubble"), Div(Text("Hey cameron"))),
+				),
 			),
 		),
 	)

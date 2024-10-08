@@ -196,7 +196,10 @@ func (s *Node) RenderCtx(ctx context.Context) string {
 		c += t.RenderCtx(ctx)
 	}
 
-	if s.locator != "" && len(s.Attrs) == 0 && len(s.DynamicAttrs) == 0 {
+	if len(s.Attrs) == 0 && len(s.DynamicAttrs) == 0 {
+		if c == "" {
+			return ""
+		}
 		return fmt.Sprintf("<%s>%s</%s>", s.Name, c, s.Name)
 	}
 
@@ -409,6 +412,14 @@ func Class(s string) *Node {
 	}
 }
 
+func Alt(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["alt"] = s
+		},
+	}
+}
+
 func Xmlns(s string) *Node {
 	return &Node{
 		transform: func(p *Node) {
@@ -487,6 +498,15 @@ func AriaHidden(s string) *Node {
 			p.Attrs["aria-hidden"] = s
 		},
 	}
+}
+
+func DataSlot(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["data-slot"] = s
+		},
+	}
+
 }
 
 func ClipRule(s string) *Node {
@@ -930,12 +950,24 @@ func HxGet(s string) *Node {
 	}
 }
 
-func HxTarget(s string) *Node {
+func HxPut(s string) *Node {
 	return &Node{
 		transform: func(p *Node) {
-			p.Attrs["hx-target"] = s
+			p.Attrs["hx-put"] = s
 		},
 	}
+}
+
+func NewAttrNode(attr, val string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs[attr] = val
+		},
+	}
+}
+
+func HxTarget(s string) *Node {
+	return NewAttrNode("hx-target", s)
 }
 
 func HxSwap(s string) *Node {

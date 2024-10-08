@@ -290,14 +290,13 @@ func RenderChat(cs chatState) (string, error) {
 	form := Form(
 		HxPost("/chat/send"),
 		HxTarget("#result"),
-		Class("bg-white p-4 rounded-lg shadow-md"),
+		Class("rounded-lg shadow-md"),
 		Div(Class("mb-4"),
-			Label(For("content"), Class("block text-sm font-medium text-gray-700"), T("Message")),
-			TextArea(Id("content"), Name("content"), Class("mt-1 p-6 block w-full shadow-sm sm:text-sm border border-gray-300 rounded-md m-3")),
+			TextArea(Id("content"), Name("content"), Class("w-full sm:text-sm")),
 		),
 		Input(Type("hidden"), Name("parent_id"), Value(cs.ParentID)),
 
-		Label(For("ai"), Class("block text-sm font-medium text-gray-700"), T("ask AI")),
+		Label(For("ai"), Class("text-sm font-medium text-gray-700"), T("ask AI")),
 		Input(Type("checkbox"), Class("toggle"), Name("ai")),
 		Div(
 			Class("flex flex-row space-x-4"),
@@ -320,10 +319,9 @@ func RenderChat(cs chatState) (string, error) {
 		Attr("lang", "en"),
 		head,
 		Body(Class("bg-gray-100 vsc-initialized"),
-			Div(Class("container mx-auto p-4"),
-				H1(Class("text-2xl font-bold mb-4"), T("Chat Room")),
+			Div(Class("container mx-auto p-2"),
 				form,
-				Div(Class("bg-white p-4 rounded-lg shadow-md mb-4"),
+				Div(Class("p-4 rounded-lg mb-4"),
 					Id("chat"),
 					Attr("hx-ext", "sse"),
 					Attr("sse-connect", "/chat/sse"),
@@ -340,7 +338,6 @@ func RenderChat(cs chatState) (string, error) {
 							return A(Href("/chat?id="+node), T(node))
 						})),
 					),
-
 					RenderGraph(cs.Graph),
 				),
 				Script(T(`

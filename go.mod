@@ -1,8 +1,10 @@
 module github.com/breadchris/share
 
-go 1.22.0
+go 1.23
 
-toolchain go1.22.5
+toolchain go1.23.1
+
+replace github.com/markbates/goth v1.78.0 => github.com/breadchris/goth v0.0.0-20240124074835-212cf2f446d3
 
 require (
 	github.com/Jeffail/gabs v1.4.0
@@ -15,6 +17,7 @@ require (
 	github.com/blevesearch/bleve v1.0.14
 	github.com/breadchris/scs/v2 v2.0.0-20230909081317-6125300685dd
 	github.com/cenkalti/backoff v2.2.1+incompatible
+	github.com/chromedp/cdproto v0.0.0-20240810084448-b931b754e476
 	github.com/chromedp/chromedp v0.10.0
 	github.com/cosmos72/gomacro v0.0.0-20240506194242-2ff796e3da10
 	github.com/evanw/esbuild v0.23.0
@@ -40,6 +43,7 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/libp2p/go-libp2p v0.36.2
 	github.com/libp2p/go-libp2p-pubsub v0.12.0
+	github.com/markbates/goth v1.78.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/multiformats/go-multiaddr v0.13.0
 	github.com/nlnwa/gowarc v1.6.0
@@ -66,7 +70,7 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0
 	golang.org/x/net v0.29.0
-	golang.org/x/oauth2 v0.22.0
+	golang.org/x/oauth2 v0.23.0
 	golang.org/x/sync v0.8.0
 	golang.org/x/time v0.6.0
 	gopkg.in/alexcesaro/statsd.v2 v2.0.0
@@ -76,6 +80,7 @@ require (
 )
 
 require (
+	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/AndreasBriese/bbloom v0.0.0-20190825152654-46b345b51c96 // indirect
 	github.com/Azure/azure-sdk-for-go v66.0.0+incompatible // indirect
@@ -105,7 +110,6 @@ require (
 	github.com/blevesearch/zap/v15 v15.0.3 // indirect
 	github.com/bmatcuk/doublestar v1.3.4 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/chromedp/cdproto v0.0.0-20240810084448-b931b754e476 // indirect
 	github.com/chromedp/sysutil v1.0.0 // indirect
 	github.com/containerd/cgroups v1.1.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
@@ -143,13 +147,14 @@ require (
 	github.com/google/go-tpm v0.9.0 // indirect
 	github.com/google/gopacket v1.1.19 // indirect
 	github.com/google/pprof v0.0.0-20240727154555-813a5fbdbec8 // indirect
+	github.com/gorilla/securecookie v1.1.2 // indirect
+	github.com/gorilla/sessions v1.4.0 // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/huin/goupnp v1.3.0 // indirect
-	github.com/ikeikeikeike/go-sitemap-generator/v2 v2.0.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/ipfs/bbloom v0.0.4 // indirect
 	github.com/ipfs/boxo v0.22.0 // indirect
@@ -245,6 +250,7 @@ require (
 	github.com/raulk/go-watchdog v1.3.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/rs/zerolog v1.30.0 // indirect
 	github.com/snabb/diagio v1.0.4 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
@@ -279,5 +285,4 @@ require (
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.8.0 // indirect
 	modernc.org/sqlite v1.33.1 // indirect
-	zombiezen.com/go/sqlite v1.4.0 // indirect
 )

@@ -63,6 +63,8 @@ func RenderBlog(entries []Entry) string {
 			Title(T("Journal")),
 			Link(Rel("stylesheet"), Href("https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css")),
 			Link(Rel("stylesheet"), Href("https://cdn.jsdelivr.net/npm/daisyui@1.14.0/dist/full.css")),
+			Link(Href("/breadchris/static/editor.css"), Rel("stylesheet"), Type("text/css")),
+			Script(Src("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js")),
 			Style(T(`
 				h1 { font-size: 2em; }
 				h2 { font-size: 1.5em; }
@@ -81,46 +83,26 @@ func RenderBlog(entries []Entry) string {
 				Div(Class("card shadow-lg compact p-6"),
 					H1(Class("text-2xl font-bold mb-4"), T("Journal")),
 					Form(
-						Attr("action", "/blog"),
-						Attr("method", "POST"),
-						Class("mb-4"),
-						//Attr("onsubmit", "document.querySelector('#entry').value = editor.getValue()"),
-						//Input(Type("hidden"), Id("entry"), Name("entry")),
-						//RenderCode(Code{
-						//	C: "hello world!",
-						//}),
-						TextArea(
-							Class("textarea w-full"),
-							Id("entry"),
-							Placeholder("you know what to do..."),
-							Name("entry"),
-						),
-						Button(
-							Type("submit"),
-							Class("btn btn-primary"),
-							T("Submit"),
+						Method("POST"),
+						Action("/blog"),
+						Class("flex flex-col space-y-4"),
+						Input(Type("hidden"), Name("markdown"), Id("markdown")),
+						Input(Type("hidden"), Name("blocknote"), Id("blocknote")),
+						Div(Id("editor")),
+						//Div(Class("flex flex-row space-x-4"),
+						//	Input(Type("text"), Class("input w-full"), Name("title"), Placeholder("Title")),
+						//	Input(Type("text"), Class("input w-full"), Name("tags"), Placeholder("Tags")),
+						//),
+						Div(Class("flex justify-end"),
+							Button(Type("submit"), Class("btn"), T("Submit")),
 						),
 					),
-					Form(Method("POST"), Action("/upload"), Attr("enctype", "multipart/form-data"),
-						Input(Type("file"), Id("file"), Name("file"), Attr("required", "true")),
-						Button(Type("submit"), T("Submit")),
-					),
-					P(T("1) upload a file 2) copy the link 3) make your post: ![](link)")),
-					Script(T(`
-						var entry = localStorage.getItem('entry');
-						if (entry) {
-							console.log('restoring entry from local storage')
-							document.querySelector('#entry').value = entry;
-						}
-
-						document.querySelector('#entry').addEventListener('input', function(e) {
-							console.log('saving entry to local storage')
-							localStorage.setItem('entry', e.target.value);
-						});
-					`)),
+					Div(Class("mt-4"), Id("preview")),
 					Div(Class("space-y-4"),
 						Ch(en),
 					),
+					Script(Src("/breadchris/static/editor.js")),
+					Script(T("hljs.highlightAll();")),
 				),
 			),
 		),
@@ -187,13 +169,6 @@ func (s *Auth) reactHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Auth) blogHandlerEditor(w http.ResponseWriter, r *http.Request) {
-	Html(
-		Div(
-			Link(Rel("stylesheet"), Href("/dist/editor/editor.css")),
-			Div(Class("w-full"), Attr("style", "height: 600px"), Id("editor")),
-			Script(Attr("src", "/dist/editor/editor.js")),
-		),
-	).RenderPage(w, r)
 }
 
 func (s *Auth) blogHandler(w http.ResponseWriter, r *http.Request) {
@@ -205,7 +180,7 @@ func (s *Auth) blogHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodPost {
 		r.ParseForm()
-		text := r.FormValue("entry")
+		text := r.FormValue("markdown")
 		entry := Entry{
 			ID:        uuid.NewString(),
 			Text:      text,

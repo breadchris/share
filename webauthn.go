@@ -42,8 +42,9 @@ type User struct {
 	DisplayName string
 	Icon        string
 	Credentials []webauthn.Credential
-	Secrets     []string
-	Audiences   []string
+	// TODO breadchris make these expire
+	Secrets   []string
+	Audiences []string
 }
 
 func (u User) WebAuthnID() []byte {
@@ -66,7 +67,7 @@ func (u User) WebAuthnCredentials() []webauthn.Credential {
 	return u.Credentials
 }
 
-var sessions = map[string]*webauthn.SessionData{}
+var webSessions = map[string]*webauthn.SessionData{}
 
 func saveUsersToFile() {
 	file, err := os.Create("data/users.json")
@@ -113,14 +114,14 @@ func beginRegistration(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Store session data
-	sessions[user.Email] = sessionData
+	webSessions[user.Email] = sessionData
 
 	json.NewEncoder(w).Encode(options)
 }
 
 func finishRegistration(w http.ResponseWriter, r *http.Request) {
 	user := users["user@example.com"]
-	sessionData := sessions[user.Email]
+	sessionData := webSessions[user.Email]
 
 	credential, err := webAuthn.FinishRegistration(user, *sessionData, r)
 	if err != nil {
@@ -154,14 +155,14 @@ func beginLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Store session data
-	sessions[user.Email] = sessionData
+	webSessions[user.Email] = sessionData
 
 	json.NewEncoder(w).Encode(options)
 }
 
 func finishLogin(w http.ResponseWriter, r *http.Request) {
 	user := users["user@example.com"]
-	sessionData := sessions[user.Email]
+	sessionData := webSessions[user.Email]
 
 	_, err := webAuthn.FinishLogin(user, *sessionData, r)
 	if err != nil {

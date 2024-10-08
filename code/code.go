@@ -45,6 +45,8 @@ func New(lm *leaps.Leaps) *http.ServeMux {
 			http.Error(w, "file is required", http.StatusBadRequest)
 			return
 		}
+		_ = r.URL.Query().Get("function")
+
 		funcs, err := GetFunctions(file)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -62,7 +64,7 @@ func New(lm *leaps.Leaps) *http.ServeMux {
 						Li(
 							Ul(
 								Ch(lo.Map(funcs, func(f string, i int) *Node {
-									return Li(A(T(f)))
+									return Li(A(Href(fmt.Sprintf("/code?file=%s&function=%s", file, f)), T(f)))
 								})),
 							),
 						)),
@@ -76,6 +78,9 @@ func New(lm *leaps.Leaps) *http.ServeMux {
 		if file == "" {
 			file = "data/test.go"
 		}
+
+		function := r.URL.Query().Get("function")
+
 		switch r.Method {
 		case http.MethodGet:
 			w.Write([]byte(Html(
@@ -91,7 +96,7 @@ func New(lm *leaps.Leaps) *http.ServeMux {
 							Script(Src("/dist/leapclient.js")),
 							Script(Src("/dist/leap-bind-textarea.js")),
 							Link(Rel("stylesheet"), Href("/dist/code/monaco.css")),
-							Div(Class("w-full h-full"), Id("monaco-editor"), Attr("data-filename", file)),
+							Div(Class("w-full h-full"), Id("monaco-editor"), Attr("data-filename", file), Attr("data-function", function)),
 							Script(Attr("src", "/dist/code/monaco.js")),
 						),
 					),

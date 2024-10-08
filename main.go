@@ -60,18 +60,23 @@ type SpotifyConfig struct {
 }
 
 type AppConfig struct {
-	OpenAIKey   string        `json:"openai_key"`
-	SMTP        SMTPConfig    `json:"smtp"`
-	Spotify     SpotifyConfig `json:"spotify"`
-	ExternalURL string        `json:"external_url"`
+	OpenAIKey          string        `json:"openai_key"`
+	SMTP               SMTPConfig    `json:"smtp"`
+	Spotify            SpotifyConfig `json:"spotify"`
+	ExternalURL        string        `json:"external_url"`
+	SessionSecret      string        `json:"session_secret"`
+	GoogleClientID     string        `json:"google_client_id"`
+	GoogleClientSecret string        `json:"google_client_secret"`
 }
 
 type ZineConfig struct {
 }
 
 func LoadConfig() AppConfig {
-	// load the app dbconfig
-	var appConfig AppConfig
+	appConfig := AppConfig{
+		SessionSecret: "secret",
+	}
+
 	configFile, err := os.Open("data/config.json")
 	if err != nil {
 		log.Fatalf("Failed to open dbconfig file: %v", err)
@@ -284,8 +289,9 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/register", a.handleRegister)
 	http.HandleFunc("/login", a.handleLogin)
 	http.HandleFunc("/invite", a.handleInvite)
+	http.HandleFunc("/auth/google", a.startGoogleAuth)
+	http.HandleFunc("/auth/google/callback", a.handleGoogleCallback)
 	http.HandleFunc("/blog", a.blogHandler)
-	http.HandleFunc("/blog/editor", a.blogHandlerEditor)
 	http.HandleFunc("/blog/react", a.reactHandler)
 	http.HandleFunc("/account", a.accountHandler)
 	http.HandleFunc("/files", fileHandler)
@@ -750,6 +756,11 @@ func fileServerHandler(w http.ResponseWriter, r *http.Request) {
 	host := r.Host
 
 	fmt.Printf("path: %s\n", r.URL.Path)
+
+	if r.URL.Path == "/" {
+		Index().RenderPage(w, r)
+		return
+	}
 
 	// the host is in the form: *.justshare.io, extract the subdomain
 

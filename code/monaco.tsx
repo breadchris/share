@@ -57,7 +57,7 @@ const makeid = (length) => {
     return result;
 };
 
-const CodeEditor = ({ fileName, darkMode, vimModeEnabled, isServerEnvironment, code: initialCode }) => {
+const CodeEditor = ({ fileName, darkMode, func, vimModeEnabled, isServerEnvironment, code: initialCode }) => {
     const [code, setCode] = useState(initialCode);
     const [result, setResult] = useState('');
     const analyzer = useRef();
@@ -238,10 +238,10 @@ const CodeEditor = ({ fileName, darkMode, vimModeEnabled, isServerEnvironment, c
         console.log("Running code", editorInstance.current.getValue());
         // get select value from "#function"
         // const func = document.getElementById("function").value;
-        
+
         const res = await fetch('/code/', {
             method: 'POST',
-            body: JSON.stringify({ code: editorInstance.current?.getValue(), func: "main.Render" }),
+            body: JSON.stringify({ code: editorInstance.current?.getValue(), func: func }),
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -309,17 +309,25 @@ const CodeEditor = ({ fileName, darkMode, vimModeEnabled, isServerEnvironment, c
                 </Panel>
                 <PanelResizeHandle className="w-2 bg-gray-300"/>
                 <Panel>
-                    <MonacoEditor
-                        language={LANGUAGE_GOLANG}
-                        theme={darkMode ? 'vs-dark' : 'vs-light'}
-                        value={code}
-                        defaultValue={code}
-                        path={fileName}
-                        options={{}}
-                        onChange={onChange}
-                        onMount={(e, m) => editorDidMount(e, m, fileName)}
-                        loading={<span className={'loading loading-spinner'}>Loading...</span>}
-                    />
+                    <PanelGroup direction="vertical">
+                        <Panel>
+                            <MonacoEditor
+                                language={LANGUAGE_GOLANG}
+                                theme={darkMode ? 'vs-dark' : 'vs-light'}
+                                value={code}
+                                defaultValue={code}
+                                path={fileName}
+                                options={{}}
+                                onChange={onChange}
+                                onMount={(e, m) => editorDidMount(e, m, fileName)}
+                                loading={<span className={'loading loading-spinner'}>Loading...</span>}
+                            />
+                        </Panel>
+                        <PanelResizeHandle className="h-2 bg-gray-300"/>
+                        <Panel defaultSize={20}>
+                            <div className={"overflow-auto h-full"} hx-get={`/chat`} hx-trigger="load"></div>
+                        </Panel>
+                    </PanelGroup>
                 </Panel>
                 <PanelResizeHandle className="w-2 bg-gray-300"/>
                 <Panel>
@@ -335,5 +343,6 @@ if (s) {
     const r = createRoot(s);
     // get filename from data-filename attribute
     const fileName = s.getAttribute('data-filename');
-    r.render(<CodeEditor darkMode={false} fileName={fileName} vimModeEnabled={true} isServerEnvironment={false}/>);
+    const func = s.getAttribute('data-function');
+    r.render(<CodeEditor darkMode={false} fileName={fileName} func={func} vimModeEnabled={true} isServerEnvironment={false}/>);
 }
