@@ -3,6 +3,7 @@ package game
 import (
 	"encoding/json"
 	"fmt"
+	"image"
 	"log"
 	"net/http"
 	"os"
@@ -19,15 +20,17 @@ type Color struct {
 }
 
 type Position struct {
-	X int `json:"x"`
-	Y int `json:"y"`
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
 }
+
 
 var (
 	players      = make(map[string]*Player)
 	npcs         = make(map[string]*Player)
 	playersMutex sync.Mutex
 	projectiles  = make(map[string]*Projectile)
+	colliders    = make(map[string]image.Rectangle)
 
 	// Colors for players
 	colors = []Color{

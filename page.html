@@ -1,0 +1,88 @@
+<html><head><title>PixelWars</title><script src="https://unpkg.com/htmx.org@1.9.12"></script><script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"></script></head><body><div ws-connect="/game/move" hx-ext="ws"><div id="chat_room" hx-swap-oob="innerHTML"><div id="player-0e8f96e8-8a47-4fc7-ac14-8022dd7eb1c6" style="position:absolute; left:603px; top:177px; width:10px; height:10px; background-color:hsl(0, 0%, 0%);"></div><div style="position:absolute; left:334px; top:271px; width:10px; height:10px; background-color:hsl(0, 0%, 0%);" id="player-afbb1e43-b27e-4718-8565-d3af89393d5a"></div><div id="player-67839b7f-f6dd-473c-9ae3-94090f37df8e" style="position:absolute; left:428px; top:374px; width:10px; height:10px; background-color:hsl(0, 0%, 0%);"></div><div id="player-12875ef6-3e2c-4272-986d-e4522f1a6a6c" style="position:absolute; left:383px; top:216px; width:10px; height:10px; background-color:hsl(0, 0%, 0%);"></div><div id="player-c956c8a0-1e30-4a55-acbf-5ea4edacede5" style="position:absolute; left:158px; top:66px; width:10px; height:10px; background-color:hsl(0, 0%, 0%);"></div><div id="player-3c1b5afd-288a-43ba-b008-59caa3adae69" style="position:absolute; left:65px; top:322px; width:10px; height:10px; background-color:hsl(0, 0%, 0%);"></div><div style="position:absolute; left:290px; top:545px; width:10px; height:10px; background-color:hsl(0, 0%, 0%);" id="player-0cd39bb8-45d6-4982-a11d-d6c227f29372"></div><div id="player-6a190a99-77a3-4700-a07a-484944fd1bf1" style="position:absolute; left:440px; top:411px; width:10px; height:10px; background-color:hsl(0, 0%, 0%);"></div><div id="player-b90b85e1-1b50-401b-9273-19c087fd43c9" style="position:absolute; left:800px; top:255px; width:10px; height:10px; background-color:hsl(0, 0%, 0%);"></div><div id="player-552253c8-8c5a-4088-8dbd-d6ac3664afdc" style="position:absolute; left:598px; top:172px; width:10px; height:10px; background-color:hsl(0, 0%, 0%);"></div></div><div><form id="form" ws-send="submit"><input autofocus="" value="left" readonly="" hidden="" name="chat_message" autocomplete="off"></input><input hidden="" id="leftButton" type="submit" value="Send"></input></form><form ws-send="submit" id="form"><input value="right" readonly="" hidden="" name="chat_message" autocomplete="off" autofocus=""></input><input hidden="" id="rightButton" type="submit" value="Send"></input></form><form id="form" ws-send="submit"><input value="up" readonly="" hidden="" name="chat_message" autocomplete="off" autofocus=""></input><input id="upButton" type="submit" value="Send" hidden=""></input></form><form ws-send="submit" id="form"><input autocomplete="off" autofocus="" value="down" readonly="" hidden="" name="chat_message"></input><input id="downButton" type="submit" value="Send" hidden=""></input></form><form id="form" ws-send="submit"><input autofocus="" value="attack" readonly="" hidden="" name="chat_message" autocomplete="off"></input><input type="submit" value="Send" hidden="" id="attackButton"></input></form><form id="form" ws-send="submit"><input readonly="" hidden="" name="chat_message" autocomplete="off" autofocus="" value="special"></input><input hidden="" id="specialButton" type="submit" value="Send"></input></form><form id="form" ws-send="submit"><input name="chat_message" autocomplete="off" autofocus="" value="one" readonly="" hidden=""></input><input hidden="" id="oneButton" type="submit" value="Send"></input></form><form id="form" ws-send="submit"><input autofocus="" value="two" readonly="" hidden="" name="chat_message" autocomplete="off"></input><input hidden="" id="twoButton" type="submit" value="Send"></input></form><form id="form" ws-send="submit"><input name="chat_message" autocomplete="off" autofocus="" value="three" readonly="" hidden=""></input><input type="submit" value="Send" hidden="" id="threeButton"></input></form></div></div><script>
+		// Key state tracking
+		var keysPressed = {};
+
+		// Start moving when keys are pressed
+		document.addEventListener('keydown', function(event) {
+			var key = event.key;
+			console.log('key pressed');
+			if (['a', 'd', 'w', 's', 'n', 'm', '1', '2', '3'].includes(key)) {
+				keysPressed[key] = true;
+				console.log('key pressed');
+				event.preventDefault(); // prevent default scrolling
+			}
+		});
+
+		// Stop moving when keys are released
+		document.addEventListener('keyup', function(event) {
+			var key = event.key;
+			if (['a', 'd', 'w', 's', 'n', 'm', '1', '2', '3'].includes(key)) {
+				keysPressed[key] = false;
+				event.preventDefault(); // prevent default scrolling
+			}
+		});
+		
+		// Movement function
+		function movePlayer() {
+			var directions = [];
+			if (keysPressed['a']) {
+	directions.push('left');
+}
+if (keysPressed['d']) {
+	directions.push('right');
+}
+if (keysPressed['w']) {
+	directions.push('up');
+}
+if (keysPressed['s']) {
+	directions.push('down');
+}
+if (keysPressed['n']) {
+	directions.push('attack');
+}
+if (keysPressed['m']) {
+	directions.push('special');
+}
+if (keysPressed['1']) {
+	directions.push('one');
+}
+if (keysPressed['2']) {
+	directions.push('two');
+}
+if (keysPressed['3']) {
+	directions.push('three');
+}
+			if (directions.length > 0) {
+				if (directions.includes('left')) {
+	document.getElementById('leftButton').click();
+}
+if (directions.includes('right')) {
+	document.getElementById('rightButton').click();
+}
+if (directions.includes('up')) {
+	document.getElementById('upButton').click();
+}
+if (directions.includes('down')) {
+	document.getElementById('downButton').click();
+}
+if (directions.includes('attack')) {
+	document.getElementById('attackButton').click();
+}
+if (directions.includes('special')) {
+	document.getElementById('specialButton').click();
+}
+if (directions.includes('one')) {
+	document.getElementById('oneButton').click();
+}
+if (directions.includes('two')) {
+	document.getElementById('twoButton').click();
+}
+if (directions.includes('three')) {
+	document.getElementById('threeButton').click();
+}
+			}
+		}
+
+		// Call movePlayer at regular intervals
+		setInterval(movePlayer, 50);
+		</script></body></html>

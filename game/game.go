@@ -5,29 +5,33 @@ import (
 	"time"
 
 	. "github.com/breadchris/share/html"
-	"github.com/solarlune/resolv"
 )
 
 type Projectile struct {
-	ID       string        `json:"id"`
-	Object   resolv.Object `json:"object"`
-	Target   string        `json:"target"`
-	Distance int           `json:"distance"`
-	PlayerID string        `json:"player_id"`
-	Damage   int           `json:"damage"`
+	ID       string   `json:"id"`
+	Target   string   `json:"target"`
+	Distance int      `json:"distance"`
+	PlayerID string   `json:"player_id"`
+	Damage   int      `json:"damage"`
+	Position Position `json:"position"`
 }
-
-var space *resolv.Space = resolv.NewSpace(640, 480, 16, 16)
 
 // The game loop that updates NPCs and broadcasts their positions
 func gameLoop() {
-	// Initialize the space
-
 	for {
 		time.Sleep(100 * time.Millisecond)
 		update()
 		Draw()
 	}
+}
+
+func collisionDetection(x, y int) string {
+	for uuid, collider := range colliders {
+		if collider.Min.X < x && x < collider.Max.X && collider.Min.Y < y && y < collider.Max.Y {
+			return uuid
+		}
+	}
+	return ""
 }
 
 func update() {
@@ -38,18 +42,18 @@ func update() {
 			delete(projectiles, projectileID)
 			continue
 		}
-		if calculateDistance(float64(projectile.Object.Position.X), float64(projectile.Object.Position.Y), npc.Object.Position.X, npc.Object.Position.Y) < 100 {
+		if calculateDistance(float64(projectile.Position.X), float64(projectile.Position.Y), npc.Position.X, npc.Position.Y) < 100 {
 			npc.Health -= projectile.Damage
 			if npc.Health <= 0 {
 				players[projectile.PlayerID].Experience += 10
 			}
 			delete(projectiles, projectileID)
-		} else if calculateDistance(float64(projectile.Object.Position.X), float64(projectile.Object.Position.Y), npc.Object.Position.X, npc.Object.Position.Y) >= float64(projectile.Distance) {
+		} else if calculateDistance(float64(projectile.Position.X), float64(projectile.Position.Y), npc.Position.X, npc.Position.Y) >= float64(projectile.Distance) {
 			delete(projectiles, projectileID)
 		} else {
-			xMove, yMove, _ := moveTowards(float64(projectile.Object.Position.X), float64(projectile.Object.Position.Y), npc.Object.Position.X, npc.Object.Position.Y, float64(projectile.Distance))
-			projectile.Object.Position.X += xMove
-			projectile.Object.Position.Y += yMove
+			xMove, yMove, _ := moveTowards(float64(projectile.Position.X), float64(projectile.Position.Y), npc.Position.X, npc.Position.Y, float64(projectile.Distance))
+			projectile.Position.X += xMove
+			projectile.Position.Y += yMove
 		}
 	}
 	for npcID, npc := range npcs {
@@ -80,17 +84,17 @@ func Draw() {
 	playersMutex.Lock()
 	for pID, player := range players {
 		color := fmt.Sprintf("hsl(%d, %d%%, %d%%)", player.Color.H, player.Color.S, 100-player.Health)
-		gameDiv.Children = append(gameDiv.Children, generatePlayerDiv(pID, player.Object.Position.X, player.Object.Position.Y, color))
-		// npcDivs.Children = append(npcDivs.Children, updateHealth(player.ID, player.Health, player.Attack, player.Object.Position.X, player.Object.Position.Y))
+		gameDiv.Children = append(gameDiv.Children, generatePlayerDiv(pID, player.Position.X, player.Position.Y, color))
+		// npcDivs.Children = append(npcDivs.Children, updateHealth(player.ID, player.Health, player.Attack, player.Position.X, player.Position.Y))
 
 	}
 	for npcID, npc := range npcs {
 		color := "hsl(0, 0%, " + fmt.Sprint(100-npc.Health) + "%)"
-		gameDiv.Children = append(gameDiv.Children, generatePlayerDiv(npcID, npc.Object.Position.X, npc.Object.Position.Y, color))
+		gameDiv.Children = append(gameDiv.Children, generatePlayerDiv(npcID, npc.Position.X, npc.Position.Y, color))
 	}
 
 	for projectileID, projectile := range projectiles {
-		gameDiv.Children = append(gameDiv.Children, generateProjectileDiv(projectileID, int(projectile.Object.Position.X), int(projectile.Object.Position.Y)))
+		gameDiv.Children = append(gameDiv.Children, generateProjectileDiv(projectileID, int(projectile.Position.X), int(projectile.Position.Y)))
 	}
 
 	playersMutex.Unlock()

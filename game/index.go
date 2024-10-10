@@ -39,8 +39,8 @@ func generatePlayerDiv(playerID string, x, y float64, color string) *Node {
 
 	if _, exists := players[playerID]; exists {
 		player := players[playerID]
-		special = specialMeter(player.Special, player.MaxSpecial, int(player.Object.Position.X), int(player.Object.Position.Y))
-		experience = experienceMeter(player.Experience, 200, int(player.Object.Position.X), int(player.Object.Position.Y))
+		special = specialMeter(player.Special, player.MaxSpecial, int(player.Position.X), int(player.Position.Y))
+		experience = experienceMeter(player.Experience, 200, int(player.Position.X), int(player.Position.Y))
 		width = players[playerID].MaxHealth / 10
 		player.Width = width
 	}
@@ -66,11 +66,11 @@ func MovementPage(players map[string]*Player, npcs map[string]*Player) *Node {
 		Attr("hx-swap-oob", "innerHTML"))
 	for playerID, player := range players {
 		color := fmt.Sprintf("hsl(%d, %d%%, %d%%)", player.Color.H, player.Color.S, 100-player.Health)
-		PlayersDiv.Children = append(PlayersDiv.Children, generatePlayerDiv(playerID, player.Object.Position.X, player.Object.Position.Y, color))
+		PlayersDiv.Children = append(PlayersDiv.Children, generatePlayerDiv(playerID, player.Position.X, player.Position.Y, color))
 	}
 	for npcID, npc := range npcs {
 		color := fmt.Sprintf("hsl(%d, %d%%, %d%%)", npc.Color.H, npc.Color.S, 100-npc.Health)
-		PlayersDiv.Children = append(PlayersDiv.Children, generatePlayerDiv(npcID, npc.Object.Position.X, npc.Object.Position.Y, color))
+		PlayersDiv.Children = append(PlayersDiv.Children, generatePlayerDiv(npcID, npc.Position.X, npc.Position.Y, color))
 	}
 	controls, forms := jsControls()
 
