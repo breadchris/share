@@ -237,7 +237,7 @@ func ArticleView(state Post) *Node {
 			),
 			Style(T(`
 			pre,code {
-				tab-size: 2; /* Set the tab width to 4 spaces */
+				tab-size: 2; /* SetMap the tab width to 4 spaces */
 				/*white-space: pre; Preserve whitespace and line breaks */
 			}
 			`)),

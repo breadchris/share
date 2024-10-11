@@ -7,13 +7,15 @@ import (
 	"fmt"
 	_ "github.com/glebarez/go-sqlite"
 	"github.com/google/uuid"
+	"math"
 	"regexp"
+	"time"
 )
 
 // Document represents a stored document with an ID and JSONB value.
 type Document struct {
-	ID    uuid.UUID      `json:"id"`
-	Value map[string]any `json:"value"`
+	ID    uuid.UUID       `json:"id"`
+	Value json.RawMessage `json:"value"`
 }
 
 // DocumentStore provides methods to interact with a document storage database.
@@ -34,33 +36,43 @@ func NewDocumentStore(db *sql.DB) *DocumentStore {
 	if err != nil {
 		panic(fmt.Sprintf("failed to create documents table: %v", err))
 	}
-	return &DocumentStore{db: db}
+	return &DocumentStore{db: db, collection: "default"}
 }
 
 func (ds *DocumentStore) WithCollection(collection string) *DocumentStore {
 	return &DocumentStore{db: ds.db, collection: collection}
 }
 
-// Set inserts or updates a document with the given ID and JSON value.
-func (ds *DocumentStore) Set(ctx context.Context, id uuid.UUID, value map[string]any) error {
+// SetMap inserts or updates a document with the given ID and JSON value.
+func (ds *DocumentStore) SetMap(ctx context.Context, id uuid.UUID, value map[string]any) error {
+	return ds.Set(ctx, id, value)
+}
+
+func (ds *DocumentStore) Set(ctx context.Context, id uuid.UUID, value any) error {
 	jsonValue, err := json.Marshal(value)
 	if err != nil {
 		return fmt.Errorf("failed to marshal value: %v", err)
 	}
 
-	query := `
-        INSERT INTO document (id, value) 
-        VALUES ($1, $2) 
-        ON CONFLICT (id) 
-        DO UPDATE SET value = EXCLUDED.value`
-	_, err = ds.db.ExecContext(ctx, query, id, jsonValue)
+	for i := 0; i < 5; i++ {
+		query := `
+			INSERT INTO document (id, collection, value) 
+			VALUES ($1, $2, $3) 
+			ON CONFLICT (id) 
+			DO UPDATE SET value = EXCLUDED.value`
+		_, err = ds.db.ExecContext(ctx, query, id, ds.collection, jsonValue)
+		if err == nil {
+			break
+		}
+		time.Sleep(time.Duration(math.Pow(2, float64(i))) * time.Second)
+	}
 	return err
 }
 
 // Get retrieves a document by its ID.
 func (ds *DocumentStore) Get(ctx context.Context, id uuid.UUID) (*Document, error) {
-	query := `SELECT id, value FROM document WHERE id = $1`
-	row := ds.db.QueryRowContext(ctx, query, id)
+	query := `SELECT id, value FROM document WHERE id = $1 AND collection = $2`
+	row := ds.db.QueryRowContext(ctx, query, id, ds.collection)
 
 	var doc Document
 	var value []byte
@@ -87,10 +99,10 @@ func (ds *DocumentStore) Find(ctx context.Context, key, value string) ([]Documen
 	query := `
         SELECT id, value 
         FROM document 
-        WHERE json_extract(value, ?) = ?`
+        WHERE collection = ? AND json_extract(value, ?) = ?`
 
 	jsonPath := fmt.Sprintf("$.%s", key)
-	rows, err := ds.db.QueryContext(ctx, query, jsonPath, value)
+	rows, err := ds.db.QueryContext(ctx, query, ds.collection, jsonPath, value)
 	if err != nil {
 		return nil, err
 	}
@@ -105,10 +117,10 @@ func (ds *DocumentStore) Find(ctx context.Context, key, value string) ([]Documen
 			return nil, err
 		}
 
-		if err := json.Unmarshal([]byte(jsonValue), &doc.Value); err != nil {
-			return nil, err
-		}
-		documents = append(documents, doc)
+		documents = append(documents, Document{
+			ID:    doc.ID,
+			Value: json.RawMessage(jsonValue),
+		})
 	}
 	return documents, nil
 }

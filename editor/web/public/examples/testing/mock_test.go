@@ -31,7 +31,7 @@ func TestGreet(t *testing.T) {
 	// Create a mock StringService.
 	mockSvc := NewMockStringService(ctrl)
 
-	// Set up the expected behavior.
+	// SetMap up the expected behavior.
 	mockSvc.EXPECT().ToUpper("world").Return("WORLD")
 
 	// Call the function under test.

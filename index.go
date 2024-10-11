@@ -5,6 +5,32 @@ import (
 )
 
 func Index() *Node {
+	type link struct {
+		url  string
+		text string
+	}
+
+	forLink := func(l []link, f func(link) *Node) []*Node {
+		var nodes []*Node
+		for _, v := range l {
+			nodes = append(nodes, f(v))
+		}
+		return nodes
+	}
+
+	urls := []link{
+		{"/data/recipes/", "Recipes"},
+		{"/login", "Login"},
+		{"/register", "Register"},
+		{"/blog", "Blog"},
+		{"/account", "Account"},
+		{"/chat", "Chat"},
+		{"/llm", "LLM"},
+		{"/spotify", "Spotify"},
+		{"/zine", "Zine"},
+		{"/code", "Code"},
+		{"/vote", "Vote"},
+	}
 	toggleMenu := Attr("onclick", "document.getElementById('menu').classList.toggle('hidden')")
 	return Html(
 		Head(
@@ -32,16 +58,9 @@ func Index() *Node {
 						),
 					),
 					Div(Class("hidden lg:flex lg:gap-x-12"),
-						A(Href("/data/recipes/"), Class("text-sm font-semibold leading-6 text-gray-900"), T("Recipes")),
-						A(Href("/login"), Class("text-sm font-semibold leading-6 text-gray-900"), T("Login")),
-						A(Href("/register"), Class("text-sm font-semibold leading-6 text-gray-900"), T("Register")),
-						A(Href("/blog"), Class("text-sm font-semibold leading-6 text-gray-900"), T("Blog")),
-						A(Href("/account"), Class("text-sm font-semibold leading-6 text-gray-900"), T("Account")),
-						A(Href("/chat"), Class("text-sm font-semibold leading-6 text-gray-900"), T("Chat")),
-						A(Href("/llm"), Class("text-sm font-semibold leading-6 text-gray-900"), T("LLM")),
-						A(Href("/spotify"), Class("text-sm font-semibold leading-6 text-gray-900"), T("Spotify")),
-						A(Href("/zine"), Class("text-sm font-semibold leading-6 text-gray-900"), T("Zine")),
-						A(Href("/code"), Class("text-sm font-semibold leading-6 text-gray-900"), T("Zine")),
+						Ch(forLink(urls, func(l link) *Node {
+							return A(Href(l.url), Class("text-sm font-semibold leading-6 text-gray-900"), T(l.text))
+						})),
 					),
 					Div(Class("hidden lg:flex lg:flex-1 lg:justify-end"),
 						A(Href("#"), Class("text-sm font-semibold leading-6 text-gray-900"), T("Log in "), Span(Attr("aria-hidden", "true"), T("→"))),
@@ -66,16 +85,9 @@ func Index() *Node {
 						Div(Class("mt-6 flow-root"),
 							Div(Class("-my-6 divide-y divide-gray-500/10"),
 								Div(Class("space-y-2 py-6"),
-									A(Href("/data/recipes/"), Class("-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"), T("Recipes")),
-									A(Href("/login"), Class("-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"), T("Login")),
-									A(Href("/register"), Class("-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"), T("Register")),
-									A(Href("/blog"), Class("-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"), T("Blog")),
-									A(Href("/account"), Class("-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"), T("Account")),
-									A(Href("/chat"), Class("-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"), T("Chat")),
-									A(Href("/llm"), Class("-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"), T("LLM")),
-									A(Href("/spotify"), Class("-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"), T("Spotify")),
-									A(Href("/zine"), Class("-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"), T("Zine")),
-									A(Href("/code"), Class("-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"), T("Zine")),
+									Ch(forLink(urls, func(l link) *Node {
+										return A(Href(l.url), Class("-mx-3 block rounded-lg px-3 py-2 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"), T(l.text))
+									})),
 								),
 								Div(Class("py-6"),
 									A(Href("#"), Class("-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"), T("Log in")),
@@ -94,16 +106,9 @@ func Index() *Node {
 						H1(Class("text-balance text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl"), T("Welcome to justshare")),
 						P(Class("mt-6 text-lg leading-8 text-gray-600"), T("it is a site i guess")),
 						Div(Class("mt-10 grid grid-cols-2 gap-4 m-1.5 p-7"),
-							A(Href("/data/recipes/"), Class("bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded"), T("Recipes")),
-							A(Href("/login"), Class("bg-green-500 hover:bg-green-700 text-white font-bold py-3 px-6 rounded"), T("Login")),
-							A(Href("/register"), Class("bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-3 px-6 rounded"), T("Register")),
-							A(Href("/blog"), Class("bg-purple-500 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded"), T("Blog")),
-							A(Href("/account"), Class("bg-red-500 hover:bg-red-700 text-white font-bold py-3 px-6 rounded"), T("Account")),
-							A(Href("/chat"), Class("bg-rose-500 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded"), T("Chat")),
-							A(Href("/llm"), Class("bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded"), T("LLM")),
-							A(Href("/spotify"), Class("bg-pink-500 hover:bg-pink-700 text-white font-bold py-3 px-6 rounded"), T("Spotify")),
-							A(Href("/zine"), Class("bg-purple-500 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded"), T("Zine")),
-							A(Href("/graph"), Class("bg-pink-500 hover:bg-pink-700 text-white font-bold py-3 px-6 rounded"), T("Graph")),
+							Ch(forLink(urls, func(l link) *Node {
+								return A(Href(l.url), Class("bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded"), T(l.text))
+							})),
 						),
 					),
 				),

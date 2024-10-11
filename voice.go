@@ -333,7 +333,7 @@ package main
 //		}
 //	}
 //
-//	// Set the remote SessionDescription
+//	// SetMap the remote SessionDescription
 //	if err := u.pc.SetRemoteDescription(offer); err != nil {
 //		return err
 //	}
