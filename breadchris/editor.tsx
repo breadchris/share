@@ -1,6 +1,11 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import "@blocknote/core/fonts/inter.css";
-import {getDefaultReactSlashMenuItems, SuggestionMenuController, useCreateBlockNote} from "@blocknote/react";
+import {
+    DefaultReactSuggestionItem,
+    getDefaultReactSlashMenuItems,
+    SuggestionMenuController,
+    useCreateBlockNote
+} from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 import Reveal from 'reveal.js';
@@ -12,9 +17,10 @@ import {
     BlockNoteEditor,
     BlockNoteSchema,
     defaultBlockSpecs,
-    filterSuggestionItems,
+    filterSuggestionItems, insertOrUpdateBlock,
     PartialBlock
 } from "@blocknote/core";
+import {MdCode} from "react-icons/md";
 
 async function saveToStorage(jsonBlocks: Block[]) {
     // Save contents to local storage. You might want to debounce this or replace
@@ -30,7 +36,125 @@ async function loadFromStorage() {
         : undefined;
 }
 
+const schema = BlockNoteSchema.create({
+    blockSpecs: {
+        ...defaultBlockSpecs,
+        procode: CodeBlock,
+    }
+});
+
 export const Editor = () => {
+    const abortControllerRef = useRef<AbortController|undefined>(undefined);
+
+    // TODO breadchris this will become problematic with multiple forms on the page, need provider
+    useEffect(() => {
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+        };
+    }, []);
+
+    const onStop = () => {
+        abortControllerRef.current?.abort();
+    }
+
+    const inferFromSelectedText = async (prompt: string) => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
+        const aiBlocks = editor.insertBlocks(
+            [
+                {
+                    content: "let me think...",
+                },
+            ],
+            editor.getTextCursorPosition().block,
+            "after"
+        );
+
+        function countIndentationDepth(inputString: string): number {
+            const match = inputString.match(/^( {4}|\t)*/);
+            if (!match) {
+                return 0;
+            }
+            const matchedString = match[0];
+            return matchedString.split(/( {4}|\t)/).filter(Boolean).length;
+        }
+
+        try {
+            const res = contentService.infer({
+                prompt,
+            }, {
+                timeoutMs: undefined,
+                signal: controller.signal,
+            })
+            let content = '';
+            let lastBlock = aiBlocks[0];
+
+            let prevDepth = -1;
+            let count = 0;
+            const insertLine = (text: string) => {
+                const newBlocks = editor.insertBlocks(
+                    [
+                        {
+                            content: text,
+                        },
+                    ],
+                    lastBlock,
+                    count === 0 ? "nested" : "after"
+                );
+                return newBlocks[0];
+            }
+            for await (const exec of res) {
+                // keep collecting until a newline is found
+                content += exec;
+                if (content.includes('\n')) {
+                    const depth = countIndentationDepth(content);
+                    content = content.trim()
+
+                    lastBlock = insertLine(content);
+                    content = '';
+                    prevDepth = depth;
+                    count += 1;
+                }
+            }
+            if (content) {
+                insertLine(content);
+            }
+        } catch (e: any) {
+            console.log(e);
+        } finally {
+            abortControllerRef.current = undefined;
+        }
+    }
+
+    const insertAI = (editor: typeof schema.BlockNoteEditor): DefaultReactSuggestionItem => ({
+        title: "Ask AI",
+        onItemClick: () => {
+            // editor.insertBlocks(
+            //     [
+            //         {
+            //             type: "aiBlock",
+            //             props: {},
+            //         },
+            //     ],
+            //     editor.getTextCursorPosition().block,
+            //     "after"
+            // );
+            const content = editor.getTextCursorPosition().block.content;
+            if (content && content.length > 0 && content[0].type === "text") {
+                const text = content[0].text;
+                void inferFromSelectedText(text);
+            }
+        },
+        aliases: ["ai"],
+        group: "Other",
+        icon: <MdCode />,
+    });
     const [initialContent, setInitialContent] = useState<
         PartialBlock[] | undefined | "loading"
     >("loading");
@@ -61,12 +185,7 @@ export const Editor = () => {
                 });
                 return await ret.text();
             },
-            schema: BlockNoteSchema.create({
-                blockSpecs: {
-                    ...defaultBlockSpecs,
-                    procode: CodeBlock,
-                }
-            }),
+            schema: schema,
         });
     }, [initialContent]);
 
@@ -89,7 +208,7 @@ export const Editor = () => {
                 triggerCharacter={"/"}
                 getItems={async (query) =>
                     filterSuggestionItems(
-                        [...getDefaultReactSlashMenuItems(editor), insertCode()],
+                        [...getDefaultReactSlashMenuItems(editor), insertCode(), insertAI(editor)],
                         query
                     )
                 }
@@ -142,6 +261,7 @@ export const Slides = () => {
 
 import {createRoot} from 'react-dom/client';
 import {CodeBlock, insertCode} from "./CodeBlock";
+import {contentService} from "./ContentService";
 const e = document.getElementById('editor');
 if (e) {
     const r = createRoot(e);

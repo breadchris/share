@@ -1,6 +1,7 @@
 package code
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/breadchris/share/editor/leaps"
@@ -13,13 +14,18 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"log/slog"
 	"net/http"
+	"path/filepath"
+	"reflect"
+	"runtime"
 	"sync"
 )
 
 type CodeRequest struct {
 	Code string `json:"code"`
 	Func string `json:"func"`
+	Data string `json:"data"`
 }
 
 // analyze code https://github.com/x1unix/go-playground/tree/9cc0c4d80f44fb3589fcb22df432563fa065feed/internal/analyzer
@@ -132,19 +138,129 @@ func New(lm *leaps.Leaps) *http.ServeMux {
 			if ok {
 				f := fn()
 				w.Write([]byte(f.Render()))
+				return
+			}
+
+			fnc, ok := fr.Interface().(func(ctx context.Context) *Node)
+			if ok {
+				ctx := context.WithValue(r.Context(), "state", cr.Data)
+				w.Write([]byte(fnc(ctx).Render()))
+				return
+			}
+
+			fs, ok := fr.Interface().(func() *http.ServeMux)
+			if ok {
+				l.Lock()
+				codeMux = fs()
+				l.Unlock()
 			} else {
-				fs, ok := fr.Interface().(func() *http.ServeMux)
-				if ok {
-					l.Lock()
-					codeMux = fs()
-					l.Unlock()
-				} else {
-					http.Error(w, "invalid function", http.StatusInternalServerError)
-				}
+				http.Error(w, "invalid function", http.StatusInternalServerError)
 			}
 		}
 	})
 	return mux
+}
+
+func DynamicHTMLNodeCtx(f func(ctx context.Context) *Node) func(ctx context.Context) *Node {
+	pc := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Entry()
+	fnp := runtime.FuncForPC(pc)
+	file, _ := fnp.FileLine(pc)
+	path := filepath.Base(file)
+	function := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
+
+	i := interp.New(interp.Options{
+		GoPath: "/dev/null",
+	})
+
+	i.Use(stdlib.Symbols)
+	i.Use(symbol.Symbols)
+
+	_, err := i.EvalPath(path)
+	if err != nil {
+		slog.Warn("failed to eval path", "error", err)
+		return f
+	}
+
+	fr, err := i.Eval(function)
+	if err != nil {
+		slog.Warn("failed to eval function", "error", err)
+		return f
+	}
+
+	fn, ok := fr.Interface().(func(ctx context.Context) *Node)
+	if ok {
+		return fn
+	}
+	slog.Warn("failed to convert function to func() *Node")
+	return f
+}
+
+func DynamicHTTPHandler(f func() *http.ServeMux) func() *http.ServeMux {
+	pc := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Entry()
+	fnp := runtime.FuncForPC(pc)
+	file, _ := fnp.FileLine(pc)
+	path := filepath.Base(file)
+	function := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
+
+	i := interp.New(interp.Options{
+		GoPath: "/dev/null",
+	})
+
+	i.Use(stdlib.Symbols)
+	i.Use(symbol.Symbols)
+
+	_, err := i.EvalPath(path)
+	if err != nil {
+		slog.Warn("failed to eval path", "error", err)
+		return f
+	}
+
+	fr, err := i.Eval(function)
+	if err != nil {
+		slog.Warn("failed to eval function", "error", err)
+		return f
+	}
+
+	fn, ok := fr.Interface().(func() *http.ServeMux)
+	if ok {
+		return fn
+	}
+	slog.Warn("failed to convert function to func() *http.ServeMux")
+	return f
+}
+
+func DynamicHTMLNode(f func() *Node) func() *Node {
+	pc := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Entry()
+	fnp := runtime.FuncForPC(pc)
+	file, _ := fnp.FileLine(pc)
+	path := filepath.Base(file)
+	function := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
+
+	i := interp.New(interp.Options{
+		GoPath: "/dev/null",
+	})
+
+	i.Use(stdlib.Symbols)
+	i.Use(symbol.Symbols)
+
+	_, err := i.EvalPath(path)
+	if err != nil {
+		slog.Warn("failed to eval path", "error", err)
+		return f
+	}
+
+	fr, err := i.Eval(function)
+	if err != nil {
+		slog.Warn("failed to eval function", "error", err)
+		return f
+	}
+
+	fn, ok := fr.Interface().(func() *Node)
+	if ok {
+		return fn
+	}
+	slog.Warn("failed to convert function to func() *Node")
+	return f
 }
 
 func GetFunctions(filePath string) ([]string, error) {

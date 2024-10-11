@@ -138,7 +138,7 @@ func (h *HTTP) Decr(stat string, value int64) error {
 	return nil
 }
 
-// Timing - Set a stat representing a duration.
+// Timing - SetMap a stat representing a duration.
 func (h *HTTP) Timing(stat string, delta int64) error {
 	readable := time.Duration(delta).String()
 
@@ -149,7 +149,7 @@ func (h *HTTP) Timing(stat string, delta int64) error {
 	return nil
 }
 
-// Gauge - Set a stat as a gauge value.
+// Gauge - SetMap a stat as a gauge value.
 func (h *HTTP) Gauge(stat string, value int64) error {
 	h.Lock()
 	h.json.SetP(value, stat)

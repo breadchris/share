@@ -82,13 +82,13 @@ func (h *Statsd) Decr(stat string, value int64) error {
 	return nil
 }
 
-// Timing - Set a stat representing a duration.
+// Timing - SetMap a stat representing a duration.
 func (h *Statsd) Timing(stat string, delta int64) error {
 	h.s.Timing(stat, delta)
 	return nil
 }
 
-// Gauge - Set a stat as a gauge value.
+// Gauge - SetMap a stat as a gauge value.
 func (h *Statsd) Gauge(stat string, value int64) error {
 	h.s.Gauge(stat, value)
 	return nil

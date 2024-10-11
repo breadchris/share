@@ -59,6 +59,7 @@ const makeid = (length) => {
 
 const CodeEditor = ({ fileName, darkMode, func, vimModeEnabled, isServerEnvironment, code: initialCode }) => {
     const [code, setCode] = useState(initialCode);
+    const [data, setData] = useState(localStorage.getItem('data') || '{}');
     const [result, setResult] = useState('');
     const analyzer = useRef();
     const editorInstance = useRef();
@@ -110,6 +111,40 @@ const CodeEditor = ({ fileName, darkMode, func, vimModeEnabled, isServerEnvironm
         if (!editorInstance.current) return;
         monacoInstance.current?.editor.setModelMarkers(editorInstance.current.getModel(), editorInstance.current.getId(), markers);
     };
+
+    const dataEditorDidMount = (editor, monaco) => {
+        editor.onKeyDown((e) => {
+            if (vimModeEnabled) {
+                return;
+            }
+            vimCommandAdapter.current?.handleKeyDownEvent(e, '');
+        });
+        editor.onDidChangeCursorPosition((e) => {
+            const { position } = e;
+            console.log(`Cursor position: ${position.lineNumber}:${position.column}`);
+        });
+
+        const [vimAdapterInstance, statusAdapter] = createVimModeAdapter(editor);
+        vimAdapter.current = vimAdapterInstance;
+        vimCommandAdapter.current = statusAdapter;
+
+        console.log('Vim mode enabled');
+        vimAdapterInstance.attach();
+
+        const actions = [
+            {
+                id: 'format-json',
+                label: 'Format JSON',
+                contextMenuGroupId: 'navigation',
+                run: (editor) => {
+                    const json = editor.getValue();
+                    editor.setValue(JSON.stringify(JSON.parse(json), null, 2));
+                },
+            },
+        ];
+
+        actions.forEach((action) => editor.addAction(action));
+    }
 
     const editorDidMount = (editor, monaco, file) => {
         editorInstance.current = editor;
@@ -234,14 +269,14 @@ const CodeEditor = ({ fileName, darkMode, func, vimModeEnabled, isServerEnvironm
         debouncedAnalyzeFunc.current(fileName, code);
     };
 
-    const runCode = async () => {
+    const runCode = async (d?: string) => {
         console.log("Running code", editorInstance.current.getValue());
         // get select value from "#function"
         // const func = document.getElementById("function").value;
 
         const res = await fetch('/code/', {
             method: 'POST',
-            body: JSON.stringify({ code: editorInstance.current?.getValue(), func: func }),
+            body: JSON.stringify({ code: editorInstance.current?.getValue(), func: func, data: d || data }),
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -267,6 +302,13 @@ const CodeEditor = ({ fileName, darkMode, func, vimModeEnabled, isServerEnvironm
     const onChange = (newVal, e) => {
         setCode(newVal);
         runCode();
+    }
+
+    const onDataChange = (newVal, e) => {
+        setData(newVal);
+        // save to local storage
+        localStorage.setItem('data', newVal);
+        runCode(newVal);
     }
 
     const modalRef = useRef(null);
@@ -325,13 +367,30 @@ const CodeEditor = ({ fileName, darkMode, func, vimModeEnabled, isServerEnvironm
                         </Panel>
                         <PanelResizeHandle className="h-2 bg-gray-300"/>
                         <Panel defaultSize={20}>
-                            <div className={"overflow-auto h-full"} hx-get={`/chat`} hx-trigger="load"></div>
+                            <div className={"overflow-auto h-full"} hx-get={`/blog`} hx-trigger="load"></div>
                         </Panel>
                     </PanelGroup>
                 </Panel>
                 <PanelResizeHandle className="w-2 bg-gray-300"/>
                 <Panel>
-                    <div className={"overflow-auto h-full"} dangerouslySetInnerHTML={{__html: result}}/>
+                    <PanelGroup direction="vertical">
+                        <Panel>
+                            <div className={"overflow-auto h-full"} dangerouslySetInnerHTML={{__html: result}}/>
+                        </Panel>
+                        <PanelResizeHandle className="h-2 bg-gray-300"/>
+                        <Panel defaultSize={20}>
+                            <MonacoEditor
+                                language={LANGUAGE_GOLANG}
+                                theme={darkMode ? 'vs-dark' : 'vs-light'}
+                                value={data}
+                                defaultValue={data}
+                                options={{}}
+                                onChange={onDataChange}
+                                onMount={(e, m) => dataEditorDidMount(e, m)}
+                                loading={<span className={'loading loading-spinner'}>Loading...</span>}
+                            />
+                        </Panel>
+                    </PanelGroup>
                 </Panel>
             </PanelGroup>
         </>

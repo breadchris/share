@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -134,9 +135,32 @@ func startServer(useTLS bool, port int) {
 
 	lm := leaps.RegisterRoutes(leaps.NewLogger())
 	p("/leaps", lm.Mux)
+	NewVote := func() *http.ServeMux {
+		r := http.NewServeMux()
+		r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			var state FormState
+			state.Users = append(state.Users, UserVote{
+				Name: r.FormValue("name"),
+			})
+			state.Recipes = append(state.Recipes, Recipe{
+				Name:      r.FormValue("name"),
+				VoteCount: 0,
+			})
+			stateData, err := json.Marshal(state)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("Failed to marshal state: %v", err), http.StatusInternalServerError)
+				return
+			}
+			ctx := context.WithValue(r.Context(), "state", string(stateData))
+			code.DynamicHTMLNodeCtx(formBuilder)(ctx).RenderPage(w, r)
+		})
+		return r
+	}
+	p("/vote", NewVote())
+	p("/breadchris", breadchris.New("/breadchris"))
+	p("/reload", setupReload("./scratch.go"))
+	p("/code", code.New(lm))
 
-	//text.Setup(upgrader)
-	//go watchPaths()
 	go func() {
 		paths := []string{
 			"./breadchris/editor.tsx",
@@ -220,20 +244,6 @@ func startServer(useTLS bool, port int) {
 			log.Fatalf("Failed to watch files: %v", err)
 		}
 	}()
-	//go func() {
-	//	paths := []string{
-	//		"./graph/graph.tsx",
-	//	}
-	//	if err := WatchFilesAndFolders(paths, graph.Build); err != nil {
-	//		log.Fatalf("Failed to watch files: %v", err)
-	//	}
-	//}()
-
-	p("/breadchris", breadchris.New("/breadchris"))
-
-	p("/reload", setupReload("./scratch.go"))
-
-	p("/code", code.New(lm))
 
 	z.SetupZineRoutes()
 
@@ -407,6 +417,10 @@ var u = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
+}
+
+type InferRequest struct {
+	Prompt string `json:"prompt"`
 }
 
 type ExtensionRequest struct {
@@ -762,7 +776,7 @@ func fileServerHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("path: %s\n", r.URL.Path)
 
 	if r.URL.Path == "/" {
-		Index().RenderPage(w, r)
+		code.DynamicHTMLNode(Index)().RenderPage(w, r)
 		return
 	}
 

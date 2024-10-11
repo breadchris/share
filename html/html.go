@@ -347,6 +347,18 @@ func Ol(o ...*Node) *Node {
 	return NewNode("ol", o)
 }
 
+func Dl(o ...*Node) *Node {
+	return NewNode("dl", o)
+}
+
+func Dt(o ...*Node) *Node {
+	return NewNode("dt", o)
+}
+
+func Dd(o ...*Node) *Node {
+	return NewNode("dd", o)
+}
+
 type NilNode struct{}
 
 func (s *NilNode) Init(p *Node) {

@@ -209,14 +209,14 @@ func main() {
 }
 
 //func main() {
-//	js.Global().Set("convert", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+//	js.Global().SetMap("convert", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 //		defer func() {
 //			if r := recover(); r != nil {
-//				js.Global().Set("err", fmt.Sprintf("%s", r))
+//				js.Global().SetMap("err", fmt.Sprintf("%s", r))
 //			}
 //		}()
 //
-//		js.Global().Set("err", "")
+//		js.Global().SetMap("err", "")
 //		return js.ValueOf(Convert(args[0].String()))
 //	}))
 //

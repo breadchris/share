@@ -126,7 +126,7 @@ func (r *Riemann) Decr(stat string, value int64) error {
 	return nil
 }
 
-// Timing - Set a stat representing a duration.
+// Timing - SetMap a stat representing a duration.
 func (r *Riemann) Timing(stat string, delta int64) error {
 	r.Lock()
 	defer r.Unlock()
@@ -141,7 +141,7 @@ func (r *Riemann) Timing(stat string, delta int64) error {
 	return nil
 }
 
-// Gauge - Set a stat as a gauge value.
+// Gauge - SetMap a stat as a gauge value.
 func (r *Riemann) Gauge(stat string, value int64) error {
 	r.Lock()
 	defer r.Unlock()
