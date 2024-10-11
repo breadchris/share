@@ -36,12 +36,16 @@ func generatePlayerDiv(playerID string, x, y float64, color string) *Node {
 	special := Div()
 	experience := Div()
 	width := 10
+	
+	if players[playerID] != nil {
+		width = players[playerID].MaxHealth / 10
+	}
 
 	if _, exists := players[playerID]; exists {
 		player := players[playerID]
 		special = specialMeter(player.Special, player.MaxSpecial, int(player.Position.X), int(player.Position.Y))
 		experience = experienceMeter(player.Experience, 200, int(player.Position.X), int(player.Position.Y))
-		width = players[playerID].MaxHealth / 10
+		
 		player.Width = width
 	}
 

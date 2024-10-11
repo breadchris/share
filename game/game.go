@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	. "github.com/breadchris/share/html"
@@ -18,6 +19,7 @@ type Projectile struct {
 
 // The game loop that updates NPCs and broadcasts their positions
 func gameLoop() {
+	initializeNPCs()
 	for {
 		time.Sleep(100 * time.Millisecond)
 		update()
@@ -115,8 +117,8 @@ func regenHealth(playerID string) {
 	}
 	if player.HealthRegen.Before(time.Now()) {
 		player.Health += 1
-		if player.Health > 100 {
-			player.Health = 100
+		if player.Health > player.MaxHealth {
+			player.Health = player.MaxHealth
 		}
 		player.HealthRegen = time.Now().Add(1 * time.Second)
 	}

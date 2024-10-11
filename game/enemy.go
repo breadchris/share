@@ -21,7 +21,7 @@ func updateNpc(npcID string, npc *Player) {
 			command = 4
 		}
 		//attack player
-		if (colliders[player.ID].Min.X < int(npc.Position.X) && int(npc.Position.X) < colliders[player.ID].Max.X && colliders[player.ID].Min.Y < int(npc.Position.Y) && int(npc.Position.Y) < colliders[player.ID].Max.Y) {
+		if colliders[player.ID].Min.X < int(npc.Position.X) && int(npc.Position.X) < colliders[player.ID].Max.X && colliders[player.ID].Min.Y < int(npc.Position.Y) && int(npc.Position.Y) < colliders[player.ID].Max.Y {
 			player.Health -= npc.Attack
 			if player.Health <= 0 {
 				delete(players, player.ID)
@@ -77,16 +77,40 @@ func initializeNPCs() {
 }
 
 func newNPC() {
+	var avgPlayerHealth int = 100
+	var avgPlayerAttack int = 10
+	fmt.Println()
+	if len(players) > 0 {
+		for _, player := range players {
+			avgPlayerHealth += player.MaxHealth
+			avgPlayerAttack += player.Attack
+		}
+		avgPlayerHealth /= len(players)
+		avgPlayerAttack /= len(players)
+
+		fmt.Println(avgPlayerHealth, avgPlayerAttack)
+	}
+
+	npcAttack := avgPlayerAttack + rand.Intn(5)
+	npcHealth := avgPlayerHealth + rand.Intn(5)
+	fmt.Println(len(players))
+	fmt.Println(("npcHealth: "), npcHealth)
+
 	uuid := uuid.New().String()
 
 	npcs[uuid] = &Player{
 		ID:         uuid,
 		Position:   Position{X: rand.Float64() * 800, Y: rand.Float64() * 600},
 		Color:      Color{H: 0, S: 0, L: 50},
-		Health:     100,
-		Attack:     10,
+		Health:     npcHealth,
+		Attack:     npcAttack,
 		MaxSpecial: 100,
+		MaxHealth:  npcHealth,
+		Width:      npcHealth / 10,
 	}
+	// fmt.Println("ENEMY WIDTH: ", npcs[uuid].Width)
+	// fmt.Println("ENEMY HEALTH: ", npcs[uuid].Health)
+	// fmt.Println("ENEMY MAX Health: ", npcs[uuid].MaxHealth)
 	colliders[uuid] = image.Rect(int(npcs[uuid].Position.X), int(npcs[uuid].Position.Y), int(npcs[uuid].Position.X)+10, int(npcs[uuid].Position.Y)+10)
 }
 

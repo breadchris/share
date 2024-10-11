@@ -71,8 +71,6 @@ var hub = Hub{
 }
 
 func Setup() {
-	initializeNPCs() // Initialize NPCs before starting the server
-
 	go hub.run()
 
 	go gameLoop() // Start the game loop in a separate goroutine
