@@ -37,8 +37,8 @@ func initializePlayer(playerID string) *Player {
 			Color:        color,
 			Position:     Position{X: float64(rand.Intn(400)), Y: float64(rand.Intn(400))},
 			Health:       100,
-			MaxHealth:    200,
-			Attack:       500,
+			MaxHealth:    100,
+			Attack:       5,
 			Special:      100,
 			MaxSpecial:   100,
 			HealthRegen:  time.Now().Add(1 * time.Second),
@@ -92,7 +92,7 @@ func updatePlayer(playerID string, command string) {
 		specialAttack(player)
 	case "one":
 		if player.Experience >= 10 {
-			player.Attack += 5
+			player.Attack += 10
 			player.Experience -= 10
 		}
 	case "two":

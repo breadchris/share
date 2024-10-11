@@ -2,7 +2,6 @@ package game
 
 import (
 	"fmt"
-	"net/http"
 	"time"
 
 	. "github.com/breadchris/share/html"

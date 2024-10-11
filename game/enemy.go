@@ -27,13 +27,6 @@ func updateNpc(npcID string, npc *Player) {
 				delete(players, player.ID)
 			}
 		}
-		// distance := calculateDistance(player.Position.X, player.Position.Y, npc.Position.X, npc.Position.Y)
-		// if distance < 100 {
-		// 	player.Health -= npc.Attack
-		// 	if player.Health <= 0 {
-		// 		delete(players, player.ID)
-		// 	}
-		// }
 	}
 
 	switch command {
@@ -79,7 +72,6 @@ func initializeNPCs() {
 func newNPC() {
 	var avgPlayerHealth int = 100
 	var avgPlayerAttack int = 10
-	fmt.Println()
 	if len(players) > 0 {
 		for _, player := range players {
 			avgPlayerHealth += player.MaxHealth
@@ -87,14 +79,10 @@ func newNPC() {
 		}
 		avgPlayerHealth /= len(players)
 		avgPlayerAttack /= len(players)
-
-		fmt.Println(avgPlayerHealth, avgPlayerAttack)
 	}
 
-	npcAttack := avgPlayerAttack + rand.Intn(5)
-	npcHealth := avgPlayerHealth + rand.Intn(5)
-	fmt.Println(len(players))
-	fmt.Println(("npcHealth: "), npcHealth)
+	npcAttack := rand.Intn(avgPlayerAttack + rand.Intn(10))
+	npcHealth := rand.Intn(avgPlayerHealth + rand.Intn(10))
 
 	uuid := uuid.New().String()
 
@@ -108,9 +96,7 @@ func newNPC() {
 		MaxHealth:  npcHealth,
 		Width:      npcHealth / 10,
 	}
-	// fmt.Println("ENEMY WIDTH: ", npcs[uuid].Width)
-	// fmt.Println("ENEMY HEALTH: ", npcs[uuid].Health)
-	// fmt.Println("ENEMY MAX Health: ", npcs[uuid].MaxHealth)
+
 	colliders[uuid] = image.Rect(int(npcs[uuid].Position.X), int(npcs[uuid].Position.Y), int(npcs[uuid].Position.X)+10, int(npcs[uuid].Position.Y)+10)
 }
 

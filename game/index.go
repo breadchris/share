@@ -39,6 +39,8 @@ func generatePlayerDiv(playerID string, x, y float64, color string) *Node {
 	
 	if players[playerID] != nil {
 		width = players[playerID].MaxHealth / 10
+	} else if npcs[playerID] != nil {
+		width = npcs[playerID].MaxHealth / 10
 	}
 
 	if _, exists := players[playerID]; exists {
