@@ -5,6 +5,7 @@ import (
 	"fmt"
 	. "github.com/breadchris/share/html"
 	"github.com/go-git/go-git/v5"
+	"github.com/google/uuid"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -12,10 +13,9 @@ import (
 	"strings"
 )
 
-// CloneRepo clones the given git repository into the "./data" directory
-func CloneRepo(repoURL string) error {
+func CloneRepo(repoURL string) (string, error) {
 	if err := os.MkdirAll("./data/repos", 0755); err != nil {
-		return fmt.Errorf("failed to create data directory: %w", err)
+		return "", fmt.Errorf("failed to create data directory: %w", err)
 	}
 
 	cloneOptions := &git.CloneOptions{
@@ -24,18 +24,18 @@ func CloneRepo(repoURL string) error {
 		SingleBranch: true,
 	}
 
-	_, err := git.PlainClone("./data/repos", false, cloneOptions)
+	repoDir := fmt.Sprintf("./data/repos/%s", uuid.NewString())
+	_, err := git.PlainClone(repoDir, false, cloneOptions)
 	if err != nil {
-		return fmt.Errorf("failed to clone repository: %w", err)
+		return "", fmt.Errorf("failed to clone repository: %w", err)
 	}
-	return nil
+	return "", nil
 }
 
-// WalkGoFiles walks through the cloned repo directory and concatenates all .go files into a string
-func WalkGoFiles() (string, error) {
+func WalkGoFiles(f string) (string, error) {
 	var goFilesContent strings.Builder
 
-	err := filepath.Walk("./data", func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(f, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -47,7 +47,7 @@ func WalkGoFiles() (string, error) {
 			}
 
 			goFilesContent.WriteString(string(content))
-			goFilesContent.WriteString("\n") // Add a newline between files for readability
+			goFilesContent.WriteString("\n")
 		}
 		return nil
 	})
@@ -95,11 +95,12 @@ func NewGit(d Deps) *http.ServeMux {
 }
 
 func RepoGoFiles(repoURL string) (string, error) {
-	if err := CloneRepo(repoURL); err != nil {
+	d, err := CloneRepo(repoURL)
+	if err != nil {
 		return "", err
 	}
 
-	content, err := WalkGoFiles()
+	content, err := WalkGoFiles(d)
 	if err != nil {
 		return "", err
 	}
