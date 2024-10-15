@@ -29,7 +29,7 @@ func CloneRepo(repoURL string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to clone repository: %w", err)
 	}
-	return "", nil
+	return repoDir, nil
 }
 
 func WalkGoFiles(f string) (string, error) {
