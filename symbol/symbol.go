@@ -8,6 +8,9 @@
 //go:generate yaegi extract net/http
 //go:generate yaegi extract github.com/snabb/sitemap
 //go:generate yaegi extract gopkg.in/yaml.v3
+//go:generate yaegi extract github.com/google/uuid
+//go:generate yaegi extract os/exec
+//go:generate yaegi extract github.com/go-git/go-git/v5
 package symbol
 
 import "reflect"

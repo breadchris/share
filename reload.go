@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/gorilla/websocket"
@@ -11,23 +12,25 @@ import (
 var webClients = make(map[*websocket.Conn]bool)
 var broadcast = make(chan string)
 
-func setupReload(filePath string) *http.ServeMux {
-	go fileWatcher(filePath)
+func setupReload(filePaths []string) *http.ServeMux {
+	go fileWatcher(filePaths)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", wsHandler)
 	return mux
 }
 
-func fileWatcher(fileToWatch string) {
+func fileWatcher(filePaths []string) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer watcher.Close()
 
-	err = watcher.Add(fileToWatch)
-	if err != nil {
-		log.Fatal(err)
+	for _, fileToWatch := range filePaths {
+		err = watcher.Add(fileToWatch)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	for {
@@ -35,7 +38,7 @@ func fileWatcher(fileToWatch string) {
 		case event := <-watcher.Events:
 			if event.Op&fsnotify.Write == fsnotify.Write {
 				fmt.Println("File modified:", event.Name)
-				notifyWebClients()
+				notifyWebClients(event.Name)
 			}
 		case err := <-watcher.Errors:
 			log.Println("Error:", err)
@@ -43,9 +46,25 @@ func fileWatcher(fileToWatch string) {
 	}
 }
 
-func notifyWebClients() {
+type WebSocketMessage struct {
+	Type string `json:"type"`
+	Data string `json:"data"`
+}
+
+func notifyWebClients(fileName string) {
+	msg := WebSocketMessage{
+		Type: "reload",
+		Data: fileName,
+	}
+
+	b, err := json.Marshal(msg)
+	if err != nil {
+		log.Println("Marshal error:", err)
+		return
+	}
+
 	for client := range webClients {
-		err := client.WriteMessage(websocket.TextMessage, []byte("reload"))
+		err := client.WriteMessage(websocket.TextMessage, b)
 		if err != nil {
 			log.Println("Write error:", err)
 			client.Close()

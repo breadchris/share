@@ -18,28 +18,6 @@ func RenderList(db *DBAny) *Node {
 	return Div(Id("list"), Ch(list))
 }
 
-func ReloadNode() *Node {
-	return Script(T(`
-const ws = new WebSocket("ws://localhost:8080/reload/");
-
-ws.onmessage = function (event) {
-	if (event.data === "reload") {
-		ws.close();
-		console.log("File changed, reloading...");
-		window.location.reload();
-	}
-};
-
-ws.onclose = function () {
-	console.log("WebSocket connection closed.");
-};
-
-ws.onerror = function (error) {
-	console.error("WebSocket error:", error);
-};
-`))
-}
-
 func Render() *Node {
 	db, _ := NewDBAny("a")
 	db.Set("1", map[string]any{
@@ -65,7 +43,7 @@ func RenderComponents(db *DBAny) *Node {
 			TailwindCSS,
 			HTMX,
 			Style(T("body { font-family: 'Inter', sans-serif; }")),
-			ReloadNode(),
+			ReloadNode("scratch.go"),
 		),
 		Form(
 			Method("POST"),

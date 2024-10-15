@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
@@ -60,9 +61,17 @@ func NewOpenAIService(config AppConfig) *OpenAIService {
 func (s *OpenAIService) homeHandler(w http.ResponseWriter, r *http.Request) {
 	i := r.PathValue("id")
 	var cs ChatState
-	if i != "" {
-		cs = loadChatState(i)
+	if i == "" {
+		chats := loadChats()
+		Ul(
+			Ch(lo.Map(chats, func(c ChatState, i int) *Node {
+				return Li(A(Href("/llm/"+c.ID), Class("block p-4 border-b"), T(c.Name)))
+			})),
+		).RenderPage(w, r)
+		return
 	}
+
+	cs = loadChatState(i)
 	Div(
 		Ch(lo.Map(cs.Messages, func(m ChatMessage, i int) *Node {
 			b := "mb-2"
@@ -216,9 +225,7 @@ func saveChatState(chatID string, state ChatState) {
 	os.WriteFile(fmt.Sprintf("data/chatgpt/%s.json", chatID), data, 0644)
 }
 
-func (s *OpenAIService) GenerateImage(w http.ResponseWriter, r *http.Request) string {
-	r.ParseForm()
-	prompt := r.FormValue("content")
+func (s *OpenAIService) GenerateImage(ctx context.Context, prompt string) (string, error) {
 	req := openai.ImageRequest{
 		Model:          openai.CreateImageModelDallE3,
 		Prompt:         prompt,
@@ -228,11 +235,9 @@ func (s *OpenAIService) GenerateImage(w http.ResponseWriter, r *http.Request) st
 		Style:          openai.CreateImageStyleVivid,
 		ResponseFormat: openai.CreateImageResponseFormatURL,
 	}
-	resp, err := s.Client.CreateImage(r.Context(), req)
+	resp, err := s.Client.CreateImage(ctx, req)
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Error generating image", http.StatusInternalServerError)
-		return ""
+		return "", err
 	}
 	imageURL := resp.Data[0].URL
 	fmt.Println(imageURL)
@@ -240,30 +245,24 @@ func (s *OpenAIService) GenerateImage(w http.ResponseWriter, r *http.Request) st
 	// Download the image
 	imageResp, err := http.Get(imageURL)
 	if err != nil {
-		http.Error(w, "Error downloading image", http.StatusInternalServerError)
+		return "", err
 	}
 	defer imageResp.Body.Close()
 
 	now := strconv.Itoa(time.Now().Nanosecond())
 	imageName := fmt.Sprintf("generated_image%s.png", now)
-	// Define the output path for the generated image
 	outputPath := fmt.Sprintf("./data/images/" + imageName)
 
-	// Create the output file
 	file, err := os.Create(outputPath)
 	if err != nil {
-		http.Error(w, "Error creating file", http.StatusInternalServerError)
+		return "", err
 	}
 	defer file.Close()
 
-	// Write the image to the file
 	_, err = io.Copy(file, imageResp.Body)
 	if err != nil {
-		http.Error(w, "Error writing image", http.StatusInternalServerError)
+		return "", err
 	}
 
-	return imageName
-	// image := Img(Attr("style", "max-width: 100%; object-fit: contain;"), Attr("src", "/data/images/"+imageName), Attr("alt", "Uploaded Image"))
-
-	// w.Write([]byte(image.Render()))
+	return imageName, nil
 }

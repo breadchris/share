@@ -204,7 +204,9 @@ func loadPanelData(zineId string) map[string]PanelData {
 // =================================================================================================
 
 func (z *ZineMaker) GenerateImage(w http.ResponseWriter, r *http.Request) {
-	imageName := NewOpenAIService(LoadConfig()).GenerateImage(w, r)
+	r.ParseForm()
+	prompt := r.FormValue("content")
+	imageName, _ := NewOpenAIService(LoadConfig()).GenerateImage(r.Context(), prompt)
 	panelId := r.Header.Get("Hx-Target")
 	panelData := PanelData{
 		PanelID:   panelId,

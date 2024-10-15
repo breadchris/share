@@ -1,4 +1,16 @@
 document.getElementById('send-element').addEventListener('click', async () => {
+    const name = document.getElementById('name').value;
+    const html = document.getElementById('html').value;
+    if (html) {
+        document.getElementById('html').value = '';
+        chrome.runtime.sendMessage({
+            action: 'sendElement',
+            element: html,
+            name: name
+        });
+        return;
+    }
+
     chrome.devtools.inspectedWindow.eval(
         "inspect($0); $0.outerHTML;", // `$0` is the currently selected element in DevTools
         (result, isException) => {
@@ -7,9 +19,6 @@ document.getElementById('send-element').addEventListener('click', async () => {
                 return;
             }
 
-            const name = document.getElementById('name').value;
-
-            // Send a message to background.js
             chrome.runtime.sendMessage({
                 action: 'sendElement',
                 element: result,

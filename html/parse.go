@@ -1,6 +1,7 @@
 package html
 
 import (
+	"fmt"
 	"golang.org/x/net/html"
 	"strings"
 )
@@ -45,6 +46,9 @@ func ParseHTMLString(htmlStr string) (*Node, error) {
 		if n.Type == html.ElementNode && n.Data == "body" {
 			body = n.FirstChild
 		}
+		if n.Type == html.ElementNode && n.Data == "html" {
+			body = n.LastChild.FirstChild
+		}
 		for c := n.FirstChild; c != nil; c = c.NextSibling {
 			f(c)
 		}
@@ -57,5 +61,9 @@ func ParseHTMLString(htmlStr string) (*Node, error) {
 	}
 
 	// Convert the HTML nodes to the Go library format
-	return ParseHTML(body), nil
+	h := ParseHTML(body)
+	if h == nil {
+		return nil, fmt.Errorf("could not parse HTML")
+	}
+	return h, nil
 }

@@ -3,12 +3,18 @@ package html
 import (
 	"context"
 	"fmt"
+	"github.com/breadchris/share/session"
 	"go/ast"
 	"go/token"
 	"net/http"
 	"runtime"
 	"strings"
 )
+
+type Deps struct {
+	DB      *DBAny
+	Session *session.SessionManager
+}
 
 var (
 	DaisyUI = Link(
@@ -19,6 +25,19 @@ var (
 	TailwindCSS = Script(Src("https://cdn.tailwindcss.com"))
 	HTMX        = Script(Src("https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js"))
 )
+
+func DefaultLayout(n *Node) *Node {
+	return Html(
+		Head(
+			DaisyUI,
+			TailwindCSS,
+			HTMX,
+		),
+		Body(
+			n,
+		),
+	)
+}
 
 func RenderHTML() *Node {
 	type state struct {
@@ -260,6 +279,29 @@ func RenderGoFunction(fset *token.FileSet, name string, s ast.Expr) *ast.FuncDec
 	}
 }
 
+func ReloadNode(filename string) *Node {
+	return Script(T(fmt.Sprintf(`
+const ws = new WebSocket("ws://localhost:8080/reload/");
+
+ws.onmessage = function (event) {
+    const msg = JSON.parse(event.data);
+	if (msg.type === "reload" && msg.data === "%s") {
+		ws.close();
+		console.log("File changed, reloading...");
+		window.location.reload();
+	}
+};
+
+ws.onclose = function () {
+	console.log("WebSocket connection closed.");
+};
+
+ws.onerror = function (error) {
+	console.error("WebSocket error:", error);
+};
+`, filename)))
+}
+
 func (s *Node) RenderGoCode(fset *token.FileSet) *ast.CallExpr {
 	if s.text != "" {
 		return &ast.CallExpr{
@@ -410,6 +452,10 @@ func Role(s string) *Node {
 			p.Attrs["role"] = s
 		},
 	}
+}
+
+func Iframe(o ...*Node) *Node {
+	return NewNode("iframe", o)
 }
 
 func Class(s string) *Node {
@@ -627,6 +673,14 @@ func Hr(o ...*Node) *Node {
 
 func Style(o ...*Node) *Node {
 	return NewNode("style", o)
+}
+
+func Style_(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["style"] = s
+		},
+	}
 }
 
 func Main(o ...*Node) *Node {
@@ -941,7 +995,14 @@ var (
 func HxPost(s string) *Node {
 	return &Node{
 		transform: func(p *Node) {
-			p.Attrs["hx-post"] = s
+			p.DynamicAttrs["hx-post"] = func(ctx context.Context) string {
+				if strings.HasPrefix(s, "/") {
+					if baseURL, ok := ctx.Value("baseURL").(string); ok {
+						return baseURL + s
+					}
+				}
+				return s
+			}
 		},
 	}
 }
@@ -966,6 +1027,14 @@ func HxPut(s string) *Node {
 	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["hx-put"] = s
+		},
+	}
+}
+
+func HxDelete(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["hx-delete"] = s
 		},
 	}
 }

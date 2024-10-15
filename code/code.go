@@ -161,6 +161,40 @@ func New(lm *leaps.Leaps) *http.ServeMux {
 	return mux
 }
 
+func DynamicHTTPMux(f func(d Deps) *http.ServeMux) func(Deps) *http.ServeMux {
+	pc := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Entry()
+	fnp := runtime.FuncForPC(pc)
+	file, _ := fnp.FileLine(pc)
+	path := filepath.Base(file)
+	function := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
+
+	i := interp.New(interp.Options{
+		GoPath: "/dev/null",
+	})
+
+	i.Use(stdlib.Symbols)
+	i.Use(symbol.Symbols)
+
+	_, err := i.EvalPath(path)
+	if err != nil {
+		slog.Warn("failed to eval path", "error", err)
+		return f
+	}
+
+	fr, err := i.Eval(function)
+	if err != nil {
+		slog.Warn("failed to eval function", "error", err)
+		return f
+	}
+
+	fn, ok := fr.Interface().(func(db Deps) *http.ServeMux)
+	if ok {
+		return fn
+	}
+	slog.Warn("failed to convert function to func() *http.ServeMux")
+	return f
+}
+
 func DynamicHTMLNodeCtx(f func(ctx context.Context) *Node) func(ctx context.Context) *Node {
 	pc := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Entry()
 	fnp := runtime.FuncForPC(pc)

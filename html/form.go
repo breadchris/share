@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func BuildForm(data any) *Node {
+func BuildForm(action string, data any) *Node {
 	v := reflect.ValueOf(data)
 	t := reflect.TypeOf(data)
 
@@ -14,7 +14,7 @@ func BuildForm(data any) *Node {
 		panic("data must be a struct")
 	}
 
-	form := Form(Method("POST"), Action("/submit"))
+	form := Form(Method("POST"), Action(action))
 	for i := 0; i < v.NumField(); i++ {
 		field := t.Field(i)
 		value := v.Field(i)
@@ -37,6 +37,23 @@ func BuildForm(data any) *Node {
 				checked = "checked"
 			}
 			input = Input(Type("checkbox"), Id(field.Name), Name(field.Name), Class("border rounded w-full py-2 px-3"), Attr("checked", checked))
+		case reflect.Slice:
+			if value.Type().Elem().Kind() == reflect.String {
+				for j := 0; j < value.Len(); j++ {
+					sliceElem := value.Index(j)
+					inputName := fmt.Sprintf("%s.%d", field.Name, j) // <name>.<i> format
+					sliceInput := Input(Type("text"), Id(inputName), Name(inputName), Class("border rounded w-full py-2 px-3"), Value(sliceElem.String()))
+					div := Div(Class("mb-2"), Button(HxPut("/new/add_field?field="+inputName), T("new")), Button(HxDelete("/new/delete_field?field="+inputName), T("delete")))
+					div.Children = append(form.Children, Div(Class("mb-4"),
+						Label(For(inputName), T(fmt.Sprintf("%s %d", labelText, j+1))),
+						sliceInput,
+					))
+					form.Children = append(form.Children, div)
+				}
+				continue // Avoid adding a general unsupported type message for slices
+			} else {
+				input = P(T(fmt.Sprintf("Unsupported slice type: %s", field.Type.String())))
+			}
 		default:
 			input = P(T(fmt.Sprintf("Unsupported field type: %s", field.Type.String())))
 		}

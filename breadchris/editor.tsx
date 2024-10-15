@@ -11,6 +11,11 @@ import "@blocknote/mantine/style.css";
 import Reveal from 'reveal.js';
 import 'reveal.js/dist/reveal.css';
 import 'reveal.js/dist/theme/black.css';
+import * as Y from 'yjs';
+import {WebsocketProvider} from "y-websocket";
+
+export const doc = new Y.Doc();
+export const provider = new WebsocketProvider('ws://localhost:1234', 'your-room-name', doc);
 
 import {
     Block,
@@ -155,6 +160,26 @@ export const Editor = () => {
         group: "Other",
         icon: <MdCode />,
     });
+
+    const generateImage = (editor: typeof schema.BlockNoteEditor): DefaultReactSuggestionItem => ({
+        title: "Generate Image",
+        onItemClick: () => {
+            // editor.insertBlocks(
+            //     [
+            //         {
+            //             type: "aiBlock",
+            //             props: {},
+            //         },
+            //     ],
+            //     editor.getTextCursorPosition().block,
+            //     "after"
+            // );
+        },
+        aliases: ["ai"],
+        group: "Other",
+        icon: <MdCode />,
+    });
+
     const [initialContent, setInitialContent] = useState<
         PartialBlock[] | undefined | "loading"
     >("loading");
@@ -184,6 +209,14 @@ export const Editor = () => {
                     body: body,
                 });
                 return await ret.text();
+            },
+            collaboration: {
+                provider,
+                fragment: doc.getXmlFragment("blocknote"),
+                user: {
+                    name: "chris",
+                    color: "blue",
+                }
             },
             schema: schema,
         });

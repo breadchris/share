@@ -13,7 +13,7 @@ import (
 
 type DBAny struct {
 	mu       sync.RWMutex
-	store    map[string]any
+	store    map[string][]byte
 	dir      string
 	watchers map[string]time.Time
 }
@@ -24,7 +24,7 @@ func NewDBAny(dir string) (*DBAny, error) {
 	}
 
 	db := &DBAny{
-		store:    make(map[string]any),
+		store:    make(map[string][]byte),
 		dir:      dir,
 		watchers: make(map[string]time.Time),
 	}
@@ -43,7 +43,7 @@ func (s *DBAny) Clear() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.store = make(map[string]any)
+	s.store = make(map[string][]byte)
 
 	files, err := os.ReadDir(s.dir)
 	if err != nil {
@@ -69,7 +69,7 @@ func (s *DBAny) List() []any {
 	return list
 }
 
-func (s *DBAny) Get(id string) (any, bool) {
+func (s *DBAny) Get(id string) ([]byte, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -82,7 +82,6 @@ func (s *DBAny) Set(id string, v any) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.store[id] = v
 	filePath := filepath.Join(s.dir, id+".json")
 
 	data, err := json.Marshal(v)
@@ -90,12 +89,13 @@ func (s *DBAny) Set(id string, v any) error {
 		return err
 	}
 
+	s.store[id] = data
 	err = ioutil.WriteFile(filePath, data, 0644)
 	if err != nil {
 		return err
 	}
 
-	s.watchers[filePath] = time.Now()
+	//s.watchers[filePath] = time.Now()
 	return nil
 }
 
@@ -142,14 +142,8 @@ func (s *DBAny) loadFile(id string) error {
 		return err
 	}
 
-	var value any
-	err = json.Unmarshal(data, &value)
-	if err != nil {
-		return err
-	}
-
 	s.mu.Lock()
-	s.store[id] = value
+	s.store[id] = data
 	s.mu.Unlock()
 
 	return nil

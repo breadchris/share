@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -12,10 +11,12 @@ import (
 	"github.com/breadchris/share/editor/config"
 	"github.com/breadchris/share/editor/leaps"
 	"github.com/breadchris/share/editor/playground"
-	"github.com/breadchris/share/html"
+	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/session"
 	"github.com/breadchris/share/symbol"
 	"github.com/evanw/esbuild/pkg/api"
+	"github.com/go-shiori/dom"
+	"github.com/go-shiori/go-readability"
 	"github.com/gomarkdown/markdown"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -33,6 +34,7 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path"
@@ -40,6 +42,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 )
 
 var upgrader = websocket.Upgrader{
@@ -124,38 +128,37 @@ func startServer(useTLS bool, port int) {
 	fileUpload()
 	setupSpotify(appConfig)
 
+	db, err := NewDBAny("data/testdb/")
+	if err != nil {
+		log.Fatalf("Failed to create db: %v", err)
+	}
+
 	oai := NewOpenAIService(appConfig)
 	c := NewChat(s, oai)
 	p("/llm", SetupChatgpt(oai))
 	p("/chat", c.NewMux())
 
+	deps := Deps{
+		DB:      db,
+		Session: s,
+	}
+
+	interpreted := func(f func(d Deps) *http.ServeMux) *http.ServeMux {
+		m := http.NewServeMux()
+		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			code.DynamicHTTPMux(f)(deps).ServeHTTP(w, r)
+		})
+		return m
+	}
+
 	lm := leaps.RegisterRoutes(leaps.NewLogger())
 	p("/leaps", lm.Mux)
-	NewVote := func() *http.ServeMux {
-		r := http.NewServeMux()
-		r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			var state FormState
-			state.Users = append(state.Users, UserVote{
-				Name: r.FormValue("name"),
-			})
-			state.Recipes = append(state.Recipes, Recipe{
-				Name:      r.FormValue("name"),
-				VoteCount: 0,
-			})
-			stateData, err := json.Marshal(state)
-			if err != nil {
-				http.Error(w, fmt.Sprintf("Failed to marshal state: %v", err), http.StatusInternalServerError)
-				return
-			}
-			ctx := context.WithValue(r.Context(), "state", string(stateData))
-			code.DynamicHTMLNodeCtx(formBuilder)(ctx).RenderPage(w, r)
-		})
-		return r
-	}
-	p("/vote", NewVote())
+	p("/vote", interpreted(NewVote))
 	p("/breadchris", breadchris.New("/breadchris"))
-	p("/reload", setupReload("./scratch.go"))
+	p("/reload", setupReload([]string{"./scratch.go", "./vote.go"}))
 	p("/code", code.New(lm))
+	p("/extension", NewExtension())
+	p("/git", interpreted(NewGit))
 
 	go func() {
 		paths := []string{
@@ -243,11 +246,6 @@ func startServer(useTLS bool, port int) {
 
 	z.SetupZineRoutes()
 
-	db, err := html.NewDBAny("data/testdb/")
-	if err != nil {
-		log.Fatalf("Failed to create db: %v", err)
-	}
-
 	getScriptFunc := func(path, name string) (reflect.Value, error) {
 		i := interp.New(interp.Options{
 			GoPath: "/dev/null",
@@ -279,7 +277,7 @@ func startServer(useTLS bool, port int) {
 				http.Error(w, "Failed to get script func", http.StatusInternalServerError)
 				return
 			}
-			rf := v.Interface().(func(db *html.DBAny) *html.Node)
+			rf := v.Interface().(func(db *DBAny) *Node)
 			n := rf(db)
 			n.RenderPage(w, r)
 			return
@@ -291,7 +289,7 @@ func startServer(useTLS bool, port int) {
 			return
 		}
 
-		rf := v.Interface().(func(db *html.DBAny) *html.Node)
+		rf := v.Interface().(func(db *DBAny) *Node)
 		n := rf(db)
 		n.RenderPage(w, r)
 	})
@@ -306,7 +304,6 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/account", a.accountHandler)
 	http.HandleFunc("/files", fileHandler)
 	http.HandleFunc("/modify", modifyHandler)
-	http.HandleFunc("/extension", extensionHandler)
 
 	http.HandleFunc("/", fileServerHandler)
 
@@ -424,75 +421,211 @@ type ExtensionRequest struct {
 	Element string `json:"element"`
 }
 
-func extensionHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.Error(w, fmt.Sprintf("Method %s not allowed", r.Method), http.StatusMethodNotAllowed)
-		return
-	}
+var (
+	state  State
+	stream []string
+	smu    sync.Mutex
+)
 
-	var req ExtensionRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to decode request: %v", err), http.StatusBadRequest)
-		return
-	}
+func init() {
+	loadState()
+}
 
-	if req.Element == "" {
-		http.Error(w, "Element is required", http.StatusBadRequest)
-		return
+func loadState() {
+	state = State{
+		PageInfos: make(map[string]PageInfo),
 	}
-
-	n, err := html.ParseHTMLString(req.Element)
+	b, err := os.ReadFile("data/state.json")
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to parse element: %v", err), http.StatusInternalServerError)
+		slog.Error("failed to read state", "error", err)
 		return
 	}
 
-	var buf bytes.Buffer
-
-	fset := token.NewFileSet()
-
-	// TODO breadchris https://github.com/segmentio/golines
-	cfg := &printer.Config{
-		Mode:     printer.TabIndent,
-		Tabwidth: 4,
-	}
-
-	err = cfg.Fprint(&buf, fset, html.RenderGoFunction(fset, "Render"+strings.Title(req.Name), n.RenderGoCode(fset)))
+	err = json.Unmarshal(b, &state)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to format code: %v", err), http.StatusInternalServerError)
+		slog.Error("failed to unmarshal state", "error", err)
 		return
 	}
+}
 
-	formattedCode, err := format.Source(buf.Bytes())
+func saveState() {
+	b, err := json.Marshal(state)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to format code: %v", err), http.StatusInternalServerError)
+		slog.Error("failed to marshal state", "error", err)
 		return
 	}
 
-	f, err := os.OpenFile("scratch.go", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	err = os.WriteFile("data/state.json", b, 0644)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to open scratch.go: %v", err), http.StatusInternalServerError)
+		slog.Error("failed to write state", "error", err)
 		return
 	}
+}
 
-	if _, err = f.Write([]byte("\n" + string(formattedCode))); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to write to scratch.go: %v", err), http.StatusInternalServerError)
-		return
-	}
+func NewExtension() *http.ServeMux {
+	m := http.NewServeMux()
+	m.HandleFunc("/save", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			var pageInfo PageInfo
+			err := json.NewDecoder(r.Body).Decode(&pageInfo)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			pageInfo.CreatedAt = time.Now().Unix()
 
-	if _, err := exec.LookPath("golines"); err != nil {
-		println("golines is not installed: go install github.com/segmentio/golines@latest")
-		http.Error(w, fmt.Sprintf("golines is not installed: %v", err), http.StatusInternalServerError)
-		return
-	}
+			getArticle := func(pageInfo PageInfo) (*readability.Article, error) {
+				r := strings.NewReader(pageInfo.HTML)
 
-	cmd := exec.Command("golines", "-w", "scratch.go")
-	if err := cmd.Run(); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to run golines: %v", err), http.StatusInternalServerError)
-		return
-	}
+				doc, err := dom.Parse(r)
+				if err != nil {
+					return nil, err
+				}
 
-	w.WriteHeader(http.StatusOK)
+				u, err := url.Parse(pageInfo.URL)
+				if err != nil {
+					return nil, err
+				}
+
+				a, err := readability.FromDocument(doc, u)
+				if err != nil {
+					return nil, err
+				}
+				return &a, nil
+			}
+
+			println("getting article", pageInfo.URL)
+			article, err := getArticle(pageInfo)
+			if err != nil {
+				slog.Debug("failed to get article", "error", err)
+			} else {
+				pageInfo.Article = article.TextContent
+			}
+
+			prevPageInfo, ok := state.PageInfos[pageInfo.URL]
+			if ok {
+				pageInfo.HitCount = prevPageInfo.HitCount + 1
+			} else {
+				pageInfo.HitCount = 1
+			}
+
+			state.PageInfos[pageInfo.URL] = pageInfo
+
+			var documents []any
+			for _, pageInfo := range state.PageInfos {
+				pageInfo.ID = pageInfo.URL
+				documents = append(documents, pageInfo)
+			}
+			//err = pageCol.index(documents)
+			//if err != nil {
+			//	println(err.Error())
+			//}
+
+			smu.Lock()
+			stream = append(stream, pageInfo.URL)
+			smu.Unlock()
+
+			saveState()
+
+			j, err := json.Marshal(pageInfo)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(j)
+		} else {
+			http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		}
+	})
+
+	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			pages := Div()
+			for _, pageInfo := range state.PageInfos {
+				pages.Children = append(pages.Children, Div(
+					Div(
+						Attrs(map[string]string{"class": "page"}),
+						A(
+							Attrs(map[string]string{"href": pageInfo.URL}),
+							T(pageInfo.Title),
+						),
+					),
+				))
+			}
+			DefaultLayout(
+				RenderMasonry(state),
+			).RenderPage(w, r)
+			return
+		}
+		if r.Method == "POST" {
+			var req ExtensionRequest
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				http.Error(w, fmt.Sprintf("Failed to decode request: %v", err), http.StatusBadRequest)
+				return
+			}
+
+			if req.Element == "" {
+				http.Error(w, "Element is required", http.StatusBadRequest)
+				return
+			}
+
+			n, err := ParseHTMLString(req.Element)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("Failed to parse element: %v", err), http.StatusInternalServerError)
+				return
+			}
+
+			var buf bytes.Buffer
+
+			fset := token.NewFileSet()
+
+			// TODO breadchris https://github.com/segmentio/golines
+			cfg := &printer.Config{
+				Mode:     printer.TabIndent,
+				Tabwidth: 4,
+			}
+
+			err = cfg.Fprint(&buf, fset, RenderGoFunction(fset, "Render"+strings.Title(req.Name), n.RenderGoCode(fset)))
+			if err != nil {
+				http.Error(w, fmt.Sprintf("Failed to format code: %v", err), http.StatusInternalServerError)
+				return
+			}
+
+			formattedCode, err := format.Source(buf.Bytes())
+			if err != nil {
+				http.Error(w, fmt.Sprintf("Failed to format code: %v", err), http.StatusInternalServerError)
+				return
+			}
+
+			f, err := os.OpenFile("scratch.go", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("Failed to open scratch.go: %v", err), http.StatusInternalServerError)
+				return
+			}
+
+			if _, err = f.Write([]byte("\n" + string(formattedCode))); err != nil {
+				http.Error(w, fmt.Sprintf("Failed to write to scratch.go: %v", err), http.StatusInternalServerError)
+				return
+			}
+
+			if _, err := exec.LookPath("golines"); err != nil {
+				println("golines is not installed: go install github.com/segmentio/golines@latest")
+				http.Error(w, fmt.Sprintf("golines is not installed: %v", err), http.StatusInternalServerError)
+				return
+			}
+
+			cmd := exec.Command("golines", "-w", "scratch.go")
+			if err := cmd.Run(); err != nil {
+				http.Error(w, fmt.Sprintf("Failed to run golines: %v", err), http.StatusInternalServerError)
+				return
+			}
+
+			w.WriteHeader(http.StatusOK)
+		}
+	})
+	return m
 }
 
 type ModifyRequest struct {
@@ -523,7 +656,7 @@ func modifyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = html.ModifyFunction(parts[0], req.Class, line, -1); err != nil {
+	if err = ModifyFunction(parts[0], req.Class, line, -1); err != nil {
 		slog.Error("error modifying function", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -544,7 +677,7 @@ func convertMovToMp4(inputFile, outputFile string) error {
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		w.Write([]byte(html.Upload().Render()))
+		w.Write([]byte(Upload().Render()))
 		return
 	case "POST":
 		r.ParseMultipartForm(10 << 20)

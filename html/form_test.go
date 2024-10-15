@@ -21,6 +21,6 @@ func TestRenderForm(t *testing.T) {
 		IsVegetarian: true,
 	}
 
-	form := BuildForm(recipe)
+	form := BuildForm("/", recipe)
 	println(form.Render())
 }
