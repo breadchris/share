@@ -73,6 +73,7 @@ func (s *DBAny) Get(id string) ([]byte, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
+	println(id)
 	value, ok := s.store[id]
 	return value, ok
 }
@@ -118,7 +119,7 @@ func (s *DBAny) Filter(query string) []any {
 }
 
 func (s *DBAny) loadFiles() error {
-	files, err := ioutil.ReadDir(s.dir)
+	files, err := os.ReadDir(s.dir)
 	if err != nil {
 		return err
 	}
@@ -137,12 +138,13 @@ func (s *DBAny) loadFiles() error {
 
 func (s *DBAny) loadFile(id string) error {
 	filePath := filepath.Join(s.dir, id+".json")
-	data, err := ioutil.ReadFile(filePath)
+	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return err
 	}
 
 	s.mu.Lock()
+	println(id)
 	s.store[id] = data
 	s.mu.Unlock()
 

@@ -37,70 +37,147 @@ type FormState struct {
 	Polls map[string]Poll
 }
 
-func BuildForm2(data any) *Node {
+func BuildForm2(fieldPath string, data any, fieldToAdd string) *Node {
 	v := reflect.ValueOf(data)
-	t := reflect.TypeOf(data)
-
-	if v.Kind() != reflect.Struct {
-		return P(T(fmt.Sprintf("Unsupported type: %s", t.String())))
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
 	}
 
-	form := Form(Method("POST"), Action("/submit"))
+	t := v.Type()
+
+	if v.Kind() != reflect.Struct {
+		panic("data must be a struct")
+	}
+
+	form := Div()
 	for i := 0; i < v.NumField(); i++ {
 		field := t.Field(i)
 		value := v.Field(i)
 
-		labelText := strings.Title(field.Name)
+		// Build the new field path based on the current field
+		currentFieldPath := fieldPath
+		if fieldPath != "" {
+			currentFieldPath = fmt.Sprintf("%s.%s", fieldPath, field.Name)
+		} else {
+			currentFieldPath = field.Name
+		}
 
-		label := Label(For(field.Name), T(labelText))
+		labelText := strings.Title(field.Name)
+		label := Label(For(currentFieldPath), T(labelText))
 
 		var input *Node
 		switch value.Kind() {
 		case reflect.String:
-			input = Input(Type("text"), Id(field.Name), Name(field.Name), Class("border rounded w-full py-2 px-3"), Value(value.String()))
+			input = Input(Type("text"), Id(currentFieldPath), Name(currentFieldPath), Class("border rounded w-full py-2 px-3"), Value(value.String()))
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			input = Input(Type("number"), Id(field.Name), Name(field.Name), Class("border rounded w-full py-2 px-3"), Value(fmt.Sprintf("%d", value.Int())))
+			input = Input(Type("number"), Id(currentFieldPath), Name(currentFieldPath), Class("border rounded w-full py-2 px-3"), Value(fmt.Sprintf("%d", value.Int())))
 		case reflect.Float32, reflect.Float64:
-			input = Input(Type("number"), Id(field.Name), Name(field.Name), Class("border rounded w-full py-2 px-3"), Value(fmt.Sprintf("%f", value.Float())))
+			input = Input(Type("number"), Id(currentFieldPath), Name(currentFieldPath), Class("border rounded w-full py-2 px-3"), Value(fmt.Sprintf("%f", value.Float())))
 		case reflect.Bool:
 			checked := ""
 			if value.Bool() {
 				checked = "checked"
 			}
-			input = Input(Type("checkbox"), Id(field.Name), Name(field.Name), Class("border rounded w-full py-2 px-3"), Attr("checked", checked))
+			input = Input(Type("checkbox"), Id(currentFieldPath), Name(currentFieldPath), Class("border rounded w-full py-2 px-3"), Attr("checked", checked))
 		case reflect.Slice:
-			switch t := value.Type().Elem(); t.Kind() {
-			case reflect.Struct:
-				form.Children = append(form.Children, BuildForm2(t))
+			elemType := value.Type().Elem()
+			d := Div()
+			ds := Div(
+				Class("p-4"),
+				Div(Class("divider"), T(field.Name)),
+				d,
+				A(Class("btn btn-neutral"), Href(fmt.Sprintf("/?id=%s", field.Name)), T("Add")),
+			)
+			form.Children = append(form.Children, ds)
 
-			case reflect.String:
-				for j := 0; j < value.Len(); j++ {
-					sliceElem := value.Index(j)
-					inputName := fmt.Sprintf("%s.%d", field.Name, j) // <name>.<i> format
-					sliceInput := Input(Type("text"), Id(inputName), Name(inputName), Class("border rounded w-full py-2 px-3"), Value(sliceElem.String()))
-					div := Div(Class("mb-2"), Button(HxPut("/new/add_field?field="+inputName), T("new")), Button(HxDelete("/new/delete_field?field="+inputName), T("delete")))
-					div.Children = append(form.Children, Div(Class("mb-4"),
-						Label(For(inputName), T(fmt.Sprintf("%s %d", labelText, j+1))),
-						sliceInput,
-					))
-					form.Children = append(form.Children, div)
+			if currentFieldPath == fieldToAdd {
+				// Handle different slice types when adding a new element
+				newElem := reflect.New(elemType).Elem() // Create a new element (empty struct or zero value)
+
+				switch elemType.Kind() {
+				case reflect.String:
+					newElem = reflect.ValueOf("New value")
+				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+					newElem = reflect.ValueOf(0)
+				case reflect.Float32, reflect.Float64:
+					newElem = reflect.ValueOf(0.0)
+				case reflect.Bool:
+					newElem = reflect.ValueOf(false)
+				case reflect.Struct, reflect.Ptr:
+					// If it's a pointer to a struct or struct itself, ensure it's addressable
+					newElem = reflect.New(elemType).Elem()
 				}
-			default:
-				input = P(T(fmt.Sprintf("Unsupported slice type: %s", field.Type.String())))
+
+				// Append the new element to the slice
+				if value.CanSet() {
+					value.Set(reflect.Append(value, newElem))
+				} else {
+					// Handle the case where the value is not directly settable (e.g., non-pointer)
+					panic(fmt.Sprintf("Cannot set value for %s; it is unaddressable", currentFieldPath))
+				}
+			}
+
+			for j := 0; j < value.Len(); j++ {
+				sliceElem := value.Index(j)
+				sliceFieldPath := fmt.Sprintf("%s.%d", currentFieldPath, j)
+				var sliceInput *Node
+
+				switch elemType.Kind() {
+				case reflect.String:
+					sliceInput = Input(Type("text"), Id(sliceFieldPath), Name(sliceFieldPath), Class("border rounded w-full py-2 px-3"), Value(sliceElem.String()))
+				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+					sliceInput = Input(Type("number"), Id(sliceFieldPath), Name(sliceFieldPath), Class("border rounded w-full py-2 px-3"), Value(fmt.Sprintf("%d", sliceElem.Int())))
+				case reflect.Float32, reflect.Float64:
+					sliceInput = Input(Type("number"), Id(sliceFieldPath), Name(sliceFieldPath), Class("border rounded w-full py-2 px-3"), Value(fmt.Sprintf("%f", sliceElem.Float())))
+				case reflect.Bool:
+					checked := ""
+					if sliceElem.Bool() {
+						checked = "checked"
+					}
+					sliceInput = Input(Type("checkbox"), Id(sliceFieldPath), Name(sliceFieldPath), Class("border rounded w-full py-2 px-3"), Attr("checked", checked))
+				case reflect.Struct:
+					nestedForm := BuildForm2(sliceFieldPath, sliceElem.Interface(), fieldToAdd)
+					d.Children = append(d.Children, nestedForm.Children...)
+					continue
+				case reflect.Ptr:
+					if !sliceElem.IsNil() {
+						nestedForm := BuildForm2(sliceFieldPath, sliceElem.Interface(), fieldToAdd)
+						d.Children = append(d.Children, nestedForm.Children...)
+					} else {
+						sliceInput = P(T(fmt.Sprintf("Pointer to %s is nil", elemType.Elem().Name())))
+					}
+				default:
+					sliceInput = P(T(fmt.Sprintf("Unsupported slice element type: %s", elemType.String())))
+				}
+
+				d.Children = append(d.Children, Div(Class("mb-4"),
+					Label(For(sliceFieldPath), T(fmt.Sprintf("%s %d", labelText, j+1))),
+					sliceInput,
+				))
+			}
+		case reflect.Struct:
+			// Recursive call for nested structs
+			nestedForm := BuildForm2(currentFieldPath, value.Interface(), fieldToAdd)
+			form.Children = append(form.Children, nestedForm.Children...)
+			continue
+		case reflect.Ptr:
+			// Handle pointer types by dereferencing
+			if !value.IsNil() {
+				input = BuildForm2(currentFieldPath, value.Elem().Interface(), fieldToAdd)
+			} else {
+				input = P(T(fmt.Sprintf("Pointer to %s is nil", field.Type.Elem().Name())))
 			}
 		default:
 			input = P(T(fmt.Sprintf("Unsupported field type: %s", field.Type.String())))
 		}
 
-		form.Children = append(form.Children, Div(Class("mb-4"),
-			label,
-			input,
-		))
+		if input != nil {
+			form.Children = append(form.Children, Div(Class("mb-4"),
+				label,
+				input,
+			))
+		}
 	}
-
-	form.Children = append(form.Children, Div(Class("text-center"),
-		Button(Type("submit"), Class("bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"), T("Submit")),
-	))
 
 	return form
 }
@@ -115,47 +192,60 @@ func NewVote(d Deps) *http.ServeMux {
 			return
 		}
 
-		var state Poll
+		var poll Poll
 		id := r.PathValue("id")
 		if id == "" {
-			state.ID = uuid.NewString()
-			err = d.DB.Set(state.ID, state)
+			poll.ID = uuid.NewString()
+			err = d.DB.Set(poll.ID, poll)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+			http.Redirect(w, r, fmt.Sprintf("/vote/new/%s", poll.ID), http.StatusSeeOther)
+			return
 		} else {
+			// remove trailing slash from id
+			if strings.HasSuffix(id, "/") {
+				id = id[:len(id)-1]
+			}
 			b, ok := d.DB.Get(id)
 			if !ok {
 				http.Error(w, "Poll not found", http.StatusNotFound)
 				return
 			}
-			err := json.Unmarshal(b, &state)
+			err := json.Unmarshal(b, &poll)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 		}
 
-		if r.Method == http.MethodPost {
-			http.Redirect(w, r, "/vote", http.StatusFound)
+		fieldName := r.URL.Query().Get("id")
+		f := BuildForm2("", &poll, fieldName)
+
+		if fieldName != "" {
+			err := d.DB.Set(poll.ID, poll)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			http.Redirect(w, r, fmt.Sprintf("/vote/new/%s", poll.ID), http.StatusSeeOther)
 			return
 		}
 
+		ctx := context.WithValue(r.Context(), "baseURL", "/vote/new/"+id)
 		DefaultLayout(
 			Div(
 				ReloadNode("vote.go"),
 				Class("container mx-auto mt-10 p-5"),
-				P(T("new vote")),
 				Form(
 					Method("POST"),
 					Action("/new"),
-					Input(Placeholder("name")),
-					BuildForm2(Poll{}),
+					f,
 					Button(Class("btn btn-neutral"), Type("submit"), T("save")),
 				),
 			),
-		).RenderPage(w, r)
+		).RenderPageCtx(ctx, w, r)
 		return
 	})
 

@@ -125,6 +125,18 @@ func TestDocumentStoreWithStructs(t *testing.T) {
 		log.Fatalf("Failed to associate user with document: %v", err)
 	}
 
+	u := User{
+		ID: user.ID,
+	}
+	err = store.GetStruct(context.Background(), &u)
+	if err != nil {
+		log.Fatalf("Failed to get user: %v", err)
+	}
+
+	if u.Name != user.Name {
+		t.Fatalf("expected %s, got %s", user.Name, u.Name)
+	}
+
 	assocs, err := store.Find(context.Background(), "user_id", user.ID.String())
 	if err != nil {
 		log.Fatalf("Failed to find documents: %v", err)

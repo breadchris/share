@@ -8,6 +8,7 @@ import (
 	_ "github.com/glebarez/go-sqlite"
 	"github.com/google/uuid"
 	"math"
+	"reflect"
 	"regexp"
 	"time"
 )
@@ -88,6 +89,28 @@ func (ds *DocumentStore) Get(ctx context.Context, id uuid.UUID) (*Document, erro
 		return nil, fmt.Errorf("failed to unmarshal value: %v", err)
 	}
 	return &doc, nil
+}
+
+func (ds *DocumentStore) GetStruct(ctx context.Context, a any) error {
+	id := reflect.ValueOf(a).Elem().FieldByName("ID").Interface().(uuid.UUID)
+
+	query := `SELECT id, value FROM document WHERE id = $1 AND collection = $2`
+	row := ds.db.QueryRowContext(ctx, query, id, ds.collection)
+
+	var doc Document
+	var value []byte
+
+	if err := row.Scan(&doc.ID, &value); err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("document not found")
+		}
+		return err
+	}
+
+	if err := json.Unmarshal(value, a); err != nil {
+		return fmt.Errorf("failed to unmarshal value: %v", err)
+	}
+	return nil
 }
 
 // Find performs a search on the value JSONB field for a given key-value pair.

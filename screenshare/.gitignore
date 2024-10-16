@@ -1,0 +1,5 @@
+/target
+/.idea
+*-packr.go
+/dist/
+*.local

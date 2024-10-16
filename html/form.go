@@ -50,7 +50,7 @@ func BuildForm(action string, data any) *Node {
 					))
 					form.Children = append(form.Children, div)
 				}
-				continue // Avoid adding a general unsupported type message for slices
+				continue
 			} else {
 				input = P(T(fmt.Sprintf("Unsupported slice type: %s", field.Type.String())))
 			}
