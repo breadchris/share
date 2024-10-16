@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/breadchris/share/editor/leaps"
+	. "github.com/breadchris/share/deps"
 	"github.com/breadchris/share/graph"
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/symbol"
@@ -29,7 +29,7 @@ type CodeRequest struct {
 }
 
 // analyze code https://github.com/x1unix/go-playground/tree/9cc0c4d80f44fb3589fcb22df432563fa065feed/internal/analyzer
-func New(lm *leaps.Leaps) *http.ServeMux {
+func New(d Deps) *http.ServeMux {
 	mux := http.NewServeMux()
 	var (
 		l       sync.Mutex
@@ -62,7 +62,7 @@ func New(lm *leaps.Leaps) *http.ServeMux {
 			RenderTabs([]Tab{
 				{
 					Title:   "files",
-					Content: GenerateRenderDirectory(lm.Authenticator.GetPaths()),
+					Content: GenerateRenderDirectory(d.Leaps.Authenticator.GetPaths()),
 				},
 				{
 					Title: "functions",

@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	config2 "github.com/breadchris/share/config"
+	"github.com/breadchris/share/llm"
 	"io"
 	"net/http"
 	"os"
@@ -206,7 +208,7 @@ func loadPanelData(zineId string) map[string]PanelData {
 func (z *ZineMaker) GenerateImage(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	prompt := r.FormValue("content")
-	imageName, _ := NewOpenAIService(LoadConfig()).GenerateImage(r.Context(), prompt)
+	imageName, _ := llm.NewOpenAIService(config2.New()).GenerateImage(r.Context(), prompt)
 	panelId := r.Header.Get("Hx-Target")
 	panelData := PanelData{
 		PanelID:   panelId,

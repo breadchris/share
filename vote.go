@@ -4,8 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	"github.com/google/uuid"
+	"github.com/sashabaranov/go-openai"
+	"github.com/sashabaranov/go-openai/jsonschema"
 	"net/http"
 	"reflect"
 	"strings"
@@ -24,6 +27,7 @@ type Recipe struct {
 	RecipeID    string   `json:"recipe_id"`
 	Name        string   `json:"name"`
 	Ingredients []string `json:"ingredients"`
+	Directions  []string `json:"directions"`
 }
 
 type Poll struct {
@@ -182,8 +186,66 @@ func BuildForm2(fieldPath string, data any, fieldToAdd string) *Node {
 	return form
 }
 
-func NewVote(d Deps) *http.ServeMux {
+func NewVote(d deps.Deps) *http.ServeMux {
 	r := http.NewServeMux()
+
+	r.HandleFunc("/new/ai", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			var recipe Recipe
+			schema, err := jsonschema.GenerateSchemaForType(recipe)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			req := openai.ChatCompletionRequest{
+				Model: openai.GPT4oMini,
+				Messages: []openai.ChatCompletionMessage{
+					{Role: "system", Content: "You are a professional chef. You provide great recipes."},
+					{Role: "user", Content: "Create a new recipe for " + r.FormValue("description")},
+				},
+				ResponseFormat: &openai.ChatCompletionResponseFormat{
+					Type: openai.ChatCompletionResponseFormatTypeJSONSchema,
+					JSONSchema: &openai.ChatCompletionResponseFormatJSONSchema{
+						Name:   "create_recipe",
+						Schema: schema,
+						Strict: true,
+					},
+				},
+			}
+			res, err := d.AI.Client.CreateChatCompletion(context.Background(), req)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			for _, choice := range res.Choices {
+				if choice.Message.Role == "assistant" {
+					err := json.Unmarshal([]byte(choice.Message.Content), &recipe)
+					if err != nil {
+						http.Error(w, err.Error(), http.StatusInternalServerError)
+						return
+					}
+				}
+			}
+
+			BuildForm2("", recipe, "").RenderPage(w, r)
+			return
+		}
+		DefaultLayout(
+			Div(
+				ReloadNode("vote.go"),
+				Class("container mx-auto mt-10 p-5"),
+				Form(
+					HxPost("/vote/new/ai"),
+					HxTarget("#result"),
+					Input(Type("text"), Name("description"), Class("input"), Placeholder("Description")),
+					Button(Class("btn btn-neutral"), Type("submit"), T("Generate Recipe")),
+				),
+				Div(Id("result")),
+			),
+		).RenderPage(w, r)
+		return
+	})
 
 	r.HandleFunc("/new/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		_, err := d.Session.GetUserID(r.Context())

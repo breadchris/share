@@ -3,18 +3,12 @@ package html
 import (
 	"context"
 	"fmt"
-	"github.com/breadchris/share/session"
 	"go/ast"
 	"go/token"
 	"net/http"
 	"runtime"
 	"strings"
 )
-
-type Deps struct {
-	DB      *DBAny
-	Session *session.SessionManager
-}
 
 var (
 	DaisyUI = Link(

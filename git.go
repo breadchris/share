@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	"github.com/go-git/go-git/v5"
 	"github.com/google/uuid"
@@ -63,7 +64,7 @@ type GitState struct {
 	RepoURL string
 }
 
-func NewGit(d Deps) *http.ServeMux {
+func NewGit(d deps.Deps) *http.ServeMux {
 	m := http.NewServeMux()
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {

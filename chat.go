@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/breadchris/share/llm"
 	"github.com/samber/lo"
 	"io"
 	"net/http"
@@ -38,12 +39,12 @@ func init() {
 
 type Chat struct {
 	s *session.SessionManager
-	l *OpenAIService
+	l *llm.OpenAIService
 }
 
 func NewChat(
 	s *session.SessionManager,
-	l *OpenAIService,
+	l *llm.OpenAIService,
 ) *Chat {
 	return &Chat{
 		s: s,

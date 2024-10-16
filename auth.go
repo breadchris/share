@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"fmt"
+	"github.com/breadchris/share/config"
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/session"
 	"github.com/fsnotify/fsnotify"
@@ -53,12 +54,12 @@ func init() {
 type Auth struct {
 	s   *session.SessionManager
 	e   *SMTPEmail
-	c   AppConfig
+	c   config.AppConfig
 	h   *gothic.Handler
-	cfg AppConfig
+	cfg config.AppConfig
 }
 
-func NewAuth(s *session.SessionManager, e *SMTPEmail, c AppConfig) *Auth {
+func NewAuth(s *session.SessionManager, e *SMTPEmail, c config.AppConfig) *Auth {
 	return &Auth{
 		s:   s,
 		e:   e,

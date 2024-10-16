@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/breadchris/share/config"
 	"html/template"
 	"log"
 	"net/http"
@@ -31,7 +32,7 @@ type Spotify struct {
 	a      *auth.Authenticator
 }
 
-func NewSpotify(c AppConfig) *Spotify {
+func NewSpotify(c config.AppConfig) *Spotify {
 	config := &clientcredentials.Config{
 		ClientID:     c.Spotify.ClientID,
 		ClientSecret: c.Spotify.ClientSecret,
@@ -69,7 +70,7 @@ var (
 	codeChallenge = "ZhZJzPQXYBMjH8FlGAdYK5AndohLzFfZT-8J7biT7ig"
 )
 
-func setupSpotify(c AppConfig) *http.ServeMux {
+func setupSpotify(c config.AppConfig) *http.ServeMux {
 	s := NewSpotify(c)
 	if s != nil {
 		http.HandleFunc("/spotify", s.homeHandler)

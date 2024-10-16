@@ -105,7 +105,6 @@ func init() {
 		"RenderGoFunction":        reflect.ValueOf(html.RenderGoFunction),
 		"RenderHTML":              reflect.ValueOf(html.RenderHTML),
 		"RenderLanding":           reflect.ValueOf(html.RenderLanding),
-		"RenderMasonry":           reflect.ValueOf(html.RenderMasonry),
 		"RenderPricingPage":       reflect.ValueOf(html.RenderPricingPage),
 		"RenderTabs":              reflect.ValueOf(html.RenderTabs),
 		"Role":                    reflect.ValueOf(html.Role),
@@ -142,15 +141,12 @@ func init() {
 
 		// type definitions
 		"DBAny":         reflect.ValueOf((*html.DBAny)(nil)),
-		"Deps":          reflect.ValueOf((*html.Deps)(nil)),
 		"Directory":     reflect.ValueOf((*html.Directory)(nil)),
 		"Document":      reflect.ValueOf((*html.Document)(nil)),
 		"DocumentStore": reflect.ValueOf((*html.DocumentStore)(nil)),
 		"File":          reflect.ValueOf((*html.File)(nil)),
 		"NilNode":       reflect.ValueOf((*html.NilNode)(nil)),
 		"Node":          reflect.ValueOf((*html.Node)(nil)),
-		"PageInfo":      reflect.ValueOf((*html.PageInfo)(nil)),
-		"State":         reflect.ValueOf((*html.State)(nil)),
 		"Tab":           reflect.ValueOf((*html.Tab)(nil)),
 	}
 }

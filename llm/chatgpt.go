@@ -1,9 +1,10 @@
-package main
+package llm
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/config"
 	"github.com/gorilla/websocket"
 	"github.com/samber/lo"
 	"html/template"
@@ -20,6 +21,12 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
+
 type ChatMessage struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
@@ -29,6 +36,10 @@ type ChatState struct {
 	ID       string
 	Name     string
 	Messages []ChatMessage `json:"messages"`
+}
+
+type InferRequest struct {
+	Prompt string `json:"prompt"`
 }
 
 var (
@@ -51,8 +62,8 @@ type OpenAIService struct {
 	Client *openai.Client
 }
 
-func NewOpenAIService(config AppConfig) *OpenAIService {
-	c := openai.NewClient(config.OpenAIKey)
+func NewOpenAIService(cfg config.AppConfig) *OpenAIService {
+	c := openai.NewClient(cfg.OpenAIKey)
 	return &OpenAIService{
 		Client: c,
 	}

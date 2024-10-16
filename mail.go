@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"github.com/breadchris/share/config"
 	"log"
 	"mime/multipart"
 	"net/smtp"
@@ -10,10 +11,10 @@ import (
 )
 
 type SMTPEmail struct {
-	a SMTPConfig
+	a config.SMTPConfig
 }
 
-func NewSMTPEmail(a *AppConfig) *SMTPEmail {
+func NewSMTPEmail(a *config.AppConfig) *SMTPEmail {
 	return &SMTPEmail{a: a.SMTP}
 }
 

@@ -1,22 +1,22 @@
 package main
 
 import (
-	"bytes"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"github.com/breadchris/share/breadchris"
 	"github.com/breadchris/share/code"
+	config2 "github.com/breadchris/share/config"
+	deps2 "github.com/breadchris/share/deps"
 	"github.com/breadchris/share/editor/config"
 	"github.com/breadchris/share/editor/leaps"
 	"github.com/breadchris/share/editor/playground"
 	. "github.com/breadchris/share/html"
+	"github.com/breadchris/share/llm"
 	"github.com/breadchris/share/session"
 	"github.com/breadchris/share/symbol"
 	"github.com/evanw/esbuild/pkg/api"
-	"github.com/go-shiori/dom"
-	"github.com/go-shiori/go-readability"
 	"github.com/gomarkdown/markdown"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -25,16 +25,12 @@ import (
 	"github.com/traefik/yaegi/interp"
 	"github.com/traefik/yaegi/stdlib"
 	"github.com/urfave/cli/v2"
-	"go/format"
-	"go/printer"
-	"go/token"
 	"html/template"
 	"io"
 	"io/ioutil"
 	"log"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"path"
@@ -42,8 +38,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"sync"
-	"time"
 )
 
 var upgrader = websocket.Upgrader{
@@ -52,51 +46,8 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-type SMTPConfig struct {
-	Host     string `json:"host"`
-	Port     string `json:"port"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-type SpotifyConfig struct {
-	ClientID     string `json:"client_id"`
-	ClientSecret string `json:"client_secret"`
-}
-
-type AppConfig struct {
-	OpenAIKey          string        `json:"openai_key"`
-	SMTP               SMTPConfig    `json:"smtp"`
-	Spotify            SpotifyConfig `json:"spotify"`
-	ExternalURL        string        `json:"external_url"`
-	SessionSecret      string        `json:"session_secret"`
-	GoogleClientID     string        `json:"google_client_id"`
-	GoogleClientSecret string        `json:"google_client_secret"`
-}
-
-type ZineConfig struct {
-}
-
-func LoadConfig() AppConfig {
-	appConfig := AppConfig{
-		SessionSecret: "secret",
-	}
-
-	configFile, err := os.Open("data/config.json")
-	if err != nil {
-		log.Fatalf("Failed to open dbconfig file: %v", err)
-	}
-	defer configFile.Close()
-
-	err = json.NewDecoder(configFile).Decode(&appConfig)
-	if err != nil {
-		log.Fatalf("Failed to decode dbconfig file: %v", err)
-	}
-	return appConfig
-}
-
 func startServer(useTLS bool, port int) {
-	appConfig := LoadConfig()
+	appConfig := config2.New()
 
 	loadJSON(dataFile, &entries)
 	var newEntries []Entry
@@ -133,17 +84,20 @@ func startServer(useTLS bool, port int) {
 		log.Fatalf("Failed to create db: %v", err)
 	}
 
-	oai := NewOpenAIService(appConfig)
+	oai := llm.NewOpenAIService(appConfig)
 	c := NewChat(s, oai)
-	p("/llm", SetupChatgpt(oai))
+	p("/llm", llm.SetupChatgpt(oai))
 	p("/chat", c.NewMux())
 
-	deps := Deps{
+	lm := leaps.RegisterRoutes(leaps.NewLogger())
+	deps := deps2.Deps{
 		DB:      db,
 		Session: s,
+		Leaps:   lm,
+		AI:      oai,
 	}
 
-	interpreted := func(f func(d Deps) *http.ServeMux) *http.ServeMux {
+	interpreted := func(f func(d deps2.Deps) *http.ServeMux) *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			code.DynamicHTTPMux(f)(deps).ServeHTTP(w, r)
@@ -151,12 +105,21 @@ func startServer(useTLS bool, port int) {
 		return m
 	}
 
-	lm := leaps.RegisterRoutes(leaps.NewLogger())
 	p("/leaps", lm.Mux)
 	p("/vote", interpreted(NewVote))
 	p("/breadchris", breadchris.New("/breadchris"))
 	p("/reload", setupReload([]string{"./scratch.go", "./vote.go"}))
-	p("/code", code.New(lm))
+	p("/code", func() *http.ServeMux {
+		m := http.NewServeMux()
+		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			_, err := s.GetUserID(r.Context())
+			if err != nil {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			}
+			interpreted(code.New).ServeHTTP(w, r)
+		})
+		return m
+	}())
 	p("/extension", NewExtension())
 	p("/git", interpreted(NewGit))
 
@@ -410,222 +373,6 @@ var u = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
-}
-
-type InferRequest struct {
-	Prompt string `json:"prompt"`
-}
-
-type ExtensionRequest struct {
-	Name    string `json:"name"`
-	Element string `json:"element"`
-}
-
-var (
-	state  State
-	stream []string
-	smu    sync.Mutex
-)
-
-func init() {
-	loadState()
-}
-
-func loadState() {
-	state = State{
-		PageInfos: make(map[string]PageInfo),
-	}
-	b, err := os.ReadFile("data/state.json")
-	if err != nil {
-		slog.Error("failed to read state", "error", err)
-		return
-	}
-
-	err = json.Unmarshal(b, &state)
-	if err != nil {
-		slog.Error("failed to unmarshal state", "error", err)
-		return
-	}
-}
-
-func saveState() {
-	b, err := json.Marshal(state)
-	if err != nil {
-		slog.Error("failed to marshal state", "error", err)
-		return
-	}
-
-	err = os.WriteFile("data/state.json", b, 0644)
-	if err != nil {
-		slog.Error("failed to write state", "error", err)
-		return
-	}
-}
-
-func NewExtension() *http.ServeMux {
-	m := http.NewServeMux()
-	m.HandleFunc("/save", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			var pageInfo PageInfo
-			err := json.NewDecoder(r.Body).Decode(&pageInfo)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			pageInfo.CreatedAt = time.Now().Unix()
-
-			getArticle := func(pageInfo PageInfo) (*readability.Article, error) {
-				r := strings.NewReader(pageInfo.HTML)
-
-				doc, err := dom.Parse(r)
-				if err != nil {
-					return nil, err
-				}
-
-				u, err := url.Parse(pageInfo.URL)
-				if err != nil {
-					return nil, err
-				}
-
-				a, err := readability.FromDocument(doc, u)
-				if err != nil {
-					return nil, err
-				}
-				return &a, nil
-			}
-
-			println("getting article", pageInfo.URL)
-			article, err := getArticle(pageInfo)
-			if err != nil {
-				slog.Debug("failed to get article", "error", err)
-			} else {
-				pageInfo.Article = article.TextContent
-			}
-
-			prevPageInfo, ok := state.PageInfos[pageInfo.URL]
-			if ok {
-				pageInfo.HitCount = prevPageInfo.HitCount + 1
-			} else {
-				pageInfo.HitCount = 1
-			}
-
-			state.PageInfos[pageInfo.URL] = pageInfo
-
-			var documents []any
-			for _, pageInfo := range state.PageInfos {
-				pageInfo.ID = pageInfo.URL
-				documents = append(documents, pageInfo)
-			}
-			//err = pageCol.index(documents)
-			//if err != nil {
-			//	println(err.Error())
-			//}
-
-			smu.Lock()
-			stream = append(stream, pageInfo.URL)
-			smu.Unlock()
-
-			saveState()
-
-			j, err := json.Marshal(pageInfo)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(j)
-		} else {
-			http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		}
-	})
-
-	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
-			pages := Div()
-			for _, pageInfo := range state.PageInfos {
-				pages.Children = append(pages.Children, Div(
-					Div(
-						Attrs(map[string]string{"class": "page"}),
-						A(
-							Attrs(map[string]string{"href": pageInfo.URL}),
-							T(pageInfo.Title),
-						),
-					),
-				))
-			}
-			DefaultLayout(
-				RenderMasonry(state),
-			).RenderPage(w, r)
-			return
-		}
-		if r.Method == "POST" {
-			var req ExtensionRequest
-			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-				http.Error(w, fmt.Sprintf("Failed to decode request: %v", err), http.StatusBadRequest)
-				return
-			}
-
-			if req.Element == "" {
-				http.Error(w, "Element is required", http.StatusBadRequest)
-				return
-			}
-
-			n, err := ParseHTMLString(req.Element)
-			if err != nil {
-				http.Error(w, fmt.Sprintf("Failed to parse element: %v", err), http.StatusInternalServerError)
-				return
-			}
-
-			var buf bytes.Buffer
-
-			fset := token.NewFileSet()
-
-			// TODO breadchris https://github.com/segmentio/golines
-			cfg := &printer.Config{
-				Mode:     printer.TabIndent,
-				Tabwidth: 4,
-			}
-
-			err = cfg.Fprint(&buf, fset, RenderGoFunction(fset, "Render"+strings.Title(req.Name), n.RenderGoCode(fset)))
-			if err != nil {
-				http.Error(w, fmt.Sprintf("Failed to format code: %v", err), http.StatusInternalServerError)
-				return
-			}
-
-			formattedCode, err := format.Source(buf.Bytes())
-			if err != nil {
-				http.Error(w, fmt.Sprintf("Failed to format code: %v", err), http.StatusInternalServerError)
-				return
-			}
-
-			f, err := os.OpenFile("scratch.go", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-			if err != nil {
-				http.Error(w, fmt.Sprintf("Failed to open scratch.go: %v", err), http.StatusInternalServerError)
-				return
-			}
-
-			if _, err = f.Write([]byte("\n" + string(formattedCode))); err != nil {
-				http.Error(w, fmt.Sprintf("Failed to write to scratch.go: %v", err), http.StatusInternalServerError)
-				return
-			}
-
-			if _, err := exec.LookPath("golines"); err != nil {
-				println("golines is not installed: go install github.com/segmentio/golines@latest")
-				http.Error(w, fmt.Sprintf("golines is not installed: %v", err), http.StatusInternalServerError)
-				return
-			}
-
-			cmd := exec.Command("golines", "-w", "scratch.go")
-			if err := cmd.Run(); err != nil {
-				http.Error(w, fmt.Sprintf("Failed to run golines: %v", err), http.StatusInternalServerError)
-				return
-			}
-
-			w.WriteHeader(http.StatusOK)
-		}
-	})
-	return m
 }
 
 type ModifyRequest struct {
