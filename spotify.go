@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/breadchris/share/config"
+	"github.com/breadchris/share/deps"
 	"html/template"
 	"log"
 	"net/http"
@@ -70,17 +71,17 @@ var (
 	codeChallenge = "ZhZJzPQXYBMjH8FlGAdYK5AndohLzFfZT-8J7biT7ig"
 )
 
-func setupSpotify(c config.AppConfig) *http.ServeMux {
-	s := NewSpotify(c)
+func setupSpotify(d deps.Deps) *http.ServeMux {
+	m := http.NewServeMux()
+	s := NewSpotify(d.Config)
 	if s != nil {
-		http.HandleFunc("/spotify", s.homeHandler)
-		http.HandleFunc("/spotify/", s.homeHandler)
-		http.HandleFunc("/spotify/callback", s.completeAuth)
-		http.HandleFunc("/spotify/add", s.addSongHandler)
-		http.HandleFunc("/spotify/play", s.playSongsHandler)
-		http.HandleFunc("/spotify/connect", s.connect)
+		m.HandleFunc("/", s.homeHandler)
+		m.HandleFunc("/callback", s.completeAuth)
+		m.HandleFunc("/add", s.addSongHandler)
+		m.HandleFunc("/play", s.playSongsHandler)
+		m.HandleFunc("/connect", s.connect)
 	}
-	return nil
+	return m
 }
 
 type SpotifyState struct {

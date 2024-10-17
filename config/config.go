@@ -18,6 +18,11 @@ type SpotifyConfig struct {
 	ClientSecret string `json:"client_secret"`
 }
 
+type BlogConfig struct {
+	BaseURL string `json:"base_url"`
+	YJSURL  string `json:"yjs_url"`
+}
+
 type AppConfig struct {
 	OpenAIKey          string        `json:"openai_key"`
 	SMTP               SMTPConfig    `json:"smtp"`
@@ -26,6 +31,7 @@ type AppConfig struct {
 	SessionSecret      string        `json:"session_secret"`
 	GoogleClientID     string        `json:"google_client_id"`
 	GoogleClientSecret string        `json:"google_client_secret"`
+	Blog               BlogConfig    `json:"blog"`
 }
 
 func New() AppConfig {

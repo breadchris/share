@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"html/template"
 	"net/http"
 	"runtime"
 	"strings"
@@ -230,6 +231,7 @@ func (s *Node) RenderCtx(ctx context.Context) string {
 	a := ""
 	var i int
 	for k, v := range attrs {
+		v = template.HTMLEscapeString(v)
 		if i == len(attrs)-1 {
 			a += fmt.Sprintf("%s=\"%s\"", k, v)
 			break

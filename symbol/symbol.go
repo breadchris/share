@@ -16,6 +16,9 @@
 //go:generate yaegi extract github.com/go-git/go-git/v5
 //go:generate yaegi extract github.com/sashabaranov/go-openai/jsonschema
 //go:generate yaegi extract github.com/sashabaranov/go-openai
+//go:generate yaegi extract golang.org/x/oauth2/clientcredentials
+//go:generate yaegi extract github.com/zmb3/spotify/v2
+//go:generate yaegi extract github.com/zmb3/spotify/v2/auth
 package symbol
 
 import "reflect"

@@ -77,7 +77,6 @@ func startServer(useTLS bool, port int) {
 	setupCursor()
 	setupRecipe()
 	fileUpload()
-	setupSpotify(appConfig)
 
 	db, err := NewDBAny("data/testdb/")
 	if err != nil {
@@ -95,6 +94,7 @@ func startServer(useTLS bool, port int) {
 		Session: s,
 		Leaps:   lm,
 		AI:      oai,
+		Config:  appConfig,
 	}
 
 	interpreted := func(f func(d deps2.Deps) *http.ServeMux) *http.ServeMux {
@@ -105,9 +105,10 @@ func startServer(useTLS bool, port int) {
 		return m
 	}
 
+	p("/spotify", interpreted(setupSpotify))
 	p("/leaps", lm.Mux)
 	p("/vote", interpreted(NewVote))
-	p("/breadchris", breadchris.New("/breadchris"))
+	p("/breadchris", interpreted(breadchris.New))
 	p("/reload", setupReload([]string{"./scratch.go", "./vote.go"}))
 	p("/code", func() *http.ServeMux {
 		m := http.NewServeMux()
@@ -258,13 +259,13 @@ func startServer(useTLS bool, port int) {
 	})
 
 	http.HandleFunc("/register", a.handleRegister)
+	http.HandleFunc("/account", a.accountHandler)
 	http.HandleFunc("/login", a.handleLogin)
 	http.HandleFunc("/invite", a.handleInvite)
 	http.HandleFunc("/auth/google", a.startGoogleAuth)
 	http.HandleFunc("/auth/google/callback", a.handleGoogleCallback)
 	http.HandleFunc("/blog", a.blogHandler)
 	http.HandleFunc("/blog/react", a.reactHandler)
-	http.HandleFunc("/account", a.accountHandler)
 	http.HandleFunc("/files", fileHandler)
 	http.HandleFunc("/modify", modifyHandler)
 

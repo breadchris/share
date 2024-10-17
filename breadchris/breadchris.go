@@ -3,7 +3,9 @@ package breadchris
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	"github.com/gosimple/slug"
 	"github.com/samber/lo"
@@ -43,7 +45,7 @@ func loadPosts() ([]Post, error) {
 	return posts, nil
 }
 
-func NewRoutes(baseURL string) []Route {
+func NewRoutes(d deps.Deps) []Route {
 	posts, err := loadPosts()
 	if err != nil {
 		log.Fatalf("Failed to load posts: %v", err)
@@ -55,7 +57,7 @@ func NewRoutes(baseURL string) []Route {
 		}
 	}
 
-	ctx := context.WithValue(context.Background(), "baseURL", baseURL)
+	ctx := context.WithValue(context.Background(), "baseURL", d.Config.Blog.BaseURL)
 
 	routes := []Route{
 		NewRoute(
@@ -129,6 +131,12 @@ func NewRoutes(baseURL string) []Route {
 			).RenderPageCtx(ctx, w, r)
 		}),
 		NewRoute("/new", func(w http.ResponseWriter, r *http.Request) {
+			u, err := d.Session.GetUserID(r.Context())
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
 			if r.Method == "POST" {
 				title := r.FormValue("title")
 				tags := strings.Split(r.FormValue("tags"), ",")
@@ -147,6 +155,21 @@ func NewRoutes(baseURL string) []Route {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 				}
 				http.Redirect(w, r, "/", http.StatusSeeOther)
+				return
+			}
+			type Props struct {
+				ProviderURL string `json:"provider_url"`
+				Room        string `json:"room"`
+				Username    string `json:"username"`
+			}
+			props := Props{
+				ProviderURL: d.Config.Blog.YJSURL,
+				Room:        "blog",
+				Username:    u,
+			}
+			b, err := json.Marshal(props)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			PageLayout(
@@ -178,7 +201,9 @@ func NewRoutes(baseURL string) []Route {
 						//),
 						Input(Type("hidden"), Name("markdown"), Id("markdown")),
 						Input(Type("hidden"), Name("blocknote"), Id("blocknote")),
-						Div(Id("editor")),
+						Div(Id("editor"), Attrs(map[string]string{
+							"props": string(b),
+						})),
 						Div(Class("flex flex-row space-x-4"),
 							Input(Type("text"), Class("input w-full"), Name("title"), Placeholder("Title")),
 							Input(Type("text"), Class("input w-full"), Name("tags"), Placeholder("Tags")),
@@ -217,9 +242,9 @@ func NewRoutes(baseURL string) []Route {
 	return routes
 }
 
-func New(baseURL string) *http.ServeMux {
+func New(d deps.Deps) *http.ServeMux {
 	mux := http.NewServeMux()
-	for _, route := range NewRoutes(baseURL) {
+	for _, route := range NewRoutes(d) {
 		mux.HandleFunc(route.Path, route.Handler)
 	}
 	return mux

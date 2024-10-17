@@ -2,6 +2,8 @@ package breadchris
 
 import (
 	"fmt"
+	"github.com/breadchris/share/config"
+	"github.com/breadchris/share/deps"
 	"github.com/snabb/sitemap"
 	"golang.org/x/net/html"
 	"io"
@@ -96,8 +98,15 @@ func StaticSiteGenerator() error {
 		return fmt.Errorf("failed to copy static directory: %v", err)
 	}
 
-	mux := New(baseURL)
-	for _, route := range NewRoutes(baseURL) {
+	d := deps.Deps{
+		Config: config.AppConfig{
+			Blog: config.BlogConfig{
+				BaseURL: baseURL,
+			},
+		},
+	}
+	mux := New(d)
+	for _, route := range NewRoutes(d) {
 		if route.Ignore {
 			continue
 		}

@@ -88,7 +88,11 @@ func NewGit(d deps.Deps) *http.ServeMux {
 			Div(
 				Class("container mx-auto p-4"),
 				P(T("clone a git repo (http url) and concat all .go files")),
-				BuildForm("/", GitState{}),
+				Form(
+					Action("/"),
+					Method("POST"),
+					BuildForm("", GitState{}, ""),
+				),
 			),
 		).RenderPageCtx(ctx, w, r)
 	})
