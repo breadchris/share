@@ -5,6 +5,20 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"html/template"
+	"io"
+	"io/ioutil"
+	"log"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/exec"
+	"path"
+	"path/filepath"
+	"reflect"
+	"strconv"
+	"strings"
+
 	"github.com/breadchris/share/breadchris"
 	"github.com/breadchris/share/code"
 	config2 "github.com/breadchris/share/config"
@@ -25,19 +39,6 @@ import (
 	"github.com/traefik/yaegi/interp"
 	"github.com/traefik/yaegi/stdlib"
 	"github.com/urfave/cli/v2"
-	"html/template"
-	"io"
-	"io/ioutil"
-	"log"
-	"log/slog"
-	"net/http"
-	"os"
-	"os/exec"
-	"path"
-	"path/filepath"
-	"reflect"
-	"strconv"
-	"strings"
 )
 
 var upgrader = websocket.Upgrader{
@@ -78,6 +79,7 @@ func startServer(useTLS bool, port int) {
 	setupRecipe()
 	fileUpload()
 	setupSpotify(appConfig)
+	SetupCalendar()
 
 	db, err := NewDBAny("data/testdb/")
 	if err != nil {
@@ -293,7 +295,9 @@ func startServer(useTLS bool, port int) {
 		}
 	} else {
 		log.Printf("Starting HTTP server on port: %d", port)
-		http.ListenAndServe(fmt.Sprintf("localhost:%d", port), h)
+		//serve on network
+		http.ListenAndServe(fmt.Sprintf(":%d", port), h)
+		// http.ListenAndServe(fmt.Sprintf("localhost:%d", port), h)
 	}
 }
 

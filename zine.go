@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	config2 "github.com/breadchris/share/config"
-	"github.com/breadchris/share/llm"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
+
+	config2 "github.com/breadchris/share/config"
+	"github.com/breadchris/share/llm"
 
 	. "github.com/breadchris/share/html"
 	"github.com/chromedp/chromedp"
