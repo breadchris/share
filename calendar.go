@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -56,6 +57,8 @@ func SetupCalendar() {
 	http.HandleFunc("/calendar/month", createMonth)
 	http.HandleFunc("/calendar/create_event_form", createEventForm)
 	http.HandleFunc("/calendar/submit_event", submitEvent)
+	http.HandleFunc("/calendar/event/", viewEvent)
+	http.HandleFunc("/calendar/delete_event/", deleteEvent)
 }
 
 // Serve the user dashboard
@@ -207,7 +210,7 @@ func createEventForm(w http.ResponseWriter, r *http.Request) {
 				Action("/calendar/submit_event"),
 				Attr("hx-post", "/calendar/submit_event"),
 				Attr("hx-target", "#calendar-container"),
-				Attr("hx-swap", "innerHTML"),
+				Attr("hx-swap", "outerHTML"),
 				Class("space-y-4"),
 				Input(Type("text"), Name("name"), Placeholder("Event Name"), Class("w-full p-2 border border-gray-300 rounded")),
 				TextArea(Name("description"), Placeholder("Description"), Class("w-full p-2 border border-gray-300 rounded")),
@@ -278,17 +281,9 @@ func submitEvent(w http.ResponseWriter, r *http.Request) {
 
 	// Generate the updated calendar
 	calendarNode := GenerateCalendar(month, year, monthEvents)
-	
-
-	// Return the updated calendar and clear the modal
-	response := Div(
-		Id("calendar-container"),
-		calendarNode,
-	)
-	responseHTML := response.Render() + `<div id="event-modal"></div>`
 
 	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprint(w, responseHTML)
+	fmt.Fprint(w, calendarNode.Render())
 }
 
 func createMonth(w http.ResponseWriter, r *http.Request) {
@@ -373,7 +368,17 @@ func GenerateCalendar(month, year int, events []*CalendarEvent) *Node {
 		dayEvents := eventsByDate[dateStr]
 		eventNodes := []*Node{}
 		for _, evt := range dayEvents {
-			eventNodes = append(eventNodes, Div(Class("event bg-blue-100 p-1 mt-1 rounded"), T(evt.Name)))
+			eventNodes = append(eventNodes, Div(
+				Class("event bg-blue-100 p-1 mt-1 rounded"),
+				A(
+					Href("#"),
+					T(evt.Name),
+					HxGet(fmt.Sprintf("/calendar/event/%d", evt.ID)),
+					HxTarget("#event-modal"),
+					HxSwap("innerHTML"),
+					Attr("class", "event-link"),
+				),
+			))
 		}
 		cells = append(cells, Div(
 			Class("calendar-cell"),
@@ -449,4 +454,94 @@ func GenerateCalendar(month, year int, events []*CalendarEvent) *Node {
 	)
 
 	return calendar
+}
+
+func viewEvent(w http.ResponseWriter, r *http.Request) {
+	// Extract event ID from URL
+	idStr := strings.TrimPrefix(r.URL.Path, "/calendar/event/")
+	eventID, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid event ID", http.StatusBadRequest)
+		return
+	}
+
+	dataMutex.Lock()
+	evt, exists := events[strconv.Itoa(eventID)]
+	dataMutex.Unlock()
+	if !exists {
+		http.Error(w, "Event not found", http.StatusNotFound)
+		return
+	}
+
+	// Create modal content
+	modalContent := Div(
+		Class("modal"),
+		Div(
+			Class("modal-content"),
+			H2(Class("text-2xl font-bold mb-4"), T(evt.Name)),
+			P(Class("mb-2"), T("Description: "+evt.Description)),
+			P(Class("mb-2"), T("Date: "+evt.Date.Format("2006-01-02"))),
+			Div(
+				Class("flex justify-end mt-4"),
+				Button(
+					T("Delete"),
+					Type("button"),
+					Class("bg-red-500 text-white px-4 py-2 rounded mr-2"),
+					HxPost(fmt.Sprintf("/calendar/delete_event/%d", evt.ID)),
+					HxTarget("#calendar-container"),
+					HxSwap("innerHTML"),
+				),
+				Button(
+					T("Close"),
+					Type("button"),
+					Class("modal-close bg-gray-500 text-white px-4 py-2 rounded"),
+					Attr("onclick", "document.getElementById('event-modal').innerHTML = '';"),
+				),
+			),
+		),
+	)
+
+	w.Header().Set("Content-Type", "text/html")
+	fmt.Fprint(w, modalContent.Render())
+}
+
+func deleteEvent(w http.ResponseWriter, r *http.Request) {
+	// Extract event ID from URL
+	idStr := strings.TrimPrefix(r.URL.Path, "/calendar/delete_event/")
+	eventID, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid event ID", http.StatusBadRequest)
+		return
+	}
+
+	dataMutex.Lock()
+	evt, exists := events[strconv.Itoa(eventID)]
+	if !exists {
+		dataMutex.Unlock()
+		http.Error(w, "Event not found", http.StatusNotFound)
+		return
+	}
+
+	// Remove the event from the events map
+	delete(events, strconv.Itoa(eventID))
+	dataMutex.Unlock()
+
+	// Collect events for the month and year
+	month := int(evt.Date.Month())
+	year := evt.Date.Year()
+
+	dataMutex.Lock()
+	monthEvents := []*CalendarEvent{}
+	for _, e := range events {
+		if e.Date.Year() == year && int(e.Date.Month()) == month {
+			monthEvents = append(monthEvents, e)
+		}
+	}
+	dataMutex.Unlock()
+
+	// Generate the updated calendar
+	calendarNode := GenerateCalendar(month, year, monthEvents)
+
+	w.Header().Set("Content-Type", "text/html")
+	fmt.Fprint(w, calendarNode.Render())
 }
