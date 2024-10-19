@@ -55,6 +55,7 @@ type JSONPatch struct {
 	Value any         `json:"value"`
 }
 
+// TODO breadchris this should be replaced by traversing the struct and applying the patch
 func ApplyJSONPatch(original, new any, patch []JSONPatch) error {
 	originalJSON, err := json.Marshal(original)
 	if err != nil {
@@ -74,7 +75,6 @@ func ApplyJSONPatch(original, new any, patch []JSONPatch) error {
 	if err != nil {
 		return fmt.Errorf("failed to apply JSON patch: %w", err)
 	}
-	fmt.Printf("modifiedJSON: %s\n", modifiedJSON)
 
 	err = json.Unmarshal(modifiedJSON, new)
 	if err != nil {
@@ -192,20 +192,11 @@ func NewVote(d deps.Deps) *http.ServeMux {
 			}
 
 			var newPoll Poll
-			pa, _ := json.Marshal(patch)
-			fmt.Println(string(pa))
-
 			err = ApplyJSONPatch(poll, &newPoll, []JSONPatch{patch})
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			// json marshal formatted before and after patching
-			originalJSON, _ := json.MarshalIndent(poll, "", "  ")
-			newJSON, _ := json.MarshalIndent(newPoll, "", "  ")
-			fmt.Println(string(originalJSON))
-			fmt.Println(string(newJSON))
-
 			poll = newPoll
 			err = d.DB.Set(poll.ID, poll)
 			if err != nil {

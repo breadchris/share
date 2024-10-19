@@ -4,7 +4,6 @@ import (
 	"fmt"
 	. "github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
-	"github.com/samber/lo"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -20,36 +19,6 @@ type CodeRequest struct {
 // analyze code https://github.com/x1unix/go-playground/tree/9cc0c4d80f44fb3589fcb22df432563fa065feed/internal/analyzer
 func New(d Deps) *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/sidebar", func(w http.ResponseWriter, r *http.Request) {
-		file := r.URL.Query().Get("file")
-		if file == "" {
-			http.Error(w, "file is required", http.StatusBadRequest)
-			return
-		}
-		_ = r.URL.Query().Get("function")
-
-		funcs, err := GetFunctions(file)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		w.Write([]byte(
-			RenderTabs([]Tab{
-				{
-					Title: "functions",
-					Content: Ul(Class("menu bg-base-200 rounded-box w-56"),
-						Li(
-							Ul(
-								Ch(lo.Map(funcs, func(f string, i int) *Node {
-									return Li(A(Href(fmt.Sprintf("/code?file=%s&function=%s", file, f)), T(f)))
-								})),
-							),
-						)),
-					Active: true,
-				},
-			}).Render(),
-		))
-	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		file := r.URL.Query().Get("file")
 		if file == "" {

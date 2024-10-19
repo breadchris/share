@@ -317,8 +317,10 @@ func (s *Node) RenderGoCode(fset *token.FileSet) *ast.CallExpr {
 		for _, st := range strings.Split(k, "-") {
 			cased = append(cased, strings.Title(st))
 		}
+		fun := strings.Join(cased, "")
+		fun = strings.ReplaceAll(fun, "@", "")
 		call.Args = append(call.Args, &ast.CallExpr{
-			Fun: ast.NewIdent(strings.Join(cased, "")),
+			Fun: ast.NewIdent(fun),
 			Args: []ast.Expr{
 				&ast.BasicLit{
 					Kind:  token.STRING,
@@ -1054,4 +1056,24 @@ func HxSwap(s string) *Node {
 			p.Attrs["hx-swap"] = s
 		},
 	}
+}
+
+func AriaOrientation(s string) *Node {
+	return NewAttrNode("aria-orientation", s)
+}
+
+func AriaLabelledby(s string) *Node {
+	return NewAttrNode("aria-labelledby", s)
+}
+
+func AriaHaspopup(s string) *Node {
+	return NewAttrNode("aria-haspopup", s)
+}
+
+func AriaExpanded(s string) *Node {
+	return NewAttrNode("aria-expanded", s)
+}
+
+func Tabindex(s string) *Node {
+	return NewAttrNode("tabindex", s)
 }

@@ -43,7 +43,7 @@ const initialNodes = [
         id: '5',
         type: 'url',
         position: { x: 0, y: 400 },
-        data: { url: "/" }
+        data: { url: "/calendar" }
     },
     // {
     //     id: '4',
@@ -87,7 +87,7 @@ function URLNode({ data }) {
     return (
         <>
             <Handle type="target" position={Position.Top} />
-            <div className={"p-6"}>
+            <div className={"p-12"}>
                 <iframe src={data.url} style={{height: "500px", width: "700px"}}></iframe>
             </div>
             <Handle type="source" position={Position.Bottom} id="a" />

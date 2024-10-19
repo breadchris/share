@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	. "github.com/breadchris/share/deps"
-	"github.com/breadchris/share/graph"
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/symbol"
 	"github.com/samber/lo"
@@ -19,7 +18,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
-	"sync"
 )
 
 type CodeRequest struct {
@@ -31,20 +29,6 @@ type CodeRequest struct {
 // analyze code https://github.com/x1unix/go-playground/tree/9cc0c4d80f44fb3589fcb22df432563fa065feed/internal/analyzer
 func New(d Deps) *http.ServeMux {
 	mux := http.NewServeMux()
-	var (
-		l       sync.Mutex
-		codeMux *http.ServeMux
-	)
-	codeMux = graph.New()
-	mux.HandleFunc("/proxy/", func(w http.ResponseWriter, r *http.Request) {
-		if codeMux == nil {
-			http.Error(w, "codeMux is nil", http.StatusInternalServerError)
-			return
-		}
-		l.Lock()
-		http.StripPrefix("/proxy", codeMux).ServeHTTP(w, r)
-		l.Unlock()
-	})
 	mux.HandleFunc("/sidebar", func(w http.ResponseWriter, r *http.Request) {
 		file := r.URL.Query().Get("file")
 		if file == "" {
@@ -146,15 +130,6 @@ func New(d Deps) *http.ServeMux {
 				ctx := context.WithValue(r.Context(), "state", cr.Data)
 				w.Write([]byte(fnc(ctx).Render()))
 				return
-			}
-
-			fs, ok := fr.Interface().(func() *http.ServeMux)
-			if ok {
-				l.Lock()
-				codeMux = fs()
-				l.Unlock()
-			} else {
-				http.Error(w, "invalid function", http.StatusInternalServerError)
 			}
 		}
 	})

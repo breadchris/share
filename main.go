@@ -111,7 +111,7 @@ func startServer(useTLS bool, port int) {
 	p("/leaps", lm.Mux)
 	p("/vote", interpreted(NewVote))
 	p("/breadchris", interpreted(breadchris.New))
-	p("/reload", setupReload([]string{"./scratch.go", "./vote.go"}))
+	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./calendar.go"}))
 	p("/code", func() *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -133,6 +133,7 @@ func startServer(useTLS bool, port int) {
 	p("/extension", NewExtension())
 	p("/git", interpreted(NewGit))
 	p("/music", interpreted(NewMusic))
+	p("/calendar", interpreted(NewCalendar))
 
 	go func() {
 		paths := []string{
