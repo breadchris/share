@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/breadchris/share/config"
 	"github.com/breadchris/share/deps"
-	"html/template"
+	. "github.com/breadchris/share/html"
 	"log"
 	"net/http"
 	"sync"
@@ -17,10 +17,8 @@ import (
 )
 
 var (
-	ch        = make(chan *spotify.Client)
-	clients   []*spotify.Client
-	songQueue []Song
-	queueLock sync.Mutex
+	ch      = make(chan *spotify.Client)
+	clients []*spotify.Client
 )
 
 type Song struct {
@@ -29,8 +27,10 @@ type Song struct {
 }
 
 type Spotify struct {
-	client *spotify.Client
-	a      *auth.Authenticator
+	client    *spotify.Client
+	a         *auth.Authenticator
+	queueLock sync.Mutex
+	songQueue []Song
 }
 
 func NewSpotify(c config.AppConfig) *Spotify {
@@ -99,11 +99,81 @@ func (s *Spotify) homeHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		clientNames = append(clientNames, u.DisplayName)
 	}
-	t := template.Must(template.ParseFiles("spotify.html"))
-	t.Execute(w, SpotifyState{
-		SongQueue: songQueue,
-		Users:     clientNames,
-	})
+	RenderSpotifyQueue(clientNames, s.songQueue).RenderPage(w, r)
+}
+
+func RenderSpotifyQueue(users []string, songQueue []Song) *Node {
+	var u []*Node
+	for _, user := range users {
+		u = append(u, Li(Class("text-lg"), T(user)))
+	}
+	var sq []*Node
+	for _, song := range songQueue {
+		sq = append(sq, Li(Class("text-lg"),
+			T(fmt.Sprintf("%s - ", song.Name)),
+			A(Href(song.URL), Class("text-blue-500 hover:underline"), T("Play on Spotify")),
+		))
+	}
+	return Html(
+		Head(
+			Meta(Charset("UTF-8")),
+			Meta(Attr("name", "viewport"), Attr("content", "width=device-width, initial-scale=1.0")),
+			Title(T("Spotify Queue")),
+			Link(Href("https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"), Rel("stylesheet")),
+		),
+		Body(Class("bg-gray-100 text-gray-900"),
+			Div(Class("container mx-auto p-8"),
+				Div(Class("max-w-2xl mx-auto bg-white rounded-xl shadow-md p-6"),
+					H1(Class("text-3xl font-bold text-center mb-8"), T("Spotify Queue")),
+
+					// Friends list
+					Div(Class("mb-6"),
+						H2(Class("text-2xl font-semibold mb-4"), T("frands")),
+						Ul(Class("list-disc list-inside space-y-2"),
+							If(len(users) > 0, Ch(u), Li(Class("text-lg text-gray-500"), T("no frands yet"))),
+						),
+						Div(Class("text-center"),
+							H2(Class("text-2xl font-semibold mb-4"), T("Connect Your Spotify Account")),
+							A(Href("/spotify/connect"),
+								Class("inline-block bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"),
+								T("Connect to Spotify")),
+						),
+					),
+
+					// Songs list
+					Div(Class("mb-6"),
+						H2(Class("text-2xl font-semibold mb-4"), T("songs")),
+						Ul(Class("list-disc list-inside space-y-2"),
+							If(len(songQueue) > 0, Ch(sq), Li(Class("text-lg text-gray-500"), T("No songs queued"))),
+						),
+					),
+
+					// Add a song form
+					Div(Class("mb-6"),
+						H2(Class("text-2xl font-semibold mb-4"), T("Add a Song")),
+						Form(Action("/spotify/add"), Method("POST"), Class("space-y-4"),
+							Div(
+								Label(For("song"), Class("block text-sm font-medium text-gray-700"), T("Song Name:")),
+								Input(Type("text"), Id("song"), Name("song"), Class("mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500")),
+							),
+							Div(
+								Label(For("url"), Class("block text-sm font-medium text-gray-700"), T("Spotify URL:")),
+								Input(Type("text"), Id("url"), Name("url"), Class("mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500")),
+							),
+							Button(Type("submit"), Class("w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"), T("Add to Queue")),
+						),
+					),
+
+					// Play next song button
+					Div(Class("mb-6"),
+						Form(Action("/spotify/play"), Method("POST"),
+							Button(Type("submit"), Class("w-full bg-green-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"), T("Play Next Song")),
+						),
+					),
+				),
+			),
+		),
+	)
 }
 
 func (s *Spotify) connect(w http.ResponseWriter, r *http.Request) {
@@ -139,23 +209,23 @@ func (s *Spotify) addSongHandler(w http.ResponseWriter, r *http.Request) {
 	songName := r.FormValue("song")
 	songURL := r.FormValue("url")
 
-	queueLock.Lock()
-	defer queueLock.Unlock()
+	s.queueLock.Lock()
+	defer s.queueLock.Unlock()
 
-	songQueue = append(songQueue, Song{Name: songName, URL: songURL})
-	http.Redirect(w, r, "/spotify", http.StatusSeeOther)
+	s.songQueue = append(s.songQueue, Song{Name: songName, URL: songURL})
+	http.Redirect(w, r, "/spotify/", http.StatusSeeOther)
 }
 
 func (s *Spotify) playSongsHandler(w http.ResponseWriter, r *http.Request) {
-	queueLock.Lock()
-	defer queueLock.Unlock()
+	s.queueLock.Lock()
+	defer s.queueLock.Unlock()
 
-	if len(songQueue) == 0 {
+	if len(s.songQueue) == 0 {
 		http.Error(w, "No songs in the queue", http.StatusBadRequest)
 		return
 	}
 
-	res, err := s.client.Search(context.Background(), songQueue[0].Name, spotify.SearchTypeTrack)
+	res, err := s.client.Search(context.Background(), s.songQueue[0].Name, spotify.SearchTypeTrack)
 	if err != nil {
 		log.Printf("Error searching for track: %v", err)
 		http.Error(w, "Error searching for track", http.StatusInternalServerError)
@@ -179,6 +249,6 @@ func (s *Spotify) playSongsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Remove the song from the queue after playing
-	songQueue = songQueue[1:]
+	s.songQueue = s.songQueue[1:]
 	http.Redirect(w, r, "/spotify", http.StatusSeeOther)
 }

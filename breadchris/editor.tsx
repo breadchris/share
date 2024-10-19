@@ -53,7 +53,9 @@ export const Editor = ({ props }) => {
 
     // TODO breadchris this will become problematic with multiple forms on the page, need provider
     useEffect(() => {
-        providerRef.current = new WebsocketProvider(props.provider_url, props.room, doc);
+        if (props?.provider_url) {
+            providerRef.current = new WebsocketProvider(props.provider_url, props.room, doc);
+        }
         return () => {
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort();
@@ -198,9 +200,10 @@ export const Editor = ({ props }) => {
     // We use useMemo + createBlockNoteEditor instead of useCreateBlockNote so we
     // can delay the creation of the editor until the initial content is loaded.
     const editor = useMemo(() => {
-        if (initialContent === "loading" || providerRef.current === undefined) {
+        if (initialContent === "loading" || (props?.provider_url && providerRef.current === undefined)) {
             return undefined;
         }
+
         // TODO breadchris when content is loaded, set the form inputs
         return BlockNoteEditor.create({
             initialContent,
@@ -218,7 +221,7 @@ export const Editor = ({ props }) => {
                 provider: providerRef.current,
                 fragment: doc.getXmlFragment("blocknote"),
                 user: {
-                    name: props.username,
+                    name: props?.username || "Anonymous",
                     color: "blue",
                 }
             },

@@ -196,6 +196,7 @@ func (s *Node) RenderPageCtx(ctx context.Context, w http.ResponseWriter, r *http
 	}
 }
 
+// TODO breadchris rewrite this using io.Writer
 func (s *Node) RenderCtx(ctx context.Context) string {
 	c := ""
 	if s.text != "" {

@@ -19,6 +19,7 @@
 //go:generate yaegi extract golang.org/x/oauth2/clientcredentials
 //go:generate yaegi extract github.com/zmb3/spotify/v2
 //go:generate yaegi extract github.com/zmb3/spotify/v2/auth
+//go:generate yaegi extract github.com/evanphx/json-patch/v5
 package symbol
 
 import "reflect"

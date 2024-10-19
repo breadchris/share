@@ -20,7 +20,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -73,6 +75,45 @@ func NewRoutes(d deps.Deps) []Route {
 				}),
 			})),
 		),
+		NewRoute("/omnivore/{id...}", func(w http.ResponseWriter, r *http.Request) {
+			id := r.PathValue("id")
+			intID := 0
+			if id != "" {
+				intID, err = strconv.Atoi(id)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+
+			content, err := os.ReadFile("/Users/hacked/Documents/GitHub/notes/pages/Omnivore.md")
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			re := regexp.MustCompile(`site:: \[.*?\]\((.*?)\)`)
+
+			matches := re.FindAllStringSubmatch(string(content), -1)
+
+			var urls []string
+			for _, match := range matches {
+				if len(match) > 1 {
+					urls = append(urls, match[1])
+				}
+			}
+			url := urls[intID]
+			DefaultLayout(
+				Div(
+					Class("space-x-4"),
+					A(Href(url), T(url)),
+					If(intID > 0, A(Href(fmt.Sprintf("/breadchris/omnivore/%d", intID-1)), T("Previous")), Nil()),
+					If(intID < len(urls)-1, A(Href(fmt.Sprintf("/breadchris/omnivore/%d", intID+1)), T("Next")), Nil()),
+					Iframe(Src(url), Attrs(map[string]string{
+						"width":  "100%",
+						"height": "100%",
+					})),
+				)).RenderPage(w, r)
+		}),
 		NewRoute("/static/", func(w http.ResponseWriter, r *http.Request) {
 			http.StripPrefix(
 				"/static/",

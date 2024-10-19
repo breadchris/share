@@ -16,12 +16,14 @@ import (
 	"github.com/breadchris/share/llm"
 	"github.com/breadchris/share/session"
 	"github.com/breadchris/share/symbol"
+	"github.com/breadchris/share/wasmcode"
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/gomarkdown/markdown"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/protoflow-labs/protoflow/pkg/util/reload"
 	ignore "github.com/sabhiram/go-gitignore"
+	"github.com/samber/lo"
 	"github.com/traefik/yaegi/interp"
 	"github.com/traefik/yaegi/stdlib"
 	"github.com/urfave/cli/v2"
@@ -105,7 +107,7 @@ func startServer(useTLS bool, port int) {
 		return m
 	}
 
-	p("/spotify", interpreted(setupSpotify))
+	p("/spotify", setupSpotify(deps))
 	p("/leaps", lm.Mux)
 	p("/vote", interpreted(NewVote))
 	p("/breadchris", interpreted(breadchris.New))
@@ -121,8 +123,16 @@ func startServer(useTLS bool, port int) {
 		})
 		return m
 	}())
+	p("/wasmcode", func() *http.ServeMux {
+		m := http.NewServeMux()
+		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			interpreted(wasmcode.New).ServeHTTP(w, r)
+		})
+		return m
+	}())
 	p("/extension", NewExtension())
 	p("/git", interpreted(NewGit))
+	p("/music", interpreted(NewMusic))
 
 	go func() {
 		paths := []string{
@@ -169,6 +179,8 @@ func startServer(useTLS bool, port int) {
 		paths := []string{
 			"./graph/graph.tsx",
 			"./code/monaco.tsx",
+			"./wasmcode/monaco.tsx",
+			"./music.tsx",
 		}
 		if err := WatchFilesAndFolders(paths, func(s string) {
 			result := api.Build(api.BuildOptions{
@@ -728,21 +740,20 @@ func recipeHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, nil)
 }
 
+type DirFile struct {
+	Name  string
+	IsDir bool
+}
+
 func fileServe(r *http.Request, w http.ResponseWriter, baseDir string) {
-	//path := filepath.Join(baseDir, r.URL.Path)
 	path := r.URL.Path
-	// remove the leading slash
 	path = path[1:]
 
 	fileInfo, err := os.ReadDir(path)
 	if err == nil {
-		type File struct {
-			Name  string
-			IsDir bool
-		}
-		var fileNames []File
+		var fileNames []DirFile
 		for _, file := range fileInfo {
-			fileNames = append(fileNames, File{file.Name(), file.IsDir()})
+			fileNames = append(fileNames, DirFile{file.Name(), file.IsDir()})
 		}
 
 		indexPath := filepath.Join(path, "index.html")
@@ -751,68 +762,43 @@ func fileServe(r *http.Request, w http.ResponseWriter, baseDir string) {
 			return
 		}
 
-		indexTemplate, err := template.ParseFiles("dir.html")
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		err = indexTemplate.Execute(w, map[string]any{
-			"files": fileNames,
-		})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		return
-	}
-
-	ext := filepath.Ext(path)
-	if ext == ".html" {
-		tmpl, err := template.ParseFiles(path)
-		if err == nil {
-			tmpl.Execute(w, nil)
-			return
-		}
-	} else if ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif" {
-		http.ServeFile(w, r, path)
-		return
-	} else if ext == ".json" {
-		data := map[string]any{
-			"home": "/data/recipes/",
-		}
-
-		jsonFile, err := os.Open(path)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer jsonFile.Close()
-
-		byteValue, err := ioutil.ReadAll(jsonFile)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if err = json.Unmarshal(byteValue, &data); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		indexTemplate, err := template.ParseFiles("recipe.html")
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		err = indexTemplate.Execute(w, data)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		FileListPage(fileNames).RenderPage(w, r)
 		return
 	}
 	http.ServeFile(w, r, path)
+}
+
+func FileListPage(files []DirFile) *Node {
+	return Html(
+		Attr("lang", "en"),
+		Head(
+			Meta(Attr("charset", "UTF-8")),
+			Meta(Attr("name", "viewport"), Attr("content", "width=device-width, initial-scale=1.0")),
+			Title(T("File List")),
+			Link(
+				Href("https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"),
+				Attr("rel", "stylesheet"),
+			),
+		),
+		Body(Class("bg-gray-100"),
+			Div(Class("container mx-auto p-4"),
+				H1(Class("text-2xl font-bold mb-4"), T("File List")),
+				Ul(Class("list-disc list-inside bg-white p-4 rounded shadow"),
+					Ch(
+						lo.Map(files, func(f DirFile, i int) *Node {
+							href := f.Name
+							if f.IsDir {
+								href += "/"
+							}
+							return Li(Class("py-1"),
+								A(Href(href), T(f.Name)),
+							)
+						}),
+					),
+				),
+			),
+		),
+	)
 }
 
 func NewTLSConfig(

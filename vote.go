@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
+	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
 	"github.com/sashabaranov/go-openai/jsonschema"
@@ -38,6 +39,49 @@ type Poll struct {
 
 type FormState struct {
 	Polls map[string]Poll
+}
+
+type JSONPatchOp string
+
+const (
+	JSONPatchOpAdd     JSONPatchOp = "add"
+	JSONPatchOpRemove  JSONPatchOp = "remove"
+	JSONPatchOpReplace JSONPatchOp = "replace"
+)
+
+type JSONPatch struct {
+	Op    JSONPatchOp `json:"op"`
+	Path  string      `json:"path"`
+	Value any         `json:"value"`
+}
+
+func ApplyJSONPatch(original, new any, patch []JSONPatch) error {
+	originalJSON, err := json.Marshal(original)
+	if err != nil {
+		return fmt.Errorf("failed to marshal original data: %w", err)
+	}
+
+	p, err := json.Marshal(patch)
+	if err != nil {
+		return fmt.Errorf("failed to marshal patch data: %w", err)
+	}
+	obj, err := jsonpatch.DecodePatch(p)
+	if err != nil {
+		return fmt.Errorf("failed to decode JSON patch: %w", err)
+	}
+
+	modifiedJSON, err := obj.Apply(originalJSON)
+	if err != nil {
+		return fmt.Errorf("failed to apply JSON patch: %w", err)
+	}
+	fmt.Printf("modifiedJSON: %s\n", modifiedJSON)
+
+	err = json.Unmarshal(modifiedJSON, new)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal patched data: %w", err)
+	}
+
+	return nil
 }
 
 func NewVote(d deps.Deps) *http.ServeMux {
@@ -82,7 +126,7 @@ func NewVote(d deps.Deps) *http.ServeMux {
 				}
 			}
 
-			BuildForm("", recipe, "").RenderPage(w, r)
+			BuildForm("", recipe).RenderPage(w, r)
 			return
 		}
 		DefaultLayout(
@@ -120,7 +164,6 @@ func NewVote(d deps.Deps) *http.ServeMux {
 			http.Redirect(w, r, fmt.Sprintf("/vote/new/%s", poll.ID), http.StatusSeeOther)
 			return
 		} else {
-			// remove trailing slash from id
 			if strings.HasSuffix(id, "/") {
 				id = id[:len(id)-1]
 			}
@@ -136,8 +179,56 @@ func NewVote(d deps.Deps) *http.ServeMux {
 			}
 		}
 
+		if r.URL.Query().Get("op") != "" {
+			var patch JSONPatch
+			patch.Op = JSONPatchOp(r.URL.Query().Get("op"))
+			patch.Path = strings.ToLower(r.URL.Query().Get("path"))
+			if r.URL.Query().Get("value") != "" {
+				err := json.Unmarshal([]byte(r.URL.Query().Get("value")), &patch.Value)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+
+			var newPoll Poll
+			pa, _ := json.Marshal(patch)
+			fmt.Println(string(pa))
+
+			err = ApplyJSONPatch(poll, &newPoll, []JSONPatch{patch})
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			// json marshal formatted before and after patching
+			originalJSON, _ := json.MarshalIndent(poll, "", "  ")
+			newJSON, _ := json.MarshalIndent(newPoll, "", "  ")
+			fmt.Println(string(originalJSON))
+			fmt.Println(string(newJSON))
+
+			poll = newPoll
+			err = d.DB.Set(poll.ID, poll)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		if r.Method == http.MethodPost {
+			err := r.ParseForm()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			for name, value := range r.Form {
+				println(name, value)
+			}
+			return
+		}
+
 		fieldName := r.URL.Query().Get("id")
-		f := BuildForm("", &poll, fieldName)
+		f := BuildForm("", &poll)
 
 		if fieldName != "" {
 			err := d.DB.Set(poll.ID, poll)
@@ -155,9 +246,12 @@ func NewVote(d deps.Deps) *http.ServeMux {
 				ReloadNode("vote.go"),
 				Class("container mx-auto mt-10 p-5"),
 				Form(
-					Method("POST"),
-					Action("/"),
-					f,
+					HxPost("/"),
+					HxTarget("#form"),
+					Div(
+						Id("form"),
+						f,
+					),
 					Button(Class("btn btn-neutral"), Type("submit"), T("save")),
 				),
 			),

@@ -165,7 +165,6 @@ func DynamicHTTPMux(f func(d Deps) *http.ServeMux) func(Deps) *http.ServeMux {
 	pc := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Entry()
 	fnp := runtime.FuncForPC(pc)
 	file, _ := fnp.FileLine(pc)
-	path := filepath.Base(file)
 	function := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
 
 	i := interp.New(interp.Options{
@@ -175,7 +174,7 @@ func DynamicHTTPMux(f func(d Deps) *http.ServeMux) func(Deps) *http.ServeMux {
 	i.Use(stdlib.Symbols)
 	i.Use(symbol.Symbols)
 
-	_, err := i.EvalPath(path)
+	_, err := i.EvalPath(file)
 	if err != nil {
 		slog.Warn("failed to eval path", "error", err)
 		return f

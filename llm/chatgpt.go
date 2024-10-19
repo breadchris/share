@@ -7,7 +7,6 @@ import (
 	"github.com/breadchris/share/config"
 	"github.com/gorilla/websocket"
 	"github.com/samber/lo"
-	"html/template"
 	"io"
 	"log"
 	"net/http"
@@ -42,13 +41,8 @@ type InferRequest struct {
 	Prompt string `json:"prompt"`
 }
 
-var (
-	tmmsg *template.Template
-)
-
 func SetupChatgpt(s *OpenAIService) *http.ServeMux {
 	m := http.NewServeMux()
-	tmmsg = template.Must(template.ParseFiles("chatgptmsg.html"))
 
 	m.HandleFunc("/", s.homeHandler)
 	m.HandleFunc("/{id}", s.homeHandler)
@@ -140,6 +134,22 @@ func (s *OpenAIService) streamHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func ChatGPTMsg(chatState ChatState) *Node {
+	d := Div()
+	for _, m := range chatState.Messages {
+		b := "mb-2"
+		bs := "inline-block px-4 py-2 rounded "
+		d.Children = append(d.Children, Div(
+			If(m.Role == "user", Class("text-right "+b), Class("text-left "+b)),
+			Div(
+				If(m.Role == "user", Class(bs+"bg-blue"), Class(bs+"bg-gray")),
+				T(m.Content),
+			),
+		))
+	}
+	return d
+}
+
 func (s *OpenAIService) sendMessageHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	message := r.FormValue("message")
@@ -179,19 +189,13 @@ func (s *OpenAIService) sendMessageHandler(w http.ResponseWriter, r *http.Reques
 	)
 	saveChatState(chatID, chatState)
 
-	err = tmmsg.Execute(w, chatState)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	ChatGPTMsg(chatState).RenderPage(w, r)
 }
 
 func (s *OpenAIService) chatgptHandler(w http.ResponseWriter, r *http.Request) {
 	chatID := filepath.Base(r.URL.Path)
 	chatState := loadChatState(chatID)
-	err := tmmsg.ExecuteTemplate(w, "chat-messages", chatState)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	ChatGPTMsg(chatState).RenderPage(w, r)
 }
 
 func loadChats() []ChatState {

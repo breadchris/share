@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func BuildForm(fieldPath string, data any, fieldToAdd string) *Node {
+func BuildForm(fieldPath string, data any) *Node {
 	v := reflect.ValueOf(data)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
@@ -23,11 +23,14 @@ func BuildForm(fieldPath string, data any, fieldToAdd string) *Node {
 		field := t.Field(i)
 		value := v.Field(i)
 
+		// get json tag
+		jsonTag := field.Tag.Get("json")
+
 		currentFieldPath := fieldPath
 		if fieldPath != "" {
-			currentFieldPath = fmt.Sprintf("%s.%s", fieldPath, field.Name)
+			currentFieldPath = fmt.Sprintf("%s/%s", fieldPath, jsonTag)
 		} else {
-			currentFieldPath = field.Name
+			currentFieldPath = "/" + jsonTag
 		}
 
 		labelText := strings.Title(field.Name)
@@ -50,41 +53,39 @@ func BuildForm(fieldPath string, data any, fieldToAdd string) *Node {
 		case reflect.Slice:
 			elemType := value.Type().Elem()
 			d := Div()
+			h := fmt.Sprintf("/?op=add&path=%s/%d", currentFieldPath, value.Len())
+			if value.Len() == 0 {
+				var sliceJSONType string
+				switch elemType.Kind() {
+				case reflect.String:
+					sliceJSONType = "\"\""
+				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+					sliceJSONType = "0"
+				case reflect.Float32, reflect.Float64:
+					sliceJSONType = "0.0"
+				case reflect.Bool:
+					sliceJSONType = "false"
+				case reflect.Struct:
+					sliceJSONType = "{}"
+				case reflect.Ptr:
+					sliceJSONType = "null"
+				default:
+					sliceJSONType = "null"
+				}
+				h = fmt.Sprintf("/?op=replace&path=%s&value=[%s]", currentFieldPath, sliceJSONType)
+			}
+			add := A(Class("btn btn-neutral"), Href(h), T("Add"))
 			ds := Div(
 				Class("p-4"),
 				Div(Class("divider"), T(field.Name)),
 				d,
-				A(Class("btn btn-neutral"), Href(fmt.Sprintf("/?id=%s", field.Name)), T("Add")),
+				add,
 			)
 			form.Children = append(form.Children, ds)
 
-			if currentFieldPath == fieldToAdd {
-				newElem := reflect.New(elemType).Elem()
-
-				switch elemType.Kind() {
-				case reflect.String:
-					newElem = reflect.ValueOf("New value")
-				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-					newElem = reflect.ValueOf(0)
-				case reflect.Float32, reflect.Float64:
-					newElem = reflect.ValueOf(0.0)
-				case reflect.Bool:
-					newElem = reflect.ValueOf(false)
-				case reflect.Struct, reflect.Ptr:
-					newElem = reflect.New(elemType).Elem()
-				}
-
-				if value.CanSet() {
-					value.Set(reflect.Append(value, newElem))
-				} else {
-					// Handle the case where the value is not directly settable (e.g., non-pointer)
-					panic(fmt.Sprintf("Cannot set value for %s; it is unaddressable", currentFieldPath))
-				}
-			}
-
 			for j := 0; j < value.Len(); j++ {
 				sliceElem := value.Index(j)
-				sliceFieldPath := fmt.Sprintf("%s.%d", currentFieldPath, j)
+				sliceFieldPath := fmt.Sprintf("%s/%d", currentFieldPath, j)
 				var sliceInput *Node
 
 				switch elemType.Kind() {
@@ -101,12 +102,17 @@ func BuildForm(fieldPath string, data any, fieldToAdd string) *Node {
 					}
 					sliceInput = Input(Type("checkbox"), Id(sliceFieldPath), Name(sliceFieldPath), Class("border rounded w-full py-2 px-3"), Attr("checked", checked))
 				case reflect.Struct:
-					nestedForm := BuildForm(sliceFieldPath, sliceElem.Interface(), fieldToAdd)
-					d.Children = append(d.Children, nestedForm.Children...)
+					nestedForm := BuildForm(sliceFieldPath, sliceElem.Interface())
+					d.Children = append(d.Children,
+						Div(
+							Ch(nestedForm.Children),
+							A(Class("btn btn-neutral"), Href(fmt.Sprintf("/?op=remove&path=%s", sliceFieldPath)), T("Delete")),
+						),
+					)
 					continue
 				case reflect.Ptr:
 					if !sliceElem.IsNil() {
-						nestedForm := BuildForm(sliceFieldPath, sliceElem.Interface(), fieldToAdd)
+						nestedForm := BuildForm(sliceFieldPath, sliceElem.Interface())
 						d.Children = append(d.Children, nestedForm.Children...)
 					} else {
 						sliceInput = P(T(fmt.Sprintf("Pointer to %s is nil", elemType.Elem().Name())))
@@ -118,15 +124,16 @@ func BuildForm(fieldPath string, data any, fieldToAdd string) *Node {
 				d.Children = append(d.Children, Div(Class("mb-4"),
 					Label(For(sliceFieldPath), T(fmt.Sprintf("%s %d", labelText, j+1))),
 					sliceInput,
+					A(Class("btn btn-neutral"), Href(fmt.Sprintf("/?op=remove&path=%s", sliceFieldPath)), T("Delete")),
 				))
 			}
 		case reflect.Struct:
-			nestedForm := BuildForm(currentFieldPath, value.Interface(), fieldToAdd)
+			nestedForm := BuildForm(currentFieldPath, value.Interface())
 			form.Children = append(form.Children, nestedForm.Children...)
 			continue
 		case reflect.Ptr:
 			if !value.IsNil() {
-				input = BuildForm(currentFieldPath, value.Elem().Interface(), fieldToAdd)
+				input = BuildForm(currentFieldPath, value.Elem().Interface())
 			} else {
 				input = P(T(fmt.Sprintf("Pointer to %s is nil", field.Type.Elem().Name())))
 			}

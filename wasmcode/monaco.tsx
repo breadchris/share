@@ -347,7 +347,7 @@ const CodeEditor = ({ fileName, darkMode, func, vimModeEnabled, isServerEnvironm
 
             <PanelGroup direction="horizontal">
                 <Panel defaultSize={20}>
-                    <div className={"overflow-auto h-full"} hx-get={`/code/sidebar?file=${fileName}`} hx-trigger="load"></div>
+                    <div className={"overflow-auto h-full"} hx-get={`/wasmcode/sidebar?file=${fileName}`} hx-trigger="load"></div>
                 </Panel>
                 <PanelResizeHandle className="w-2 bg-gray-300"/>
                 <Panel>
@@ -364,10 +364,6 @@ const CodeEditor = ({ fileName, darkMode, func, vimModeEnabled, isServerEnvironm
                                 onMount={(e, m) => editorDidMount(e, m, fileName)}
                                 loading={<span className={'loading loading-spinner'}>Loading...</span>}
                             />
-                        </Panel>
-                        <PanelResizeHandle className="h-2 bg-gray-300"/>
-                        <Panel defaultSize={20}>
-                            <div className={"overflow-auto h-full"} hx-get={`/blog`} hx-trigger="load"></div>
                         </Panel>
                     </PanelGroup>
                 </Panel>

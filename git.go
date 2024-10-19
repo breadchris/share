@@ -91,7 +91,7 @@ func NewGit(d deps.Deps) *http.ServeMux {
 				Form(
 					Action("/"),
 					Method("POST"),
-					BuildForm("", GitState{}, ""),
+					BuildForm("", GitState{}),
 				),
 			),
 		).RenderPageCtx(ctx, w, r)
