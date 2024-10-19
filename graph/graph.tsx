@@ -23,6 +23,7 @@ import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 
 import {createRoot} from 'react-dom/client';
+import {Panel, PanelGroup, PanelResizeHandle} from "react-resizable-panels";
 
 const initialNodes = [
     { id: '1', position: { x: 0, y: 0 }, data: { label: '1' } },
@@ -30,10 +31,20 @@ const initialNodes = [
     {
         id: '3',
         type: 'textUpdater',
-        position: { x: 100, y: 100 },
-        data: { value: 123 },
+        position: { x: 0, y: 200 },
     },
-
+    {
+        id: '4',
+        type: 'url',
+        position: { x: 0, y: 300 },
+        data: { url: "/music" }
+    },
+    {
+        id: '5',
+        type: 'url',
+        position: { x: 0, y: 400 },
+        data: { url: "/" }
+    },
     // {
     //     id: '4',
     //     type: 'epub',
@@ -65,7 +76,19 @@ function TextUpdaterNode({ data }) {
         <>
             <Handle type="target" position={Position.Top} />
             <div className={"p-6"}>
-                <iframe src={"/breadchris/new"} className={"h-96 w-full"}></iframe>
+                <iframe src={"/code"} style={{height: "500px", width: "700px"}}></iframe>
+            </div>
+            <Handle type="source" position={Position.Bottom} id="a" />
+        </>
+    );
+}
+
+function URLNode({ data }) {
+    return (
+        <>
+            <Handle type="target" position={Position.Top} />
+            <div className={"p-6"}>
+                <iframe src={data.url} style={{height: "500px", width: "700px"}}></iframe>
             </div>
             <Handle type="source" position={Position.Bottom} id="a" />
         </>
@@ -206,6 +229,32 @@ export default function App() {
         [screenToFlowPosition],
     );
 
+    const onDragStart = (event, nodeType) => {
+        event.dataTransfer.effectAllowed = 'move';
+    };
+
+    const onDragOver = useCallback((event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+    }, []);
+
+    const onDrop = useCallback(
+        (event) => {
+            event.preventDefault();
+
+            const position = screenToFlowPosition({
+                x: event.clientX,
+                y: event.clientY,
+            });
+            const newNode = {
+                id: getId(),
+                position,
+                data: { label: `node` },
+            };
+            setNodes((nds) => nds.concat(newNode));
+        },
+        [screenToFlowPosition],
+    );
 
     return (
         <div style={{ width: '100vw', height: '100vh' }}>
@@ -220,28 +269,52 @@ export default function App() {
                 setNodes((nds) => nds.concat([newNode]));
 
             }}>Add Node</button>
-            <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onConnectStart={onConnectStart}
-                onConnectEnd={onConnectEnd}
-                fitView
-                fitViewOptions={{ padding: 2 }}
-                nodeOrigin={[0.5, 0]}
-                onConnect={onConnect}
-                nodeTypes={{
-                    textUpdater: TextUpdaterNode,
-                    epub: EpubNode,
-                    pdf: PDFNode,
-                    youtube: YoutubeNode,
-                }}
-            >
-                <Controls />
-                <MiniMap />
-                <Background variant="dots" gap={12} size={1} />
-            </ReactFlow>
+            <PanelGroup direction="horizontal">
+                <Panel defaultSize={20}>
+                    <div className={"overflow-auto h-full"} hx-get={`/code/sidebar`} hx-trigger="revealed"></div>
+                    <iframe src={"/code/sidebar?file=vote.go"} className={"h-full w-full"}></iframe>
+                    <aside>
+                        <div className="description">You can drag these nodes to the pane on the right.</div>
+                        <div className="dndnode input" onDragStart={(event) => onDragStart(event, 'input')} draggable>
+                            Input Node
+                        </div>
+                        <div className="dndnode" onDragStart={(event) => onDragStart(event, 'default')} draggable>
+                            Default Node
+                        </div>
+                        <div className="dndnode output" onDragStart={(event) => onDragStart(event, 'output')} draggable>
+                            Output Node
+                        </div>
+                    </aside>
+                </Panel>
+                <PanelResizeHandle className="w-2 bg-gray-300"/>
+                <Panel>
+                    <ReactFlow
+                        nodes={nodes}
+                        edges={edges}
+                        onNodesChange={onNodesChange}
+                        onEdgesChange={onEdgesChange}
+                        onConnectStart={onConnectStart}
+                        onConnectEnd={onConnectEnd}
+                        fitView
+                        fitViewOptions={{ padding: 2 }}
+                        nodeOrigin={[0.5, 0]}
+                        onConnect={onConnect}
+                        onDrop={onDrop}
+                        onDragOver={onDragOver}
+                        nodeTypes={{
+                            textUpdater: TextUpdaterNode,
+                            epub: EpubNode,
+                            pdf: PDFNode,
+                            youtube: YoutubeNode,
+                            url: URLNode,
+                        }}
+                    >
+                        <Controls />
+                        <MiniMap />
+                        <Background variant="dots" gap={12} size={1} />
+                    </ReactFlow>
+                </Panel>
+            </PanelGroup>
         </div>
     );
 }
