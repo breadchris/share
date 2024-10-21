@@ -32,12 +32,10 @@ func WSProxy(w http.ResponseWriter, r *http.Request) {
 	done := make(chan struct{})
 
 	go func() {
-		defer close(done)
 		copyWebSocket(clientConn, serverConn)
 	}()
 
 	go func() {
-		defer close(done)
 		copyWebSocket(serverConn, clientConn)
 	}()
 
