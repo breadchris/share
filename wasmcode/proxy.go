@@ -49,13 +49,11 @@ func copyWebSocket(src, dst *websocket.Conn) {
 			if websocket.IsUnexpectedCloseError(err) {
 				log.Printf("Unexpected WebSocket close error: %v", err)
 			}
-			break
 		}
 
 		err = dst.WriteMessage(messageType, message)
 		if err != nil {
 			log.Printf("Error writing message to WebSocket: %v", err)
-			break
 		}
 	}
 }
