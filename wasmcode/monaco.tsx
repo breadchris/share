@@ -429,6 +429,7 @@ const CodeEditor = ({ serverURL, id, fileName, darkMode, func, vimModeEnabled, i
         debouncedAnalyzeFunc.current(fileName, code);
     };
 
+
     const runCode = async (d?: string) => {
         console.log("Running code");
         if (syntaxChecker.current && editorInstance.current) {
