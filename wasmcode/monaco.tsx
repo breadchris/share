@@ -286,7 +286,7 @@ const CodeEditor = ({ id, fileName, darkMode, func, vimModeEnabled, isServerEnvi
         const ydoc = new Y.Doc();
         // const provider = new WebrtcProvider("asdfasdfasdffdsfkjfjf", ydocument, { signaling: ['ws://192.168.1.88:4444'] });
         const provider = new WebsocketProvider(
-            'ws://localhost:1234/ws',
+            'ws://localhost:8080/wasmcode/ws',
             id,
             ydoc
         )

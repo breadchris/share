@@ -20,7 +20,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
-var upgrader = websocket.Upgrader{
+var Upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
@@ -93,7 +93,7 @@ func (s *OpenAIService) homeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *OpenAIService) streamHandler(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
+	conn, err := Upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("Error upgrading to websocket:", err)
 		return

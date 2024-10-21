@@ -121,6 +121,7 @@ func startServer(useTLS bool, port int) {
 		return m
 	}())
 	p("/wasmcode", interpreted(wasmcode.New))
+	http.HandleFunc("/wasmcode/ws/{id...}", wasmcode.WSProxy)
 	p("/extension", NewExtension())
 	p("/git", interpreted(NewGit))
 	p("/music", interpreted(NewMusic))
