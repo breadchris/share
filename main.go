@@ -21,6 +21,7 @@ import (
 	"github.com/gomarkdown/markdown"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"github.com/koding/websocketproxy"
 	"github.com/protoflow-labs/protoflow/pkg/util/reload"
 	ignore "github.com/sabhiram/go-gitignore"
 	"github.com/samber/lo"
@@ -31,6 +32,7 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path"
@@ -121,7 +123,12 @@ func startServer(useTLS bool, port int) {
 		return m
 	}())
 	p("/wasmcode", interpreted(wasmcode.New))
-	http.HandleFunc("/wasmcode/ws/{id...}", wasmcode.WSProxy)
+
+	ur, err := url.Parse("ws://localhost:1234")
+	if err != nil {
+		log.Fatalf("Failed to parse url: %v", err)
+	}
+	http.Handle("/wasmcode/ws/{id...}", websocketproxy.NewProxy(ur))
 	p("/extension", NewExtension())
 	p("/git", interpreted(NewGit))
 	p("/music", interpreted(NewMusic))
