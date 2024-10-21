@@ -121,6 +121,7 @@ function sendEvent(eventName, data) {
 								Attr("data-id", id),
 								Attr("data-function", function),
 								Attr("data-code", string(code)),
+								Attr("data-server-url", fmt.Sprintf("%s/wasmcode/ws", d.Config.ExternalURL)),
 							),
 							Script(Attr("src", "/dist/wasmcode/monaco.js"), Attr("type", "module")),
 						),

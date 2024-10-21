@@ -127,30 +127,6 @@ func startServer(useTLS bool, port int) {
 	p("/music", interpreted(NewMusic))
 	p("/calendar", interpreted(NewCalendar))
 
-	result := api.Build(api.BuildOptions{
-		EntryPoints: []string{"./wasmcode/entry.js"},
-		Loader: map[string]api.Loader{
-			".js": api.LoaderJS,
-		},
-		Outdir:    "yjs/dist",
-		Bundle:    true,
-		Write:     true,
-		Sourcemap: api.SourceMapInline,
-		LogLevel:  api.LogLevelInfo,
-	})
-
-	for _, warning := range result.Warnings {
-		fmt.Println(warning.Text)
-	}
-
-	for _, e := range result.Errors {
-		fmt.Println(e.Text)
-	}
-
-	for _, f := range result.OutputFiles {
-		fmt.Println(f.Path)
-	}
-
 	go func() {
 		paths := []string{
 			"./breadchris/editor.tsx",

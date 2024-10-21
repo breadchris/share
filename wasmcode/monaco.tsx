@@ -187,7 +187,7 @@ const makeid = (length) => {
     return result;
 };
 
-const CodeEditor = ({ id, fileName, darkMode, func, vimModeEnabled, isServerEnvironment, code: initialCode }) => {
+const CodeEditor = ({ serverURL, id, fileName, darkMode, func, vimModeEnabled, isServerEnvironment, code: initialCode }) => {
     const syntaxChecker = useRef<GoSyntaxChecker>(null);
     const [code, setCode] = useState(initialCode);
     const [data, setData] = useState(localStorage.getItem('data') || '{}');
@@ -286,7 +286,7 @@ const CodeEditor = ({ id, fileName, darkMode, func, vimModeEnabled, isServerEnvi
         const ydoc = new Y.Doc();
         // const provider = new WebrtcProvider("asdfasdfasdffdsfkjfjf", ydocument, { signaling: ['ws://192.168.1.88:4444'] });
         const provider = new WebsocketProvider(
-            'ws://localhost:8080/wasmcode/ws',
+            serverURL,
             id,
             ydoc
         )
@@ -573,5 +573,6 @@ if (s) {
     const func = s.getAttribute('data-function');
     const code = s.getAttribute('data-code');
     const id = s.getAttribute('data-id');
-    r.render(<CodeEditor code={code} id={id} darkMode={false} fileName={fileName} func={func} vimModeEnabled={true} isServerEnvironment={false}/>);
+    const serverURL = s.getAttribute('data-server-url');
+    r.render(<CodeEditor serverURL={serverURL} code={code} id={id} darkMode={false} fileName={fileName} func={func} vimModeEnabled={true} isServerEnvironment={false}/>);
 }
