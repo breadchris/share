@@ -469,6 +469,18 @@ func Class(s string) *Node {
 	}
 }
 
+func OnClick(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["onclick"] = s
+		},
+	}
+}
+
+func Pre(o ...*Node) *Node {
+	return NewNode("pre", o)
+}
+
 func Alt(s string) *Node {
 	return &Node{
 		transform: func(p *Node) {

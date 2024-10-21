@@ -1,6 +1,7 @@
 package html
 
 import (
+	db2 "github.com/breadchris/share/db"
 	"github.com/google/uuid"
 	"github.com/samber/lo"
 	"net/http"
@@ -13,7 +14,7 @@ func TestHTML(t *testing.T) {
 		Value string
 	}
 
-	db, err := NewDB[Item]("test/")
+	db, err := db2.NewDB[Item]("test/")
 	if err != nil {
 		t.Fatal(err)
 	}

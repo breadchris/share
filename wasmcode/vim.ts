@@ -121,7 +121,6 @@ export class StatusBarAdapter {
    * @param currentData
    */
   handleKeyDownEvent(e: IKeyboardEvent, currentData: string = '') {
-    console.log('handleKeyDownEvent', e, currentData)
     e.preventDefault()
     e.stopPropagation()
 
@@ -160,15 +159,15 @@ export const createVimModeAdapter = (
 
   vimAdapter.setStatusBar(statusAdapter)
   vimAdapter.on('vim-mode-change', (mode: any) => {
-    console.log('vim-mode-change', mode)
+    // console.log('vim-mode-change', mode)
   })
 
   vimAdapter.on('vim-keypress', (key: string) => {
-    console.log('vim-keypress', key)
+    // console.log('vim-keypress', key)
   })
 
   vimAdapter.on('vim-command-done', () => {
-    console.log('vim-command-done')
+    // console.log('vim-command-done')
   })
 
   vimAdapter.on('dispose', () => {

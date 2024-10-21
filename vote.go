@@ -212,8 +212,31 @@ func NewVote(d deps.Deps) *http.ServeMux {
 				return
 			}
 
+			var patches []JSONPatch
 			for name, value := range r.Form {
-				println(name, value)
+				// create add patch for each name and value
+				v := value[0]
+				if v == "" {
+					continue
+				}
+				patches = append(patches, JSONPatch{
+					Op:    JSONPatchOpAdd,
+					Path:  name,
+					Value: v,
+				})
+			}
+			fmt.Printf("%+v\n", patches)
+			var newPoll Poll
+			err = ApplyJSONPatch(poll, &newPoll, patches)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			poll = newPoll
+			err = d.DB.Set(poll.ID, poll)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
 			}
 			return
 		}
@@ -269,22 +292,19 @@ func NewVote(d deps.Deps) *http.ServeMux {
 			return
 		}
 
+		if strings.HasSuffix(id, "/") {
+			id = id[:len(id)-1]
+		}
 		b, ok := d.DB.Get(id)
 		if !ok {
 			http.Error(w, "Poll not found", http.StatusNotFound)
 			return
 		}
 
-		var state FormState
-		err = json.Unmarshal(b, &state)
+		var poll Poll
+		err = json.Unmarshal(b, &poll)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		poll, ok := state.Polls[id]
-		if !ok {
-			http.Error(w, "Poll not found", http.StatusNotFound)
 			return
 		}
 
@@ -310,9 +330,8 @@ func NewVote(d deps.Deps) *http.ServeMux {
 				poll.UserVotes = append(poll.UserVotes, UserVote{UserID: user, RecipeID: id})
 				recipeVoteCount++
 			}
-			state.Polls[id] = poll
 
-			err := d.DB.Set("vote", state)
+			err := d.DB.Set(id, poll)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return

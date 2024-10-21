@@ -8,6 +8,7 @@ import (
 	"github.com/breadchris/share/breadchris"
 	"github.com/breadchris/share/code"
 	config2 "github.com/breadchris/share/config"
+	. "github.com/breadchris/share/db"
 	deps2 "github.com/breadchris/share/deps"
 	"github.com/breadchris/share/editor/config"
 	"github.com/breadchris/share/editor/leaps"
@@ -15,7 +16,6 @@ import (
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/llm"
 	"github.com/breadchris/share/session"
-	"github.com/breadchris/share/symbol"
 	"github.com/breadchris/share/wasmcode"
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/gomarkdown/markdown"
@@ -24,8 +24,6 @@ import (
 	"github.com/protoflow-labs/protoflow/pkg/util/reload"
 	ignore "github.com/sabhiram/go-gitignore"
 	"github.com/samber/lo"
-	"github.com/traefik/yaegi/interp"
-	"github.com/traefik/yaegi/stdlib"
 	"github.com/urfave/cli/v2"
 	"html/template"
 	"io"
@@ -37,7 +35,6 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"reflect"
 	"strconv"
 	"strings"
 )
@@ -123,17 +120,35 @@ func startServer(useTLS bool, port int) {
 		})
 		return m
 	}())
-	p("/wasmcode", func() *http.ServeMux {
-		m := http.NewServeMux()
-		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			interpreted(wasmcode.New).ServeHTTP(w, r)
-		})
-		return m
-	}())
+	p("/wasmcode", interpreted(wasmcode.New))
 	p("/extension", NewExtension())
 	p("/git", interpreted(NewGit))
 	p("/music", interpreted(NewMusic))
 	p("/calendar", interpreted(NewCalendar))
+
+	result := api.Build(api.BuildOptions{
+		EntryPoints: []string{"./wasmcode/entry.js"},
+		Loader: map[string]api.Loader{
+			".js": api.LoaderJS,
+		},
+		Outdir:    "yjs/dist",
+		Bundle:    true,
+		Write:     true,
+		Sourcemap: api.SourceMapInline,
+		LogLevel:  api.LogLevelInfo,
+	})
+
+	for _, warning := range result.Warnings {
+		fmt.Println(warning.Text)
+	}
+
+	for _, e := range result.Errors {
+		fmt.Println(e.Text)
+	}
+
+	for _, f := range result.OutputFiles {
+		fmt.Println(f.Path)
+	}
 
 	go func() {
 		paths := []string{
@@ -153,7 +168,6 @@ func startServer(useTLS bool, port int) {
 					".eot":   api.LoaderFile,
 					".css":   api.LoaderCSS,
 				},
-				//Outfile:   "graph.js",
 				Outdir:    "breadchris/static",
 				Bundle:    true,
 				Write:     true,
@@ -177,15 +191,29 @@ func startServer(useTLS bool, port int) {
 		}
 	}()
 	go func() {
-		paths := []string{
+		entrypoints := []string{
 			"./graph/graph.tsx",
 			"./code/monaco.tsx",
-			"./wasmcode/monaco.tsx",
 			"./music.tsx",
+			"./wasmcode/monaco.tsx",
+			"./wasmcode/analyzer/analyzer.worker.ts",
+		}
+		paths := make([]string, len(entrypoints))
+		copy(paths, entrypoints)
+		if err := filepath.Walk("./wasmcode", func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if filepath.Ext(path) == ".ts" || filepath.Ext(path) == ".tsx" {
+				paths = append(paths, path)
+			}
+			return nil
+		}); err != nil {
+			log.Fatalf("Failed to walk wasmcode: %v", err)
 		}
 		if err := WatchFilesAndFolders(paths, func(s string) {
 			result := api.Build(api.BuildOptions{
-				EntryPoints: paths,
+				EntryPoints: entrypoints,
 				Loader: map[string]api.Loader{
 					".js":    api.LoaderJS,
 					".jsx":   api.LoaderJSX,
@@ -197,8 +225,8 @@ func startServer(useTLS bool, port int) {
 					".eot":   api.LoaderFile,
 					".css":   api.LoaderCSS,
 				},
-				//Outfile:   "graph.js",
 				Outdir:    "dist/",
+				Format:    api.FormatESModule,
 				Bundle:    true,
 				Write:     true,
 				Sourcemap: api.SourceMapInline,
@@ -222,54 +250,6 @@ func startServer(useTLS bool, port int) {
 	}()
 
 	z.SetupZineRoutes()
-
-	getScriptFunc := func(path, name string) (reflect.Value, error) {
-		i := interp.New(interp.Options{
-			GoPath: "/dev/null",
-		})
-
-		i.Use(stdlib.Symbols)
-		i.Use(symbol.Symbols)
-
-		if _, err := i.EvalPath(path); err != nil {
-			return reflect.Value{}, err
-		}
-
-		v, err := i.Eval(name)
-		if err != nil {
-			return reflect.Value{}, err
-		}
-		return v, nil
-	}
-
-	http.HandleFunc("/scratch", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "POST" {
-			db.Set(uuid.NewString(), map[string]any{
-				"ID":    0,
-				"Value": r.FormValue("value"),
-			})
-
-			v, err := getScriptFunc("./scratch.go", "main.RenderList")
-			if err != nil {
-				http.Error(w, "Failed to get script func", http.StatusInternalServerError)
-				return
-			}
-			rf := v.Interface().(func(db *DBAny) *Node)
-			n := rf(db)
-			n.RenderPage(w, r)
-			return
-		}
-
-		v, err := getScriptFunc("./scratch.go", "main.RenderComponents")
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Failed to get script func: %v", err), http.StatusInternalServerError)
-			return
-		}
-
-		rf := v.Interface().(func(db *DBAny) *Node)
-		n := rf(db)
-		n.RenderPage(w, r)
-	})
 
 	http.HandleFunc("/register", a.handleRegister)
 	http.HandleFunc("/account", a.accountHandler)
@@ -307,7 +287,7 @@ func startServer(useTLS bool, port int) {
 		}
 	} else {
 		log.Printf("Starting HTTP server on port: %d", port)
-		http.ListenAndServe(fmt.Sprintf("localhost:%d", port), h)
+		http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), h)
 	}
 }
 

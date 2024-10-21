@@ -1,6 +1,7 @@
 package main
 
 import (
+	. "github.com/breadchris/share/db"
 	. "github.com/breadchris/share/html"
 )
 

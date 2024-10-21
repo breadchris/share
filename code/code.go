@@ -18,6 +18,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"strings"
 )
 
 type CodeRequest struct {
@@ -141,6 +142,12 @@ func DynamicHTTPMux(f func(d Deps) *http.ServeMux) func(Deps) *http.ServeMux {
 	fnp := runtime.FuncForPC(pc)
 	file, _ := fnp.FileLine(pc)
 	function := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
+
+	// TODO breadchris fix packages
+	parts := strings.Split(function, "/")
+	if len(parts) > 1 {
+		function = parts[len(parts)-1]
+	}
 
 	i := interp.New(interp.Options{
 		GoPath: "/dev/null",
