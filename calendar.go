@@ -45,6 +45,94 @@ var (
 	eventIDCounter    = 1
 )
 
+var (
+    userSelectedCalendars = map[string]map[int]bool{} // User ID to selected Calendar IDs
+)
+
+func toggleCalendar(w http.ResponseWriter, r *http.Request) {
+    user := getCurrentUser(r)
+    calendarIDStr := r.FormValue("calendar_id")
+    calendarID, _ := strconv.Atoi(calendarIDStr)
+
+    dataMutex.Lock()
+    defer dataMutex.Unlock()
+
+    if userSelectedCalendars[user.ID] == nil {
+        userSelectedCalendars[user.ID] = make(map[int]bool)
+    }
+
+    _, isSelected := userSelectedCalendars[user.ID][calendarID]
+    if isSelected {
+        delete(userSelectedCalendars[user.ID], calendarID)
+    } else {
+        userSelectedCalendars[user.ID][calendarID] = true
+    }
+
+    // Update the calendar display
+    // Collect events for the current month and year
+    month := int(time.Now().Month())
+    year := time.Now().Year()
+
+    // Gather events from selected calendars
+    monthEvents := []*CalendarEvent{}
+    for calID := range userSelectedCalendars[user.ID] {
+        for _, evt := range events {
+            if evt.CalendarID == calID && evt.Date.Year() == year && int(evt.Date.Month()) == month {
+                monthEvents = append(monthEvents, evt)
+            }
+        }
+    }
+
+    // Generate the updated calendar
+    calendarNode := GenerateCalendar(month, year, monthEvents)
+
+    w.Header().Set("Content-Type", "text/html")
+    fmt.Fprint(w, calendarNode.Render())
+}
+
+func loadUserCalendars(w http.ResponseWriter, r *http.Request) {
+    user := getCurrentUser(r)
+
+    dataMutex.Lock()
+    calIDs := userCalendars[user.ID]
+    dataMutex.Unlock()
+
+    calendarItems := []*Node{}
+    for _, calID := range calIDs {
+        dataMutex.Lock()
+        cal, exists := calendars[calID]
+        dataMutex.Unlock()
+        if exists {
+            checkbox := Input(
+                Type("checkbox"),
+                Name("calendar_ids"),
+                Value(cal.ID),
+                Class("mr-2"),
+				Checked(true),
+                HxPost("/calendar/toggle_calendar"),
+                HxTarget("#calendar-container"),
+                HxSwap("innerHTML"),
+                // HxVals(map[string]string{"calendar_id": cal.ID}),
+            )
+            label := Label(
+                Class("flex items-center mb-2"),
+                checkbox,
+                Span(T(cal.Name)),
+            )
+            calendarItems = append(calendarItems, label)
+        }
+    }
+
+    list := Div(
+        Chl(calendarItems...),
+    )
+
+    w.Header().Set("Content-Type", "text/html")
+    fmt.Fprint(w, list.Render())
+}
+
+
+
 // Simulate current logged-in user
 func getCurrentUser(r *http.Request) *User {
 	// Placeholder for user authentication
@@ -53,12 +141,16 @@ func getCurrentUser(r *http.Request) *User {
 
 // Handlers
 func SetupCalendar() {
-	http.HandleFunc("/calendar/", handleCalendar)
-	http.HandleFunc("/calendar/month", createMonth)
-	http.HandleFunc("/calendar/create_event_form", createEventForm)
-	http.HandleFunc("/calendar/submit_event", submitEvent)
-	http.HandleFunc("/calendar/event/", viewEvent)
-	http.HandleFunc("/calendar/delete_event/", deleteEvent)
+    http.HandleFunc("/calendar/", handleCalendar)
+    http.HandleFunc("/calendar/month", createMonth)
+    http.HandleFunc("/calendar/create_event_form", createEventForm)
+    http.HandleFunc("/calendar/submit_event", submitEvent)
+    http.HandleFunc("/calendar/delete_event/", deleteEvent)
+    http.HandleFunc("/calendar/event/", viewEvent)
+    http.HandleFunc("/calendar/create_calendar_form", createCalendarForm)
+    http.HandleFunc("/calendar/submit_calendar", submitCalendar)
+    http.HandleFunc("/calendar/load_user_calendars", loadUserCalendars)
+    http.HandleFunc("/calendar/toggle_calendar", toggleCalendar)
 }
 
 // Serve the user dashboard
@@ -105,6 +197,13 @@ func handleCalendar(w http.ResponseWriter, r *http.Request) {
 		yearOptions = append(yearOptions, option)
 	}
 
+	toggleSidePanelButton := Button(
+		T("Calendars"),
+		Type("button"),
+		Class("border border-gray-300 rounded px-2 py-1 mr-2"),
+		Attr("onclick", "toggleSidePanel()"),
+	)
+
 	// Create the form for month and year selection
 	selectionForm := Form(
 		Attr("hx-post", "/calendar/month"),
@@ -138,6 +237,36 @@ func handleCalendar(w http.ResponseWriter, r *http.Request) {
 			),
 		),
 	)
+
+	sidePanel := Div(
+		Id("side-panel"),
+		Class("side-panel hidden"),
+		Div(
+			Class("side-panel-content"),
+			H2(Class("text-xl font-bold mb-4"), T("Your Calendars")),
+			Div(
+				Id("calendar-list"),
+				// Calendars will be loaded here
+			),
+			Button(
+				T("Create New Calendar"),
+				Type("button"),
+				Class("bg-blue-500 text-white px-4 py-2 rounded mt-4"),
+				HxGet("/calendar/create_calendar_form"),
+				HxTarget("#calendar-list"),
+				HxSwap("innerHTML"),
+			),
+		),
+	)
+
+	calendarModal := Div(Id("calendar-modal"))
+
+	script := Script(T(`
+		function toggleSidePanel() {
+			var panel = document.getElementById('side-panel');
+			panel.classList.toggle('hidden');
+		}
+	`))
 
 	// Collect events for the current month and year
 	dataMutex.Lock()
@@ -188,12 +317,34 @@ func handleCalendar(w http.ResponseWriter, r *http.Request) {
 					border-radius: 5px;
 					cursor: pointer;
 				}
+				.side-panel {
+					position: fixed;
+					top: 0;
+					left: 0;
+					width: 250px;
+					height: 100%;
+					background-color: #f9f9f9;
+					border-right: 1px solid #ccc;
+					overflow-y: auto;
+					z-index: 1000;
+					transition: transform 0.3s ease;
+				}
+				.side-panel.hidden {
+					transform: translateX(-100%);
+				}
+				.side-panel-content {
+					padding: 20px;
+				}
 			`)),
 		),
 		Body(
+			toggleSidePanelButton,
 			selectionForm,
 			eventModal,
+			calendarModal,
+			sidePanel,
 			calendarNode,
+			script,
 		),
 	)
 
@@ -544,4 +695,110 @@ func deleteEvent(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html")
 	fmt.Fprint(w, calendarNode.Render())
+}
+
+func createCalendarForm(w http.ResponseWriter, r *http.Request) {
+	form := Div(
+		Class("modal"),
+		Div(
+			Class("modal-content"),
+			Form(
+				Method("POST"),
+				Action("/calendar/submit_calendar"),
+				Attr("hx-post", "/calendar/submit_calendar"),
+				Attr("hx-target", "#calendar-list"),
+				Attr("hx-swap", "innerHTML"),
+				Class("space-y-4"),
+				Input(Type("text"), Name("name"), Placeholder("Calendar Name"), Class("w-full p-2 border border-gray-300 rounded")),
+				TextArea(Name("description"), Placeholder("Description"), Class("w-full p-2 border border-gray-300 rounded")),
+				Div(
+					Button(Type("submit"), T("Create Calendar"), Class("bg-blue-500 text-white px-4 py-2 rounded")),
+					Button(
+						T("Cancel"),
+						Type("button"),
+						Class("modal-close bg-gray-500 text-white px-4 py-2 rounded ml-2"),
+						Attr("onclick", "document.getElementById('calendar-modal').innerHTML = '';"),
+					),
+				),
+			),
+		),
+	)
+
+	w.Header().Set("Content-Type", "text/html")
+	fmt.Fprint(w, form.Render())
+}
+
+func submitCalendar(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse form data
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, "Error parsing form data", http.StatusBadRequest)
+		return
+	}
+
+	user := getCurrentUser(r)
+	name := r.FormValue("name")
+	description := r.FormValue("description")
+
+	// Create new calendar
+	dataMutex.Lock()
+	calendarID := calendarIDCounter
+	calendarIDCounter++
+	newCalendar := &Calendar{
+		ID:          string(calendarID),
+		Name:        name,
+		Description: description,
+		OwnerID:     user.ID,
+		IsPublic:    false,
+	}
+	calendars[calendarID] = newCalendar
+	userCalendars[user.ID] = append(userCalendars[user.ID], calendarID)
+	dataMutex.Unlock()
+
+	// Return success and close the modal
+	// responseHTML := `<div id="calendar-modal"></div>`
+
+	
+	checkBoxes := Div()
+	for _, calID := range userCalendars[user.ID] {
+		cal := calendars[calID]
+		checkBox := Input(
+			Type("checkbox"),
+			Name("calendar_ids"),
+			Value(cal.ID),
+			Class("mr-2"),
+			Checked(true),
+			HxPost("/calendar/toggle_calendar"),
+			HxTarget("#calendar-container"),
+			HxSwap("innerHTML"),
+		)
+		label := Label(
+			Class("flex items-center mb-2"),
+			checkBox,
+			Span(T(cal.Name)),
+		)
+		checkBoxes.Children = append(checkBoxes.Children, label)
+	}
+
+
+	// Input(
+	// 	Type("checkbox"),
+	// 	Name("calendar_ids"),
+	// 	Value(string(calendarID)),
+	// 	Class("mr-2"),
+	// 	Checked(true),
+	// 	HxPost("/calendar/toggle_calendar"),
+	// 	HxTarget("#calendar-container"),
+	// 	HxSwap("innerHTML"),
+	// )
+
+	responseHTML := checkBoxes.Render() + `<div id="calendar-modal"></div>`
+
+	w.Header().Set("Content-Type", "text/html")
+	fmt.Fprint(w, responseHTML)
 }
