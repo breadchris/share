@@ -10,6 +10,7 @@ import {
     ReactFlowProvider,
     useEdgesState,
     useNodesState,
+    Node,
     useReactFlow,
 } from '@xyflow/react';
 import {ReactReader} from 'react-reader'
@@ -24,27 +25,39 @@ import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 
 import {createRoot} from 'react-dom/client';
 import {Panel, PanelGroup, PanelResizeHandle} from "react-resizable-panels";
+import * as Y from "yjs";
+import {WebsocketProvider} from "y-websocket";
+
+const ydoc = new Y.Doc();
+// const provider = new WebrtcProvider("asdfasdfasdffdsfkjfjf", ydocument, { signaling: ['ws://192.168.1.88:4444'] });
+const provider = new WebsocketProvider(
+    'ws://localhost:1234',
+    'graph',
+    ydoc
+)
+const nodesMap = ydoc.getMap('nodes');
+nodesMap.set('nodes', []); // Update Y.Map when nodes change
 
 const initialNodes = [
     { id: '1', position: { x: 0, y: 0 }, data: { label: '1' } },
     { id: '2', position: { x: 0, y: 100 }, data: { label: '2' } },
-    {
-        id: '3',
-        type: 'textUpdater',
-        position: { x: 0, y: 200 },
-    },
-    {
-        id: '4',
-        type: 'url',
-        position: { x: 0, y: 300 },
-        data: { url: "/music" }
-    },
-    {
-        id: '5',
-        type: 'url',
-        position: { x: 0, y: 400 },
-        data: { url: "/calendar" }
-    },
+    // {
+    //     id: '3',
+    //     type: 'textUpdater',
+    //     position: { x: 0, y: 200 },
+    // },
+    // {
+    //     id: '4',
+    //     type: 'url',
+    //     position: { x: 0, y: 300 },
+    //     data: { url: "/music" }
+    // },
+    // {
+    //     id: '5',
+    //     type: 'url',
+    //     position: { x: 0, y: 400 },
+    //     data: { url: "/calendar" }
+    // },
     // {
     //     id: '4',
     //     type: 'epub',
@@ -178,24 +191,66 @@ function EpubNode({ data }) {
     );
 }
 
-export default function App() {
+export default function GraphApp() {
     // const {nodes, onNodesChange, setNodes} = useNodesStateSynced();
     // const {edges, onEdgesChange, setEdges} = useEdgesStateSynced();
-    const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+    const [nodes, setNodes] = useState([]);
+    const [edges, setEdges] = useState([]);
     // const onConnect = (params: Connection) => {
     //     connectingNodeId.current = null;
     //     onEdgesChange([addEdge(params, edges)]);
     //     onNodesChange([addEdge(params, nodes)]);
     // }
-    const onConnect = useCallback(
-        (params) => setEdges((eds) => addEdge(params, eds)),
-        [setEdges],
-    );
+    // const onConnect = useCallback(
+    //     (params) => setEdges((eds) => addEdge(params, eds)),
+    //     [setEdges],
+    // );
 
     const reactFlowWrapper = useRef(null);
     const connectingNodeId = useRef(null);
     const { screenToFlowPosition } = useReactFlow();
+
+    const syncWithYMap = useCallback(() => {
+        const updatedNodes = nodesMap.get('nodes') || [];
+        const updatedEdges = nodesMap.get('edges') || [];
+        console.log(updatedNodes, updatedEdges)
+        setNodes([...updatedNodes]);
+        setEdges([...updatedEdges]);
+    }, [nodesMap]);
+
+    // Listen for changes in Yjs and update the React Flow accordingly
+    useEffect(() => {
+        const handleYMapChange = (event) => {
+            syncWithYMap(); // Update nodes and edges when Y.Map changes
+        };
+
+        // Sync initial data from Y.Map
+        syncWithYMap();
+
+        // Subscribe to changes in the Y.Map
+        nodesMap.observe(handleYMapChange);
+
+        // Clean up observer when component unmounts
+        return () => {
+            nodesMap.unobserve(handleYMapChange);
+        };
+    }, [syncWithYMap]);
+
+    // Handle adding new nodes or edges in React Flow
+    const onNodesChange = (newNodes) => {
+        console.log(newNodes)
+        nodesMap.set('nodes', newNodes); // Update Y.Map when nodes change
+    };
+
+    const onEdgesChange = (newEdges) => {
+        nodesMap.set('edges', newEdges); // Update Y.Map when edges change
+    };
+
+    // Handle connecting nodes in React Flow
+    const onConnect = (params) => {
+        const newEdges = addEdge(params, edges);
+        nodesMap.set('edges', newEdges); // Update Y.Map when a new edge is added
+    };
 
     const onConnectStart = useCallback((_, { nodeId }) => {
         connectingNodeId.current = nodeId;
@@ -251,6 +306,7 @@ export default function App() {
                 position,
                 data: { label: `node` },
             };
+            console.log(newNode)
             setNodes((nds) => nds.concat(newNode));
         },
         [screenToFlowPosition],
@@ -258,21 +314,10 @@ export default function App() {
 
     return (
         <div style={{ width: '100vw', height: '100vh' }}>
-            <button onClick={() => {
-                // add a new node
-                const id = getId();
-                const newNode = {
-                    id,
-                    position: { x: 0, y: 0 },
-                    data: { label: `Node ${id}` },
-                };
-                setNodes((nds) => nds.concat([newNode]));
-
-            }}>Add Node</button>
             <PanelGroup direction="horizontal">
                 <Panel defaultSize={20}>
-                    <div className={"overflow-auto h-full"} hx-get={`/code/sidebar`} hx-trigger="revealed"></div>
-                    <iframe src={"/code/sidebar?file=vote.go"} className={"h-full w-full"}></iframe>
+                    {/*<div className={"overflow-auto h-full"} hx-get={`/code/sidebar`} hx-trigger="revealed"></div>*/}
+                    {/*<iframe src={"/code/sidebar?file=vote.go"} className={"h-full w-full"}></iframe>*/}
                     <aside>
                         <div className="description">You can drag these nodes to the pane on the right.</div>
                         <div className="dndnode input" onDragStart={(event) => onDragStart(event, 'input')} draggable>
@@ -403,6 +448,6 @@ export const EpubReader: React.FC<{url: string}> = ({url}) => {
 const root = createRoot(document.getElementById('graph'));
 root.render((
     <ReactFlowProvider>
-        <App />
+        <GraphApp />
     </ReactFlowProvider>
 ));

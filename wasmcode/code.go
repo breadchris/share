@@ -57,7 +57,7 @@ func Render() *Node {
 		id := r.PathValue("id")
 		if len(id) == 0 {
 			id = uuid.NewString()
-			http.Redirect(w, r, "/wasmcode/"+id, http.StatusFound)
+			http.Redirect(w, r, "/code/"+id, http.StatusFound)
 		}
 
 		file := r.URL.Query().Get("file")
@@ -121,7 +121,7 @@ function sendEvent(eventName, data) {
 								Attr("data-id", id),
 								Attr("data-function", function),
 								Attr("data-code", string(code)),
-								Attr("data-server-url", fmt.Sprintf("%s/wasmcode/ws", d.Config.ExternalURL)),
+								Attr("data-server-url", fmt.Sprintf("%s/code/ws", d.Config.ExternalURL)),
 							),
 							Script(Attr("src", "/dist/wasmcode/monaco.js"), Attr("type", "module")),
 						),

@@ -1,5 +1,5 @@
 import React from 'react';
-import Dagre from 'graph/othergraph/dagre'
+import Dagre from './dagre'
 import { MarkerType, Edge, Node } from 'reactflow'
 import * as T from './types'
 import { shared } from './shared'

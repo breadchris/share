@@ -497,7 +497,7 @@ const CodeEditor = ({ serverURL, id, fileName, darkMode, func, vimModeEnabled, i
 
     useEffect(() => {
         // Fetch the HTML from /wasmcode/sidebar
-        fetch('/wasmcode/sidebar')
+        fetch('/code/sidebar')
             .then((response) => response.text())
             .then((html) => {
                 setHtmlContent(html); // Store the HTML content

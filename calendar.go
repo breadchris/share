@@ -69,7 +69,6 @@ func InitializeCalendar(currentTime time.Time, viewType string, events []CalEven
 		}
 		for _, event := range events {
 			if event.Start.Day() == d.Date.Day() {
-				println("event", event.Title, "starts on", event.Start.Day(), "and day is", d.Date.Day())
 				d.Events = append(d.Events, event)
 			}
 		}

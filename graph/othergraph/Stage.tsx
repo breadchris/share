@@ -1,13 +1,6 @@
 import React from 'react';
 import 'reactflow/dist/style.css'
 import { MouseEvent, useEffect } from 'react'
-import ReactFlow, {
-  ReactFlowInstance,
-  Node,
-  OnConnectStartParams,
-  Connection,
-  Background,
-} from 'reactflow'
 import { Colors } from '@blueprintjs/core'
 import * as T from './types'
 import { CustomNodeComp, CustomNodeGroup } from './Nodes'
@@ -21,6 +14,8 @@ import * as actions from './actions'
 import { elementsToDagreReactflow } from './dagre'
 import { state, events } from './state'
 import { collaboration, CollabCompState } from './collaboration'
+import {Node, OnConnectStartParams, ReactFlowInstance} from "@xyflow/react";
+import {Connection} from "./types";
 
 const testEls: T.Elements = []
 const testConns: T.Connections = []
@@ -93,13 +88,11 @@ function handleOnNodeDrag(e: MouseEvent<Element>, node: Node<T.NodeData>) {
     editing: false,
     dragging: {
       ...node.position,
-      ...node.positionAbsolute,
       userId: collaboration.currentUser.id,
     },
   }
   cState.interactions[node.id].dragging = {
     ...node.position,
-    ...node.positionAbsolute,
     userId: collaboration.currentUser.id,
   }
 

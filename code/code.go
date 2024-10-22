@@ -88,7 +88,7 @@ func New(d Deps) *http.ServeMux {
 							Script(Src("/dist/leap-bind-textarea.js")),
 							Link(Rel("stylesheet"), Href("/dist/code/monaco.css")),
 							Div(Class("w-full h-full"), Id("monaco-editor"), Attr("data-filename", file), Attr("data-function", function)),
-							Script(Attr("src", "/dist/code/monaco.js")),
+							Script(Attr("src", "/dist/code/monaco.js"), Attr("type", "module")),
 						),
 					),
 				),

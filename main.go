@@ -111,7 +111,7 @@ func startServer(useTLS bool, port int) {
 	p("/vote", interpreted(NewVote))
 	p("/breadchris", interpreted(breadchris.New))
 	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./calendar.go"}))
-	p("/code", func() *http.ServeMux {
+	p("/filecode", func() *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			_, err := s.GetUserID(r.Context())
@@ -122,13 +122,13 @@ func startServer(useTLS bool, port int) {
 		})
 		return m
 	}())
-	p("/wasmcode", interpreted(wasmcode.New))
+	p("/code", interpreted(wasmcode.New))
 
 	ur, err := url.Parse("ws://localhost:1234")
 	if err != nil {
 		log.Fatalf("Failed to parse url: %v", err)
 	}
-	http.Handle("/wasmcode/ws/{id...}", websocketproxy.NewProxy(ur))
+	http.Handle("/code/ws/{id...}", websocketproxy.NewProxy(ur))
 	p("/extension", NewExtension())
 	p("/git", interpreted(NewGit))
 	p("/music", interpreted(NewMusic))
