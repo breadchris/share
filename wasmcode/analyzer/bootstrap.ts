@@ -18,9 +18,18 @@ interface AnalyzeResult {
   markers: monaco.editor.IMarkerData[] | null
 }
 
-export interface RunRequest {
-  fileName: string
+export interface ParseRequest {
   contents: string
+}
+
+export interface ParseResponse {
+  error: string
+  functions: string[]
+}
+
+export interface RunRequest {
+  func: string
+  code: string
 }
 
 export interface RunResponse {
@@ -30,7 +39,8 @@ export interface RunResponse {
 
 export interface WrappedGoModule {
   analyzeCode: (code: string) => Promise<AnalyzeResult>
-  runCode: (code: string) => Promise<RunResponse>
+  runCode: (r: RunRequest) => Promise<RunResponse>
+  parseCode: (code: string) => Promise<ParseResponse>
   exit: () => Promise<void>
 }
 

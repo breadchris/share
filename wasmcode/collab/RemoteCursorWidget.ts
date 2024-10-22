@@ -210,8 +210,10 @@ export class RemoteCursorWidget implements editor.IContentWidget, IDisposable {
     if (visible) {
       this._updateTooltipPosition();
       this._tooltipNode.style.opacity = "1.0";
+      this._tooltipNode.style.display = "block";
     } else {
       this._tooltipNode.style.opacity = "0";
+      this._tooltipNode.style.display = "none";
     }
   }
 

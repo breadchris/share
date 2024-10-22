@@ -1,6 +1,7 @@
 import * as monaco from 'monaco-editor'
 import './lib/go/wasm_exec.js'
 import {AnalyzerWorker, spawnAnalyzerWorker} from "./analyzer/client";
+import {RunRequest} from "./analyzer/bootstrap";
 
 export enum LanguageID {
     Go = 'go',
@@ -48,11 +49,12 @@ export class GoSyntaxChecker implements monaco.IDisposable {
         }
     }
 
-    runCode(code: string) {
-        return this.worker.runCode({
-            fileName: 'main.go',
-            contents: code,
-        })
+    parseCode(code: string) {
+        return this.worker.parseCode({ contents: code })
+    }
+
+    runCode(r: RunRequest) {
+        return this.worker.runCode(r)
     }
 
     private async checkModel(model: monaco.editor.ITextModel, editorId: string, ctx: EnvironmentContext) {

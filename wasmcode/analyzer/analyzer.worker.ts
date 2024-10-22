@@ -1,5 +1,5 @@
 import * as Comlink from 'comlink'
-import {type WrappedGoModule, startAnalyzer, RunRequest, RunResponse} from './bootstrap'
+import {type WrappedGoModule, startAnalyzer, RunRequest, RunResponse, ParseRequest, ParseResponse} from './bootstrap'
 import type * as monaco from 'monaco-editor'
 
 export interface AnalyzeRequest {
@@ -33,14 +33,26 @@ export class WorkerHandler {
     return this.mod
   }
 
-  async runCode({ fileName, contents }: RunRequest): Promise<RunResponse> {
+  async runCode(r: RunRequest): Promise<RunResponse> {
     const mod = await this.getModule()
     try {
-        return await mod.runCode(contents)
+        return await mod.runCode(r)
     } catch (e) {
         return {
           output: '',
           error: e.toString(),
+        }
+    }
+  }
+
+  async parseCode({ contents }: ParseRequest): Promise<ParseResponse> {
+    const mod = await this.getModule()
+    try {
+        return await mod.parseCode(contents)
+    } catch (e) {
+        return {
+          error: e.toString(),
+          functions: [],
         }
     }
   }

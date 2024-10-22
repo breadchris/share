@@ -5,9 +5,6 @@ import (
 	. "github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	"github.com/google/uuid"
-	"go/ast"
-	"go/parser"
-	"go/token"
 	"net/http"
 	"os"
 )
@@ -80,27 +77,27 @@ func Render() *Node {
 					Title(T("Code")),
 					DaisyUI,
 					TailwindCSS,
-					Style(T(`
-        .yRemoteSelection {
-            background-color: rgb(250, 129, 0, .5)
-        }
-        .yRemoteSelectionHead {
-            position: absolute;
-            border-left: orange solid 2px;
-            border-top: orange solid 2px;
-            border-bottom: orange solid 2px;
-            height: 100%;
-            box-sizing: border-box;
-        }
-        .yRemoteSelectionHead::after {
-            position: absolute;
-            content: ' ';
-            border: 3px solid orange;
-            border-radius: 4px;
-            left: -4px;
-            top: -5px;
-        }
-`)),
+					//					Style(T(`
+					//        .yRemoteSelection {
+					//            background-color: rgb(250, 129, 0, .5)
+					//        }
+					//        .yRemoteSelectionHead {
+					//            position: absolute;
+					//            border-left: orange solid 2px;
+					//            border-top: orange solid 2px;
+					//            border-bottom: orange solid 2px;
+					//            height: 100%;
+					//            box-sizing: border-box;
+					//        }
+					//        .yRemoteSelectionHead::after {
+					//            position: absolute;
+					//            content: ' ';
+					//            border: 3px solid orange;
+					//            border-radius: 4px;
+					//            left: -4px;
+					//            top: -5px;
+					//        }
+					//`)),
 				),
 				Body(
 					Div(Class("wrapper"),
@@ -111,8 +108,8 @@ function sendEvent(eventName, data) {
     document.dispatchEvent(event);
 }
 `)),
-							//Script(Src("/dist/leapclient.js")),
-							//Script(Src("/dist/leap-bind-textarea.js")),
+							Script(Src("/dist/leapclient.js")),
+							Script(Src("/dist/leap-bind-textarea.js")),
 							Link(Rel("stylesheet"), Href("/dist/wasmcode/monaco.css")),
 							Div(
 								Class("w-full h-full"),
@@ -132,23 +129,4 @@ function sendEvent(eventName, data) {
 		}
 	})
 	return mux
-}
-
-func GetFunctions(filePath string) ([]string, error) {
-	fset := token.NewFileSet()
-
-	node, err := parser.ParseFile(fset, filePath, nil, parser.ParseComments)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse Go file: %w", err)
-	}
-
-	var functions []string
-
-	ast.Inspect(node, func(n ast.Node) bool {
-		if funcDecl, ok := n.(*ast.FuncDecl); ok {
-			functions = append(functions, node.Name.Name+"."+funcDecl.Name.Name)
-		}
-		return true
-	})
-	return functions, nil
 }
