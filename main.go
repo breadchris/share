@@ -5,6 +5,19 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"html/template"
+	"io"
+	"io/ioutil"
+	"log"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/exec"
+	"path"
+	"path/filepath"
+	"strconv"
+	"strings"
+
 	"github.com/breadchris/share/breadchris"
 	"github.com/breadchris/share/code"
 	config2 "github.com/breadchris/share/config"
@@ -25,18 +38,6 @@ import (
 	ignore "github.com/sabhiram/go-gitignore"
 	"github.com/samber/lo"
 	"github.com/urfave/cli/v2"
-	"html/template"
-	"io"
-	"io/ioutil"
-	"log"
-	"log/slog"
-	"net/http"
-	"os"
-	"os/exec"
-	"path"
-	"path/filepath"
-	"strconv"
-	"strings"
 )
 
 var upgrader = websocket.Upgrader{
@@ -76,6 +77,8 @@ func startServer(useTLS bool, port int) {
 	setupCursor()
 	setupRecipe()
 	fileUpload()
+	go scheduleScraping()
+	// ScrapeEverOut(0, 10)
 
 	db, err := NewDBAny("data/testdb/")
 	if err != nil {
