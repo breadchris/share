@@ -23,6 +23,10 @@ type BlogConfig struct {
 	YJSURL  string `json:"yjs_url"`
 }
 
+type Stripe struct {
+	SecretKey string `json:"secret_key"`
+}
+
 type AppConfig struct {
 	OpenAIKey          string        `json:"openai_key"`
 	SMTP               SMTPConfig    `json:"smtp"`
@@ -32,6 +36,8 @@ type AppConfig struct {
 	GoogleClientID     string        `json:"google_client_id"`
 	GoogleClientSecret string        `json:"google_client_secret"`
 	Blog               BlogConfig    `json:"blog"`
+	Stripe             Stripe        `json:"stripe"`
+	Figma              string        `json:"figma"`
 }
 
 func New() AppConfig {

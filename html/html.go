@@ -345,6 +345,10 @@ func Text(s string) *Node {
 	}
 }
 
+func T(s string) *Node {
+	return Text(s)
+}
+
 func NewNode(s string, o []*Node) *Node {
 	n := &Node{
 		Name:         s,
@@ -998,10 +1002,6 @@ func Value(s string) *Node {
 		},
 	}
 }
-
-var (
-	T = Text
-)
 
 func HxPost(s string) *Node {
 	return &Node{

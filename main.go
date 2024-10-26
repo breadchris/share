@@ -37,6 +37,7 @@ import (
 	"github.com/protoflow-labs/protoflow/pkg/util/reload"
 	ignore "github.com/sabhiram/go-gitignore"
 	"github.com/samber/lo"
+	"github.com/sashabaranov/go-openai"
 	"github.com/urfave/cli/v2"
 )
 
@@ -66,7 +67,6 @@ func startServer(useTLS bool, port int) {
 	}
 	e := NewSMTPEmail(&appConfig)
 	a := NewAuth(s, e, appConfig)
-	z := NewZineMaker()
 
 	p := func(p string, s *http.ServeMux) {
 		http.Handle(p+"/", http.StripPrefix(p, s))
@@ -85,11 +85,7 @@ func startServer(useTLS bool, port int) {
 		log.Fatalf("Failed to create db: %v", err)
 	}
 
-	oai := llm.NewOpenAIService(appConfig)
-	c := NewChat(s, oai)
-	p("/llm", llm.SetupChatgpt(oai))
-	p("/chat", c.NewMux())
-
+	oai := openai.NewClient(appConfig.OpenAIKey)
 	lm := leaps.RegisterRoutes(leaps.NewLogger())
 	deps := deps2.Deps{
 		DB:      db,
@@ -107,11 +103,16 @@ func startServer(useTLS bool, port int) {
 		return m
 	}
 
+	z := NewZineMaker(deps)
+
+	p("/llm", interpreted(llm.NewChatGPT))
+	p("/mood", interpreted(NewMood))
+	p("/chat", interpreted(NewChat))
 	p("/spotify", setupSpotify(deps))
 	p("/leaps", lm.Mux)
 	p("/vote", interpreted(NewVote))
 	p("/breadchris", interpreted(breadchris.New))
-	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./calendar.go"}))
+	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./calendar.go", "./everout.go"}))
 	p("/filecode", func() *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -134,6 +135,8 @@ func startServer(useTLS bool, port int) {
 	p("/git", interpreted(NewGit))
 	p("/music", interpreted(NewMusic))
 	p("/calendar", interpreted(NewCalendar))
+	p("/stripe", interpreted(NewStripe))
+	p("/everout", interpreted(NewEverout))
 
 	go func() {
 		paths := []string{

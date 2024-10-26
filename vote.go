@@ -110,7 +110,7 @@ func NewVote(d deps.Deps) *http.ServeMux {
 					},
 				},
 			}
-			res, err := d.AI.Client.CreateChatCompletion(context.Background(), req)
+			res, err := d.AI.CreateChatCompletion(context.Background(), req)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -167,14 +167,9 @@ func NewVote(d deps.Deps) *http.ServeMux {
 			if strings.HasSuffix(id, "/") {
 				id = id[:len(id)-1]
 			}
-			b, ok := d.DB.Get(id)
+			ok := d.DB.Get(id, &poll)
 			if !ok {
 				http.Error(w, "Poll not found", http.StatusNotFound)
-				return
-			}
-			err := json.Unmarshal(b, &poll)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 		}
@@ -295,16 +290,9 @@ func NewVote(d deps.Deps) *http.ServeMux {
 		if strings.HasSuffix(id, "/") {
 			id = id[:len(id)-1]
 		}
-		b, ok := d.DB.Get(id)
-		if !ok {
-			http.Error(w, "Poll not found", http.StatusNotFound)
-			return
-		}
-
 		var poll Poll
-		err = json.Unmarshal(b, &poll)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		if ok := d.DB.Get(id, &poll); !ok {
+			http.Error(w, "Poll not found", http.StatusNotFound)
 			return
 		}
 

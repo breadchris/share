@@ -4,6 +4,7 @@ package symbol
 
 import (
 	"github.com/breadchris/share/html"
+	"github.com/cogentcore/yaegi/interp"
 	"reflect"
 )
 
@@ -33,6 +34,7 @@ func init() {
 		"Chl":                     reflect.ValueOf(html.Chl),
 		"Class":                   reflect.ValueOf(html.Class),
 		"ClipRule":                reflect.ValueOf(html.ClipRule),
+		"Contains":                reflect.ValueOf(interp.GenericFunc("func Contains[T comparable](collection []T, element T) bool { //yaegi:add\n\tfor i := range collection {\n\t\tif collection[i] == element {\n\t\t\treturn true\n\t\t}\n\t}\n\n\treturn false\n}")),
 		"Content":                 reflect.ValueOf(html.Content),
 		"Crossorigin":             reflect.ValueOf(html.Crossorigin),
 		"D":                       reflect.ValueOf(html.D),
@@ -49,6 +51,7 @@ func init() {
 		"FileRule":                reflect.ValueOf(html.FileRule),
 		"Fill":                    reflect.ValueOf(html.Fill),
 		"FillRule":                reflect.ValueOf(html.FillRule),
+		"Filter":                  reflect.ValueOf(interp.GenericFunc("func Filter[T any, Slice ~[]T](collection Slice, predicate func(item T, index int) bool) Slice { //yaegi:add\n\tresult := make(Slice, 0, len(collection))\n\n\tfor i := range collection {\n\t\tif predicate(collection[i], i) {\n\t\t\tresult = append(result, collection[i])\n\t\t}\n\t}\n\n\treturn result\n}")),
 		"Footer":                  reflect.ValueOf(html.Footer),
 		"For":                     reflect.ValueOf(html.For),
 		"Form":                    reflect.ValueOf(html.Form),
@@ -77,10 +80,12 @@ func init() {
 		"Iframe":                  reflect.ValueOf(html.Iframe),
 		"Img":                     reflect.ValueOf(html.Img),
 		"Input":                   reflect.ValueOf(html.Input),
+		"Keys":                    reflect.ValueOf(interp.GenericFunc("func Keys[K comparable, V any](in map[K]V) []K { //yaegi:add\n\tresult := make([]K, 0, len(in))\n\n\tfor k := range in {\n\t\tresult = append(result, k)\n\t}\n\n\treturn result\n}")),
 		"Label":                   reflect.ValueOf(html.Label),
 		"Li":                      reflect.ValueOf(html.Li),
 		"Link":                    reflect.ValueOf(html.Link),
 		"Main":                    reflect.ValueOf(html.Main),
+		"Map":                     reflect.ValueOf(interp.GenericFunc("func Map[T any, R any](collection []T, iteratee func(item T, index int) R) []R { //yaegi:add\n\tresult := make([]R, len(collection))\n\n\tfor i := range collection {\n\t\tresult[i] = iteratee(collection[i], i)\n\t}\n\n\treturn result\n}")),
 		"Max":                     reflect.ValueOf(html.Max),
 		"Meta":                    reflect.ValueOf(html.Meta),
 		"Method":                  reflect.ValueOf(html.Method),
@@ -91,6 +96,7 @@ func init() {
 		"NewNode":                 reflect.ValueOf(html.NewNode),
 		"Nil":                     reflect.ValueOf(html.Nil),
 		"Ol":                      reflect.ValueOf(html.Ol),
+		"OnClick":                 reflect.ValueOf(html.OnClick),
 		"Open":                    reflect.ValueOf(html.Open),
 		"Option":                  reflect.ValueOf(html.Option),
 		"P":                       reflect.ValueOf(html.P),
@@ -99,6 +105,7 @@ func init() {
 		"ParseHTMLString":         reflect.ValueOf(html.ParseHTMLString),
 		"Path":                    reflect.ValueOf(html.Path),
 		"Placeholder":             reflect.ValueOf(html.Placeholder),
+		"Pre":                     reflect.ValueOf(html.Pre),
 		"Progress":                reflect.ValueOf(html.Progress),
 		"Property":                reflect.ValueOf(html.Property),
 		"Rel":                     reflect.ValueOf(html.Rel),
@@ -127,7 +134,7 @@ func init() {
 		"Style_":                  reflect.ValueOf(html.Style_),
 		"Summary":                 reflect.ValueOf(html.Summary),
 		"Svg":                     reflect.ValueOf(html.Svg),
-		"T":                       reflect.ValueOf(&html.T).Elem(),
+		"T":                       reflect.ValueOf(html.T),
 		"Tabindex":                reflect.ValueOf(html.Tabindex),
 		"TailwindCSS":             reflect.ValueOf(&html.TailwindCSS).Elem(),
 		"Target":                  reflect.ValueOf(html.Target),

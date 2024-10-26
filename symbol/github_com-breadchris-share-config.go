@@ -17,5 +17,6 @@ func init() {
 		"BlogConfig":    reflect.ValueOf((*config.BlogConfig)(nil)),
 		"SMTPConfig":    reflect.ValueOf((*config.SMTPConfig)(nil)),
 		"SpotifyConfig": reflect.ValueOf((*config.SpotifyConfig)(nil)),
+		"Stripe":        reflect.ValueOf((*config.Stripe)(nil)),
 	}
 }

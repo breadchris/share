@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -33,7 +34,7 @@ func CloneRepo(repoURL string) (string, error) {
 	return repoDir, nil
 }
 
-func WalkGoFiles(f string) (string, error) {
+func WalkGoFiles(f, fileRegex string) (string, error) {
 	var goFilesContent strings.Builder
 
 	err := filepath.Walk(f, func(path string, info os.FileInfo, err error) error {
@@ -41,7 +42,16 @@ func WalkGoFiles(f string) (string, error) {
 			return err
 		}
 
-		if !info.IsDir() && strings.HasSuffix(path, ".go") {
+		if !info.IsDir() {
+			m, err := regexp.Match(fileRegex, []byte(info.Name()))
+			if err != nil {
+				return fmt.Errorf("failed to match file regex: %w", err)
+			}
+
+			if !m {
+				return nil
+			}
+
 			content, err := ioutil.ReadFile(path)
 			if err != nil {
 				return fmt.Errorf("failed to read file %s: %w", path, err)
@@ -61,7 +71,8 @@ func WalkGoFiles(f string) (string, error) {
 }
 
 type GitState struct {
-	RepoURL string
+	RepoURL   string
+	FileRegex string
 }
 
 func NewGit(d deps.Deps) *http.ServeMux {
@@ -69,12 +80,23 @@ func NewGit(d deps.Deps) *http.ServeMux {
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			r.ParseForm()
-			repoURL := r.Form.Get("RepoURL")
+			repoURL := r.Form.Get("/RepoURL")
 			if repoURL == "" {
 				http.Error(w, "repo form field is required", http.StatusBadRequest)
 				return
 			}
-			content, err := RepoGoFiles(repoURL)
+			fileRegex := r.Form.Get("/FileRegex")
+			if fileRegex == "" {
+				fileRegex = "*\\.go"
+				return
+			}
+			d, err := CloneRepo(repoURL)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			content, err := WalkGoFiles(d, fileRegex)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -87,28 +109,15 @@ func NewGit(d deps.Deps) *http.ServeMux {
 		DefaultLayout(
 			Div(
 				Class("container mx-auto p-4"),
-				P(T("clone a git repo (http url) and concat all .go files")),
+				P(Text("clone a git repo (http url) and concat all regex")),
 				Form(
 					Action("/"),
 					Method("POST"),
 					BuildForm("", GitState{}),
+					Button(Type("submit"), Text("Submit")),
 				),
 			),
 		).RenderPageCtx(ctx, w, r)
 	})
 	return m
-}
-
-func RepoGoFiles(repoURL string) (string, error) {
-	d, err := CloneRepo(repoURL)
-	if err != nil {
-		return "", err
-	}
-
-	content, err := WalkGoFiles(d)
-	if err != nil {
-		return "", err
-	}
-
-	return content, nil
 }

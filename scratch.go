@@ -1,7 +1,6 @@
 package main
 
 import (
-	. "github.com/breadchris/share/db"
 	. "github.com/breadchris/share/html"
 )
 
@@ -10,33 +9,11 @@ type Item struct {
 	Value string
 }
 
-func RenderList(db *DBAny) *Node {
-	var list []*Node
-	for _, v := range db.List() {
-		a := v.(map[string]any)
-		list = append(list, Div(Text(a["Value"].(string))))
-	}
-	return Div(Id("list"), Ch(list))
-}
-
 func Render() *Node {
-	db, _ := NewDBAny("a")
-	db.Set("1", map[string]any{
-		"Value": "asd",
-	})
-	db.Set("2", map[string]any{
-		"Value": "list",
-	})
-	db.Set("3", map[string]any{
-		"Value": "list34",
-	})
-	db.Set("4", map[string]any{
-		"Value": "list345",
-	})
-	return RenderComponents(db)
+	return RenderComponents()
 }
 
-func RenderComponents(db *DBAny) *Node {
+func RenderComponents() *Node {
 	return Html(
 		Head(
 			Title(T("Hacker Profile")),

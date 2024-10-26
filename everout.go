@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/deps"
 	"math/rand"
 	"net/http"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	. "github.com/breadchris/share/html"
 )
 
 // EverOutEvent represents the structure of an event
@@ -26,7 +28,66 @@ type EverOutEvent struct {
 }
 
 func init() {
-    rand.Seed(time.Now().UnixNano())
+	rand.Seed(time.Now().UnixNano())
+}
+
+func NewEverout(d deps.Deps) *http.ServeMux {
+	m := http.NewServeMux()
+	events := loadEvents()
+	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		DefaultLayout(
+			Div(
+				ReloadNode("everout.go"),
+				RenderEverout(events),
+			),
+		).RenderPage(w, r)
+	})
+	return m
+}
+
+func loadEvents() []EverOutEvent {
+	data, err := os.ReadFile("everout.json")
+	if err != nil {
+		fmt.Println("Error reading events:", err)
+		return []EverOutEvent{}
+	}
+
+	var events []EverOutEvent
+	err = json.Unmarshal(data, &events)
+	if err != nil {
+		fmt.Println("Error unmarshalling events:", err)
+		return []EverOutEvent{}
+	}
+
+	return events
+}
+
+func RenderEverout(events []EverOutEvent) *Node {
+	return Div(
+		Class("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-4"),
+		Ch(Map[EverOutEvent, *Node](events, func(event EverOutEvent, i int) *Node {
+			return Div(
+				Class("bg-white shadow-md rounded-lg overflow-hidden hover:shadow-lg transform hover:scale-105 transition duration-300 ease-in-out"),
+				Div(
+					Class("h-48 bg-cover bg-center"),
+					Style_(fmt.Sprintf("background-image: url('%s');", event.ImageURL)),
+				),
+				Div(
+					Class("p-4"),
+					H2(Class("text-xl font-semibold mb-2"), Text(event.Title)),
+					P(Class("text-sm text-gray-500 mb-2"), Text(event.Category)),
+					P(Class("text-sm text-gray-500 mb-2"), Text(fmt.Sprintf("%s at %s", event.Date, event.Time))),
+					P(Class("text-sm text-gray-500 mb-2"), Text(fmt.Sprintf("%s, %s", event.Location, event.Region))),
+					P(Class("text-sm text-gray-700 font-semibold mb-4"), Text(event.Price)),
+					A(
+						Class("text-blue-500 hover:text-blue-700 underline"),
+						Href(event.EventURL),
+						Text("More info"),
+					),
+				),
+			)
+		})),
+	)
 }
 
 // ScrapeEverOut scrapes events from the specified page range and updates the JSON file
@@ -208,9 +269,9 @@ func scheduleScraping() {
 		return
 	}
 	for {
-        thusStartMin := rand.Intn(60)
-        sunStartMin := rand.Intn(60)
-        
+		thusStartMin := rand.Intn(60)
+		sunStartMin := rand.Intn(60)
+
 		nextThursday := nextOccurrence(time.Thursday, 4, thusStartMin, 0, loc)
 		nextSunday := nextOccurrence(time.Sunday, 4, sunStartMin, 0, loc)
 

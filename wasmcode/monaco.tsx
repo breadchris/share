@@ -249,7 +249,7 @@ const CodeEditor = ({ serverURL, id, fileName, darkMode, func, vimModeEnabled, i
 
         new LeapMonacoBinding(leapClient, editor, file);
 
-        leapClient.connect('wss://' + window.location.host + '/leaps/ws?username=' + id.current);
+        leapClient.connect('ws://' + window.location.host + '/leaps/ws?username=' + id.current);
 
         client.current = leapClient;
 
@@ -459,7 +459,7 @@ const CodeEditor = ({ serverURL, id, fileName, darkMode, func, vimModeEnabled, i
                         <>
                             {state.parse.error && <div className={"bg-red-500 text-white p-2"}>{state.parse.error}</div>}
                             <ul>
-                                {state.parse.functions.map((f) => (
+                                {state.parse.functions?.map((f) => (
                                     <li key={f} className={"bg-blue-500 text-white p-2"} onClick={() => {
                                         setState((state) => ({ ...state, selectedFunction: f }));
                                     }}>{f}</li>
@@ -484,6 +484,10 @@ const CodeEditor = ({ serverURL, id, fileName, darkMode, func, vimModeEnabled, i
                                 onMount={(e, m) => editorDidMount(e, m, fileName)}
                                 loading={<span className={'loading loading-spinner'}>Loading...</span>}
                             />
+                        </Panel>
+                        <PanelResizeHandle className="h-2 bg-gray-300"/>
+                        <Panel defaultSize={20}>
+                            <iframe className={"w-full h-full"} src={"/chat"} />
                         </Panel>
                         {/*<PanelResizeHandle className="h-2 bg-gray-300"/>*/}
                         {/*<Panel defaultSize={20}>*/}

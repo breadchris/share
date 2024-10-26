@@ -40,9 +40,7 @@ type _github_com_yuin_goldmark_Extender struct {
 	WExtend func(a0 goldmark.Markdown)
 }
 
-func (W _github_com_yuin_goldmark_Extender) Extend(a0 goldmark.Markdown) {
-	W.WExtend(a0)
-}
+func (W _github_com_yuin_goldmark_Extender) Extend(a0 goldmark.Markdown) { W.WExtend(a0) }
 
 // _github_com_yuin_goldmark_Markdown is an interface wrapper for Markdown type
 type _github_com_yuin_goldmark_Markdown struct {
@@ -57,15 +55,7 @@ type _github_com_yuin_goldmark_Markdown struct {
 func (W _github_com_yuin_goldmark_Markdown) Convert(source []byte, writer io.Writer, opts ...parser.ParseOption) error {
 	return W.WConvert(source, writer, opts...)
 }
-func (W _github_com_yuin_goldmark_Markdown) Parser() parser.Parser {
-	return W.WParser()
-}
-func (W _github_com_yuin_goldmark_Markdown) Renderer() renderer.Renderer {
-	return W.WRenderer()
-}
-func (W _github_com_yuin_goldmark_Markdown) SetParser(a0 parser.Parser) {
-	W.WSetParser(a0)
-}
-func (W _github_com_yuin_goldmark_Markdown) SetRenderer(a0 renderer.Renderer) {
-	W.WSetRenderer(a0)
-}
+func (W _github_com_yuin_goldmark_Markdown) Parser() parser.Parser            { return W.WParser() }
+func (W _github_com_yuin_goldmark_Markdown) Renderer() renderer.Renderer      { return W.WRenderer() }
+func (W _github_com_yuin_goldmark_Markdown) SetParser(a0 parser.Parser)       { W.WSetParser(a0) }
+func (W _github_com_yuin_goldmark_Markdown) SetRenderer(a0 renderer.Renderer) { W.WSetRenderer(a0) }

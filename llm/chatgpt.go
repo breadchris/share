@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/breadchris/share/config"
+	"github.com/breadchris/share/deps"
 	"github.com/gorilla/websocket"
 	"github.com/samber/lo"
 	"io"
@@ -41,8 +41,10 @@ type InferRequest struct {
 	Prompt string `json:"prompt"`
 }
 
-func SetupChatgpt(s *OpenAIService) *http.ServeMux {
+func NewChatGPT(d deps.Deps) *http.ServeMux {
 	m := http.NewServeMux()
+
+	s := NewOpenAIService(d)
 
 	m.HandleFunc("/", s.homeHandler)
 	m.HandleFunc("/{id}", s.homeHandler)
@@ -56,10 +58,9 @@ type OpenAIService struct {
 	Client *openai.Client
 }
 
-func NewOpenAIService(cfg config.AppConfig) *OpenAIService {
-	c := openai.NewClient(cfg.OpenAIKey)
+func NewOpenAIService(d deps.Deps) *OpenAIService {
 	return &OpenAIService{
-		Client: c,
+		Client: d.AI,
 	}
 }
 
@@ -68,16 +69,21 @@ func (s *OpenAIService) homeHandler(w http.ResponseWriter, r *http.Request) {
 	var cs ChatState
 	if i == "" {
 		chats := loadChats()
-		Ul(
-			Ch(lo.Map(chats, func(c ChatState, i int) *Node {
-				return Li(A(Href("/llm/"+c.ID), Class("block p-4 border-b"), T(c.Name)))
-			})),
+		DefaultLayout(
+			Div(
+				Ul(
+					Ch(lo.Map(chats, func(c ChatState, i int) *Node {
+						return Li(A(Href("/llm/"+c.ID), Class("block p-4 border-b"), T(c.Name)))
+					})),
+				),
+				A(Class("btn"), Href("/llm/"+uuid.NewString()), T("new")),
+			),
 		).RenderPage(w, r)
 		return
 	}
 
 	cs = loadChatState(i)
-	Div(
+	DefaultLayout(
 		Ch(lo.Map(cs.Messages, func(m ChatMessage, i int) *Node {
 			b := "mb-2"
 			bs := "inline-block px-4 py-2 rounded "
@@ -228,7 +234,9 @@ func saveChat(chat ChatState) error {
 func loadChatState(chatID string) ChatState {
 	data, err := os.ReadFile(fmt.Sprintf("data/chatgpt/%s.json", chatID))
 	if err != nil {
-		return ChatState{}
+		return ChatState{
+			ID: chatID,
+		}
 	}
 	var state ChatState
 	json.Unmarshal(data, &state)

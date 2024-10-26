@@ -69,13 +69,20 @@ func (s *DBAny) List() []any {
 	return list
 }
 
-func (s *DBAny) Get(id string) ([]byte, bool) {
+func (s *DBAny) Get(id string, v any) bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	println(id)
 	value, ok := s.store[id]
-	return value, ok
+	if !ok {
+		return false
+	}
+
+	err := json.Unmarshal(value, v)
+	if err != nil {
+		return false
+	}
+	return true
 }
 
 // Set stores a value with the given id and saves it to a file
@@ -144,7 +151,6 @@ func (s *DBAny) loadFile(id string) error {
 	}
 
 	s.mu.Lock()
-	println(id)
 	s.store[id] = data
 	s.mu.Unlock()
 

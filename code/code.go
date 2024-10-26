@@ -7,9 +7,8 @@ import (
 	. "github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/symbol"
-	"github.com/samber/lo"
-	"github.com/traefik/yaegi/interp"
-	"github.com/traefik/yaegi/stdlib"
+	"github.com/cogentcore/yaegi/interp"
+	"github.com/cogentcore/yaegi/stdlib"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -54,7 +53,7 @@ func New(d Deps) *http.ServeMux {
 					Content: Ul(Class("menu bg-base-200 rounded-box w-56"),
 						Li(
 							Ul(
-								Ch(lo.Map(funcs, func(f string, i int) *Node {
+								Ch(Map(funcs, func(f string, i int) *Node {
 									return Li(A(Href(fmt.Sprintf("/code?file=%s&function=%s", file, f)), T(f)))
 								})),
 							),

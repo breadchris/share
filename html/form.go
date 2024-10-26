@@ -30,6 +30,9 @@ func BuildForm(fieldPath string, data any) *Node {
 		if fieldPath != "" {
 			currentFieldPath = fmt.Sprintf("%s/%s", fieldPath, jsonTag)
 		} else {
+			if jsonTag == "" {
+				jsonTag = field.Name
+			}
 			currentFieldPath = "/" + jsonTag
 		}
 

@@ -1,4 +1,4 @@
-//go:generate go install github.com/traefik/yaegi/cmd/yaegi@v0.16.1
+//go:generate go install github.com/cogentcore/yaegi/cmd/yaegi
 //go:generate yaegi extract github.com/breadchris/share/html
 //go:generate yaegi extract github.com/breadchris/share/deps
 //go:generate yaegi extract github.com/breadchris/share/config
@@ -9,6 +9,7 @@
 //go:generate yaegi extract github.com/yuin/goldmark/parser
 //go:generate yaegi extract go.abhg.dev/goldmark/frontmatter
 //go:generate yaegi extract net/http
+//go:generate yaegi extract golang.org/x/net/html
 //go:generate yaegi extract github.com/snabb/sitemap
 //go:generate yaegi extract gopkg.in/yaml.v3
 //go:generate yaegi extract github.com/google/uuid
@@ -20,6 +21,9 @@
 //go:generate yaegi extract github.com/zmb3/spotify/v2
 //go:generate yaegi extract github.com/zmb3/spotify/v2/auth
 //go:generate yaegi extract github.com/evanphx/json-patch/v5
+//go:generate yaegi extract github.com/stripe/stripe-go/v80
+//go:generate yaegi extract github.com/stripe/stripe-go/v80/checkout/session
+//go:generate yaegi extract github.com/PuerkitoBio/goquery
 package symbol
 
 import "reflect"

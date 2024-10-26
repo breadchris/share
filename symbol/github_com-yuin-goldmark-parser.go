@@ -140,9 +140,7 @@ func (W _github_com_yuin_goldmark_parser_BlockParser) Continue(node ast.Node, re
 func (W _github_com_yuin_goldmark_parser_BlockParser) Open(parent ast.Node, reader text.Reader, pc parser.Context) (ast.Node, parser.State) {
 	return W.WOpen(parent, reader, pc)
 }
-func (W _github_com_yuin_goldmark_parser_BlockParser) Trigger() []byte {
-	return W.WTrigger()
-}
+func (W _github_com_yuin_goldmark_parser_BlockParser) Trigger() []byte { return W.WTrigger() }
 
 // _github_com_yuin_goldmark_parser_CloseBlocker is an interface wrapper for CloseBlocker type
 type _github_com_yuin_goldmark_parser_CloseBlocker struct {
@@ -183,12 +181,8 @@ type _github_com_yuin_goldmark_parser_Context struct {
 func (W _github_com_yuin_goldmark_parser_Context) AddReference(a0 parser.Reference) {
 	W.WAddReference(a0)
 }
-func (W _github_com_yuin_goldmark_parser_Context) BlockIndent() int {
-	return W.WBlockIndent()
-}
-func (W _github_com_yuin_goldmark_parser_Context) BlockOffset() int {
-	return W.WBlockOffset()
-}
+func (W _github_com_yuin_goldmark_parser_Context) BlockIndent() int { return W.WBlockIndent() }
+func (W _github_com_yuin_goldmark_parser_Context) BlockOffset() int { return W.WBlockOffset() }
 func (W _github_com_yuin_goldmark_parser_Context) ClearDelimiters(bottom ast.Node) {
 	W.WClearDelimiters(bottom)
 }
@@ -201,12 +195,8 @@ func (W _github_com_yuin_goldmark_parser_Context) FirstDelimiter() *parser.Delim
 func (W _github_com_yuin_goldmark_parser_Context) Get(a0 parser.ContextKey) interface{} {
 	return W.WGet(a0)
 }
-func (W _github_com_yuin_goldmark_parser_Context) IDs() parser.IDs {
-	return W.WIDs()
-}
-func (W _github_com_yuin_goldmark_parser_Context) IsInLinkLabel() bool {
-	return W.WIsInLinkLabel()
-}
+func (W _github_com_yuin_goldmark_parser_Context) IDs() parser.IDs     { return W.WIDs() }
+func (W _github_com_yuin_goldmark_parser_Context) IsInLinkLabel() bool { return W.WIsInLinkLabel() }
 func (W _github_com_yuin_goldmark_parser_Context) LastDelimiter() *parser.Delimiter {
 	return W.WLastDelimiter()
 }
@@ -231,12 +221,8 @@ func (W _github_com_yuin_goldmark_parser_Context) RemoveDelimiter(d *parser.Deli
 func (W _github_com_yuin_goldmark_parser_Context) Set(a0 parser.ContextKey, a1 interface{}) {
 	W.WSet(a0, a1)
 }
-func (W _github_com_yuin_goldmark_parser_Context) SetBlockIndent(a0 int) {
-	W.WSetBlockIndent(a0)
-}
-func (W _github_com_yuin_goldmark_parser_Context) SetBlockOffset(a0 int) {
-	W.WSetBlockOffset(a0)
-}
+func (W _github_com_yuin_goldmark_parser_Context) SetBlockIndent(a0 int) { W.WSetBlockIndent(a0) }
+func (W _github_com_yuin_goldmark_parser_Context) SetBlockOffset(a0 int) { W.WSetBlockOffset(a0) }
 func (W _github_com_yuin_goldmark_parser_Context) SetOpenedBlocks(a0 []parser.Block) {
 	W.WSetOpenedBlocks(a0)
 }
@@ -289,9 +275,7 @@ type _github_com_yuin_goldmark_parser_IDs struct {
 func (W _github_com_yuin_goldmark_parser_IDs) Generate(value []byte, kind ast.NodeKind) []byte {
 	return W.WGenerate(value, kind)
 }
-func (W _github_com_yuin_goldmark_parser_IDs) Put(value []byte) {
-	W.WPut(value)
-}
+func (W _github_com_yuin_goldmark_parser_IDs) Put(value []byte) { W.WPut(value) }
 
 // _github_com_yuin_goldmark_parser_InlineParser is an interface wrapper for InlineParser type
 type _github_com_yuin_goldmark_parser_InlineParser struct {
@@ -303,9 +287,7 @@ type _github_com_yuin_goldmark_parser_InlineParser struct {
 func (W _github_com_yuin_goldmark_parser_InlineParser) Parse(parent ast.Node, block text.Reader, pc parser.Context) ast.Node {
 	return W.WParse(parent, block, pc)
 }
-func (W _github_com_yuin_goldmark_parser_InlineParser) Trigger() []byte {
-	return W.WTrigger()
-}
+func (W _github_com_yuin_goldmark_parser_InlineParser) Trigger() []byte { return W.WTrigger() }
 
 // _github_com_yuin_goldmark_parser_Option is an interface wrapper for Option type
 type _github_com_yuin_goldmark_parser_Option struct {
@@ -350,21 +332,15 @@ type _github_com_yuin_goldmark_parser_Reference struct {
 	WTitle       func() []byte
 }
 
-func (W _github_com_yuin_goldmark_parser_Reference) Destination() []byte {
-	return W.WDestination()
-}
-func (W _github_com_yuin_goldmark_parser_Reference) Label() []byte {
-	return W.WLabel()
-}
+func (W _github_com_yuin_goldmark_parser_Reference) Destination() []byte { return W.WDestination() }
+func (W _github_com_yuin_goldmark_parser_Reference) Label() []byte       { return W.WLabel() }
 func (W _github_com_yuin_goldmark_parser_Reference) String() string {
 	if W.WString == nil {
 		return ""
 	}
 	return W.WString()
 }
-func (W _github_com_yuin_goldmark_parser_Reference) Title() []byte {
-	return W.WTitle()
-}
+func (W _github_com_yuin_goldmark_parser_Reference) Title() []byte { return W.WTitle() }
 
 // _github_com_yuin_goldmark_parser_SetOptioner is an interface wrapper for SetOptioner type
 type _github_com_yuin_goldmark_parser_SetOptioner struct {
