@@ -6,13 +6,20 @@ import (
 	"encoding/json"
 	"fmt"
 	_ "github.com/glebarez/go-sqlite"
-	"github.com/google/uuid"
 	"regexp"
 )
 
 type DocumentStore struct {
 	db         *sql.DB
 	collection string
+}
+
+func NewSqliteDocumentStore(p string) *DocumentStore {
+	db, err := sql.Open("sqlite", p)
+	if err != nil {
+		panic(fmt.Sprintf("failed to open sqlite db: %v", err))
+	}
+	return NewDocumentStore(db)
 }
 
 func NewDocumentStore(db *sql.DB) *DocumentStore {
@@ -32,7 +39,20 @@ func (ds *DocumentStore) WithCollection(collection string) *DocumentStore {
 	return &DocumentStore{db: ds.db, collection: collection}
 }
 
-func (ds *DocumentStore) Set(id uuid.UUID, value any) error {
+func (ds *DocumentStore) SetBytes(id string, b []byte) error {
+	query := `
+			INSERT INTO document (id, collection, value) 
+			VALUES ($1, $2, $3) 
+			ON CONFLICT (id) 
+			DO UPDATE SET value = EXCLUDED.value`
+	_, err := ds.db.ExecContext(context.Background(), query, id, ds.collection, b)
+	if err != nil {
+		return fmt.Errorf("failed to set document: %v", err)
+	}
+	return err
+}
+
+func (ds *DocumentStore) Set(id string, value any) error {
 	jsonValue, err := json.Marshal(value)
 	if err != nil {
 		return fmt.Errorf("failed to marshal value: %v", err)
@@ -44,13 +64,28 @@ func (ds *DocumentStore) Set(id uuid.UUID, value any) error {
 			ON CONFLICT (id) 
 			DO UPDATE SET value = EXCLUDED.value`
 	_, err = ds.db.ExecContext(context.Background(), query, id, ds.collection, jsonValue)
-	if err == nil {
+	if err != nil {
 		return fmt.Errorf("failed to set document: %v", err)
 	}
 	return err
 }
 
-func (ds *DocumentStore) Get(id uuid.UUID, val any) error {
+func (ds *DocumentStore) GetBytes(id string) ([]byte, error) {
+	query := `SELECT value FROM document WHERE id = $1 AND collection = $2`
+	row := ds.db.QueryRowContext(context.Background(), query, id, ds.collection)
+
+	var value []byte
+	if err := row.Scan(&value); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("document not found")
+		}
+		return nil, err
+	}
+
+	return value, nil
+}
+
+func (ds *DocumentStore) Get(id string, val any) error {
 	query := `SELECT value FROM document WHERE id = $1 AND collection = $2`
 	row := ds.db.QueryRowContext(context.Background(), query, id, ds.collection)
 

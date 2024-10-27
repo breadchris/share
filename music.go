@@ -12,7 +12,7 @@ func NewMusic(_ deps.Deps) *http.ServeMux {
 		DefaultLayout(
 			Div(
 				Div(Id("music")),
-				Script(Src("/dist/music.js")),
+				Script(Attr("type", "module"), Src("/dist/music.js")),
 			),
 		).RenderPage(w, r)
 	})

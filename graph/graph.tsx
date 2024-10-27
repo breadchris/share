@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
     addEdge,
     Background,
@@ -11,7 +11,8 @@ import {
     useEdgesState,
     useNodesState,
     Node,
-    useReactFlow,
+    Edge,
+    useReactFlow, OnNodesChange, OnEdgesChange, OnConnect, applyNodeChanges, applyEdgeChanges, useStoreApi,
 } from '@xyflow/react';
 import {ReactReader} from 'react-reader'
 import type {Contents, Rendition} from 'epubjs'
@@ -25,64 +26,14 @@ import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 
 import {createRoot} from 'react-dom/client';
 import {Panel, PanelGroup, PanelResizeHandle} from "react-resizable-panels";
-import * as Y from "yjs";
-import {WebsocketProvider} from "y-websocket";
 
-const ydoc = new Y.Doc();
-// const provider = new WebrtcProvider("asdfasdfasdffdsfkjfjf", ydocument, { signaling: ['ws://192.168.1.88:4444'] });
-const provider = new WebsocketProvider(
-    'ws://localhost:1234',
-    'graph',
-    ydoc
-)
-const nodesMap = ydoc.getMap('nodes');
-nodesMap.set('nodes', []); // Update Y.Map when nodes change
-
-const initialNodes = [
-    { id: '1', position: { x: 0, y: 0 }, data: { label: '1' } },
-    { id: '2', position: { x: 0, y: 100 }, data: { label: '2' } },
-    // {
-    //     id: '3',
-    //     type: 'textUpdater',
-    //     position: { x: 0, y: 200 },
-    // },
-    // {
-    //     id: '4',
-    //     type: 'url',
-    //     position: { x: 0, y: 300 },
-    //     data: { url: "/music" }
-    // },
-    // {
-    //     id: '5',
-    //     type: 'url',
-    //     position: { x: 0, y: 400 },
-    //     data: { url: "/calendar" }
-    // },
-    // {
-    //     id: '4',
-    //     type: 'epub',
-    //     position: { x: 100, y: 600 },
-    //     data: { value: 123 },
-    // },
-    // {
-    //     id: '5',
-    //     type: 'pdf',
-    //     position: { x: 400, y: 100 },
-    //     data: { value: 123 },
-    // },
-    // {
-    //     id: '5',
-    //     type: 'youtube',
-    //     position: { x: 400, y: 600 },
-    //     data: { value: 123 },
-    // },
-];
-const initialEdges = [{ id: 'e1-2', source: '1', target: '2' }];
-
-let id = 6;
-const getId = () => `${id++}`;
-
-const handleStyle = { left: 10 };
+function generateUUID() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (char) {
+        const random = Math.random() * 16 | 0;
+        const value = char === 'x' ? random : (random & 0x3 | 0x8);
+        return value.toString(16);
+    });
+}
 
 function TextUpdaterNode({ data }) {
     return (
@@ -114,7 +65,7 @@ function YoutubeNode(data) {
 
     const handleMarkTimestamp = () => {
         const currentTime = playerRef.current.getCurrentTime();
-        const timestampNodeId = getId();
+        const timestampNodeId = generateUUID();
 
         const newNode = {
             id: timestampNodeId,
@@ -188,179 +139,6 @@ function EpubNode({ data }) {
             </div>
             <Handle type="source" position={Position.Bottom} id="a" />
         </>
-    );
-}
-
-export default function GraphApp() {
-    // const {nodes, onNodesChange, setNodes} = useNodesStateSynced();
-    // const {edges, onEdgesChange, setEdges} = useEdgesStateSynced();
-    const [nodes, setNodes] = useState([]);
-    const [edges, setEdges] = useState([]);
-    // const onConnect = (params: Connection) => {
-    //     connectingNodeId.current = null;
-    //     onEdgesChange([addEdge(params, edges)]);
-    //     onNodesChange([addEdge(params, nodes)]);
-    // }
-    // const onConnect = useCallback(
-    //     (params) => setEdges((eds) => addEdge(params, eds)),
-    //     [setEdges],
-    // );
-
-    const reactFlowWrapper = useRef(null);
-    const connectingNodeId = useRef(null);
-    const { screenToFlowPosition } = useReactFlow();
-
-    const syncWithYMap = useCallback(() => {
-        const updatedNodes = nodesMap.get('nodes') || [];
-        const updatedEdges = nodesMap.get('edges') || [];
-        console.log(updatedNodes, updatedEdges)
-        setNodes([...updatedNodes]);
-        setEdges([...updatedEdges]);
-    }, [nodesMap]);
-
-    // Listen for changes in Yjs and update the React Flow accordingly
-    useEffect(() => {
-        const handleYMapChange = (event) => {
-            syncWithYMap(); // Update nodes and edges when Y.Map changes
-        };
-
-        // Sync initial data from Y.Map
-        syncWithYMap();
-
-        // Subscribe to changes in the Y.Map
-        nodesMap.observe(handleYMapChange);
-
-        // Clean up observer when component unmounts
-        return () => {
-            nodesMap.unobserve(handleYMapChange);
-        };
-    }, [syncWithYMap]);
-
-    // Handle adding new nodes or edges in React Flow
-    const onNodesChange = (newNodes) => {
-        console.log(newNodes)
-        nodesMap.set('nodes', newNodes); // Update Y.Map when nodes change
-    };
-
-    const onEdgesChange = (newEdges) => {
-        nodesMap.set('edges', newEdges); // Update Y.Map when edges change
-    };
-
-    // Handle connecting nodes in React Flow
-    const onConnect = (params) => {
-        const newEdges = addEdge(params, edges);
-        nodesMap.set('edges', newEdges); // Update Y.Map when a new edge is added
-    };
-
-    const onConnectStart = useCallback((_, { nodeId }) => {
-        connectingNodeId.current = nodeId;
-    }, []);
-
-    const onConnectEnd = useCallback(
-        (event) => {
-            if (!connectingNodeId.current) return;
-
-            const targetIsPane = event.target.classList.contains('react-flow__pane');
-
-            if (targetIsPane) {
-                // we need to remove the wrapper bounds, in order to get the correct position
-                const id = getId();
-                const newNode = {
-                    id,
-                    position: screenToFlowPosition({
-                        x: event.clientX,
-                        y: event.clientY,
-                    }),
-                    data: { label: `Node ${id}` },
-                    origin: [0.5, 0.0],
-                };
-
-                setNodes((nds) => nds.concat([newNode]));
-                setEdges((eds) =>
-                    eds.concat({ id, source: connectingNodeId.current, target: id }),
-                );
-            }
-        },
-        [screenToFlowPosition],
-    );
-
-    const onDragStart = (event, nodeType) => {
-        event.dataTransfer.effectAllowed = 'move';
-    };
-
-    const onDragOver = useCallback((event) => {
-        event.preventDefault();
-        event.dataTransfer.dropEffect = 'move';
-    }, []);
-
-    const onDrop = useCallback(
-        (event) => {
-            event.preventDefault();
-
-            const position = screenToFlowPosition({
-                x: event.clientX,
-                y: event.clientY,
-            });
-            const newNode = {
-                id: getId(),
-                position,
-                data: { label: `node` },
-            };
-            console.log(newNode)
-            setNodes((nds) => nds.concat(newNode));
-        },
-        [screenToFlowPosition],
-    );
-
-    return (
-        <div style={{ width: '100vw', height: '100vh' }}>
-            <PanelGroup direction="horizontal">
-                <Panel defaultSize={20}>
-                    {/*<div className={"overflow-auto h-full"} hx-get={`/code/sidebar`} hx-trigger="revealed"></div>*/}
-                    {/*<iframe src={"/code/sidebar?file=vote.go"} className={"h-full w-full"}></iframe>*/}
-                    <aside>
-                        <div className="description">You can drag these nodes to the pane on the right.</div>
-                        <div className="dndnode input" onDragStart={(event) => onDragStart(event, 'input')} draggable>
-                            Input Node
-                        </div>
-                        <div className="dndnode" onDragStart={(event) => onDragStart(event, 'default')} draggable>
-                            Default Node
-                        </div>
-                        <div className="dndnode output" onDragStart={(event) => onDragStart(event, 'output')} draggable>
-                            Output Node
-                        </div>
-                    </aside>
-                </Panel>
-                <PanelResizeHandle className="w-2 bg-gray-300"/>
-                <Panel>
-                    <ReactFlow
-                        nodes={nodes}
-                        edges={edges}
-                        onNodesChange={onNodesChange}
-                        onEdgesChange={onEdgesChange}
-                        onConnectStart={onConnectStart}
-                        onConnectEnd={onConnectEnd}
-                        fitView
-                        fitViewOptions={{ padding: 2 }}
-                        nodeOrigin={[0.5, 0]}
-                        onConnect={onConnect}
-                        onDrop={onDrop}
-                        onDragOver={onDragOver}
-                        nodeTypes={{
-                            textUpdater: TextUpdaterNode,
-                            epub: EpubNode,
-                            pdf: PDFNode,
-                            youtube: YoutubeNode,
-                            url: URLNode,
-                        }}
-                    >
-                        <Controls />
-                        <MiniMap />
-                        <Background variant="dots" gap={12} size={1} />
-                    </ReactFlow>
-                </Panel>
-            </PanelGroup>
-        </div>
     );
 }
 
@@ -445,9 +223,344 @@ export const EpubReader: React.FC<{url: string}> = ({url}) => {
     )
 }
 
-const root = createRoot(document.getElementById('graph'));
+export default function GraphApp({ id }) {
+    const [nodes, setNodes] = useState([]);
+    const [edges, setEdges] = useState([]);
+    const socketRef = useRef<WebSocket | null>(null);
+
+    const connectingNodeId = useRef(null);
+    const { screenToFlowPosition, setCenter } = useReactFlow();
+
+    const focusNode = (node: Node) => {
+        const x = node.position.x + node.measured.width / 2;
+        const y = node.position.y + node.measured.height / 2;
+        const zoom = 1.85;
+
+        setCenter(x, y, { zoom, duration: 1000 });
+    };
+
+    useEffect(() => {
+        if (!id) {
+            return;
+        }
+
+        socketRef.current = new WebSocket('ws://localhost:8080/graph/ws/' + id);
+
+        socketRef.current.onopen = () => {
+            console.log('WebSocket connection established');
+        };
+
+        socketRef.current.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            if (msg.type === 'graph') {
+                const graph = JSON.parse(msg.value);
+                console.log(graph)
+                setNodes(graph.nodes || []);
+                setEdges(graph.edges || []);
+            }
+            if (msg.type === 'ai') {
+                const { id, text } = msg.value;
+                setNodes((nodes) => nodes.map((node) => {
+                    if (node.id === id) {
+                        return {
+                            ...node,
+                            data: {
+                                ...node.data,
+                                text: text,
+                            },
+                        };
+                    }
+                    return node;
+                }));
+            }
+        };
+
+        socketRef.current.onclose = () => {
+            console.log('WebSocket connection closed');
+        };
+
+        socketRef.current.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+
+        return () => {
+            if (socketRef.current) {
+                socketRef.current.close();
+            }
+        };
+    }, [id, setNodes, setEdges]);
+
+    const sendGraphUpdate = (nodes, edges) => {
+        if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+            socketRef.current.send(JSON.stringify({
+                type: 'graph',
+                value: JSON.stringify({ nodes, edges }),
+            }));
+        } else {
+            console.log('WebSocket is not open');
+        }
+    }
+
+    const setSyncedNodes = useCallback((nodes) => {
+        setNodes(nodes);
+        sendGraphUpdate(nodes, edges);
+    }, [edges]);
+
+    const setSyncedEdges = useCallback((ed) => {
+        setEdges(ed);
+        sendGraphUpdate(nodes, ed);
+    }, [nodes]);
+
+    const onNodesChange: OnNodesChange = useCallback(
+        (changes) => {
+            const newNodes = applyNodeChanges(changes, nodes);
+            setSyncedNodes(newNodes);
+        },[nodes, setSyncedNodes]
+    );
+    const onEdgesChange: OnEdgesChange = useCallback(
+        (changes) => {
+            const newEdges = applyEdgeChanges(changes, edges);
+            setSyncedEdges(newEdges);
+        }, [edges, setSyncedEdges]
+    );
+    const onConnect: OnConnect = useCallback(
+        (connection) => {
+            setSyncedEdges(addEdge(connection, edges));
+        }, [setSyncedEdges, edges]
+    );
+
+    const onConnectStart = useCallback(
+        (event, { nodeId }) => {
+            connectingNodeId.current = nodeId;
+        },
+        [connectingNodeId],
+    );
+
+    const onConnectEnd = useCallback(
+        (event) => {
+            console.log(event)
+
+            const id = generateUUID();
+            setSyncedNodes(nodes.concat([{
+                id: id,
+                position: screenToFlowPosition({
+                    x: event.clientX,
+                    y: event.clientY,
+                }),
+                type: 'ai',
+                data: { label: `Node ${id}` },
+                origin: [0.5, 0.0],
+            }]));
+
+            setSyncedEdges(edges.concat({
+                id: generateUUID(),
+                source: connectingNodeId.current,
+                target: id
+            }));
+
+            // if (!connectingNodeId.current) return;
+            //
+            // const targetIsPane = event.target.classList.contains('react-flow__pane');
+            //
+            // if (targetIsPane) {
+            //     // we need to remove the wrapper bounds, in order to get the correct position
+            //     const id = generateUUID();
+            //     const newNode = {
+            //         id,
+            //         position: screenToFlowPosition({
+            //             x: event.clientX,
+            //             y: event.clientY,
+            //         }),
+            //         data: { label: `Node ${id}` },
+            //         origin: [0.5, 0.0],
+            //     };
+            //
+            //     setSyncedNodes(nodes.concat([newNode]));
+            //     setSyncedEdges(edges.concat({ id, source: connectingNodeId.current, target: id }));
+            // }
+        },
+        [screenToFlowPosition, nodes, edges, setSyncedNodes, setSyncedEdges],
+    );
+
+    const onDragStart = (event, nodeType) => {
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('application/reactflow', nodeType);
+    };
+
+    const onDragOver = useCallback((event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+    }, []);
+
+    const onDrop = useCallback(
+        (event) => {
+            event.preventDefault();
+            const type = event.dataTransfer.getData('application/reactflow');
+
+            const position = screenToFlowPosition({
+                x: event.clientX,
+                y: event.clientY,
+            });
+            const newNode = {
+                id: generateUUID(),
+                position,
+                type,
+                data: { label: `node` },
+            };
+            setSyncedNodes(nodes.concat(newNode));
+        },
+        [screenToFlowPosition, nodes],
+    );
+
+    const nodeTypes = useMemo(() => {
+        return {
+            textUpdater: TextUpdaterNode,
+            epub: EpubNode,
+            pdf: PDFNode,
+            youtube: YoutubeNode,
+            url: URLNode,
+            ai: (props) => {
+                const { data } = props;
+                const rf = useReactFlow();
+                const [text, setText] = useState(data.text);
+                const onChange = (e) => {
+                    setText(e.target.value);
+                    setSyncedNodes(rf.getNodes().map((node) => {
+                        if (node.id === props.id) {
+                            return {
+                                ...node,
+                                data: {
+                                    ...node.data,
+                                    text: e.target.value,
+                                },
+                            };
+                        }
+                        return node;
+                    }));
+                }
+
+                const setData = (newData) => {
+                    setSyncedNodes(rf.getNodes().map((node) => {
+                        if (node.id === props.id) {
+                            return {
+                                ...node,
+                                data: {
+                                    ...node.data,
+                                    ...newData,
+                                },
+                            };
+                        }
+                        return node;
+                    }));
+                }
+                return (
+                    <>
+                        <Handle type="target" position={Position.Top}/>
+                        <div className={"p-6 flex flex-col"}>
+                            {data.viewing ? (
+                                <div dangerouslySetInnerHTML={{__html: data.text}}/>
+                            ) : (
+                                <textarea onChange={onChange} value={data.text}/>
+                            )}
+                            <button onClick={() => {
+                                setData({ viewing: !data.viewing });
+                            }}>edit</button>
+                            <button onClick={() => {
+                                const id = generateUUID();
+                                setSyncedNodes(rf.getNodes().concat({
+                                    id: id,
+                                    position: {
+                                        x: props.positionAbsoluteX,
+                                        y: props.positionAbsoluteY + props.height,
+                                    },
+                                    type: 'ai',
+                                    data: {
+                                        viewing: true
+                                    },
+                                }))
+                                setSyncedEdges(rf.getEdges().concat({
+                                    id: generateUUID(),
+                                    source: props.id,
+                                    target: id,
+                                }));
+
+                                socketRef.current.send(JSON.stringify({
+                                    type: 'ai',
+                                    value: {
+                                        id: id,
+                                        text: text,
+                                    },
+                                }));
+                            }}>submit
+                            </button>
+                        </div>
+                        <Handle type="source" position={Position.Bottom} id="a"/>
+                    </>
+                );
+            }
+        }
+    }, []);
+
+    return (
+        <div style={{ width: '100vw', height: '100vh' }}>
+            <PanelGroup direction="horizontal">
+                <Panel defaultSize={20}>
+                    {/*<div className={"overflow-auto h-full"} hx-get={`/code/sidebar`} hx-trigger="revealed"></div>*/}
+                    {/*<iframe src={"/code/sidebar?file=vote.go"} className={"h-full w-full"}></iframe>*/}
+                    <aside>
+                        <div className="dndnode input" onDragStart={(event) => onDragStart(event, 'input')} draggable>
+                            Input Node
+                        </div>
+                        <div className="dndnode" onDragStart={(event) => onDragStart(event, 'default')} draggable>
+                            Default Node
+                        </div>
+                        <div className="dndnode output" onDragStart={(event) => onDragStart(event, 'output')} draggable>
+                            Output Node
+                        </div>
+                        <div className="dndnode output" onDragStart={(event) => onDragStart(event, 'ai')} draggable>
+                            AI
+                        </div>
+                    </aside>
+                    <ul>
+                        {nodes.map((node) => (
+                            <li key={node.id}>
+                                <button onClick={() => focusNode(node)}>{node.data.label}</button>
+                            </li>
+                        ))}
+                    </ul>
+                </Panel>
+                <PanelResizeHandle className="w-2 bg-gray-300"/>
+                <Panel>
+                    <ReactFlow
+                        nodes={nodes}
+                        edges={edges}
+                        onNodesChange={onNodesChange}
+                        onEdgesChange={onEdgesChange}
+                        onConnectStart={onConnectStart}
+                        onConnectEnd={onConnectEnd}
+                        fitView
+                        fitViewOptions={{ padding: 2 }}
+                        nodeOrigin={[0.5, 0]}
+                        onConnect={onConnect}
+                        onDrop={onDrop}
+                        onDragOver={onDragOver}
+                        nodeTypes={nodeTypes}
+                    >
+                        <Controls />
+                        <MiniMap />
+                        <Background variant="dots" gap={12} size={1} />
+                    </ReactFlow>
+                </Panel>
+            </PanelGroup>
+        </div>
+    );
+}
+
+const g = document.getElementById('graph');
+const id = g.getAttribute('data-id');
+const root = createRoot(g);
 root.render((
     <ReactFlowProvider>
-        <GraphApp />
+        <GraphApp id={id} />
     </ReactFlowProvider>
 ));

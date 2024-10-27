@@ -10,6 +10,7 @@ import (
 
 type Deps struct {
 	DB      *db.DBAny
+	Docs    *db.DocumentStore
 	Session *session.SessionManager
 	Leaps   *leaps.Leaps
 	AI      *openai.Client

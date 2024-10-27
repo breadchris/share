@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/graph"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -87,8 +88,10 @@ func startServer(useTLS bool, port int) {
 
 	oai := openai.NewClient(appConfig.OpenAIKey)
 	lm := leaps.RegisterRoutes(leaps.NewLogger())
+	docs := NewSqliteDocumentStore("data/docs.db")
 	deps := deps2.Deps{
 		DB:      db,
+		Docs:    docs,
 		Session: s,
 		Leaps:   lm,
 		AI:      oai,
@@ -99,6 +102,7 @@ func startServer(useTLS bool, port int) {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			code.DynamicHTTPMux(f)(deps).ServeHTTP(w, r)
+			//f(deps).ServeHTTP(w, r)
 		})
 		return m
 	}
@@ -126,17 +130,13 @@ func startServer(useTLS bool, port int) {
 	}())
 	p("/code", interpreted(wasmcode.New))
 
-	//ur, err := url.Parse("ws://localhost:1234")
-	//if err != nil {
-	//	log.Fatalf("Failed to parse url: %v", err)
-	//}
-	//http.Handle("/code/ws/{id...}", websocketproxy.NewProxy(ur))
 	p("/extension", NewExtension())
 	p("/git", interpreted(NewGit))
 	p("/music", interpreted(NewMusic))
 	p("/calendar", interpreted(NewCalendar))
 	p("/stripe", interpreted(NewStripe))
 	p("/everout", interpreted(NewEverout))
+	p("/graph", interpreted(graph.New))
 
 	go func() {
 		paths := []string{
