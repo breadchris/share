@@ -244,7 +244,7 @@ export default function GraphApp({ id }) {
             return;
         }
 
-        socketRef.current = new WebSocket('ws://localhost:8080/graph/ws/' + id);
+        socketRef.current = new WebSocket('wss://justshare.io/graph/ws/' + id);
 
         socketRef.current.onopen = () => {
             console.log('WebSocket connection established');
