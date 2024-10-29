@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
+	"github.com/google/uuid"
 	"net/http"
 	"time"
 )
@@ -110,27 +112,52 @@ func daysInMonth(year int, month time.Month) int {
 	return time.Date(year, month+1, 0, 0, 0, 0, 0, time.UTC).Day()
 }
 
-func NewCalendar(_ deps.Deps) *http.ServeMux {
+func NewCalendar(d deps.Deps) *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		events := []CalEvent{
-			{
-				ID:          "1",
-				Title:       "cook food",
-				Start:       time.Date(2024, time.October, 12, 18, 0, 0, 0, time.UTC),
-				End:         time.Date(2024, time.October, 12, 21, 0, 0, 0, time.UTC),
-				AllDay:      false,
-				IsRecurring: false,
-			},
-		}
-		calendar := InitializeCalendar(time.Now(), "Month", events)
+	mux.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		var calendar CalendarState
+		if len(id) > 0 {
+			if err := d.Docs.Get(id, &calendar); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		} else {
+			events := []CalEvent{
+				{
+					ID:          "1",
+					Title:       "cook food",
+					Start:       time.Date(2024, time.October, 12, 18, 0, 0, 0, time.UTC),
+					End:         time.Date(2024, time.October, 12, 21, 0, 0, 0, time.UTC),
+					AllDay:      false,
+					IsRecurring: false,
+				},
+			}
+			calendar := InitializeCalendar(time.Now(), "Month", events)
 
+			id := uuid.NewString()
+			if err := d.Docs.Set(id, calendar); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			http.Redirect(w, r, fmt.Sprintf("/calendar/%s", id), http.StatusFound)
+		}
+
+		ctx := context.WithValue(r.Context(), "baseURL", "/calendar")
 		DefaultLayout(
 			Div(
+				Class("container mx-auto px-4 py-8"),
 				ReloadNode("calendar.go"),
-				RenderCalendar(calendar),
+				//BuildFormCtx(BuildCtx{
+				//	CurrentFieldPath: "",
+				//	Name:             "calendar",
+				//}, calendar),
+				Div(
+					RenderCalendar(calendar),
+				),
 			),
-		).RenderPage(w, r)
+		).RenderPageCtx(ctx, w, r)
 	})
 	return mux
 }
@@ -161,6 +188,21 @@ func eventMap(events []CalEvent, f func(event CalEvent, _ int) *Node) []*Node {
 	return n
 }
 
+func NewEventModal() *Node {
+	return Dialog(
+		Id("event_modal"),
+		Class("modal"),
+		Div(
+			Class("modal-box"),
+			BuildFormCtx(BuildCtx{
+				CurrentFieldPath: "",
+				Name:             "event",
+			}, CalEvent{}),
+			Div(Class("modal-action"), Form(Method("dialog"), Button(Class("btn"), Text("Close")))),
+		),
+	)
+}
+
 func RenderCalendar(state CalendarState) *Node {
 	return Div(
 		Class("lg:flex lg:h-full lg:flex-col"),
@@ -172,7 +214,7 @@ func RenderCalendar(state CalendarState) *Node {
 					Text(fmt.Sprintf("%s %d", state.Month, state.Year))),
 			),
 			Div(
-				Class("flex items-center"),
+				Class("flex items-center space-x-2"),
 				Div(
 					Class("relative flex items-center rounded-md bg-white shadow-sm md:items-stretch"),
 					// Previous month button
@@ -209,9 +251,8 @@ func RenderCalendar(state CalendarState) *Node {
 					),
 				),
 				Div(
-					Class("hidden md:ml-4 md:flex md:items-center"),
+					Class("flex flex-row"),
 					Div(
-						Class("relative"),
 						Button(
 							Type("button"),
 							Class("flex items-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"),
@@ -238,12 +279,13 @@ func RenderCalendar(state CalendarState) *Node {
 						//	),
 						//),
 					),
-					Div(Class("ml-6 h-6 w-px bg-gray-300")),
 					Button(
 						Type("button"),
 						Class("ml-6 rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"),
 						Text("Add event"),
+						OnClick("event_modal.showModal()"),
 					),
+					NewEventModal(),
 				),
 			),
 		),

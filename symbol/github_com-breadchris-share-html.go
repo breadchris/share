@@ -27,6 +27,7 @@ func init() {
 		"Attrs":                   reflect.ValueOf(html.Attrs),
 		"Body":                    reflect.ValueOf(html.Body),
 		"BuildForm":               reflect.ValueOf(html.BuildForm),
+		"BuildFormCtx":            reflect.ValueOf(html.BuildFormCtx),
 		"Button":                  reflect.ValueOf(html.Button),
 		"Ch":                      reflect.ValueOf(html.Ch),
 		"Charset":                 reflect.ValueOf(html.Charset),
@@ -150,6 +151,7 @@ func init() {
 		"Xmlns":                   reflect.ValueOf(html.Xmlns),
 
 		// type definitions
+		"BuildCtx":  reflect.ValueOf((*html.BuildCtx)(nil)),
 		"Directory": reflect.ValueOf((*html.Directory)(nil)),
 		"File":      reflect.ValueOf((*html.File)(nil)),
 		"NilNode":   reflect.ValueOf((*html.NilNode)(nil)),

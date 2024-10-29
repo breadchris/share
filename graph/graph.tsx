@@ -26,6 +26,7 @@ import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 
 import {createRoot} from 'react-dom/client';
 import {Panel, PanelGroup, PanelResizeHandle} from "react-resizable-panels";
+import Flow from "./App";
 
 function generateUUID() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (char) {
@@ -244,7 +245,7 @@ export default function GraphApp({ id }) {
             return;
         }
 
-        socketRef.current = new WebSocket('wss://justshare.io/graph/ws/' + id);
+        socketRef.current = new WebSocket('ws://localhost:8080/graph/ws/' + id);
 
         socketRef.current.onopen = () => {
             console.log('WebSocket connection established');
@@ -562,5 +563,6 @@ const root = createRoot(g);
 root.render((
     <ReactFlowProvider>
         <GraphApp id={id} />
+        {/*{<Flow />}*/}
     </ReactFlowProvider>
 ));

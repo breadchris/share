@@ -46,6 +46,13 @@ type Return struct {
 }
 
 func runCode(this js.Value, args worker.Args) (interface{}, error) {
+	// panic recovery
+	defer func() {
+		if r := recover(); r != nil {
+			println("recovered from panic", r)
+		}
+	}()
+
 	r := args[0]
 	req := RunRequest{
 		Code:     r.Get("code").String(),

@@ -3,11 +3,13 @@ package graph
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
+	"github.com/breadchris/share/yjs"
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -39,6 +41,43 @@ func New(d deps.Deps) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	graphs := d.Docs.WithCollection("graphs")
+
+	g := Graph{
+		Nodes: []GraphNode{},
+		Edges: []GraphEdge{},
+	}
+	bg, err := json.Marshal(g)
+	if err != nil {
+		log.Println("Failed to marshal graph", err)
+		return mux
+	}
+	bgs := string(bg)
+	doc := yjs.NewComplexDocument(&bgs)
+
+	mux.HandleFunc("/yjs/{id...}", func(w http.ResponseWriter, r *http.Request) {
+		_ = r.PathValue("id")
+
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			log.Println("Failed to set websocket upgrade", err)
+			return
+		}
+		defer conn.Close()
+
+		for {
+			_, msg, err := conn.ReadMessage()
+			if err != nil {
+				log.Println("Failed to read message", err)
+				return
+			}
+			// to base64
+			base := base64.StdEncoding.EncodeToString(msg)
+			if err = doc.ApplyUpdate(base); err != nil {
+				log.Println("Failed to apply update", err)
+				return
+			}
+		}
+	})
 
 	mux.HandleFunc("/ws/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
