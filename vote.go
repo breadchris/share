@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
+	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
 	"github.com/sashabaranov/go-openai/jsonschema"
 	"net/http"
-	"reflect"
 	"strings"
 )
 
@@ -41,149 +41,47 @@ type FormState struct {
 	Polls map[string]Poll
 }
 
-func BuildForm2(fieldPath string, data any, fieldToAdd string) *Node {
-	v := reflect.ValueOf(data)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
+type JSONPatchOp string
+
+const (
+	JSONPatchOpAdd     JSONPatchOp = "add"
+	JSONPatchOpRemove  JSONPatchOp = "remove"
+	JSONPatchOpReplace JSONPatchOp = "replace"
+)
+
+type JSONPatch struct {
+	Op    JSONPatchOp `json:"op"`
+	Path  string      `json:"path"`
+	Value any         `json:"value"`
+}
+
+// TODO breadchris this should be replaced by traversing the struct and applying the patch
+func ApplyJSONPatch(original, new any, patch []JSONPatch) error {
+	originalJSON, err := json.Marshal(original)
+	if err != nil {
+		return fmt.Errorf("failed to marshal original data: %w", err)
 	}
 
-	t := v.Type()
-
-	if v.Kind() != reflect.Struct {
-		panic("data must be a struct")
+	p, err := json.Marshal(patch)
+	if err != nil {
+		return fmt.Errorf("failed to marshal patch data: %w", err)
+	}
+	obj, err := jsonpatch.DecodePatch(p)
+	if err != nil {
+		return fmt.Errorf("failed to decode JSON patch: %w", err)
 	}
 
-	form := Div()
-	for i := 0; i < v.NumField(); i++ {
-		field := t.Field(i)
-		value := v.Field(i)
-
-		// Build the new field path based on the current field
-		currentFieldPath := fieldPath
-		if fieldPath != "" {
-			currentFieldPath = fmt.Sprintf("%s.%s", fieldPath, field.Name)
-		} else {
-			currentFieldPath = field.Name
-		}
-
-		labelText := strings.Title(field.Name)
-		label := Label(For(currentFieldPath), T(labelText))
-
-		var input *Node
-		switch value.Kind() {
-		case reflect.String:
-			input = Input(Type("text"), Id(currentFieldPath), Name(currentFieldPath), Class("border rounded w-full py-2 px-3"), Value(value.String()))
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			input = Input(Type("number"), Id(currentFieldPath), Name(currentFieldPath), Class("border rounded w-full py-2 px-3"), Value(fmt.Sprintf("%d", value.Int())))
-		case reflect.Float32, reflect.Float64:
-			input = Input(Type("number"), Id(currentFieldPath), Name(currentFieldPath), Class("border rounded w-full py-2 px-3"), Value(fmt.Sprintf("%f", value.Float())))
-		case reflect.Bool:
-			checked := ""
-			if value.Bool() {
-				checked = "checked"
-			}
-			input = Input(Type("checkbox"), Id(currentFieldPath), Name(currentFieldPath), Class("border rounded w-full py-2 px-3"), Attr("checked", checked))
-		case reflect.Slice:
-			elemType := value.Type().Elem()
-			d := Div()
-			ds := Div(
-				Class("p-4"),
-				Div(Class("divider"), T(field.Name)),
-				d,
-				A(Class("btn btn-neutral"), Href(fmt.Sprintf("/?id=%s", field.Name)), T("Add")),
-			)
-			form.Children = append(form.Children, ds)
-
-			if currentFieldPath == fieldToAdd {
-				// Handle different slice types when adding a new element
-				newElem := reflect.New(elemType).Elem() // Create a new element (empty struct or zero value)
-
-				switch elemType.Kind() {
-				case reflect.String:
-					newElem = reflect.ValueOf("New value")
-				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-					newElem = reflect.ValueOf(0)
-				case reflect.Float32, reflect.Float64:
-					newElem = reflect.ValueOf(0.0)
-				case reflect.Bool:
-					newElem = reflect.ValueOf(false)
-				case reflect.Struct, reflect.Ptr:
-					// If it's a pointer to a struct or struct itself, ensure it's addressable
-					newElem = reflect.New(elemType).Elem()
-				}
-
-				// Append the new element to the slice
-				if value.CanSet() {
-					value.Set(reflect.Append(value, newElem))
-				} else {
-					// Handle the case where the value is not directly settable (e.g., non-pointer)
-					panic(fmt.Sprintf("Cannot set value for %s; it is unaddressable", currentFieldPath))
-				}
-			}
-
-			for j := 0; j < value.Len(); j++ {
-				sliceElem := value.Index(j)
-				sliceFieldPath := fmt.Sprintf("%s.%d", currentFieldPath, j)
-				var sliceInput *Node
-
-				switch elemType.Kind() {
-				case reflect.String:
-					sliceInput = Input(Type("text"), Id(sliceFieldPath), Name(sliceFieldPath), Class("border rounded w-full py-2 px-3"), Value(sliceElem.String()))
-				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-					sliceInput = Input(Type("number"), Id(sliceFieldPath), Name(sliceFieldPath), Class("border rounded w-full py-2 px-3"), Value(fmt.Sprintf("%d", sliceElem.Int())))
-				case reflect.Float32, reflect.Float64:
-					sliceInput = Input(Type("number"), Id(sliceFieldPath), Name(sliceFieldPath), Class("border rounded w-full py-2 px-3"), Value(fmt.Sprintf("%f", sliceElem.Float())))
-				case reflect.Bool:
-					checked := ""
-					if sliceElem.Bool() {
-						checked = "checked"
-					}
-					sliceInput = Input(Type("checkbox"), Id(sliceFieldPath), Name(sliceFieldPath), Class("border rounded w-full py-2 px-3"), Attr("checked", checked))
-				case reflect.Struct:
-					nestedForm := BuildForm2(sliceFieldPath, sliceElem.Interface(), fieldToAdd)
-					d.Children = append(d.Children, nestedForm.Children...)
-					continue
-				case reflect.Ptr:
-					if !sliceElem.IsNil() {
-						nestedForm := BuildForm2(sliceFieldPath, sliceElem.Interface(), fieldToAdd)
-						d.Children = append(d.Children, nestedForm.Children...)
-					} else {
-						sliceInput = P(T(fmt.Sprintf("Pointer to %s is nil", elemType.Elem().Name())))
-					}
-				default:
-					sliceInput = P(T(fmt.Sprintf("Unsupported slice element type: %s", elemType.String())))
-				}
-
-				d.Children = append(d.Children, Div(Class("mb-4"),
-					Label(For(sliceFieldPath), T(fmt.Sprintf("%s %d", labelText, j+1))),
-					sliceInput,
-				))
-			}
-		case reflect.Struct:
-			// Recursive call for nested structs
-			nestedForm := BuildForm2(currentFieldPath, value.Interface(), fieldToAdd)
-			form.Children = append(form.Children, nestedForm.Children...)
-			continue
-		case reflect.Ptr:
-			// Handle pointer types by dereferencing
-			if !value.IsNil() {
-				input = BuildForm2(currentFieldPath, value.Elem().Interface(), fieldToAdd)
-			} else {
-				input = P(T(fmt.Sprintf("Pointer to %s is nil", field.Type.Elem().Name())))
-			}
-		default:
-			input = P(T(fmt.Sprintf("Unsupported field type: %s", field.Type.String())))
-		}
-
-		if input != nil {
-			form.Children = append(form.Children, Div(Class("mb-4"),
-				label,
-				input,
-			))
-		}
+	modifiedJSON, err := obj.Apply(originalJSON)
+	if err != nil {
+		return fmt.Errorf("failed to apply JSON patch: %w", err)
 	}
 
-	return form
+	err = json.Unmarshal(modifiedJSON, new)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal patched data: %w", err)
+	}
+
+	return nil
 }
 
 func NewVote(d deps.Deps) *http.ServeMux {
@@ -212,7 +110,7 @@ func NewVote(d deps.Deps) *http.ServeMux {
 					},
 				},
 			}
-			res, err := d.AI.Client.CreateChatCompletion(context.Background(), req)
+			res, err := d.AI.CreateChatCompletion(context.Background(), req)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -228,7 +126,7 @@ func NewVote(d deps.Deps) *http.ServeMux {
 				}
 			}
 
-			BuildForm2("", recipe, "").RenderPage(w, r)
+			BuildForm("", recipe).RenderPage(w, r)
 			return
 		}
 		DefaultLayout(
@@ -266,24 +164,80 @@ func NewVote(d deps.Deps) *http.ServeMux {
 			http.Redirect(w, r, fmt.Sprintf("/vote/new/%s", poll.ID), http.StatusSeeOther)
 			return
 		} else {
-			// remove trailing slash from id
 			if strings.HasSuffix(id, "/") {
 				id = id[:len(id)-1]
 			}
-			b, ok := d.DB.Get(id)
+			ok := d.DB.Get(id, &poll)
 			if !ok {
 				http.Error(w, "Poll not found", http.StatusNotFound)
 				return
 			}
-			err := json.Unmarshal(b, &poll)
+		}
+
+		if r.URL.Query().Get("op") != "" {
+			var patch JSONPatch
+			patch.Op = JSONPatchOp(r.URL.Query().Get("op"))
+			patch.Path = strings.ToLower(r.URL.Query().Get("path"))
+			if r.URL.Query().Get("value") != "" {
+				err := json.Unmarshal([]byte(r.URL.Query().Get("value")), &patch.Value)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+
+			var newPoll Poll
+			err = ApplyJSONPatch(poll, &newPoll, []JSONPatch{patch})
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			poll = newPoll
+			err = d.DB.Set(poll.ID, poll)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 		}
 
+		if r.Method == http.MethodPost {
+			err := r.ParseForm()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			var patches []JSONPatch
+			for name, value := range r.Form {
+				// create add patch for each name and value
+				v := value[0]
+				if v == "" {
+					continue
+				}
+				patches = append(patches, JSONPatch{
+					Op:    JSONPatchOpAdd,
+					Path:  name,
+					Value: v,
+				})
+			}
+			fmt.Printf("%+v\n", patches)
+			var newPoll Poll
+			err = ApplyJSONPatch(poll, &newPoll, patches)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			poll = newPoll
+			err = d.DB.Set(poll.ID, poll)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			return
+		}
+
 		fieldName := r.URL.Query().Get("id")
-		f := BuildForm2("", &poll, fieldName)
+		f := BuildForm("", &poll)
 
 		if fieldName != "" {
 			err := d.DB.Set(poll.ID, poll)
@@ -301,9 +255,12 @@ func NewVote(d deps.Deps) *http.ServeMux {
 				ReloadNode("vote.go"),
 				Class("container mx-auto mt-10 p-5"),
 				Form(
-					Method("POST"),
-					Action("/new"),
-					f,
+					HxPost("/"),
+					HxTarget("#form"),
+					Div(
+						Id("form"),
+						f,
+					),
 					Button(Class("btn btn-neutral"), Type("submit"), T("save")),
 				),
 			),
@@ -330,21 +287,11 @@ func NewVote(d deps.Deps) *http.ServeMux {
 			return
 		}
 
-		b, ok := d.DB.Get(id)
-		if !ok {
-			http.Error(w, "Poll not found", http.StatusNotFound)
-			return
+		if strings.HasSuffix(id, "/") {
+			id = id[:len(id)-1]
 		}
-
-		var state FormState
-		err = json.Unmarshal(b, &state)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		poll, ok := state.Polls[id]
-		if !ok {
+		var poll Poll
+		if ok := d.DB.Get(id, &poll); !ok {
 			http.Error(w, "Poll not found", http.StatusNotFound)
 			return
 		}
@@ -371,9 +318,8 @@ func NewVote(d deps.Deps) *http.ServeMux {
 				poll.UserVotes = append(poll.UserVotes, UserVote{UserID: user, RecipeID: id})
 				recipeVoteCount++
 			}
-			state.Polls[id] = poll
 
-			err := d.DB.Set("vote", state)
+			err := d.DB.Set(id, poll)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return

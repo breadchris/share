@@ -5,12 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	. "github.com/breadchris/share/deps"
-	"github.com/breadchris/share/graph"
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/symbol"
-	"github.com/samber/lo"
-	"github.com/traefik/yaegi/interp"
-	"github.com/traefik/yaegi/stdlib"
+	"github.com/cogentcore/yaegi/interp"
+	"github.com/cogentcore/yaegi/stdlib"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -19,7 +17,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
-	"sync"
+	"strings"
 )
 
 type CodeRequest struct {
@@ -31,20 +29,6 @@ type CodeRequest struct {
 // analyze code https://github.com/x1unix/go-playground/tree/9cc0c4d80f44fb3589fcb22df432563fa065feed/internal/analyzer
 func New(d Deps) *http.ServeMux {
 	mux := http.NewServeMux()
-	var (
-		l       sync.Mutex
-		codeMux *http.ServeMux
-	)
-	codeMux = graph.New()
-	mux.HandleFunc("/proxy/", func(w http.ResponseWriter, r *http.Request) {
-		if codeMux == nil {
-			http.Error(w, "codeMux is nil", http.StatusInternalServerError)
-			return
-		}
-		l.Lock()
-		http.StripPrefix("/proxy", codeMux).ServeHTTP(w, r)
-		l.Unlock()
-	})
 	mux.HandleFunc("/sidebar", func(w http.ResponseWriter, r *http.Request) {
 		file := r.URL.Query().Get("file")
 		if file == "" {
@@ -69,7 +53,7 @@ func New(d Deps) *http.ServeMux {
 					Content: Ul(Class("menu bg-base-200 rounded-box w-56"),
 						Li(
 							Ul(
-								Ch(lo.Map(funcs, func(f string, i int) *Node {
+								Ch(Map(funcs, func(f string, i int) *Node {
 									return Li(A(Href(fmt.Sprintf("/code?file=%s&function=%s", file, f)), T(f)))
 								})),
 							),
@@ -103,7 +87,7 @@ func New(d Deps) *http.ServeMux {
 							Script(Src("/dist/leap-bind-textarea.js")),
 							Link(Rel("stylesheet"), Href("/dist/code/monaco.css")),
 							Div(Class("w-full h-full"), Id("monaco-editor"), Attr("data-filename", file), Attr("data-function", function)),
-							Script(Attr("src", "/dist/code/monaco.js")),
+							Script(Attr("src", "/dist/code/monaco.js"), Attr("type", "module")),
 						),
 					),
 				),
@@ -147,15 +131,6 @@ func New(d Deps) *http.ServeMux {
 				w.Write([]byte(fnc(ctx).Render()))
 				return
 			}
-
-			fs, ok := fr.Interface().(func() *http.ServeMux)
-			if ok {
-				l.Lock()
-				codeMux = fs()
-				l.Unlock()
-			} else {
-				http.Error(w, "invalid function", http.StatusInternalServerError)
-			}
 		}
 	})
 	return mux
@@ -165,8 +140,13 @@ func DynamicHTTPMux(f func(d Deps) *http.ServeMux) func(Deps) *http.ServeMux {
 	pc := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Entry()
 	fnp := runtime.FuncForPC(pc)
 	file, _ := fnp.FileLine(pc)
-	path := filepath.Base(file)
 	function := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
+
+	// TODO breadchris fix packages
+	parts := strings.Split(function, "/")
+	if len(parts) > 1 {
+		function = parts[len(parts)-1]
+	}
 
 	i := interp.New(interp.Options{
 		GoPath: "/dev/null",
@@ -175,7 +155,7 @@ func DynamicHTTPMux(f func(d Deps) *http.ServeMux) func(Deps) *http.ServeMux {
 	i.Use(stdlib.Symbols)
 	i.Use(symbol.Symbols)
 
-	_, err := i.EvalPath(path)
+	_, err := i.EvalPath(file)
 	if err != nil {
 		slog.Warn("failed to eval path", "error", err)
 		return f

@@ -3,22 +3,30 @@ package breadchris
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/config"
+	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	"github.com/gosimple/slug"
-	"github.com/samber/lo"
+	"github.com/snabb/sitemap"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/parser"
 	"go.abhg.dev/goldmark/frontmatter"
 	"golang.org/x/net/html"
 	"gopkg.in/yaml.v3"
+	"io"
 	"io/fs"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/httptest"
 	"os"
+	"path"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -43,7 +51,7 @@ func loadPosts() ([]Post, error) {
 	return posts, nil
 }
 
-func NewRoutes(baseURL string) []Route {
+func NewRoutes(d deps.Deps) []Route {
 	posts, err := loadPosts()
 	if err != nil {
 		log.Fatalf("Failed to load posts: %v", err)
@@ -55,12 +63,12 @@ func NewRoutes(baseURL string) []Route {
 		}
 	}
 
-	ctx := context.WithValue(context.Background(), "baseURL", baseURL)
+	ctx := context.WithValue(context.Background(), "baseURL", d.Config.Blog.BaseURL)
 
 	routes := []Route{
 		NewRoute(
 			"/", ServeNodeCtx(ctx, RenderHome(HomeState{
-				Posts: lo.Filter(posts, func(post Post, i int) bool {
+				Posts: Filter(posts, func(post Post, i int) bool {
 					for _, tag := range post.Tags {
 
 						if strings.HasPrefix(tag, "blog") {
@@ -71,6 +79,45 @@ func NewRoutes(baseURL string) []Route {
 				}),
 			})),
 		),
+		NewRoute("/omnivore/{id...}", func(w http.ResponseWriter, r *http.Request) {
+			id := r.PathValue("id")
+			intID := 0
+			if id != "" {
+				intID, err = strconv.Atoi(id)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+
+			content, err := os.ReadFile("/Users/hacked/Documents/GitHub/notes/pages/Omnivore.md")
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			re := regexp.MustCompile(`site:: \[.*?\]\((.*?)\)`)
+
+			matches := re.FindAllStringSubmatch(string(content), -1)
+
+			var urls []string
+			for _, match := range matches {
+				if len(match) > 1 {
+					urls = append(urls, match[1])
+				}
+			}
+			url := urls[intID]
+			DefaultLayout(
+				Div(
+					Class("space-x-4"),
+					A(Href(url), T(url)),
+					If(intID > 0, A(Href(fmt.Sprintf("/breadchris/omnivore/%d", intID-1)), T("Previous")), Nil()),
+					If(intID < len(urls)-1, A(Href(fmt.Sprintf("/breadchris/omnivore/%d", intID+1)), T("Next")), Nil()),
+					Iframe(Src(url), Attrs(map[string]string{
+						"width":  "100%",
+						"height": "100%",
+					})),
+				)).RenderPage(w, r)
+		}),
 		NewRoute("/static/", func(w http.ResponseWriter, r *http.Request) {
 			http.StripPrefix(
 				"/static/",
@@ -107,13 +154,13 @@ func NewRoutes(baseURL string) []Route {
 			PageLayout(
 				Div(
 					H1(Class("my-6 text-4xl"), T(t)),
-					Ch(lo.Map(p, func(post Post, i int) *Node {
+					Ch(Map(p, func(post Post, i int) *Node {
 						return newArticlePreview(post)
 					})),
 				),
 			).RenderPageCtx(ctx, w, r)
 		}, WithValues(map[string][]string{
-			"tag": lo.Keys(tags),
+			"tag": Keys(tags),
 		})),
 		NewRoute("/new/render", func(w http.ResponseWriter, r *http.Request) {
 			content := r.FormValue("content")
@@ -129,6 +176,12 @@ func NewRoutes(baseURL string) []Route {
 			).RenderPageCtx(ctx, w, r)
 		}),
 		NewRoute("/new", func(w http.ResponseWriter, r *http.Request) {
+			u, err := d.Session.GetUserID(r.Context())
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
 			if r.Method == "POST" {
 				title := r.FormValue("title")
 				tags := strings.Split(r.FormValue("tags"), ",")
@@ -147,6 +200,21 @@ func NewRoutes(baseURL string) []Route {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 				}
 				http.Redirect(w, r, "/", http.StatusSeeOther)
+				return
+			}
+			type Props struct {
+				ProviderURL string `json:"provider_url"`
+				Room        string `json:"room"`
+				Username    string `json:"username"`
+			}
+			props := Props{
+				ProviderURL: d.Config.Blog.YJSURL,
+				Room:        "blog",
+				Username:    u,
+			}
+			b, err := json.Marshal(props)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			PageLayout(
@@ -178,7 +246,9 @@ func NewRoutes(baseURL string) []Route {
 						//),
 						Input(Type("hidden"), Name("markdown"), Id("markdown")),
 						Input(Type("hidden"), Name("blocknote"), Id("blocknote")),
-						Div(Id("editor")),
+						Div(Id("editor"), Attrs(map[string]string{
+							"props": string(b),
+						})),
 						Div(Class("flex flex-row space-x-4"),
 							Input(Type("text"), Class("input w-full"), Name("title"), Placeholder("Title")),
 							Input(Type("text"), Class("input w-full"), Name("tags"), Placeholder("Tags")),
@@ -202,13 +272,13 @@ func NewRoutes(baseURL string) []Route {
 			}
 			http.NotFound(w, r)
 		}, WithValues(map[string][]string{
-			"slug": lo.Map(posts, func(post Post, i int) string {
+			"slug": Map(posts, func(post Post, i int) string {
 				return post.Slug
 			}),
 		})),
 	}
 	for _, post := range posts {
-		if lo.Contains(post.Tags, "page") {
+		if Contains(post.Tags, "page") {
 			routes = append(routes, NewRoute("/"+post.Title, func(w http.ResponseWriter, r *http.Request) {
 				ServeNodeCtx(ctx, ArticleView(post))(w, r)
 			}))
@@ -217,9 +287,9 @@ func NewRoutes(baseURL string) []Route {
 	return routes
 }
 
-func New(baseURL string) *http.ServeMux {
+func New(d deps.Deps) *http.ServeMux {
 	mux := http.NewServeMux()
-	for _, route := range NewRoutes(baseURL) {
+	for _, route := range NewRoutes(d) {
 		mux.HandleFunc(route.Path, route.Handler)
 	}
 	return mux
@@ -249,7 +319,7 @@ func ArticleView(state Post) *Node {
 			Footer(Class("post-footer"),
 				Ul(
 					Class("post-tags"),
-					Ch(lo.Map(state.Tags, func(tag string, i int) *Node {
+					Ch(Map(state.Tags, func(tag string, i int) *Node {
 						return Li(Class("post-tag"),
 							A(Href(fmt.Sprintf("/tags/%s", tag)), T(tag)),
 						)
@@ -492,4 +562,244 @@ func ExtractText(n *html.Node) string {
 	}
 
 	return text
+}
+
+func StaticSiteGenerator() error {
+	domain := "breadchris.com"
+	domainDir := path.Join("data", "sites", "generated", domain)
+	outputDir := path.Join(domainDir, "latest")
+
+	baseURL := "http://localhost:8080/" + domainDir + "/latest"
+
+	if _, err := os.Stat(outputDir); err == nil {
+		backupDir := path.Join(domainDir, time.Now().Format("2006-01-02-15-04-05"))
+		if err := os.Rename(outputDir, backupDir); err != nil {
+			return fmt.Errorf("failed to backup output directory: %v", err)
+		}
+		fmt.Printf("Backed up output directory to %s\n", backupDir)
+	}
+
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("failed to create output directory: %v", err)
+	}
+
+	posts, err := loadPosts()
+	if err != nil {
+		return fmt.Errorf("failed to load posts: %w", err)
+	}
+
+	uploads := path.Join(outputDir, "data/uploads")
+	if err := os.MkdirAll(uploads, 0755); err != nil {
+		return fmt.Errorf("failed to create directories for %s: %w", uploads, err)
+	}
+	for _, p := range posts {
+		urls := ExtractLinksAndSources(p.DOMNode)
+		for _, u := range urls {
+			if strings.HasPrefix(u, "/data") {
+				// TODO breadchris strip all path except for file name
+				dataPath := u[1:]
+				newDataPath := path.Join(outputDir, dataPath)
+				f, err := os.ReadFile(dataPath)
+				if err != nil {
+					return fmt.Errorf("failed to read file %s: %w", dataPath, err)
+				}
+
+				if err := os.WriteFile(newDataPath, f, 0644); err != nil {
+					return fmt.Errorf("failed to write file %s: %w", newDataPath, err)
+				}
+			}
+		}
+	}
+
+	err = GenerateSitemap(posts, baseURL, path.Join(outputDir, "sitemap.xml"))
+	if err != nil {
+		return fmt.Errorf("failed to generate sitemap: %v", err)
+	}
+
+	if err := filepath.WalkDir("breadchris/static", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return fmt.Errorf("failed to walk static directory: %w", err)
+		}
+
+		if d.IsDir() {
+			return nil
+		}
+
+		relPath := strings.TrimPrefix(path, "breadchris/")
+
+		outputPath := filepath.Join(outputDir, relPath)
+		if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
+			return fmt.Errorf("failed to create directories for %s: %w", outputPath, err)
+		}
+
+		f, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("failed to read file %s: %w", path, err)
+		}
+
+		if err := os.WriteFile(outputPath, f, 0644); err != nil {
+			return fmt.Errorf("failed to write file %s: %w", outputPath, err)
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("failed to copy static directory: %v", err)
+	}
+
+	d := deps.Deps{
+		Config: config.AppConfig{
+			Blog: config.BlogConfig{
+				BaseURL: baseURL,
+			},
+		},
+	}
+	mux := New(d)
+	for _, route := range NewRoutes(d) {
+		if route.Ignore {
+			continue
+		}
+		if route.Values != nil {
+			for k, vals := range route.Values {
+				for _, v := range vals {
+					// TODO breadchris check go tests to see how they do this?
+					p := strings.Replace(route.Path, "{"+k+"}", v, -1)
+					p = strings.Replace(p, "{"+k+"...}", v, -1)
+					if err = renderRoute(mux, p, outputDir); err != nil {
+						return fmt.Errorf("failed to render route: %v", err)
+					}
+				}
+				// TODO breadchris check go tests to see how they do this?
+				p := strings.Replace(route.Path, "{"+k+"}", "", -1)
+				p = strings.Replace(p, "{"+k+"...}", "", -1)
+				if err = renderRoute(mux, p, outputDir); err != nil {
+					return fmt.Errorf("failed to render route: %v", err)
+				}
+			}
+		} else {
+			if err = renderRoute(mux, route.Path, outputDir); err != nil {
+				return fmt.Errorf("failed to render route: %v", err)
+			}
+		}
+	}
+	return nil
+}
+
+func GenerateSitemap(posts []Post, baseURL, outputPath string) error {
+	f, err := os.Create(outputPath)
+	if err != nil {
+		return fmt.Errorf("failed to create sitemap file: %w", err)
+	}
+	defer f.Close()
+
+	sw := sitemap.New()
+
+	t := time.Now()
+	sw.Add(&sitemap.URL{
+		Loc:     baseURL,
+		LastMod: &t,
+	})
+
+	for _, post := range posts {
+		postURL := fmt.Sprintf("%s/blog/%s", baseURL, post.Slug)
+		sw.Add(&sitemap.URL{
+			Loc:     postURL,
+			LastMod: &post.CreatedAtParsed,
+		})
+	}
+	sw.Add(&sitemap.URL{
+		Loc:     baseURL + "/tags/",
+		LastMod: &t,
+	})
+	sw.Add(&sitemap.URL{
+		Loc:     baseURL + "/resume",
+		LastMod: &t,
+	})
+	sw.Add(&sitemap.URL{
+		Loc:     baseURL + "/talks",
+		LastMod: &t,
+	})
+	if _, err := sw.WriteTo(f); err != nil {
+		return fmt.Errorf("failed to close sitemap: %w", err)
+	}
+	return nil
+}
+
+type Route struct {
+	Path    string
+	Handler http.HandlerFunc
+	Values  map[string][]string
+	Ignore  bool
+}
+
+type RouteOption func(*Route)
+
+func WithValues(values map[string][]string) RouteOption {
+	return func(r *Route) {
+		r.Values = values
+	}
+}
+
+func Ignore() RouteOption {
+	return func(r *Route) {
+		r.Ignore = true
+	}
+}
+
+func NewRoute(path string, handler http.HandlerFunc, o ...RouteOption) Route {
+	r := Route{Path: path, Handler: handler}
+	for _, f := range o {
+		f(&r)
+	}
+	return r
+}
+
+// TODO breadchris also need to rewrite
+func ExtractLinksAndSources(n *html.Node) []string {
+	var links []string
+
+	if n.Type == html.ElementNode {
+		for _, attr := range n.Attr {
+			if attr.Key == "href" || attr.Key == "src" {
+				links = append(links, attr.Val)
+			}
+		}
+	}
+
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		links = append(links, ExtractLinksAndSources(c)...)
+	}
+	return links
+}
+
+func renderRoute(mux *http.ServeMux, p string, outputDir string) error {
+	req := httptest.NewRequest("GET", p, nil)
+	rr := httptest.NewRecorder()
+
+	mux.ServeHTTP(rr, req)
+
+	rec := rr.Result()
+	if rec.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to render route %s: status code %d", p, rec.StatusCode)
+	}
+
+	filePath := path.Join(outputDir, p)
+	if p == "/" {
+		filePath = path.Join(outputDir, "index.html")
+	} else {
+		filePath = path.Join(outputDir, strings.Trim(p, "/"), "index.html")
+	}
+
+	if err := os.MkdirAll(path.Dir(filePath), 0755); err != nil {
+		return fmt.Errorf("failed to create directories for %s: %v", filePath, err)
+	}
+
+	body, err := io.ReadAll(rec.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %v", err)
+	}
+	if err := os.WriteFile(filePath, body, 0644); err != nil {
+		return fmt.Errorf("failed to write file %s: %v", filePath, err)
+	}
+
+	fmt.Printf("Generated file for route: %s at %s\n", p, filePath)
+	return nil
 }

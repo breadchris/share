@@ -191,7 +191,8 @@ func NewExtension() *http.ServeMux {
 				Tabwidth: 4,
 			}
 
-			err = cfg.Fprint(&buf, fset, RenderGoFunction(fset, "Render"+strings.Title(req.Name), n.RenderGoCode(fset)))
+			gf := RenderGoFunction(fset, "Render"+strings.Title(req.Name), n.RenderGoCode(fset))
+			err = cfg.Fprint(&buf, fset, gf)
 			if err != nil {
 				http.Error(w, fmt.Sprintf("Failed to format code: %v", err), http.StatusInternalServerError)
 				return
@@ -200,6 +201,7 @@ func NewExtension() *http.ServeMux {
 			formattedCode, err := format.Source(buf.Bytes())
 			if err != nil {
 				http.Error(w, fmt.Sprintf("Failed to format code: %v", err), http.StatusInternalServerError)
+				w.Write(buf.Bytes())
 				return
 			}
 

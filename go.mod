@@ -26,11 +26,13 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/chromedp/cdproto v0.0.0-20240810084448-b931b754e476
 	github.com/chromedp/chromedp v0.10.0
+	github.com/cogentcore/yaegi v0.0.0-20240724064145-e32a03faad56
 	github.com/cosmos72/gomacro v0.0.0-20240506194242-2ff796e3da10
 	github.com/disintegration/imaging v1.6.2
 	github.com/domodwyer/mailyak/v3 v3.6.2
 	github.com/dop251/goja v0.0.0-20241009100908-5f46f2705ca3
 	github.com/dop251/goja_nodejs v0.0.0-20240728170619-29b559befffc
+	github.com/evanphx/json-patch/v5 v5.9.0
 	github.com/evanw/esbuild v0.23.0
 	github.com/fatih/color v1.17.0
 	github.com/fatih/structtag v1.2.0
@@ -92,9 +94,9 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0
+	github.com/stripe/stripe-go/v80 v80.2.0
 	github.com/tevino/abool v1.2.0
 	github.com/tidwall/gjson v1.17.3
-	github.com/traefik/yaegi v0.16.1
 	github.com/urfave/cli v1.22.10
 	github.com/urfave/cli/v2 v2.25.1
 	github.com/wasmerio/wasmer-go v1.0.4

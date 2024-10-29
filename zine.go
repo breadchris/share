@@ -11,8 +11,8 @@ import (
 	"slices"
 	"strings"
 
-	config2 "github.com/breadchris/share/config"
-	"github.com/breadchris/share/llm"
+	"github.com/breadchris/share/deps"
+	"github.com/sashabaranov/go-openai"
 
 	. "github.com/breadchris/share/html"
 	"github.com/chromedp/chromedp"
@@ -21,6 +21,7 @@ import (
 
 type ZineMaker struct {
 	zineID string
+	AI     *openai.Client
 }
 
 func (z *ZineMaker) SetupZineRoutes() {
@@ -54,11 +55,13 @@ func (z *ZineMaker) SetupZineRoutes() {
 	http.HandleFunc("/generate-image", z.GenerateImage)
 }
 
-func NewZineMaker() *ZineMaker {
+func NewZineMaker(d deps.Deps) *ZineMaker {
 	if _, err := os.Stat("./data/images"); os.IsNotExist(err) {
 		os.Mkdir("./data/images", 0755)
 	}
-	return &ZineMaker{}
+	return &ZineMaker{
+		AI: d.AI,
+	}
 }
 
 func ZineIndex(sessionID string) *Node {
@@ -208,13 +211,14 @@ func loadPanelData(zineId string) map[string]PanelData {
 
 func (z *ZineMaker) GenerateImage(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	prompt := r.FormValue("content")
-	imageName, _ := llm.NewOpenAIService(config2.New()).GenerateImage(r.Context(), prompt)
+	_ = r.FormValue("content")
+	// TODO breadchris fix
+	//imageName, _ := z.AI.GenerateImage(r.Context(), prompt)
 	panelId := r.Header.Get("Hx-Target")
 	panelData := PanelData{
-		PanelID:   panelId,
-		Content:   "",
-		ImagePath: "/data/images/" + imageName,
+		PanelID: panelId,
+		Content: "",
+		//ImagePath: "/data/images/" + imageName,
 	}
 
 	image := createPanel(panelData, panelId)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/config"
 	"github.com/sashabaranov/go-openai"
 	"testing"
 )
@@ -78,7 +79,7 @@ func TestRunConversation(t *testing.T) {
 
 	messages := []openai.ChatCompletionMessage{message}
 
-	cfg := LoadConfig()
+	cfg := config.New()
 	client := openai.NewClient(cfg.OpenAIKey)
 	resp, err := client.CreateChatCompletion(
 		context.Background(),

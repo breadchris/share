@@ -11,7 +11,7 @@ type Document struct {
 	script  *v8.UnboundScript
 }
 
-//go:embed dist/bundle.js
+//go:embed dist/entry.js
 var source string
 
 var isolate *v8.Isolate

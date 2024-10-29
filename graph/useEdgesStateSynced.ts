@@ -1,42 +1,63 @@
-// useEdgesStateSynced.ts
-import { useState, useEffect } from 'react';
-import * as Y from 'yjs';
-import { ydoc } from './ydoc';
-import {Edge, OnEdgesChange} from '@xyflow/react';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  Edge,
+  applyEdgeChanges,
+  OnEdgesChange,
+  OnConnect,
+  Connection,
+  EdgeChange,
+  EdgeAddChange,
+    EdgeReplaceChange,
+  EdgeRemoveChange,
+} from '@xyflow/react';
 
-const edgesMap = ydoc.getMap<Edge>('edges');
+import ydoc from './ydoc';
 
-export const useEdgesStateSynced = () => {
-    const [edges, setEdges] = useState<Edge[]>([]);
+// Please see the comments in useNodesStateSynced.ts.
+// This is the same thing but for edges.
+export const edgesMap = ydoc.getMap<Edge>('edges');
 
-    useEffect(() => {
-        // Initialize local state from the Yjs map
-        setEdges(Array.from(edgesMap.values()));
+const isEdgeAddChange = (change: EdgeChange): change is EdgeAddChange => change.type === 'add';
+const isEdgeResetChange = (change: EdgeChange): change is EdgeReplaceChange => change.type === 'replace';
+const isEdgeRemoveChange = (change: EdgeChange): change is EdgeRemoveChange => change.type === 'remove';
 
-        // Observer function to sync local state with the Yjs map
-        const observer = () => {
-            setEdges(Array.from(edgesMap.values()));
-        };
+function useNodesStateSynced(): [Edge[], OnEdgesChange, OnConnect] {
+  const [edges, setEdges] = useState<Edge[]>([]);
 
-        edgesMap.observe(observer);
+  const onEdgesChange: OnEdgesChange = useCallback((changes) => {
+    const currentEdges = Array.from(edgesMap.values()).filter((e) => e);
+    const nextEdges = applyEdgeChanges(changes, currentEdges);
+    changes.forEach((change: EdgeChange) => {
+      if (isEdgeRemoveChange(change)) {
+        edgesMap.delete(change.id);
+      } else if (!isEdgeAddChange(change) && !isEdgeResetChange(change)) {
+        edgesMap.set(change.id, nextEdges.find((n) => n.id === change.id) as Edge);
+      }
+    });
+  }, []);
 
-        // Cleanup observer on unmount
-        return () => {
-            edgesMap.unobserve(observer);
-        };
-    }, []);
+  const onConnect = useCallback((params: Connection | Edge) => {
+    const { source, sourceHandle, target, targetHandle } = params;
+    const id = `edge-${source}${sourceHandle || ''}-${target}${targetHandle || ''}`;
 
-    // Custom handler for edge changes
-    const onEdgesChange: OnEdgesChange = (changes) => {
-        changes.forEach((change) => {
-            const { id } = change.item;
-            if (change.type === 'remove') {
-                edgesMap.delete(id);
-            } else {
-                edgesMap.set(id, change.item);
-            }
-        });
+    edgesMap.set(id, {
+      id,
+      ...params,
+    } as Edge);
+  }, []);
+
+  useEffect(() => {
+    const observer = () => {
+      setEdges(Array.from(edgesMap.values()));
     };
 
-    return { edges, onEdgesChange, setEdges };
-};
+    setEdges(Array.from(edgesMap.values()));
+    edgesMap.observe(observer);
+
+    return () => edgesMap.unobserve(observer);
+  }, [setEdges]);
+
+  return [edges, onEdgesChange, onConnect];
+}
+
+export default useNodesStateSynced;

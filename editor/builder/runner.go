@@ -4,8 +4,6 @@ import (
 	"os/exec"
 )
 
-//go:generate mockgen -destination=mock_runner.go -package=builder github.com/breadchris/share/editor/builder CommandRunner
-
 // CommandRunner is abstract command cmdRunner.
 type CommandRunner interface {
 	RunCommand(cmd *exec.Cmd) error

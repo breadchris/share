@@ -1,44 +1,64 @@
-import { useState, useEffect } from 'react';
-import { ydoc } from './ydoc';
-import {OnNodesChange, Node} from "@xyflow/react";
+import { useCallback, useEffect, useState } from 'react';
+import {
+  applyNodeChanges,
+  getConnectedEdges,
+  Node,
+  NodeAddChange,
+  NodeChange, NodeReplaceChange,
+  OnNodesChange,
+} from '@xyflow/react';
 
-const nodesMap = ydoc.getMap<Node>('nodes');
+import ydoc from './ydoc';
+import { edgesMap } from './useEdgesStateSynced';
 
-export const useNodesStateSynced = () => {
-    const [nodes, setNodes] = useState<Node[]>([{
-        id: '1',
-        position: { x: 0, y: 0 },
-        data: { label: '1' }
-    }]);
+// We are using nodesMap as the one source of truth for the nodes.
+// This means that we are doing all changes to the nodes in the map object.
+// Whenever the map changes, we update the nodes state.
+export const nodesMap = ydoc.getMap<Node>('nodes');
 
-    useEffect(() => {
-        setNodes(Array.from(nodesMap.values()));
+const isNodeAddChange = (change: NodeChange): change is NodeAddChange => change.type === 'add';
+const isNodeResetChange = (change: NodeChange): change is NodeReplaceChange => change.type === 'replace';
 
-        const observer = () => {
-            setNodes(Array.from(nodesMap.values()));
-        };
+function useNodesStateSynced(): [Node[], OnNodesChange] {
+  const [nodes, setNodes] = useState<Node[]>([]);
 
-        nodesMap.observe(observer);
+  // The onNodesChange callback updates nodesMap.
+  // When the changes are applied to the map, the observer will be triggered and updates the nodes state.
+  const onNodesChanges: OnNodesChange = useCallback((changes) => {
+    const nodes = Array.from(nodesMap.values());
 
-        return () => {
-            nodesMap.unobserve(observer);
-        };
-    }, []);
+    const nextNodes = applyNodeChanges(changes, nodes);
+    changes.forEach((change: NodeChange) => {
+      if (!isNodeAddChange(change) && !isNodeResetChange(change)) {
+        const node = nextNodes.find((n) => n.id === change.id);
 
-    // Custom handler for node changes
-    const onNodesChange: OnNodesChange = (changes) => {
-        changes.forEach((change) => {
-            console.log(change)
-            const { id } = change.id;
-            if (change.type === 'remove') {
-                nodesMap.delete(id);
-            } else if (change.type === 'dimensions') {
-                const node = nodesMap.get(id);
-            } else {
-                nodesMap.set(id, change.item);
-            }
-        });
+        if (node && change.type !== 'remove') {
+          nodesMap.set(change.id, node);
+        } else if (change.type === 'remove') {
+          const deletedNode = nodesMap.get(change.id);
+          nodesMap.delete(change.id);
+          // when a node is removed, we also need to remove the connected edges
+          const edges = Array.from(edgesMap.values()).map((e) => e);
+          const connectedEdges = getConnectedEdges(deletedNode ? [deletedNode] : [], edges);
+          connectedEdges.forEach((edge) => edgesMap.delete(edge.id));
+        }
+      }
+    });
+  }, []);
+
+  // here we are observing the nodesMap and updating the nodes state whenever the map changes.
+  useEffect(() => {
+    const observer = () => {
+      setNodes(Array.from(nodesMap.values()));
     };
 
-    return { nodes, onNodesChange, setNodes };
-};
+    setNodes(Array.from(nodesMap.values()));
+    nodesMap.observe(observer);
+
+    return () => nodesMap.unobserve(observer);
+  }, [setNodes]);
+
+  return [nodes.filter((n) => n), onNodesChanges];
+}
+
+export default useNodesStateSynced;

@@ -15,7 +15,6 @@ import * as Y from 'yjs';
 import {WebsocketProvider} from "y-websocket";
 
 export const doc = new Y.Doc();
-export const provider = new WebsocketProvider('ws://localhost:1234', 'your-room-name', doc);
 
 import {
     Block,
@@ -48,14 +47,21 @@ const schema = BlockNoteSchema.create({
     }
 });
 
-export const Editor = () => {
+export const Editor = ({ props }) => {
     const abortControllerRef = useRef<AbortController|undefined>(undefined);
+    const providerRef = useRef<WebsocketProvider|undefined>(undefined);
 
     // TODO breadchris this will become problematic with multiple forms on the page, need provider
     useEffect(() => {
+        if (props?.provider_url) {
+            providerRef.current = new WebsocketProvider(props.provider_url, props.room, doc);
+        }
         return () => {
             if (abortControllerRef.current) {
                 abortControllerRef.current.abort();
+            }
+            if (providerRef.current) {
+                providerRef.current.disconnect();
             }
         };
     }, []);
@@ -194,9 +200,10 @@ export const Editor = () => {
     // We use useMemo + createBlockNoteEditor instead of useCreateBlockNote so we
     // can delay the creation of the editor until the initial content is loaded.
     const editor = useMemo(() => {
-        if (initialContent === "loading") {
+        if (initialContent === "loading" || (props?.provider_url && providerRef.current === undefined)) {
             return undefined;
         }
+
         // TODO breadchris when content is loaded, set the form inputs
         return BlockNoteEditor.create({
             initialContent,
@@ -211,10 +218,10 @@ export const Editor = () => {
                 return await ret.text();
             },
             collaboration: {
-                provider,
+                provider: providerRef.current,
                 fragment: doc.getXmlFragment("blocknote"),
                 user: {
-                    name: "chris",
+                    name: props?.username || "Anonymous",
                     color: "blue",
                 }
             },
@@ -223,7 +230,7 @@ export const Editor = () => {
     }, [initialContent]);
 
     if (editor === undefined) {
-        return "Loading content...";
+        return <div>Loading...</div>;
     }
 
     // Renders the editor instance.
@@ -298,8 +305,9 @@ import {contentService} from "./ContentService";
 const e = document.getElementById('editor');
 if (e) {
     const r = createRoot(e);
+    const props = e.getAttribute('props');
     r.render((
-        <Editor />
+        <Editor props={JSON.parse(props)} />
     ));
 }
 

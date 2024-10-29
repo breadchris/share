@@ -3,8 +3,8 @@ package breadchris
 import (
 	"encoding/json"
 	"github.com/breadchris/share/symbol"
-	"github.com/traefik/yaegi/interp"
-	"github.com/traefik/yaegi/stdlib"
+	"github.com/cogentcore/yaegi/interp"
+	"github.com/cogentcore/yaegi/stdlib"
 	"os"
 	"path/filepath"
 	"testing"

@@ -210,7 +210,7 @@ const CodeEditor = ({ fileName, darkMode, func, vimModeEnabled, isServerEnvironm
 
         new LeapMonacoBinding(leapClient, editor, file);
 
-        leapClient.connect('ws://' + window.location.host + '/leaps/ws?username=' + id.current);
+        leapClient.connect('wss://' + window.location.host + '/leaps/ws?username=' + id.current);
 
         client.current = leapClient;
 

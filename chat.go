@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/breadchris/share/llm"
+	"github.com/breadchris/share/deps"
 	"github.com/samber/lo"
 	"io"
 	"net/http"
@@ -38,22 +38,18 @@ func init() {
 }
 
 type Chat struct {
-	s *session.SessionManager
-	l *llm.OpenAIService
+	s      *session.SessionManager
+	Client *openai.Client
 }
 
-func NewChat(
-	s *session.SessionManager,
-	l *llm.OpenAIService,
-) *Chat {
-	return &Chat{
-		s: s,
-		l: l,
-	}
-}
-
-func (s *Chat) NewMux() *http.ServeMux {
+func NewChat(d deps.Deps) *http.ServeMux {
 	m := http.NewServeMux()
+
+	s := &Chat{
+		s:      d.Session,
+		Client: d.AI,
+	}
+
 	m.HandleFunc("/", s.chatHandler)
 	m.HandleFunc("/send", s.sendHandler)
 	m.HandleFunc("/sse", sseHandler)
@@ -175,7 +171,7 @@ func (s *Chat) handleAIResponse(ctx context.Context, userInput, parentNodeID str
 			{Role: "user", Content: userInput},
 		},
 	}
-	resp, err := s.l.Client.CreateChatCompletionStream(ctx, req)
+	resp, err := s.Client.CreateChatCompletionStream(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -393,7 +389,7 @@ func RenderMsg(m FlattenedGraph) *Node {
 		),
 	)
 
-	btn := Button(Class("btn btn-ghost p-2"), Attr("onclick", "my_modal_1.showModal()"), gear)
+	_ = Button(Class("btn btn-ghost p-2"), Attr("onclick", "my_modal_1.showModal()"), gear)
 	_ = Dialog(Id("my_modal_1"), Class("btn btn-ghost p-px items-end"),
 		Div(Class("modal-box"),
 			H3(Class("text-lg font-bold"), T("Hello!")),
@@ -405,10 +401,10 @@ func RenderMsg(m FlattenedGraph) *Node {
 			),
 		),
 	)
-	return Div(Class("chat chat-start mb-4"),
-		btn,
+	return Div(Class("mb-4"),
+		//btn,
 		//modal,
 		A(Href("/chat?id="+m.Node.ID), Class("font-semibold"), T(m.Node.Author+":")),
-		Span(T(m.Node.Content)),
+		P(T(m.Node.Content)),
 	)
 }

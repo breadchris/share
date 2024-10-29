@@ -10,8 +10,10 @@ import (
 func init() {
 	Symbols["github.com/breadchris/share/llm/llm"] = map[string]reflect.Value{
 		// function, constant and variable definitions
+		"ChatGPTMsg":       reflect.ValueOf(llm.ChatGPTMsg),
+		"NewChatGPT":       reflect.ValueOf(llm.NewChatGPT),
 		"NewOpenAIService": reflect.ValueOf(llm.NewOpenAIService),
-		"SetupChatgpt":     reflect.ValueOf(llm.SetupChatgpt),
+		"Upgrader":         reflect.ValueOf(&llm.Upgrader).Elem(),
 
 		// type definitions
 		"ChatMessage":   reflect.ValueOf((*llm.ChatMessage)(nil)),

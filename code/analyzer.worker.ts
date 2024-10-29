@@ -1,7 +1,7 @@
 import './lib/go/wasm_exec.js'
 import { instantiateStreaming } from './lib/go'
 
-export const getWasmUrl = (name) => `/wasm/${name}@v1.wasm`
+export const getWasmUrl = (name) => `/dist/${name}@v1.wasm`
 
 declare const self: DedicatedWorkerGlobalScope
 

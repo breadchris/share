@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"html/template"
 	"net/http"
 	"runtime"
 	"strings"
@@ -195,6 +196,7 @@ func (s *Node) RenderPageCtx(ctx context.Context, w http.ResponseWriter, r *http
 	}
 }
 
+// TODO breadchris rewrite this using io.Writer
 func (s *Node) RenderCtx(ctx context.Context) string {
 	c := ""
 	if s.text != "" {
@@ -230,6 +232,7 @@ func (s *Node) RenderCtx(ctx context.Context) string {
 	a := ""
 	var i int
 	for k, v := range attrs {
+		v = template.HTMLEscapeString(v)
 		if i == len(attrs)-1 {
 			a += fmt.Sprintf("%s=\"%s\"", k, v)
 			break
@@ -314,8 +317,10 @@ func (s *Node) RenderGoCode(fset *token.FileSet) *ast.CallExpr {
 		for _, st := range strings.Split(k, "-") {
 			cased = append(cased, strings.Title(st))
 		}
+		fun := strings.Join(cased, "")
+		fun = strings.ReplaceAll(fun, "@", "")
 		call.Args = append(call.Args, &ast.CallExpr{
-			Fun: ast.NewIdent(strings.Join(cased, "")),
+			Fun: ast.NewIdent(fun),
 			Args: []ast.Expr{
 				&ast.BasicLit{
 					Kind:  token.STRING,
@@ -338,6 +343,10 @@ func Text(s string) *Node {
 			p.text = s
 		},
 	}
+}
+
+func T(s string) *Node {
+	return Text(s)
 }
 
 func NewNode(s string, o []*Node) *Node {
@@ -462,6 +471,18 @@ func Class(s string) *Node {
 			}
 		},
 	}
+}
+
+func OnClick(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["onclick"] = s
+		},
+	}
+}
+
+func Pre(o ...*Node) *Node {
+	return NewNode("pre", o)
 }
 
 func Alt(s string) *Node {
@@ -982,10 +1003,6 @@ func Value(s string) *Node {
 	}
 }
 
-var (
-	T = Text
-)
-
 func HxPost(s string) *Node {
 	return &Node{
 		transform: func(p *Node) {
@@ -1051,4 +1068,24 @@ func HxSwap(s string) *Node {
 			p.Attrs["hx-swap"] = s
 		},
 	}
+}
+
+func AriaOrientation(s string) *Node {
+	return NewAttrNode("aria-orientation", s)
+}
+
+func AriaLabelledby(s string) *Node {
+	return NewAttrNode("aria-labelledby", s)
+}
+
+func AriaHaspopup(s string) *Node {
+	return NewAttrNode("aria-haspopup", s)
+}
+
+func AriaExpanded(s string) *Node {
+	return NewAttrNode("aria-expanded", s)
+}
+
+func Tabindex(s string) *Node {
+	return NewAttrNode("tabindex", s)
 }

@@ -15,29 +15,30 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"reflect"
 	"strconv"
 	"strings"
 
 	"github.com/breadchris/share/breadchris"
 	"github.com/breadchris/share/code"
 	config2 "github.com/breadchris/share/config"
+	. "github.com/breadchris/share/db"
 	deps2 "github.com/breadchris/share/deps"
 	"github.com/breadchris/share/editor/config"
 	"github.com/breadchris/share/editor/leaps"
 	"github.com/breadchris/share/editor/playground"
+	"github.com/breadchris/share/graph"
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/llm"
 	"github.com/breadchris/share/session"
-	"github.com/breadchris/share/symbol"
+	"github.com/breadchris/share/wasmcode"
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/gomarkdown/markdown"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/protoflow-labs/protoflow/pkg/util/reload"
 	ignore "github.com/sabhiram/go-gitignore"
-	"github.com/traefik/yaegi/interp"
-	"github.com/traefik/yaegi/stdlib"
+	"github.com/samber/lo"
+	"github.com/sashabaranov/go-openai"
 	"github.com/urfave/cli/v2"
 )
 
@@ -67,7 +68,6 @@ func startServer(useTLS bool, port int) {
 	}
 	e := NewSMTPEmail(&appConfig)
 	a := NewAuth(s, e, appConfig)
-	z := NewZineMaker()
 
 	p := func(p string, s *http.ServeMux) {
 		http.Handle(p+"/", http.StripPrefix(p, s))
@@ -78,40 +78,46 @@ func startServer(useTLS bool, port int) {
 	setupCursor()
 	setupRecipe()
 	fileUpload()
-	setupSpotify(appConfig)
-	SetupCalendar()
+	go scheduleScraping()
+	// ScrapeEverOut(0, 10)
 
 	db, err := NewDBAny("data/testdb/")
 	if err != nil {
 		log.Fatalf("Failed to create db: %v", err)
 	}
 
-	oai := llm.NewOpenAIService(appConfig)
-	c := NewChat(s, oai)
-	p("/llm", llm.SetupChatgpt(oai))
-	p("/chat", c.NewMux())
-
+	oai := openai.NewClient(appConfig.OpenAIKey)
 	lm := leaps.RegisterRoutes(leaps.NewLogger())
+	docs := NewSqliteDocumentStore("data/docs.db")
 	deps := deps2.Deps{
 		DB:      db,
+		Docs:    docs,
 		Session: s,
 		Leaps:   lm,
 		AI:      oai,
+		Config:  appConfig,
 	}
 
 	interpreted := func(f func(d deps2.Deps) *http.ServeMux) *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			code.DynamicHTTPMux(f)(deps).ServeHTTP(w, r)
+			//f(deps).ServeHTTP(w, r)
 		})
 		return m
 	}
 
+	z := NewZineMaker(deps)
+
+	p("/llm", interpreted(llm.NewChatGPT))
+	p("/mood", interpreted(NewMood))
+	p("/chat", interpreted(NewChat))
+	p("/spotify", setupSpotify(deps))
 	p("/leaps", lm.Mux)
 	p("/vote", interpreted(NewVote))
-	p("/breadchris", breadchris.New("/breadchris"))
-	p("/reload", setupReload([]string{"./scratch.go", "./vote.go"}))
-	p("/code", func() *http.ServeMux {
+	p("/breadchris", interpreted(breadchris.New))
+	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./calendar.go", "./everout.go"}))
+	p("/filecode", func() *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			_, err := s.GetUserID(r.Context())
@@ -122,8 +128,15 @@ func startServer(useTLS bool, port int) {
 		})
 		return m
 	}())
+	p("/code", interpreted(wasmcode.New))
+
 	p("/extension", NewExtension())
 	p("/git", interpreted(NewGit))
+	p("/music", interpreted(NewMusic))
+	p("/calendar", interpreted(NewCalendar))
+	p("/stripe", interpreted(NewStripe))
+	p("/everout", interpreted(NewEverout))
+	p("/graph", interpreted(graph.New))
 
 	go func() {
 		paths := []string{
@@ -143,7 +156,6 @@ func startServer(useTLS bool, port int) {
 					".eot":   api.LoaderFile,
 					".css":   api.LoaderCSS,
 				},
-				//Outfile:   "graph.js",
 				Outdir:    "breadchris/static",
 				Bundle:    true,
 				Write:     true,
@@ -167,13 +179,29 @@ func startServer(useTLS bool, port int) {
 		}
 	}()
 	go func() {
-		paths := []string{
+		entrypoints := []string{
 			"./graph/graph.tsx",
 			"./code/monaco.tsx",
+			"./music.tsx",
+			"./wasmcode/monaco.tsx",
+			"./wasmcode/analyzer/analyzer.worker.ts",
+		}
+		paths := make([]string, len(entrypoints))
+		copy(paths, entrypoints)
+		if err := filepath.Walk("./wasmcode", func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if filepath.Ext(path) == ".ts" || filepath.Ext(path) == ".tsx" {
+				paths = append(paths, path)
+			}
+			return nil
+		}); err != nil {
+			log.Fatalf("Failed to walk wasmcode: %v", err)
 		}
 		if err := WatchFilesAndFolders(paths, func(s string) {
 			result := api.Build(api.BuildOptions{
-				EntryPoints: paths,
+				EntryPoints: entrypoints,
 				Loader: map[string]api.Loader{
 					".js":    api.LoaderJS,
 					".jsx":   api.LoaderJSX,
@@ -185,8 +213,8 @@ func startServer(useTLS bool, port int) {
 					".eot":   api.LoaderFile,
 					".css":   api.LoaderCSS,
 				},
-				//Outfile:   "graph.js",
 				Outdir:    "dist/",
+				Format:    api.FormatESModule,
 				Bundle:    true,
 				Write:     true,
 				Sourcemap: api.SourceMapInline,
@@ -211,62 +239,14 @@ func startServer(useTLS bool, port int) {
 
 	z.SetupZineRoutes()
 
-	getScriptFunc := func(path, name string) (reflect.Value, error) {
-		i := interp.New(interp.Options{
-			GoPath: "/dev/null",
-		})
-
-		i.Use(stdlib.Symbols)
-		i.Use(symbol.Symbols)
-
-		if _, err := i.EvalPath(path); err != nil {
-			return reflect.Value{}, err
-		}
-
-		v, err := i.Eval(name)
-		if err != nil {
-			return reflect.Value{}, err
-		}
-		return v, nil
-	}
-
-	http.HandleFunc("/scratch", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "POST" {
-			db.Set(uuid.NewString(), map[string]any{
-				"ID":    0,
-				"Value": r.FormValue("value"),
-			})
-
-			v, err := getScriptFunc("./scratch.go", "main.RenderList")
-			if err != nil {
-				http.Error(w, "Failed to get script func", http.StatusInternalServerError)
-				return
-			}
-			rf := v.Interface().(func(db *DBAny) *Node)
-			n := rf(db)
-			n.RenderPage(w, r)
-			return
-		}
-
-		v, err := getScriptFunc("./scratch.go", "main.RenderComponents")
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Failed to get script func: %v", err), http.StatusInternalServerError)
-			return
-		}
-
-		rf := v.Interface().(func(db *DBAny) *Node)
-		n := rf(db)
-		n.RenderPage(w, r)
-	})
-
 	http.HandleFunc("/register", a.handleRegister)
+	http.HandleFunc("/account", a.accountHandler)
 	http.HandleFunc("/login", a.handleLogin)
 	http.HandleFunc("/invite", a.handleInvite)
 	http.HandleFunc("/auth/google", a.startGoogleAuth)
 	http.HandleFunc("/auth/google/callback", a.handleGoogleCallback)
 	http.HandleFunc("/blog", a.blogHandler)
 	http.HandleFunc("/blog/react", a.reactHandler)
-	http.HandleFunc("/account", a.accountHandler)
 	http.HandleFunc("/files", fileHandler)
 	http.HandleFunc("/modify", modifyHandler)
 
@@ -295,9 +275,7 @@ func startServer(useTLS bool, port int) {
 		}
 	} else {
 		log.Printf("Starting HTTP server on port: %d", port)
-		//serve on network
-		http.ListenAndServe(fmt.Sprintf(":%d", port), h)
-		// http.ListenAndServe(fmt.Sprintf("localhost:%d", port), h)
+		http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), h)
 	}
 }
 
@@ -731,21 +709,20 @@ func recipeHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, nil)
 }
 
+type DirFile struct {
+	Name  string
+	IsDir bool
+}
+
 func fileServe(r *http.Request, w http.ResponseWriter, baseDir string) {
-	//path := filepath.Join(baseDir, r.URL.Path)
 	path := r.URL.Path
-	// remove the leading slash
 	path = path[1:]
 
 	fileInfo, err := os.ReadDir(path)
 	if err == nil {
-		type File struct {
-			Name  string
-			IsDir bool
-		}
-		var fileNames []File
+		var fileNames []DirFile
 		for _, file := range fileInfo {
-			fileNames = append(fileNames, File{file.Name(), file.IsDir()})
+			fileNames = append(fileNames, DirFile{file.Name(), file.IsDir()})
 		}
 
 		indexPath := filepath.Join(path, "index.html")
@@ -754,68 +731,43 @@ func fileServe(r *http.Request, w http.ResponseWriter, baseDir string) {
 			return
 		}
 
-		indexTemplate, err := template.ParseFiles("dir.html")
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		err = indexTemplate.Execute(w, map[string]any{
-			"files": fileNames,
-		})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		return
-	}
-
-	ext := filepath.Ext(path)
-	if ext == ".html" {
-		tmpl, err := template.ParseFiles(path)
-		if err == nil {
-			tmpl.Execute(w, nil)
-			return
-		}
-	} else if ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".gif" {
-		http.ServeFile(w, r, path)
-		return
-	} else if ext == ".json" {
-		data := map[string]any{
-			"home": "/data/recipes/",
-		}
-
-		jsonFile, err := os.Open(path)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer jsonFile.Close()
-
-		byteValue, err := ioutil.ReadAll(jsonFile)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if err = json.Unmarshal(byteValue, &data); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		indexTemplate, err := template.ParseFiles("recipe.html")
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		err = indexTemplate.Execute(w, data)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		FileListPage(fileNames).RenderPage(w, r)
 		return
 	}
 	http.ServeFile(w, r, path)
+}
+
+func FileListPage(files []DirFile) *Node {
+	return Html(
+		Attr("lang", "en"),
+		Head(
+			Meta(Attr("charset", "UTF-8")),
+			Meta(Attr("name", "viewport"), Attr("content", "width=device-width, initial-scale=1.0")),
+			Title(T("File List")),
+			Link(
+				Href("https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"),
+				Attr("rel", "stylesheet"),
+			),
+		),
+		Body(Class("bg-gray-100"),
+			Div(Class("container mx-auto p-4"),
+				H1(Class("text-2xl font-bold mb-4"), T("File List")),
+				Ul(Class("list-disc list-inside bg-white p-4 rounded shadow"),
+					Ch(
+						lo.Map(files, func(f DirFile, i int) *Node {
+							href := f.Name
+							if f.IsDir {
+								href += "/"
+							}
+							return Li(Class("py-1"),
+								A(Href(href), T(f.Name)),
+							)
+						}),
+					),
+				),
+			),
+		),
+	)
 }
 
 func NewTLSConfig(

@@ -453,6 +453,4 @@ type _github_com_sashabaranov_go_openai_Response struct {
 	WSetHeader func(a0 http.Header)
 }
 
-func (W _github_com_sashabaranov_go_openai_Response) SetHeader(a0 http.Header) {
-	W.WSetHeader(a0)
-}
+func (W _github_com_sashabaranov_go_openai_Response) SetHeader(a0 http.Header) { W.WSetHeader(a0) }

@@ -4,10 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/breadchris/share/config"
+	"github.com/breadchris/share/deps"
 	"github.com/gorilla/websocket"
 	"github.com/samber/lo"
-	"html/template"
 	"io"
 	"log"
 	"net/http"
@@ -21,7 +20,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
-var upgrader = websocket.Upgrader{
+var Upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
@@ -42,13 +41,10 @@ type InferRequest struct {
 	Prompt string `json:"prompt"`
 }
 
-var (
-	tmmsg *template.Template
-)
-
-func SetupChatgpt(s *OpenAIService) *http.ServeMux {
+func NewChatGPT(d deps.Deps) *http.ServeMux {
 	m := http.NewServeMux()
-	tmmsg = template.Must(template.ParseFiles("chatgptmsg.html"))
+
+	s := NewOpenAIService(d)
 
 	m.HandleFunc("/", s.homeHandler)
 	m.HandleFunc("/{id}", s.homeHandler)
@@ -62,10 +58,9 @@ type OpenAIService struct {
 	Client *openai.Client
 }
 
-func NewOpenAIService(cfg config.AppConfig) *OpenAIService {
-	c := openai.NewClient(cfg.OpenAIKey)
+func NewOpenAIService(d deps.Deps) *OpenAIService {
 	return &OpenAIService{
-		Client: c,
+		Client: d.AI,
 	}
 }
 
@@ -74,16 +69,21 @@ func (s *OpenAIService) homeHandler(w http.ResponseWriter, r *http.Request) {
 	var cs ChatState
 	if i == "" {
 		chats := loadChats()
-		Ul(
-			Ch(lo.Map(chats, func(c ChatState, i int) *Node {
-				return Li(A(Href("/llm/"+c.ID), Class("block p-4 border-b"), T(c.Name)))
-			})),
+		DefaultLayout(
+			Div(
+				Ul(
+					Ch(lo.Map(chats, func(c ChatState, i int) *Node {
+						return Li(A(Href("/llm/"+c.ID), Class("block p-4 border-b"), T(c.Name)))
+					})),
+				),
+				A(Class("btn"), Href("/llm/"+uuid.NewString()), T("new")),
+			),
 		).RenderPage(w, r)
 		return
 	}
 
 	cs = loadChatState(i)
-	Div(
+	DefaultLayout(
 		Ch(lo.Map(cs.Messages, func(m ChatMessage, i int) *Node {
 			b := "mb-2"
 			bs := "inline-block px-4 py-2 rounded "
@@ -99,7 +99,7 @@ func (s *OpenAIService) homeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *OpenAIService) streamHandler(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
+	conn, err := Upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("Error upgrading to websocket:", err)
 		return
@@ -138,6 +138,22 @@ func (s *OpenAIService) streamHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+}
+
+func ChatGPTMsg(chatState ChatState) *Node {
+	d := Div()
+	for _, m := range chatState.Messages {
+		b := "mb-2"
+		bs := "inline-block px-4 py-2 rounded "
+		d.Children = append(d.Children, Div(
+			If(m.Role == "user", Class("text-right "+b), Class("text-left "+b)),
+			Div(
+				If(m.Role == "user", Class(bs+"bg-blue"), Class(bs+"bg-gray")),
+				T(m.Content),
+			),
+		))
+	}
+	return d
 }
 
 func (s *OpenAIService) sendMessageHandler(w http.ResponseWriter, r *http.Request) {
@@ -179,19 +195,13 @@ func (s *OpenAIService) sendMessageHandler(w http.ResponseWriter, r *http.Reques
 	)
 	saveChatState(chatID, chatState)
 
-	err = tmmsg.Execute(w, chatState)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	ChatGPTMsg(chatState).RenderPage(w, r)
 }
 
 func (s *OpenAIService) chatgptHandler(w http.ResponseWriter, r *http.Request) {
 	chatID := filepath.Base(r.URL.Path)
 	chatState := loadChatState(chatID)
-	err := tmmsg.ExecuteTemplate(w, "chat-messages", chatState)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	ChatGPTMsg(chatState).RenderPage(w, r)
 }
 
 func loadChats() []ChatState {
@@ -224,7 +234,9 @@ func saveChat(chat ChatState) error {
 func loadChatState(chatID string) ChatState {
 	data, err := os.ReadFile(fmt.Sprintf("data/chatgpt/%s.json", chatID))
 	if err != nil {
-		return ChatState{}
+		return ChatState{
+			ID: chatID,
+		}
 	}
 	var state ChatState
 	json.Unmarshal(data, &state)
