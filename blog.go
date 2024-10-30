@@ -101,7 +101,7 @@ func RenderBlog(entries []Entry) string {
 					Div(Class("space-y-4"),
 						Ch(en),
 					),
-					Script(Src("/breadchris/static/editor.js")),
+					Script(Src("/breadchris/static/editor.js"), Type("module")),
 					Script(T("hljs.highlightAll();")),
 				),
 			),
