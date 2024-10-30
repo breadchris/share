@@ -151,37 +151,42 @@ func SetupCalendar() {
 	http.HandleFunc("/calendar/load_user_calendars", loadUserCalendars)
 	http.HandleFunc("/calendar/toggle_calendar", toggleCalendar)
 }
-func newCalendar(d deps.Deps) *http.ServeMux {
+func NewCalendar(d deps.Deps) *http.ServeMux {
+	fmt.Println("NewCalendar")
 	m := http.NewServeMux()
 	events := loadEvents()
-	m.HandleFunc("/calendar", func(w http.ResponseWriter, r *http.Request) {
+	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		DefaultLayout(
 			Div(
 				ReloadNode("calendar.go"),
-				CreateEveroutCalender(events),
+				CreateEveroutCalendar(events),
 			),
 		).RenderPage(w, r)
 	})
 	return m
 }
-func CreateEveroutCalender(events []EverOutEvent) *Node {
-	// convert the everout events to calendar events
-	calendarEvents := []CalendarEvent{}
-	for _, evt := range events {
-		dateParts := strings.Split(evt.Date, "/")
-		month, _ := strconv.Atoi(dateParts[0])
-		day, _ := strconv.Atoi(dateParts[1])
-		year, _ := strconv.Atoi(dateParts[2])
-		date := time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
-		calendarEvents = append(calendarEvents, CalendarEvent{
-			Name:        evt.Title,
-			Description: fmt.Sprintf("%s, %s", evt.Location, evt.Region),
-			Date:        date,
-		})
+func CreateEveroutCalendar(eventsByDate map[string][]EverOutEvent) *Node {
+	// Convert the EverOutEvents to CalendarEvents
+	var calendarEvents []CalendarEvent
+	for dateStr, events := range eventsByDate {
+		// Parse the date string into time.Time
+		eventDate, err := time.Parse("2006-01-02", dateStr)
+		if err != nil {
+			fmt.Printf("Invalid date format: %s\n", dateStr)
+			continue
+		}
+		for _, evt := range events {
+			calendarEvents = append(calendarEvents, CalendarEvent{
+				Name:        evt.Title,
+				Description: fmt.Sprintf("%s, %s", evt.Location, evt.Region),
+				Date:        eventDate,
+			})
+		}
 	}
 
-	return RenderCalendar(calendarEvents)	
+	return RenderCalendar(calendarEvents)
 }
+
 func RenderCalendar(events []CalendarEvent) *Node {
 	month := int(time.Now().Month())
 	year := time.Now().Year()
@@ -289,7 +294,7 @@ func RenderCalendar(events []CalendarEvent) *Node {
 	monthEvents := []*CalendarEvent{}
 	for _, evt := range events {
 		if evt.Date.Year() == year && int(evt.Date.Month()) == month {
-			monthEvents = append(monthEvents, evt)
+			monthEvents = append(monthEvents, &evt)
 		}
 	}
 	dataMutex.Unlock()
@@ -366,6 +371,7 @@ func RenderCalendar(events []CalendarEvent) *Node {
 
 	return page
 }
+
 // Serve the user dashboard
 func handleCalendar(w http.ResponseWriter, r *http.Request) {
 

@@ -78,7 +78,7 @@ func startServer(useTLS bool, port int) {
 	setupCursor()
 	setupRecipe()
 	fileUpload()
-	go scheduleScraping()
+	// go scheduleScraping()
 	// ScrapeEverOut(0, 10)
 
 	db, err := NewDBAny("data/testdb/")
