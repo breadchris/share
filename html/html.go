@@ -24,6 +24,7 @@ var (
 func DefaultLayout(n *Node) *Node {
 	return Html(
 		Head(
+			Meta(Charset("UTF-8")),
 			DaisyUI,
 			TailwindCSS,
 			HTMX,
@@ -200,7 +201,7 @@ func (s *Node) RenderPageCtx(ctx context.Context, w http.ResponseWriter, r *http
 func (s *Node) RenderCtx(ctx context.Context) string {
 	c := ""
 	if s.text != "" {
-		c += s.text
+		c += template.HTMLEscapeString(s.text)
 	}
 
 	if s.baseURL != "" {
@@ -219,9 +220,9 @@ func (s *Node) RenderCtx(ctx context.Context) string {
 	}
 
 	attrs := map[string]string{}
-	if s.locator != "" {
-		attrs["data-godom"] = s.locator
-	}
+	//if s.locator != "" {
+	//	attrs["data-godom"] = s.locator
+	//}
 	for k, v := range s.DynamicAttrs {
 		attrs[k] = v(ctx)
 	}

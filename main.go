@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/breadchris/share/graph"
+	"github.com/breadchris/share/paint"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -109,6 +110,8 @@ func startServer(useTLS bool, port int) {
 
 	z := NewZineMaker(deps)
 
+	p("/pain", interpreted(paint.New))
+	p("/notes", interpreted(NewNotes))
 	p("/llm", interpreted(llm.NewChatGPT))
 	p("/mood", interpreted(NewMood))
 	p("/chat", interpreted(NewChat))
