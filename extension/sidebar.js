@@ -7,6 +7,12 @@ document.getElementById('send-element').addEventListener('click', async () => {
             action: 'sendElement',
             element: html,
             name: name
+        }, (response) => {
+            if (response.ok) {
+                console.log('Element sent successfully!');
+            } else {
+                console.error('Failed to send element.');
+            }
         });
         return;
     }

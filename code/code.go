@@ -136,7 +136,7 @@ func New(d Deps) *http.ServeMux {
 	return mux
 }
 
-func DynamicHTTPMux(f func(d Deps) *http.ServeMux) func(Deps) *http.ServeMux {
+func DynamicHTTPMux(f func(d Deps) *http.ServeMux, files ...string) func(Deps) *http.ServeMux {
 	pc := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Entry()
 	fnp := runtime.FuncForPC(pc)
 	file, _ := fnp.FileLine(pc)
@@ -145,6 +145,8 @@ func DynamicHTTPMux(f func(d Deps) *http.ServeMux) func(Deps) *http.ServeMux {
 	// TODO breadchris fix packages
 	parts := strings.Split(function, "/")
 	if len(parts) > 1 {
+		file = "./" + filepath.Base(filepath.Dir(file))
+		//function = "main." + strings.Split(parts[len(parts)-1], ".")[1]
 		function = parts[len(parts)-1]
 	}
 
@@ -154,6 +156,14 @@ func DynamicHTTPMux(f func(d Deps) *http.ServeMux) func(Deps) *http.ServeMux {
 
 	i.Use(stdlib.Symbols)
 	i.Use(symbol.Symbols)
+
+	for _, fi := range files {
+		_, err := i.CompilePath(fi)
+		if err != nil {
+			slog.Warn("failed to eval path", "error", err)
+			return f
+		}
+	}
 
 	_, err := i.EvalPath(file)
 	if err != nil {

@@ -96,6 +96,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             body: JSON.stringify({ element, name })
         })
             .then(response => {
+                // send response to the content script
+                sendResponse({ ok: response.ok });
                 if (response.ok) {
                     console.log('Element sent successfully!');
                 } else {

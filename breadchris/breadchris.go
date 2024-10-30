@@ -258,7 +258,7 @@ func NewRoutes(d deps.Deps) []Route {
 						),
 					),
 					Div(Class("mt-4"), Id("preview")),
-					Script(Src("/static/editor.js")),
+					Script(Src("/static/editor.js"), Type("module")),
 				),
 			).RenderPageCtx(ctx, w, r)
 		}),

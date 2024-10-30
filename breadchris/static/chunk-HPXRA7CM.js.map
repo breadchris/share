@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../node_modules/ccount/index.js"],
+  "sourcesContent": ["/**\n * Count how often a character (or substring) is used in a string.\n *\n * @param {string} value\n *   Value to search in.\n * @param {string} character\n *   Character (or substring) to look for.\n * @return {number}\n *   Number of times `character` occurred in `value`.\n */\nexport function ccount(value, character) {\n  const source = String(value)\n\n  if (typeof character !== 'string') {\n    throw new TypeError('Expected character')\n  }\n\n  let count = 0\n  let index = source.indexOf(character)\n\n  while (index !== -1) {\n    count++\n    index = source.indexOf(character, index + character.length)\n  }\n\n  return count\n}\n"],
+  "mappings": "AAUO,SAASA,EAAOC,EAAOC,EAAW,CACvC,IAAMC,EAAS,OAAOF,CAAK,EAE3B,GAAI,OAAOC,GAAc,SACvB,MAAM,IAAI,UAAU,oBAAoB,EAG1C,IAAIE,EAAQ,EACRC,EAAQF,EAAO,QAAQD,CAAS,EAEpC,KAAOG,IAAU,IACfD,IACAC,EAAQF,EAAO,QAAQD,EAAWG,EAAQH,EAAU,MAAM,EAG5D,OAAOE,CACT",
+  "names": ["ccount", "value", "character", "source", "count", "index"]
+}

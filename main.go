@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/calendar"
 	"github.com/breadchris/share/graph"
 	"github.com/breadchris/share/paint"
 	"html/template"
@@ -99,10 +100,10 @@ func startServer(useTLS bool, port int) {
 		Config:  appConfig,
 	}
 
-	interpreted := func(f func(d deps2.Deps) *http.ServeMux) *http.ServeMux {
+	interpreted := func(f func(d deps2.Deps) *http.ServeMux, files ...string) *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			code.DynamicHTTPMux(f)(deps).ServeHTTP(w, r)
+			code.DynamicHTTPMux(f, files...)(deps).ServeHTTP(w, r)
 			//f(deps).ServeHTTP(w, r)
 		})
 		return m
@@ -110,7 +111,7 @@ func startServer(useTLS bool, port int) {
 
 	z := NewZineMaker(deps)
 
-	p("/pain", interpreted(paint.New))
+	p("/paint", interpreted(paint.New))
 	p("/notes", interpreted(NewNotes))
 	p("/llm", interpreted(llm.NewChatGPT))
 	p("/mood", interpreted(NewMood))
@@ -119,7 +120,7 @@ func startServer(useTLS bool, port int) {
 	p("/leaps", lm.Mux)
 	p("/vote", interpreted(NewVote))
 	p("/breadchris", interpreted(breadchris.New))
-	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./calendar.go", "./everout.go"}))
+	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./everout.go"}))
 	p("/filecode", func() *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -136,7 +137,7 @@ func startServer(useTLS bool, port int) {
 	p("/extension", NewExtension())
 	p("/git", interpreted(NewGit))
 	p("/music", interpreted(NewMusic))
-	p("/calendar", interpreted(NewCalendar))
+	p("/calendar", interpreted(calendar.NewCalendar))
 	p("/stripe", interpreted(NewStripe))
 	p("/everout", interpreted(NewEverout))
 	p("/graph", interpreted(graph.New))
@@ -159,10 +160,16 @@ func startServer(useTLS bool, port int) {
 					".eot":   api.LoaderFile,
 					".css":   api.LoaderCSS,
 				},
-				Outdir:    "breadchris/static",
-				Bundle:    true,
+				Outdir:            "breadchris/static",
+				Bundle:            true,
+				TreeShaking:       api.TreeShakingTrue,
+				MinifyWhitespace:  true,
+				MinifyIdentifiers: true,
+				MinifySyntax:      true,
+				//Splitting:         true,
+				Format:    api.FormatESModule,
 				Write:     true,
-				Sourcemap: api.SourceMapInline,
+				Sourcemap: api.SourceMapExternal,
 				LogLevel:  api.LogLevelInfo,
 			})
 
@@ -216,12 +223,16 @@ func startServer(useTLS bool, port int) {
 					".eot":   api.LoaderFile,
 					".css":   api.LoaderCSS,
 				},
-				Outdir:    "dist/",
-				Format:    api.FormatESModule,
-				Bundle:    true,
-				Write:     true,
-				Sourcemap: api.SourceMapInline,
-				LogLevel:  api.LogLevelInfo,
+				Outdir:            "dist/",
+				Format:            api.FormatESModule,
+				Bundle:            true,
+				Write:             true,
+				TreeShaking:       api.TreeShakingTrue,
+				MinifyWhitespace:  true,
+				MinifyIdentifiers: true,
+				MinifySyntax:      true,
+				Sourcemap:         api.SourceMapExternal,
+				LogLevel:          api.LogLevelInfo,
 			})
 
 			for _, warning := range result.Warnings {

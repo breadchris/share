@@ -1,7 +1,7 @@
 package html
 
-func Map[TC any, R any](collection []TC, iteratee func(item TC, index int) R) []R { //yaegi:add
-	result := make([]R, len(collection))
+func Map[TC any, TR any](collection []TC, iteratee func(item TC, index int) TR) []TR { //yaegi:add
+	result := make([]TR, len(collection))
 
 	for i := range collection {
 		result[i] = iteratee(collection[i], i)

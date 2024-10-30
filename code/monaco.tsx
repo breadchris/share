@@ -20,6 +20,7 @@ export const configureMonacoLoader = () => {
     loaderConfigured = true;
 };
 
+
 const nodeModules = '/dist/node_modules/monaco-editor/esm/vs/';
 window.MonacoEnvironment = {
     getWorkerUrl: function (moduleId, label) {

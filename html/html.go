@@ -302,9 +302,11 @@ ws.onerror = function (error) {
 
 func (s *Node) RenderGoCode(fset *token.FileSet) *ast.CallExpr {
 	if s.text != "" {
+		// url escape the text
+		t := strings.ReplaceAll(s.text, "\n", "\\n")
 		return &ast.CallExpr{
 			Fun:  ast.NewIdent("Text"),
-			Args: []ast.Expr{&ast.BasicLit{Kind: token.STRING, Value: fmt.Sprintf("\"%s\"", s.text)}},
+			Args: []ast.Expr{&ast.BasicLit{Kind: token.STRING, Value: fmt.Sprintf("\"%s\"", t)}},
 		}
 	}
 
@@ -548,6 +550,14 @@ func Datetime(s string) *Node {
 			p.Attrs["datetime"] = s
 		},
 	}
+}
+
+func Code(o ...*Node) *Node {
+	return NewNode("code", o)
+}
+
+func Aside(o ...*Node) *Node {
+	return NewNode("aside", o)
 }
 
 func ViewBox(s string) *Node {
@@ -1089,4 +1099,80 @@ func AriaExpanded(s string) *Node {
 
 func Tabindex(s string) *Node {
 	return NewAttrNode("tabindex", s)
+}
+
+func Width(s string) *Node {
+	return NewAttrNode("width", s)
+}
+
+func Height(s string) *Node {
+	return NewAttrNode("height", s)
+}
+
+func Circle(o ...*Node) *Node {
+	return NewNode("circle", o)
+}
+
+func Cx(s string) *Node {
+	return NewAttrNode("cx", s)
+}
+
+func Cy(s string) *Node {
+	return NewAttrNode("cy", s)
+}
+
+func R(s string) *Node {
+	return NewAttrNode("r", s)
+}
+
+func Rect(o ...*Node) *Node {
+	return NewNode("rect", o)
+}
+
+func Rx(s string) *Node {
+	return NewAttrNode("rx", s)
+}
+
+func Ry(s string) *Node {
+	return NewAttrNode("ry", s)
+}
+
+func X(s string) *Node {
+	return NewAttrNode("x", s)
+}
+
+func Y(s string) *Node {
+	return NewAttrNode("y", s)
+}
+
+func AriaControls(s string) *Node {
+	return NewAttrNode("aria-controls", s)
+}
+
+func Focusable(s string) *Node {
+	return NewAttrNode("focusable", s)
+}
+
+func DataTestid(s string) *Node {
+	return NewAttrNode("data-testid", s)
+}
+
+func Line(o ...*Node) *Node {
+	return NewNode("line", o)
+}
+
+func X1(s string) *Node {
+	return NewAttrNode("x1", s)
+}
+
+func X2(s string) *Node {
+	return NewAttrNode("x2", s)
+}
+
+func Y1(s string) *Node {
+	return NewAttrNode("y1", s)
+}
+
+func Y2(s string) *Node {
+	return NewAttrNode("y2", s)
 }
