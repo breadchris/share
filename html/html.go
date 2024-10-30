@@ -167,6 +167,7 @@ type Node struct {
 	Children     []*Node
 	transform    func(p *Node)
 	text         string
+	raw          string
 	locator      string
 	baseURL      string
 }
@@ -202,6 +203,9 @@ func (s *Node) RenderCtx(ctx context.Context) string {
 	c := ""
 	if s.text != "" {
 		c += template.HTMLEscapeString(s.text)
+	}
+	if s.raw != "" {
+		c += s.raw
 	}
 
 	if s.baseURL != "" {
@@ -344,6 +348,14 @@ func Text(s string) *Node {
 	return &Node{
 		transform: func(p *Node) {
 			p.text = s
+		},
+	}
+}
+
+func Raw(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.raw = s
 		},
 	}
 }

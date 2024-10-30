@@ -41,7 +41,7 @@ func RenderBlog(entries []Entry) string {
 		}
 		en = append(en,
 			Div(Class("border p-4 rounded-lg"),
-				P(Class("mb-2"), T(e.Text)),
+				P(Class("mb-2"), Raw(e.Text)),
 				P(Class("text-sm text-gray-500"), T(e.Timestamp)),
 				P(Class("text-sm text-gray-500"), T(e.User.Email)),
 				Form(
