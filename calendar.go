@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 )
 
@@ -152,27 +151,13 @@ func getCurrentUser(r *http.Request) *User {
 	return &User{ID: "1", DisplayName: "Chris"}
 }
 
-func NewCalendar(d deps.Deps) *http.ServeMux {
-	fmt.Println("NewCalendar")
-	m := http.NewServeMux()
-	events := loadEvents()
-	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		DefaultLayout(
-			Div(
-				ReloadNode("calendar.go"),
-				CreateEveroutCalendar(events),
-			),
-		).RenderPage(w, r)
-	})
-	return m
-}
-
 func getCalenderEvents() []CalendarEvent {
 	var calendarEvents []CalendarEvent
 
 	eventsByDate := loadEvents()
 
 	for dateStr, events := range eventsByDate {
+		dateStr := strings.Split(dateStr, "-top")[0]
 		// Parse the date string into time.Time
 		eventDate, err := time.Parse("2006-01-02", dateStr)
 		if err != nil {
@@ -188,13 +173,6 @@ func getCalenderEvents() []CalendarEvent {
 		}
 	}
 	return calendarEvents
-}
-
-func CreateEveroutCalendar(eventsByDate map[string][]EverOutEvent) *Node {
-	// Convert the EverOutEvents to CalendarEvents
-	var calendarEvents []CalendarEvent = getCalenderEvents()
-
-	return RenderCalendar(calendarEvents)
 }
 
 func RenderCalendar(events []CalendarEvent) *Node {
@@ -563,6 +541,12 @@ func GenerateCalendar(month, year int, events []CalendarEvent) *Node {
 		))
 	}
 
+	// Create the header grid
+	headerGrid := Div(
+		Class("grid grid-cols-7 gap-1 bg-gray-300"),
+		Chl(headerCells...),
+	)
+
 	// Map events by date for quick lookup
 	eventsByDate := make(map[string][]CalendarEvent)
 	for _, event := range events {
@@ -572,12 +556,10 @@ func GenerateCalendar(month, year int, events []CalendarEvent) *Node {
 
 	// Create the day cells
 	cells := []*Node{}
-	// Add the header cells first
-	cells = append(cells, headerCells...)
 
 	// Empty cells before the first day of the month
 	for i := 0; i < firstWeekday; i++ {
-		cells = append(cells, Div(Class("p-2 bg-white")))
+		cells = append(cells, Div(Class("p-2 bg-white h-full")))
 	}
 
 	// Add the day cells for each day in the month
@@ -600,35 +582,39 @@ func GenerateCalendar(month, year int, events []CalendarEvent) *Node {
 			))
 		}
 		cells = append(cells, Div(
-			Class("p-2 bg-white box-border"),
+			Class("p-2 bg-white box-border h-full overflow-hidden"),
 			Div(Class("text-right text-sm font-bold text-gray-800"), T(strconv.Itoa(day))),
 			Chl(eventNodes...),
 		))
 	}
 
 	// Fill the remaining cells to complete the grid
-	totalCells := len(cells)
+	totalCells := firstWeekday + daysInMonth
 	if totalCells%7 != 0 {
 		for i := 0; i < 7-(totalCells%7); i++ {
-			cells = append(cells, Div(Class("p-2 bg-white")))
+			cells = append(cells, Div(Class("p-2 bg-white h-full")))
 		}
 	}
 
 	// Create the calendar grid container with Tailwind classes
 	calendarGrid := Div(
 		Id("calendar"),
-		Class("grid grid-cols-7 gap-1 bg-gray-300 h-[calc(100vh-160px)]"),
+		Class("grid grid-cols-7 gap-1 bg-gray-300 h-[calc(100vh-160px)] auto-rows-fr"),
 		Chl(cells...),
 	)
 
 	// Wrap everything in a container div
 	calendar := Div(
 		Id("calendar-container"),
-		calendarGrid,
+		Chl(
+			headerGrid,
+			calendarGrid,
+		),
 	)
 
 	return calendar
 }
+
 
 func viewEvent(w http.ResponseWriter, r *http.Request) {
 	// Extract event ID from URL
@@ -823,3 +809,18 @@ func submitCalendar(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	fmt.Fprint(w, responseHTML)
 }
+
+// func NewCalendar(d deps.Deps) *http.ServeMux {
+// 	fmt.Println("NewCalendar")
+// 	m := http.NewServeMux()
+// 	events := loadEvents()
+// 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+// 		DefaultLayout(
+// 			Div(
+// 				ReloadNode("calendar.go"),
+// 				RenderCalendar(getCalenderEvents()),
+// 			),
+// 		).RenderPage(w, r)
+// 	})
+// 	return m
+// }
