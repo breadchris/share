@@ -33,7 +33,7 @@ type CalendarEvent struct {
 // In-memory Data Stores
 var (
 	calendars      = map[int]*Calendar{}
-	events         = map[string]*CalendarEvent{}
+	events         = map[string]CalendarEvent{}
 	userCalendars  = map[string][]int{}    // User ID to Calendar IDs
 	eventAttendees = map[string][]string{} // Event ID to User IDs
 	dataMutex      sync.Mutex
@@ -49,6 +49,20 @@ var (
 var (
 	userSelectedCalendars = map[string]map[int]bool{} // User ID to selected Calendar IDs
 )
+
+// Handlers
+func SetupCalendar() {
+	http.HandleFunc("/calendar/", handleCalendar)
+	http.HandleFunc("/calendar/month", createMonth)
+	http.HandleFunc("/calendar/create_event_form", createEventForm)
+	http.HandleFunc("/calendar/submit_event", submitEvent)
+	http.HandleFunc("/calendar/delete_event/", deleteEvent)
+	http.HandleFunc("/calendar/event/", viewEvent)
+	http.HandleFunc("/calendar/create_calendar_form", createCalendarForm)
+	http.HandleFunc("/calendar/submit_calendar", submitCalendar)
+	http.HandleFunc("/calendar/load_user_calendars", loadUserCalendars)
+	http.HandleFunc("/calendar/toggle_calendar", toggleCalendar)
+}
 
 func toggleCalendar(w http.ResponseWriter, r *http.Request) {
 	user := getCurrentUser(r)
@@ -75,7 +89,7 @@ func toggleCalendar(w http.ResponseWriter, r *http.Request) {
 	year := time.Now().Year()
 
 	// Gather events from selected calendars
-	monthEvents := []*CalendarEvent{}
+	monthEvents := []CalendarEvent{}
 	for calID := range userSelectedCalendars[user.ID] {
 		for _, evt := range events {
 			if evt.CalendarID == calID && evt.Date.Year() == year && int(evt.Date.Month()) == month {
@@ -138,19 +152,6 @@ func getCurrentUser(r *http.Request) *User {
 	return &User{ID: "1", DisplayName: "Chris"}
 }
 
-// Handlers
-func SetupCalendar() {
-	http.HandleFunc("/calendar/", handleCalendar)
-	http.HandleFunc("/calendar/month", createMonth)
-	http.HandleFunc("/calendar/create_event_form", createEventForm)
-	http.HandleFunc("/calendar/submit_event", submitEvent)
-	http.HandleFunc("/calendar/delete_event/", deleteEvent)
-	http.HandleFunc("/calendar/event/", viewEvent)
-	http.HandleFunc("/calendar/create_calendar_form", createCalendarForm)
-	http.HandleFunc("/calendar/submit_calendar", submitCalendar)
-	http.HandleFunc("/calendar/load_user_calendars", loadUserCalendars)
-	http.HandleFunc("/calendar/toggle_calendar", toggleCalendar)
-}
 func NewCalendar(d deps.Deps) *http.ServeMux {
 	fmt.Println("NewCalendar")
 	m := http.NewServeMux()
@@ -165,9 +166,12 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 	})
 	return m
 }
-func CreateEveroutCalendar(eventsByDate map[string][]EverOutEvent) *Node {
-	// Convert the EverOutEvents to CalendarEvents
+
+func getCalenderEvents() []CalendarEvent {
 	var calendarEvents []CalendarEvent
+
+	eventsByDate := loadEvents()
+
 	for dateStr, events := range eventsByDate {
 		// Parse the date string into time.Time
 		eventDate, err := time.Parse("2006-01-02", dateStr)
@@ -183,6 +187,12 @@ func CreateEveroutCalendar(eventsByDate map[string][]EverOutEvent) *Node {
 			})
 		}
 	}
+	return calendarEvents
+}
+
+func CreateEveroutCalendar(eventsByDate map[string][]EverOutEvent) *Node {
+	// Convert the EverOutEvents to CalendarEvents
+	var calendarEvents []CalendarEvent = getCalenderEvents()
 
 	return RenderCalendar(calendarEvents)
 }
@@ -291,10 +301,10 @@ func RenderCalendar(events []CalendarEvent) *Node {
 
 	// Collect events for the current month and year
 	dataMutex.Lock()
-	monthEvents := []*CalendarEvent{}
+	monthEvents := []CalendarEvent{}
 	for _, evt := range events {
 		if evt.Date.Year() == year && int(evt.Date.Month()) == month {
-			monthEvents = append(monthEvents, &evt)
+			monthEvents = append(monthEvents, evt)
 		}
 	}
 	dataMutex.Unlock()
@@ -386,186 +396,24 @@ func handleCalendar(w http.ResponseWriter, r *http.Request) {
 	}
 	dataMutex.Unlock()
 
-	month := int(time.Now().Month())
-	year := time.Now().Year()
-
-	// Create month and year dropdowns
-	monthOptions := []*Node{}
-	for i := 1; i <= 12; i++ {
-		monthName := time.Month(i).String()
-		option := Option(
-			Value(strconv.Itoa(i)),
-			T(monthName),
-		)
-		if i == month {
-			option.Attrs["selected"] = "selected"
+	var calendarEvents []CalendarEvent
+	for dateStr, events := range loadEvents() {
+		// Parse the date string into time.Time
+		eventDate, err := time.Parse("2006-01-02", dateStr)
+		if err != nil {
+			fmt.Printf("Invalid date format: %s\n", dateStr)
+			continue
 		}
-		monthOptions = append(monthOptions, option)
-	}
-
-	currentYear := time.Now().Year()
-	yearOptions := []*Node{}
-	for i := currentYear - 5; i <= currentYear+5; i++ {
-		option := Option(
-			Value(strconv.Itoa(i)),
-			T(strconv.Itoa(i)),
-		)
-		if i == year {
-			option.Attrs["selected"] = "selected"
-		}
-		yearOptions = append(yearOptions, option)
-	}
-
-	toggleSidePanelButton := Button(
-		T("Calendars"),
-		Type("button"),
-		Class("border border-gray-300 rounded px-2 py-1 mr-2"),
-		Attr("onclick", "toggleSidePanel()"),
-	)
-
-	// Create the form for month and year selection
-	selectionForm := Form(
-		Attr("hx-post", "/calendar/month"),
-		Attr("hx-target", "#calendar-container"),
-		Attr("hx-swap", "innerHTML"),
-		Attr("enctype", "multipart/form-data"),
-		Class("flex items-center justify-center mb-4"),
-		Div(
-			Select(
-				Name("month"),
-				Chl(monthOptions...),
-				Class("border border-gray-300 rounded px-2 py-1 mr-2"),
-			),
-			Select(
-				Name("year"),
-				Chl(yearOptions...),
-				Class("border border-gray-300 rounded px-2 py-1 mr-2"),
-			),
-			Button(
-				T("Go"),
-				Type("submit"),
-				Class("border border-gray-300 rounded px-2 py-1 mr-2"),
-			),
-			Button(
-				T("Create Event"),
-				Type("button"),
-				Class("border border-gray-300 rounded px-2 py-1"),
-				HxGet("/calendar/create_event_form"),
-				HxTarget("#event-modal"),
-				HxSwap("innerHTML"),
-			),
-		),
-	)
-
-	sidePanel := Div(
-		Id("side-panel"),
-		Class("side-panel hidden"),
-		Div(
-			Class("side-panel-content"),
-			H2(Class("text-xl font-bold mb-4"), T("Your Calendars")),
-			Div(
-				Id("calendar-list"),
-				// Calendars will be loaded here
-			),
-			Button(
-				T("Create New Calendar"),
-				Type("button"),
-				Class("bg-blue-500 text-white px-4 py-2 rounded mt-4"),
-				HxGet("/calendar/create_calendar_form"),
-				HxTarget("#calendar-list"),
-				HxSwap("innerHTML"),
-			),
-		),
-	)
-
-	calendarModal := Div(Id("calendar-modal"))
-
-	script := Script(T(`
-		function toggleSidePanel() {
-			var panel = document.getElementById('side-panel');
-			panel.classList.toggle('hidden');
-		}
-	`))
-
-	// Collect events for the current month and year
-	dataMutex.Lock()
-	monthEvents := []*CalendarEvent{}
-	for _, evt := range events {
-		if evt.Date.Year() == year && int(evt.Date.Month()) == month {
-			monthEvents = append(monthEvents, evt)
+		for _, evt := range events {
+			calendarEvents = append(calendarEvents, CalendarEvent{
+				Name:        evt.Title,
+				Description: fmt.Sprintf("%s, %s", evt.Location, evt.Region),
+				Date:        eventDate,
+			})
 		}
 	}
-	dataMutex.Unlock()
 
-	// Generate the calendar node
-	calendarNode := GenerateCalendar(month, year, monthEvents)
-
-	// Include a div for the event modal
-	eventModal := Div(Id("event-modal"))
-
-	page := Html(
-		Head(
-			Title(T("Calendar Dashboard")),
-			HTMX,
-			TailwindCSS,
-			Style(T(`
-				.modal {
-					position: fixed;
-					top: 0;
-					left: 0;
-					width: 100%;
-					height: 100%;
-					background-color: rgba(0,0,0,0.5);
-					display: flex;
-					justify-content: center;
-					align-items: center;
-				}
-				.modal-content {
-					background-color: #fff;
-					padding: 20px;
-					border-radius: 8px;
-					width: 90%;
-					max-width: 500px;
-				}
-				.modal-close {
-					margin-top: 10px;
-					background-color: #f44336;
-					color: white;
-					border: none;
-					padding: 10px;
-					border-radius: 5px;
-					cursor: pointer;
-				}
-				.side-panel {
-					position: fixed;
-					top: 0;
-					left: 0;
-					width: 250px;
-					height: 100%;
-					background-color: #f9f9f9;
-					border-right: 1px solid #ccc;
-					overflow-y: auto;
-					z-index: 1000;
-					transition: transform 0.3s ease;
-				}
-				.side-panel.hidden {
-					transform: translateX(-100%);
-				}
-				.side-panel-content {
-					padding: 20px;
-				}
-			`)),
-		),
-		Body(
-			toggleSidePanelButton,
-			selectionForm,
-			eventModal,
-			calendarModal,
-			sidePanel,
-			calendarNode,
-			script,
-		),
-	)
+	page := RenderCalendar(calendarEvents)
 
 	page.RenderPage(w, r)
 }
@@ -627,7 +475,7 @@ func submitEvent(w http.ResponseWriter, r *http.Request) {
 	dataMutex.Lock()
 	eventID := eventIDCounter
 	eventIDCounter++
-	newEvent := &CalendarEvent{
+	newEvent := CalendarEvent{
 		ID:          eventID,
 		Name:        name,
 		Description: description,
@@ -641,7 +489,7 @@ func submitEvent(w http.ResponseWriter, r *http.Request) {
 	year := date.Year()
 
 	dataMutex.Lock()
-	monthEvents := []*CalendarEvent{}
+	monthEvents := []CalendarEvent{}
 	for _, evt := range events {
 		if evt.Date.Year() == year && int(evt.Date.Month()) == month {
 			monthEvents = append(monthEvents, evt)
@@ -674,14 +522,15 @@ func createMonth(w http.ResponseWriter, r *http.Request) {
 	year, _ := strconv.Atoi(yearStr)
 
 	// Collect events for the selected month and year
-	dataMutex.Lock()
-	monthEvents := []*CalendarEvent{}
-	for _, evt := range events {
-		if evt.Date.Year() == year && int(evt.Date.Month()) == month {
-			monthEvents = append(monthEvents, evt)
-		}
-	}
-	dataMutex.Unlock()
+	// dataMutex.Lock()
+	// monthEvents := []*CalendarEvent{}
+	// for _, evt := range events {
+	// 	if evt.Date.Year() == year && int(evt.Date.Month()) == month {
+	// 		monthEvents = append(monthEvents, evt)
+	// 	}
+	// }
+	// dataMutex.Unlock()
+	monthEvents := getCalenderEvents()
 
 	// Generate the calendar node
 	calendarNode := GenerateCalendar(month, year, monthEvents)
@@ -692,7 +541,7 @@ func createMonth(w http.ResponseWriter, r *http.Request) {
 }
 
 // GenerateCalendar creates an HTML calendar with events
-func GenerateCalendar(month, year int, events []*CalendarEvent) *Node {
+func GenerateCalendar(month, year int, events []CalendarEvent) *Node {
 	// Create a time.Time object for the first day of the month
 	firstOfMonth := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
 
@@ -715,7 +564,7 @@ func GenerateCalendar(month, year int, events []*CalendarEvent) *Node {
 	}
 
 	// Map events by date for quick lookup
-	eventsByDate := make(map[string][]*CalendarEvent)
+	eventsByDate := make(map[string][]CalendarEvent)
 	for _, event := range events {
 		dateStr := event.Date.Format("2006-01-02")
 		eventsByDate[dateStr] = append(eventsByDate[dateStr], event)
@@ -856,7 +705,7 @@ func deleteEvent(w http.ResponseWriter, r *http.Request) {
 	year := evt.Date.Year()
 
 	dataMutex.Lock()
-	monthEvents := []*CalendarEvent{}
+	monthEvents := []CalendarEvent{}
 	for _, e := range events {
 		if e.Date.Year() == year && int(e.Date.Month()) == month {
 			monthEvents = append(monthEvents, e)
