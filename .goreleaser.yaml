@@ -22,6 +22,8 @@ builds:
       - linux
       - windows
       - darwin
+    output: bin/{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+
 
 archives:
   - format: tar.gz
