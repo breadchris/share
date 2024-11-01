@@ -44,7 +44,7 @@ func streamCommandOutput(command string) error {
 	}
 
 	// TODO breadchris from config
-	url := "http://localhost:8080/pipeport/" + uuid.NewString()
+	url := "https://justshare.io/pipeport/" + uuid.NewString()
 
 	println("Streaming to", url)
 
