@@ -56,7 +56,7 @@ var (
 
 // Handlers
 func SetupCalendar() {
-	// http.HandleFunc("/calendar/", handleCalendar)
+	http.HandleFunc("/calendar/", handleCalendar)
 	http.HandleFunc("/calendar/month", createMonth)
 	http.HandleFunc("/calendar/create_event_form", createEventForm)
 	http.HandleFunc("/calendar/submit_event", submitEvent)
@@ -447,6 +447,7 @@ func createEventForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func submitEvent(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("submitEvent")
 	if r.Method != http.MethodPost {
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
@@ -478,7 +479,7 @@ func submitEvent(w http.ResponseWriter, r *http.Request) {
 		Date:        date,
 	}
 	events[strconv.Itoa(eventID)] = newEvent
-	SaveEvents()
+	// SaveEvents()
 	dataMutex.Unlock()
 
 	// Collect events for the month and year
