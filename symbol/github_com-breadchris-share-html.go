@@ -120,6 +120,7 @@ func init() {
 		"Progress":                reflect.ValueOf(html.Progress),
 		"Property":                reflect.ValueOf(html.Property),
 		"R":                       reflect.ValueOf(html.R),
+		"Raw":                     reflect.ValueOf(html.Raw),
 		"Rect":                    reflect.ValueOf(html.Rect),
 		"Rel":                     reflect.ValueOf(html.Rel),
 		"ReloadNode":              reflect.ValueOf(html.ReloadNode),
