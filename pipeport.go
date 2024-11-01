@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/breadchris/share/deps"
@@ -28,38 +28,64 @@ func NewPipePortCli() *cli.Command {
 				log.Fatal("Usage: stream-cli stream <command> <url>")
 			}
 			command := c.Args().Get(0)
-			return streamCommandOutput(command)
+			return streamCommand(command)
 		},
 	}
 }
 
-func streamCommandOutput(command string) error {
+func streamCommand(command string) error {
 	cmd := exec.Command("sh", "-c", command)
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
+	cmd.Stdin = os.Stdin // Pass stdin through to the command
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return fmt.Errorf("failed to get stdout pipe: %w", err)
 	}
-
-	// TODO breadchris from config
-	url := "https://justshare.io/pipeport/" + uuid.NewString()
-
-	println("Streaming to", url)
-
-	go func() {
-		_, err = http.Post(url, "text/plain", bufio.NewReader(stdout))
-		if err != nil {
-			log.Printf("Failed to send data: %v", err)
-		}
-	}()
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("failed to get stderr pipe: %w", err)
+	}
 
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("failed to start command: %w", err)
 	}
 
-	return cmd.Wait()
+	done := make(chan error, 1)
+
+	url := "https://justshare.io/pipeport/" + uuid.NewString()
+	fmt.Println("Streaming to", url)
+
+	go func() {
+		var stdoutBuffer bytes.Buffer
+		if _, err := io.Copy(&stdoutBuffer, stdout); err != nil {
+			done <- fmt.Errorf("failed to read stdout: %w", err)
+			return
+		}
+
+		resp, err := http.Post(url, "text/plain", &stdoutBuffer)
+		if err != nil {
+			done <- fmt.Errorf("failed to send data: %w", err)
+			return
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			done <- fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+			return
+		}
+
+		done <- nil
+	}()
+
+	go func() {
+		io.Copy(os.Stderr, stderr)
+	}()
+
+	if err := cmd.Wait(); err != nil {
+		return fmt.Errorf("command execution failed: %w", err)
+	}
+
+	return <-done
 }
 
 func NewPipePort(d deps.Deps) *http.ServeMux {

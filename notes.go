@@ -714,169 +714,6 @@ func RenderMemo(cal calendar.State) *Node {
 									Div(Class("w-full"), Id("editor")),
 								),
 								Div(
-									// file upload and other icons
-									Class(
-										"hidden relative w-full flex flex-row justify-between items-center pt-2",
-									),
-									Div(
-										Class(
-											"flex flex-row justify-start items-center opacity-80 dark:opacity-60 -space-x-1",
-										),
-										Button(
-											AriaControls(":r1:"),
-											Tabindex("0"),
-											Type("button"),
-											Class(
-												"border-box inline-flex items-center justify-center rounded-md text-zinc-900 dark:text-zinc-100 shadow-none text-xs px-2 py-1 h-8 cursor-pointer hover:opacity-80 bg-transparent MuiMenuButton-root MuiMenuButton-variantOutlined MuiMenuButton-colorNeutral MuiMenuButton-sizeMd",
-											),
-											AriaHaspopup("menu"),
-											AriaExpanded("false"),
-											Svg(
-												Fill("none"),
-												Stroke("currentColor"),
-												StrokeWidth("2"),
-												StrokeLinecap("round"),
-												Class("lucide lucide-hash w-5 h-5 mx-auto"),
-												Xmlns("http://www.w3.org/2000/svg"),
-												Width("24"),
-												StrokeLinejoin("round"),
-												Height("24"),
-												ViewBox("0 0 24 24"),
-												Line(X1("4"), X2("20"), Y1("9"), Y2("9")),
-												Line(X1("4"), X2("20"), Y1("15"), Y2("15")),
-												Line(X1("10"), X2("8"), Y1("3"), Y2("21")),
-												Line(X1("16"), X2("14"), Y1("3"), Y2("21")),
-											),
-										),
-										Button(
-											AriaExpanded("false"),
-											AriaControls(":r2:"),
-											Tabindex("0"),
-											Type("button"),
-											Class(
-												"border-box inline-flex items-center justify-center rounded-md text-zinc-900 dark:text-zinc-100 shadow-none text-xs px-2 py-1 h-8 cursor-pointer hover:opacity-80 bg-transparent MuiMenuButton-root MuiMenuButton-variantOutlined MuiMenuButton-colorNeutral MuiMenuButton-sizeMd",
-											),
-											AriaHaspopup("menu"),
-											Svg(
-												StrokeLinejoin("round"),
-												Xmlns("http://www.w3.org/2000/svg"),
-												Fill("none"),
-												Stroke("currentColor"),
-												StrokeWidth("2"),
-												StrokeLinecap("round"),
-												Width("24"),
-												Height("24"),
-												ViewBox("0 0 24 24"),
-												Class("lucide lucide-square-slash w-5 h-5 mx-auto"),
-												Rect(
-													Y("3"),
-													Rx("2"),
-													Width("18"),
-													Height("18"),
-													X("3"),
-												),
-												Line(Y1("15"), Y2("9"), X1("9"), X2("15")),
-											),
-										),
-										Button(
-											Class(
-												"border-box inline-flex items-center justify-center rounded-md text-zinc-900 dark:text-zinc-100 shadow-none text-xs px-2 py-1 h-8 cursor-pointer hover:opacity-80 bg-transparent relative",
-											),
-											Svg(
-												Class("lucide lucide-paperclip w-5 h-5 mx-auto"),
-												Xmlns("http://www.w3.org/2000/svg"),
-												Width("24"),
-												Height("24"),
-												ViewBox("0 0 24 24"),
-												Fill("none"),
-												StrokeLinejoin("round"),
-												Stroke("currentColor"),
-												StrokeWidth("2"),
-												StrokeLinecap("round"),
-												Path(
-													D(
-														"m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48",
-													),
-												),
-											),
-											Input(
-												Class(
-													"absolute inset-0 w-full h-full opacity-0 cursor-pointer",
-												),
-												Type("file"),
-												Id("files"),
-											),
-										),
-										Button(
-											Class("w-9"),
-											Type("button"),
-											AriaHaspopup("dialog"),
-											AriaExpanded("false"),
-											AriaControls("radix-:r3:"),
-											Svg(
-												StrokeWidth("2"),
-												StrokeLinecap("round"),
-												Height("24"),
-												Fill("none"),
-												ViewBox("0 0 24 24"),
-												Stroke("currentColor"),
-												StrokeLinejoin("round"),
-												Class(
-													"lucide lucide-link border-box rounded-md text-zinc-900 dark:text-zinc-100 shadow-none text-xs cursor-pointer hover:opacity-80 bg-transparent flex items-center justify-center w-5 h-5 mx-auto p-0",
-												),
-												Xmlns("http://www.w3.org/2000/svg"),
-												Width("24"),
-												Path(
-													D(
-														"M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71",
-													),
-												),
-												Path(
-													D(
-														"M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71",
-													),
-												),
-											),
-										),
-										Button(
-											Type("button"),
-											AriaHaspopup("dialog"),
-											AriaExpanded("false"),
-											AriaControls("radix-:r4:"),
-										),
-										Button(
-											Class(
-												"border-box rounded-md text-zinc-900 dark:text-zinc-100 shadow-none text-xs px-2 py-1 h-8 cursor-pointer hover:opacity-80 bg-transparent flex items-center justify-center",
-											),
-											Svg(
-												Xmlns("http://www.w3.org/2000/svg"),
-												Width("24"),
-												Height("24"),
-												ViewBox("0 0 24 24"),
-												StrokeLinecap("round"),
-												Class(
-													"lucide lucide-map-pin w-5 h-5 mx-auto shrink-0",
-												),
-												Fill("none"),
-												Stroke("currentColor"),
-												StrokeWidth("2"),
-												StrokeLinejoin("round"),
-												Path(
-													D(
-														"M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0",
-													),
-												),
-												Circle(Cx("12"), Cy("10"), R("3")),
-											),
-										),
-									),
-								),
-								Hr(
-									Class(
-										"MuiDivider-root MuiDivider-horizontal !mt-2 opacity-40 css-w2e6ki",
-									),
-								),
-								Div(
 									Class(
 										"w-full flex flex-row justify-between items-center py-3 dark:border-t-zinc-500",
 									),
@@ -1639,6 +1476,172 @@ func MemoCal() *Node {
 						),
 					),
 				),
+			),
+		),
+	)
+}
+
+func ToolbarIcons() *Node {
+	return Div(
+		// file upload and other icons
+		Class(
+			"hidden relative w-full flex flex-row justify-between items-center pt-2",
+		),
+		Div(
+			Class(
+				"flex flex-row justify-start items-center opacity-80 dark:opacity-60 -space-x-1",
+			),
+			Button(
+				AriaControls(":r1:"),
+				Tabindex("0"),
+				Type("button"),
+				Class(
+					"border-box inline-flex items-center justify-center rounded-md text-zinc-900 dark:text-zinc-100 shadow-none text-xs px-2 py-1 h-8 cursor-pointer hover:opacity-80 bg-transparent MuiMenuButton-root MuiMenuButton-variantOutlined MuiMenuButton-colorNeutral MuiMenuButton-sizeMd",
+				),
+				AriaHaspopup("menu"),
+				AriaExpanded("false"),
+				Svg(
+					Fill("none"),
+					Stroke("currentColor"),
+					StrokeWidth("2"),
+					StrokeLinecap("round"),
+					Class("lucide lucide-hash w-5 h-5 mx-auto"),
+					Xmlns("http://www.w3.org/2000/svg"),
+					Width("24"),
+					StrokeLinejoin("round"),
+					Height("24"),
+					ViewBox("0 0 24 24"),
+					Line(X1("4"), X2("20"), Y1("9"), Y2("9")),
+					Line(X1("4"), X2("20"), Y1("15"), Y2("15")),
+					Line(X1("10"), X2("8"), Y1("3"), Y2("21")),
+					Line(X1("16"), X2("14"), Y1("3"), Y2("21")),
+				),
+			),
+			Button(
+				AriaExpanded("false"),
+				AriaControls(":r2:"),
+				Tabindex("0"),
+				Type("button"),
+				Class(
+					"border-box inline-flex items-center justify-center rounded-md text-zinc-900 dark:text-zinc-100 shadow-none text-xs px-2 py-1 h-8 cursor-pointer hover:opacity-80 bg-transparent MuiMenuButton-root MuiMenuButton-variantOutlined MuiMenuButton-colorNeutral MuiMenuButton-sizeMd",
+				),
+				AriaHaspopup("menu"),
+				Svg(
+					StrokeLinejoin("round"),
+					Xmlns("http://www.w3.org/2000/svg"),
+					Fill("none"),
+					Stroke("currentColor"),
+					StrokeWidth("2"),
+					StrokeLinecap("round"),
+					Width("24"),
+					Height("24"),
+					ViewBox("0 0 24 24"),
+					Class("lucide lucide-square-slash w-5 h-5 mx-auto"),
+					Rect(
+						Y("3"),
+						Rx("2"),
+						Width("18"),
+						Height("18"),
+						X("3"),
+					),
+					Line(Y1("15"), Y2("9"), X1("9"), X2("15")),
+				),
+			),
+			Button(
+				Class(
+					"border-box inline-flex items-center justify-center rounded-md text-zinc-900 dark:text-zinc-100 shadow-none text-xs px-2 py-1 h-8 cursor-pointer hover:opacity-80 bg-transparent relative",
+				),
+				Svg(
+					Class("lucide lucide-paperclip w-5 h-5 mx-auto"),
+					Xmlns("http://www.w3.org/2000/svg"),
+					Width("24"),
+					Height("24"),
+					ViewBox("0 0 24 24"),
+					Fill("none"),
+					StrokeLinejoin("round"),
+					Stroke("currentColor"),
+					StrokeWidth("2"),
+					StrokeLinecap("round"),
+					Path(
+						D(
+							"m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48",
+						),
+					),
+				),
+				Input(
+					Class(
+						"absolute inset-0 w-full h-full opacity-0 cursor-pointer",
+					),
+					Type("file"),
+					Id("files"),
+				),
+			),
+			Button(
+				Class("w-9"),
+				Type("button"),
+				AriaHaspopup("dialog"),
+				AriaExpanded("false"),
+				AriaControls("radix-:r3:"),
+				Svg(
+					StrokeWidth("2"),
+					StrokeLinecap("round"),
+					Height("24"),
+					Fill("none"),
+					ViewBox("0 0 24 24"),
+					Stroke("currentColor"),
+					StrokeLinejoin("round"),
+					Class(
+						"lucide lucide-link border-box rounded-md text-zinc-900 dark:text-zinc-100 shadow-none text-xs cursor-pointer hover:opacity-80 bg-transparent flex items-center justify-center w-5 h-5 mx-auto p-0",
+					),
+					Xmlns("http://www.w3.org/2000/svg"),
+					Width("24"),
+					Path(
+						D(
+							"M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71",
+						),
+					),
+					Path(
+						D(
+							"M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71",
+						),
+					),
+				),
+			),
+			Button(
+				Type("button"),
+				AriaHaspopup("dialog"),
+				AriaExpanded("false"),
+				AriaControls("radix-:r4:"),
+			),
+			Button(
+				Class(
+					"border-box rounded-md text-zinc-900 dark:text-zinc-100 shadow-none text-xs px-2 py-1 h-8 cursor-pointer hover:opacity-80 bg-transparent flex items-center justify-center",
+				),
+				Svg(
+					Xmlns("http://www.w3.org/2000/svg"),
+					Width("24"),
+					Height("24"),
+					ViewBox("0 0 24 24"),
+					StrokeLinecap("round"),
+					Class(
+						"lucide lucide-map-pin w-5 h-5 mx-auto shrink-0",
+					),
+					Fill("none"),
+					Stroke("currentColor"),
+					StrokeWidth("2"),
+					StrokeLinejoin("round"),
+					Path(
+						D(
+							"M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0",
+						),
+					),
+					Circle(Cx("12"), Cy("10"), R("3")),
+				),
+			),
+		),
+		Hr(
+			Class(
+				"MuiDivider-root MuiDivider-horizontal !mt-2 opacity-40 css-w2e6ki",
 			),
 		),
 	)
