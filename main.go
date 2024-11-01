@@ -133,7 +133,7 @@ func startServer(useTLS bool, port int) {
 	p("/extension", NewExtension())
 	p("/git", interpreted(NewGit))
 	p("/music", interpreted(NewMusic))
-	// p("/calendar", interpreted(NewCalendar))
+	p("/calendar", interpreted(NewCalendar))
 	p("/stripe", interpreted(NewStripe))
 	p("/everout", interpreted(NewEverout))
 	p("/graph", interpreted(graph.New))

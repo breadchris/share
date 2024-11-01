@@ -1,13 +1,17 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 )
 
@@ -36,6 +40,7 @@ var (
 	userCalendars  = map[string][]int{}    // User ID to Calendar IDs
 	eventAttendees = map[string][]string{} // Event ID to User IDs
 	dataMutex      sync.Mutex
+	eventsFilePath = "data/calendar/events.json"
 )
 
 // Generate unique IDs
@@ -51,7 +56,7 @@ var (
 
 // Handlers
 func SetupCalendar() {
-	http.HandleFunc("/calendar/", handleCalendar)
+	// http.HandleFunc("/calendar/", handleCalendar)
 	http.HandleFunc("/calendar/month", createMonth)
 	http.HandleFunc("/calendar/create_event_form", createEventForm)
 	http.HandleFunc("/calendar/submit_event", submitEvent)
@@ -61,6 +66,19 @@ func SetupCalendar() {
 	http.HandleFunc("/calendar/submit_calendar", submitCalendar)
 	http.HandleFunc("/calendar/load_user_calendars", loadUserCalendars)
 	http.HandleFunc("/calendar/toggle_calendar", toggleCalendar)
+}
+
+func NewCalendar(d deps.Deps) *http.ServeMux {
+	m := http.NewServeMux()
+	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		DefaultLayout(
+			Div(
+				ReloadNode("calendar.go"),
+				RenderCalendar(getCalenderEvents()),
+			),
+		).RenderPage(w, r)
+	})
+	return m
 }
 
 func toggleCalendar(w http.ResponseWriter, r *http.Request) {
@@ -460,6 +478,7 @@ func submitEvent(w http.ResponseWriter, r *http.Request) {
 		Date:        date,
 	}
 	events[strconv.Itoa(eventID)] = newEvent
+	SaveEvents()
 	dataMutex.Unlock()
 
 	// Collect events for the month and year
@@ -467,7 +486,7 @@ func submitEvent(w http.ResponseWriter, r *http.Request) {
 	year := date.Year()
 
 	dataMutex.Lock()
-	monthEvents := []CalendarEvent{}
+	monthEvents := getCalenderEvents()
 	for _, evt := range events {
 		if evt.Date.Year() == year && int(evt.Date.Month()) == month {
 			monthEvents = append(monthEvents, evt)
@@ -615,7 +634,6 @@ func GenerateCalendar(month, year int, events []CalendarEvent) *Node {
 	return calendar
 }
 
-
 func viewEvent(w http.ResponseWriter, r *http.Request) {
 	// Extract event ID from URL
 	idStr := strings.TrimPrefix(r.URL.Path, "/calendar/event/")
@@ -707,6 +725,7 @@ func deleteEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 func createCalendarForm(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("createCalendarForm")
 	form := Div(
 		Class("modal"),
 		Div(
@@ -810,17 +829,27 @@ func submitCalendar(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, responseHTML)
 }
 
-// func NewCalendar(d deps.Deps) *http.ServeMux {
-// 	fmt.Println("NewCalendar")
-// 	m := http.NewServeMux()
-// 	events := loadEvents()
-// 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-// 		DefaultLayout(
-// 			Div(
-// 				ReloadNode("calendar.go"),
-// 				RenderCalendar(getCalenderEvents()),
-// 			),
-// 		).RenderPage(w, r)
-// 	})
-// 	return m
-// }
+func SaveEvents() error {
+	dataMutex.Lock()
+	defer dataMutex.Unlock()
+
+	// Marshal the events map to JSON
+	data, err := json.MarshalIndent(events, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	// Ensure the directory exists
+	err = os.MkdirAll(filepath.Dir(eventsFilePath), os.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	// Write the JSON data to the file
+	err = os.WriteFile(eventsFilePath, data, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
