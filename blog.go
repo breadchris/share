@@ -51,7 +51,7 @@ func RenderBlog(entries []Entry) string {
 					Button(Type("submit"), Class("text-blue-500"), T("👍")),
 					Ch(reacts),
 				),
-				A(Href("/blog?id="+e.ID), Class("text-blue-500"), T("link")),
+				A(Href("/blog/"+e.ID), Class("text-blue-500"), T("link")),
 			),
 		)
 	}
@@ -192,7 +192,7 @@ func (s *Auth) blogHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/blog", http.StatusFound)
 	}
 
-	id := r.URL.Query().Get("id")
+	id := r.PathValue("id")
 	if id != "" {
 		for _, e := range entries {
 			if e.ID == id {

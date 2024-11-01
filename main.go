@@ -141,6 +141,7 @@ func startServer(useTLS bool, port int) {
 	p("/stripe", interpreted(NewStripe))
 	p("/everout", interpreted(NewEverout))
 	p("/graph", interpreted(graph.New))
+	p("/pipeport", interpreted(NewPipePort))
 
 	go func() {
 		paths := []string{
@@ -259,8 +260,8 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/invite", a.handleInvite)
 	http.HandleFunc("/auth/google", a.startGoogleAuth)
 	http.HandleFunc("/auth/google/callback", a.handleGoogleCallback)
-	http.HandleFunc("/blog", a.blogHandler)
 	http.HandleFunc("/blog/react", a.reactHandler)
+	http.HandleFunc("/blog/{id...}", a.blogHandler)
 	http.HandleFunc("/files", fileHandler)
 	http.HandleFunc("/modify", modifyHandler)
 
@@ -344,6 +345,7 @@ func main() {
 					return nil
 				},
 			},
+			NewPipePortCli(),
 		},
 	}
 

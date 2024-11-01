@@ -117,7 +117,7 @@ func NewRoutes(d deps.Deps) []Route {
 						"height": "100%",
 					})),
 				)).RenderPage(w, r)
-		}),
+		}, Ignore()),
 		NewRoute("/static/", func(w http.ResponseWriter, r *http.Request) {
 			http.StripPrefix(
 				"/static/",
@@ -174,7 +174,7 @@ func NewRoutes(d deps.Deps) []Route {
 				T(buf.String()),
 				Script(T("hljs.highlightAll();")),
 			).RenderPageCtx(ctx, w, r)
-		}),
+		}, Ignore()),
 		NewRoute("/new", func(w http.ResponseWriter, r *http.Request) {
 			u, err := d.Session.GetUserID(r.Context())
 			if err != nil {
@@ -261,7 +261,7 @@ func NewRoutes(d deps.Deps) []Route {
 					Script(Src("/static/editor.js"), Type("module")),
 				),
 			).RenderPageCtx(ctx, w, r)
-		}),
+		}, Ignore()),
 		NewRoute("/blog/{slug}", func(w http.ResponseWriter, r *http.Request) {
 			s := r.PathValue("slug")
 			for _, post := range posts {
@@ -312,10 +312,10 @@ func ArticleView(state Post) *Node {
 			}
 			`)),
 			Div(Class("post-content"),
-				T(state.Content),
+				Raw(state.Content),
 			),
 			Script(Src("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js")),
-			Script(T("hljs.highlightAll();")),
+			Script(Raw("hljs.highlightAll();")),
 			Footer(Class("post-footer"),
 				Ul(
 					Class("post-tags"),
@@ -564,33 +564,46 @@ func ExtractText(n *html.Node) string {
 	return text
 }
 
-func StaticSiteGenerator() error {
+type Site struct {
+	OutputDir string
+}
+
+func StaticSiteGenerator() (*Site, error) {
 	domain := "breadchris.com"
 	domainDir := path.Join("data", "sites", "generated", domain)
 	outputDir := path.Join(domainDir, "latest")
 
-	baseURL := "http://localhost:8080/" + domainDir + "/latest"
+	site := &Site{
+		OutputDir: outputDir,
+	}
+
+	//baseURL := "http://localhost:8080/" + domainDir + "/latest"
+	baseURL := "https://breadchris.com"
 
 	if _, err := os.Stat(outputDir); err == nil {
 		backupDir := path.Join(domainDir, time.Now().Format("2006-01-02-15-04-05"))
 		if err := os.Rename(outputDir, backupDir); err != nil {
-			return fmt.Errorf("failed to backup output directory: %v", err)
+			return nil, fmt.Errorf("failed to backup output directory: %v", err)
 		}
 		fmt.Printf("Backed up output directory to %s\n", backupDir)
 	}
 
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
-		return fmt.Errorf("failed to create output directory: %v", err)
+		return nil, fmt.Errorf("failed to create output directory: %v", err)
+	}
+
+	if err := os.WriteFile(path.Join(outputDir, "CNAME"), []byte(domain), 0644); err != nil {
+		return nil, fmt.Errorf("failed to write CNAME file: %v", err)
 	}
 
 	posts, err := loadPosts()
 	if err != nil {
-		return fmt.Errorf("failed to load posts: %w", err)
+		return nil, fmt.Errorf("failed to load posts: %w", err)
 	}
 
 	uploads := path.Join(outputDir, "data/uploads")
 	if err := os.MkdirAll(uploads, 0755); err != nil {
-		return fmt.Errorf("failed to create directories for %s: %w", uploads, err)
+		return nil, fmt.Errorf("failed to create directories for %s: %w", uploads, err)
 	}
 	for _, p := range posts {
 		urls := ExtractLinksAndSources(p.DOMNode)
@@ -601,11 +614,11 @@ func StaticSiteGenerator() error {
 				newDataPath := path.Join(outputDir, dataPath)
 				f, err := os.ReadFile(dataPath)
 				if err != nil {
-					return fmt.Errorf("failed to read file %s: %w", dataPath, err)
+					return nil, fmt.Errorf("failed to read file %s: %w", dataPath, err)
 				}
 
 				if err := os.WriteFile(newDataPath, f, 0644); err != nil {
-					return fmt.Errorf("failed to write file %s: %w", newDataPath, err)
+					return nil, fmt.Errorf("failed to write file %s: %w", newDataPath, err)
 				}
 			}
 		}
@@ -613,7 +626,7 @@ func StaticSiteGenerator() error {
 
 	err = GenerateSitemap(posts, baseURL, path.Join(outputDir, "sitemap.xml"))
 	if err != nil {
-		return fmt.Errorf("failed to generate sitemap: %v", err)
+		return nil, fmt.Errorf("failed to generate sitemap: %v", err)
 	}
 
 	if err := filepath.WalkDir("breadchris/static", func(path string, d fs.DirEntry, err error) error {
@@ -642,7 +655,7 @@ func StaticSiteGenerator() error {
 		}
 		return nil
 	}); err != nil {
-		return fmt.Errorf("failed to copy static directory: %v", err)
+		return nil, fmt.Errorf("failed to copy static directory: %v", err)
 	}
 
 	d := deps.Deps{
@@ -664,23 +677,23 @@ func StaticSiteGenerator() error {
 					p := strings.Replace(route.Path, "{"+k+"}", v, -1)
 					p = strings.Replace(p, "{"+k+"...}", v, -1)
 					if err = renderRoute(mux, p, outputDir); err != nil {
-						return fmt.Errorf("failed to render route: %v", err)
+						return nil, fmt.Errorf("failed to render route: %v", err)
 					}
 				}
 				// TODO breadchris check go tests to see how they do this?
 				p := strings.Replace(route.Path, "{"+k+"}", "", -1)
 				p = strings.Replace(p, "{"+k+"...}", "", -1)
 				if err = renderRoute(mux, p, outputDir); err != nil {
-					return fmt.Errorf("failed to render route: %v", err)
+					return nil, fmt.Errorf("failed to render route: %v", err)
 				}
 			}
 		} else {
 			if err = renderRoute(mux, route.Path, outputDir); err != nil {
-				return fmt.Errorf("failed to render route: %v", err)
+				return nil, fmt.Errorf("failed to render route: %v", err)
 			}
 		}
 	}
-	return nil
+	return site, nil
 }
 
 func GenerateSitemap(posts []Post, baseURL, outputPath string) error {

@@ -16,6 +16,7 @@ import {WebsocketProvider} from "y-websocket";
 
 export const doc = new Y.Doc();
 
+
 import {
     Block,
     BlockNoteEditor,

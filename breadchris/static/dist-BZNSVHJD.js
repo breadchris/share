@@ -1,1 +1,0 @@
-import{a,b}from"./chunk-YWMMTKX5.js";import"./chunk-WV7SRCBE.js";import"./chunk-DBV4S5OA.js";import"./chunk-WHNJWZ5C.js";import"./chunk-BJDDJEKN.js";import"./chunk-XIZ2MGXJ.js";import"./chunk-RFBBAUMM.js";export{b as angular,a as angularLanguage};
