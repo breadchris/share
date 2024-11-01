@@ -8,6 +8,8 @@
 
 version: 2
 
+dist: bin
+
 before:
   hooks:
     # You may remove this if you don't use go modules.
@@ -22,7 +24,6 @@ builds:
       - linux
       - windows
       - darwin
-    output: bin/{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
 
 
 archives:
