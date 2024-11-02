@@ -601,7 +601,7 @@ func RenderMemo(cal calendar.State, notesState NotesState) *Node {
 									Div(
 										// editor
 										Class(
-											"flex flex-col justify-start items-start relative w-full h-auto max-h-[50vh] bg-inherit dark:text-gray-300",
+											"flex flex-col justify-start items-start relative w-full h-auto bg-inherit dark:text-gray-300",
 										),
 										//TextArea(
 										//	Class(
