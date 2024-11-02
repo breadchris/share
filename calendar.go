@@ -29,8 +29,9 @@ type CalendarEvent struct {
 	Name        string
 	Description string
 	Link        string
-	Attendees   []string // List of User IDs
+	Attendees   []string
 	Date        time.Time
+	ImageURL    string
 }
 
 // In-memory Data Stores
@@ -66,6 +67,7 @@ func SetupCalendar() {
 	http.HandleFunc("/calendar/submit_calendar", submitCalendar)
 	http.HandleFunc("/calendar/load_user_calendars", loadUserCalendars)
 	http.HandleFunc("/calendar/toggle_calendar", toggleCalendar)
+	http.HandleFunc("/calendar/day_events", dayEventsHandler)
 }
 
 func NewCalendar(d deps.Deps) *http.ServeMux {
@@ -211,6 +213,7 @@ func getCalenderEvents() []CalendarEvent {
 				Description: fmt.Sprintf("%s, %s", evt.Location, evt.Region),
 				Date:        eventDate,
 				ID:          int(uuid),
+				ImageURL:    evt.ImageURL,
 			}
 
 			events[strconv.Itoa(newEvent.ID)] = newEvent
@@ -225,6 +228,7 @@ func getCalenderEvents() []CalendarEvent {
 			Name:        evt.Name,
 			Description: evt.Description,
 			Date:        evt.Date,
+			ImageURL:    evt.ImageURL,
 		})
 	}
 	return calendarEvents
@@ -355,23 +359,25 @@ func RenderCalendar(events []CalendarEvent) *Node {
 			TailwindCSS,
 			Style(T(`
 				.modal {
-					position: fixed;
-					top: 0;
-					left: 0;
-					width: 100%;
-					height: 100%;
-					background-color: rgba(0,0,0,0.5);
-					display: flex;
-					justify-content: center;
-					align-items: center;
-				}
-				.modal-content {
-					background-color: #fff;
-					padding: 20px;
-					border-radius: 8px;
-					width: 90%;
-					max-width: 500px;
-				}
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background-color: rgba(0,0,0,0.5);
+				display: flex;
+				justify-content: center;
+				align-items: center;
+			}
+			.modal-content {
+				background-color: #fff;
+				padding: 20px;
+				border-radius: 8px;
+				width: 90%;
+				max-width: 500px;
+				max-height: 80vh;
+				overflow-y: auto;
+			}
 				.modal-close {
 					margin-top: 10px;
 					background-color: #f44336;
@@ -491,11 +497,7 @@ func submitEvent(w http.ResponseWriter, r *http.Request) {
 
 	dataMutex.Lock()
 	monthEvents := getCalenderEvents()
-	// for _, evt := range events {
-	// 	if evt.Date.Year() == year && int(evt.Date.Month()) == month {
-	// 		monthEvents = append(monthEvents, evt)
-	// 	}
-	// }
+
 	dataMutex.Unlock()
 
 	// Generate the updated calendar
@@ -522,15 +524,6 @@ func createMonth(w http.ResponseWriter, r *http.Request) {
 	month, _ := strconv.Atoi(monthStr)
 	year, _ := strconv.Atoi(yearStr)
 
-	// Collect events for the selected month and year
-	// dataMutex.Lock()
-	// monthEvents := []*CalendarEvent{}
-	// for _, evt := range events {
-	// 	if evt.Date.Year() == year && int(evt.Date.Month()) == month {
-	// 		monthEvents = append(monthEvents, evt)
-	// 	}
-	// }
-	// dataMutex.Unlock()
 	monthEvents := getCalenderEvents()
 
 	// Generate the calendar node
@@ -594,6 +587,8 @@ func GenerateCalendar(month, year int, events []CalendarEvent) *Node {
 		for _, evt := range dayEvents {
 			eventNodes = append(eventNodes, Div(
 				Class("bg-blue-100 p-1 mt-1 rounded"),
+				// Prevent click event from bubbling up
+				Attr("onclick", "event.stopPropagation();"),
 				A(
 					Href("#"),
 					T(evt.Name),
@@ -606,6 +601,11 @@ func GenerateCalendar(month, year int, events []CalendarEvent) *Node {
 		}
 		cells = append(cells, Div(
 			Class("p-2 bg-white box-border h-full overflow-hidden"),
+			// Add HTMX attributes here
+			HxGet(fmt.Sprintf("/calendar/day_events?date=%s", dateStr)),
+			HxTarget("#event-modal"),
+			HxSwap("innerHTML"),
+			Attr("style", "cursor:pointer"),
 			Div(Class("text-right text-sm font-bold text-gray-800"), T(strconv.Itoa(day))),
 			Chl(eventNodes...),
 		))
@@ -660,6 +660,9 @@ func viewEvent(w http.ResponseWriter, r *http.Request) {
 		Class("modal"),
 		Div(
 			Class("modal-content"),
+			Img(
+				Src(evt.ImageURL),
+			),
 			H2(Class("text-2xl font-bold mb-4"), T(evt.Name)),
 			P(Class("mb-2"), T("Description: "+evt.Description)),
 			P(Class("mb-2"), T("Date: "+evt.Date.Format("2006-01-02"))),
@@ -811,21 +814,80 @@ func submitCalendar(w http.ResponseWriter, r *http.Request) {
 		checkBoxes.Children = append(checkBoxes.Children, label)
 	}
 
-	// Input(
-	// 	Type("checkbox"),
-	// 	Name("calendar_ids"),
-	// 	Value(string(calendarID)),
-	// 	Class("mr-2"),
-	// 	Checked(true),
-	// 	HxPost("/calendar/toggle_calendar"),
-	// 	HxTarget("#calendar-container"),
-	// 	HxSwap("innerHTML"),
-	// )
-
 	responseHTML := checkBoxes.Render() + `<div id="calendar-modal"></div>`
 
 	w.Header().Set("Content-Type", "text/html")
 	fmt.Fprint(w, responseHTML)
+}
+
+func dayEventsHandler(w http.ResponseWriter, r *http.Request) {
+	dateStr := r.URL.Query().Get("date")
+	if dateStr == "" {
+		http.Error(w, "Date parameter is missing", http.StatusBadRequest)
+		return
+	}
+
+	allEvents := getCalenderEvents()
+	eventsOnDate := []CalendarEvent{}
+	for _, evt := range allEvents {
+		if evt.Date.Format("2006-01-02") == dateStr {
+			eventsOnDate = append(eventsOnDate, evt)
+		}
+	}
+
+	// Create modal content
+	modalContent := Div(
+		Class("modal"),
+		Div(
+			Class("modal-content"),
+			H2(Class("text-2xl font-bold mb-4"), T(fmt.Sprintf("Events on %s", dateStr))),
+			func() *Node {
+				if len(eventsOnDate) == 0 {
+					return P(T("No events on this day."))
+				}
+				eventItems := []*Node{}
+				for _, evt := range eventsOnDate {
+					eventItems = append(eventItems, Div(
+						Class("mb-2"),
+						Img(
+							Src(evt.ImageURL),
+						),
+						H3(Class("text-xl font-semibold"), T(evt.Name)),
+						P(T(evt.Description)),
+						Div(
+							Class("flex"),
+							Button(
+								T("View"),
+								Type("button"),
+								Class("bg-blue-500 text-white px-4 py-2 rounded mr-2"),
+								HxGet(fmt.Sprintf("/calendar/event/%d", evt.ID)),
+								HxTarget("#event-modal"),
+								HxSwap("innerHTML"),
+							),
+							Button(
+								T("Delete"),
+								Type("button"),
+								Class("bg-red-500 text-white px-4 py-2 rounded"),
+								HxPost(fmt.Sprintf("/calendar/delete_event/%d", evt.ID)),
+								HxTarget("#calendar-container"),
+								HxSwap("innerHTML"),
+							),
+						),
+					))
+				}
+				return Div(Chl(eventItems...))
+			}(),
+			Button(
+				T("Close"),
+				Type("button"),
+				Class("modal-close bg-gray-500 text-white px-4 py-2 rounded mt-4"),
+				Attr("onclick", "document.getElementById('event-modal').innerHTML = '';"),
+			),
+		),
+	)
+
+	w.Header().Set("Content-Type", "text/html")
+	fmt.Fprint(w, modalContent.Render())
 }
 
 func SaveEvents() error {
