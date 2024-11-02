@@ -26,6 +26,7 @@
 //go:generate yaegi extract github.com/stripe/stripe-go/v80/checkout/session
 //go:generate yaegi extract github.com/PuerkitoBio/goquery
 //go:generate yaegi extract github.com/gorilla/websocket
+//go:generate yaegi extract github.com/russross/blackfriday/v2
 package symbol
 
 import "reflect"

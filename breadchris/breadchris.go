@@ -68,7 +68,7 @@ func NewRoutes(d deps.Deps) []Route {
 	routes := []Route{
 		NewRoute(
 			"/", ServeNodeCtx(ctx, RenderHome(HomeState{
-				Posts: Filter(posts, func(post Post, i int) bool {
+				Posts: Filter[Post](posts, func(post Post, i int) bool {
 					for _, tag := range post.Tags {
 
 						if strings.HasPrefix(tag, "blog") {

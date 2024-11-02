@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import "@blocknote/core/fonts/inter.css";
 import {
+    createReactInlineContentSpec,
     DefaultReactSuggestionItem,
     getDefaultReactSlashMenuItems,
     SuggestionMenuController,
@@ -21,7 +22,7 @@ import {
     Block,
     BlockNoteEditor,
     BlockNoteSchema,
-    defaultBlockSpecs,
+    defaultBlockSpecs, defaultInlineContentSpecs,
     filterSuggestionItems, insertOrUpdateBlock,
     PartialBlock
 } from "@blocknote/core";
@@ -41,10 +42,33 @@ async function loadFromStorage() {
         : undefined;
 }
 
+export const Mention = createReactInlineContentSpec(
+    {
+        type: "mention",
+        propSchema: {
+            user: {
+                default: "Unknown",
+            },
+        },
+        content: "none",
+    },
+    {
+        render: (props) => (
+            <span style={{ backgroundColor: "#8400ff33" }}>
+        #{props.inlineContent.props.user}
+      </span>
+        ),
+    }
+);
+
 const schema = BlockNoteSchema.create({
     blockSpecs: {
         ...defaultBlockSpecs,
         procode: CodeBlock,
+    },
+    inlineContentSpecs: {
+        ...defaultInlineContentSpecs,
+        mention: Mention,
     }
 });
 
@@ -254,10 +278,37 @@ export const Editor = ({ props }) => {
                     )
                 }
             />
+            <SuggestionMenuController
+                triggerCharacter={"#"}
+                getItems={async (query) =>
+                    // Gets the mentions menu items
+                    filterSuggestionItems(getMentionMenuItems(editor), query)
+                }
+            />
         </BlockNoteView>
     );
 }
 
+const getMentionMenuItems = (
+    editor: typeof schema.BlockNoteEditor
+): DefaultReactSuggestionItem[] => {
+    const users = ["Steve", "Bob", "Joe", "Mike"];
+
+    return users.map((user) => ({
+        title: user,
+        onItemClick: () => {
+            editor.insertInlineContent([
+                {
+                    type: "mention",
+                    props: {
+                        user,
+                    },
+                },
+                " ",
+            ]);
+        },
+    }));
+};
 
 export const Slides = () => {
     const deckDivRef = useRef<HTMLDivElement>(null); // reference to deck container div

@@ -25,6 +25,10 @@ func DefaultLayout(n *Node) *Node {
 	return Html(
 		Head(
 			Meta(Charset("UTF-8")),
+			Meta(Attrs(map[string]string{
+				"name":    "viewport",
+				"content": "width=device-width, initial-scale=1.0",
+			})),
 			DaisyUI,
 			TailwindCSS,
 			HTMX,
@@ -817,6 +821,14 @@ func Src(s string) *Node {
 	}
 }
 
+func Src_(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["src"] = s
+		},
+	}
+}
+
 func Href(s string) *Node {
 	return &Node{
 		transform: func(p *Node) {
@@ -828,6 +840,14 @@ func Href(s string) *Node {
 				}
 				return s
 			}
+		},
+	}
+}
+
+func Href_(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["href"] = s
 		},
 	}
 }
@@ -1052,7 +1072,14 @@ func HxTrigger(s string) *Node {
 func HxGet(s string) *Node {
 	return &Node{
 		transform: func(p *Node) {
-			p.Attrs["hx-get"] = s
+			p.DynamicAttrs["hx-get"] = func(ctx context.Context) string {
+				if strings.HasPrefix(s, "/") {
+					if baseURL, ok := ctx.Value("baseURL").(string); ok {
+						return baseURL + s
+					}
+				}
+				return s
+			}
 		},
 	}
 }
@@ -1060,7 +1087,14 @@ func HxGet(s string) *Node {
 func HxPut(s string) *Node {
 	return &Node{
 		transform: func(p *Node) {
-			p.Attrs["hx-put"] = s
+			p.DynamicAttrs["hx-put"] = func(ctx context.Context) string {
+				if strings.HasPrefix(s, "/") {
+					if baseURL, ok := ctx.Value("baseURL").(string); ok {
+						return baseURL + s
+					}
+				}
+				return s
+			}
 		},
 	}
 }
@@ -1068,7 +1102,14 @@ func HxPut(s string) *Node {
 func HxDelete(s string) *Node {
 	return &Node{
 		transform: func(p *Node) {
-			p.Attrs["hx-delete"] = s
+			p.DynamicAttrs["hx-delete"] = func(ctx context.Context) string {
+				if strings.HasPrefix(s, "/") {
+					if baseURL, ok := ctx.Value("baseURL").(string); ok {
+						return baseURL + s
+					}
+				}
+				return s
+			}
 		},
 	}
 }

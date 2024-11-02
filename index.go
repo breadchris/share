@@ -19,6 +19,7 @@ func Index() *Node {
 	}
 
 	urls := []link{
+		{"/notes/", "Notes"},
 		{"/data/recipes/", "Recipes"},
 		{"/login", "Login"},
 		{"/register", "Register"},

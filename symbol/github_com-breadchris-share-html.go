@@ -4,7 +4,6 @@ package symbol
 
 import (
 	"github.com/breadchris/share/html"
-	"github.com/cogentcore/yaegi/interp"
 	"reflect"
 )
 
@@ -39,7 +38,6 @@ func init() {
 		"Class":                   reflect.ValueOf(html.Class),
 		"ClipRule":                reflect.ValueOf(html.ClipRule),
 		"Code":                    reflect.ValueOf(html.Code),
-		"Contains":                reflect.ValueOf(interp.GenericFunc("func Contains[TC comparable](collection []TC, element TC) bool { //yaegi:add\n\tfor i := range collection {\n\t\tif collection[i] == element {\n\t\t\treturn true\n\t\t}\n\t}\n\n\treturn false\n}")),
 		"Content":                 reflect.ValueOf(html.Content),
 		"Crossorigin":             reflect.ValueOf(html.Crossorigin),
 		"Cx":                      reflect.ValueOf(html.Cx),
@@ -59,7 +57,6 @@ func init() {
 		"FileRule":                reflect.ValueOf(html.FileRule),
 		"Fill":                    reflect.ValueOf(html.Fill),
 		"FillRule":                reflect.ValueOf(html.FillRule),
-		"Filter":                  reflect.ValueOf(interp.GenericFunc("func Filter[TC any, Slice ~[]TC](collection Slice, predicate func(item TC, index int) bool) Slice { //yaegi:add\n\tresult := make(Slice, 0, len(collection))\n\n\tfor i := range collection {\n\t\tif predicate(collection[i], i) {\n\t\t\tresult = append(result, collection[i])\n\t\t}\n\t}\n\n\treturn result\n}")),
 		"Focusable":               reflect.ValueOf(html.Focusable),
 		"Footer":                  reflect.ValueOf(html.Footer),
 		"For":                     reflect.ValueOf(html.For),
@@ -76,6 +73,7 @@ func init() {
 		"Height":                  reflect.ValueOf(html.Height),
 		"Hr":                      reflect.ValueOf(html.Hr),
 		"Href":                    reflect.ValueOf(html.Href),
+		"Href_":                   reflect.ValueOf(html.Href_),
 		"Html":                    reflect.ValueOf(html.Html),
 		"HttpEquiv":               reflect.ValueOf(html.HttpEquiv),
 		"HxDelete":                reflect.ValueOf(html.HxDelete),
@@ -90,13 +88,11 @@ func init() {
 		"Iframe":                  reflect.ValueOf(html.Iframe),
 		"Img":                     reflect.ValueOf(html.Img),
 		"Input":                   reflect.ValueOf(html.Input),
-		"Keys":                    reflect.ValueOf(interp.GenericFunc("func Keys[K comparable, V any](in map[K]V) []K { //yaegi:add\n\tresult := make([]K, 0, len(in))\n\n\tfor k := range in {\n\t\tresult = append(result, k)\n\t}\n\n\treturn result\n}")),
 		"Label":                   reflect.ValueOf(html.Label),
 		"Li":                      reflect.ValueOf(html.Li),
 		"Line":                    reflect.ValueOf(html.Line),
 		"Link":                    reflect.ValueOf(html.Link),
 		"Main":                    reflect.ValueOf(html.Main),
-		"Map":                     reflect.ValueOf(interp.GenericFunc("func Map[TC any, TR any](collection []TC, iteratee func(item TC, index int) TR) []TR { //yaegi:add\n\tresult := make([]TR, len(collection))\n\n\tfor i := range collection {\n\t\tresult[i] = iteratee(collection[i], i)\n\t}\n\n\treturn result\n}")),
 		"Max":                     reflect.ValueOf(html.Max),
 		"Meta":                    reflect.ValueOf(html.Meta),
 		"Method":                  reflect.ValueOf(html.Method),
@@ -142,6 +138,7 @@ func init() {
 		"Sizes":                   reflect.ValueOf(html.Sizes),
 		"Span":                    reflect.ValueOf(html.Span),
 		"Src":                     reflect.ValueOf(html.Src),
+		"Src_":                    reflect.ValueOf(html.Src_),
 		"Stroke":                  reflect.ValueOf(html.Stroke),
 		"StrokeLinecap":           reflect.ValueOf(html.StrokeLinecap),
 		"StrokeLinejoin":          reflect.ValueOf(html.StrokeLinejoin),

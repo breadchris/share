@@ -1,43 +1,111 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/breadchris/share/calendar"
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
+	"github.com/google/uuid"
+	"github.com/russross/blackfriday/v2"
 	"net/http"
 	"strings"
 	"time"
 )
 
+type NotesState struct {
+	Posts []PostState
+}
+
+type PostState struct {
+	ID            string
+	Date          string
+	Content       string
+	CommentURL    string
+	Address       string
+	UserReactions []UserReaction
+	References    []Reference
+}
+
+type UserReaction struct {
+	Emoji string
+	Count int
+	Label string
+}
+
+type Reference struct {
+	ID   string
+	Text string
+	URL  string
+}
+
 func NewNotes(d deps.Deps) *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+
+		var notesState NotesState
+		if err := d.Docs.Get("notes", &notesState); err != nil {
+			notesState = NotesState{}
+			if err = d.Docs.Set("notes", notesState); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		if r.Method == http.MethodDelete {
+			var newPosts []PostState
+			for _, post := range notesState.Posts {
+				if post.ID != id {
+					newPosts = append(newPosts, post)
+				}
+			}
+			notesState.Posts = newPosts
+
+			if err := d.Docs.Set("notes", notesState); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			return
+		}
+
+		if r.Method == http.MethodPost {
+			if err := r.ParseForm(); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			md := r.FormValue("markdown")
+			//bn := r.FormValue("blocknote")
+
+			renderer := blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{})
+			b := blackfriday.Run([]byte(md), blackfriday.WithRenderer(renderer))
+
+			p := PostState{
+				ID:            uuid.NewString(),
+				Content:       string(b),
+				Date:          time.Now().Format("2006-01-02T15:04:05.000Z"),
+				UserReactions: []UserReaction{},
+			}
+			notesState.Posts = append([]PostState{p}, notesState.Posts...)
+
+			if err := d.Docs.Set("notes", notesState); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			ctx := context.WithValue(r.Context(), "baseURL", "/notes")
+			Post(&p).RenderPageCtx(ctx, w, r)
+			return
+		}
+		ctx := context.WithValue(r.Context(), "baseURL", "/notes")
 		DefaultLayout(
-			MemoInterface(),
-		).RenderPage(w, r)
+			MemoInterface(notesState),
+		).RenderPageCtx(ctx, w, r)
 	})
 	return mux
 }
 
-func MemoInterface() *Node {
-	sidebar := Nav(
-		Div(Class("flex flex-col w-64 p-4 bg-gray-100 min-h-screen"),
-			Div(Class("text-center font-bold text-xl mb-8"), Text("notes")),
-			Nav(
-				Ul(Class("space-y-4"),
-					Li(A(Href("#"), T("Home"))),
-					Li(A(Href("#"), T("Resources"))),
-					Li(A(Href("#"), T("Explore"))),
-					Li(A(Href("#"), T("Profile"))),
-					Li(A(Href("#"), T("Inbox"))),
-					Li(A(Href("#"), T("Archived"))),
-					Li(A(Href("#"), T("Settings"))),
-				),
-			),
-		),
-	)
-
+func MemoInterface(notesState NotesState) *Node {
 	events := []calendar.Event{
 		{
 			ID:          "1",
@@ -50,73 +118,9 @@ func MemoInterface() *Node {
 	}
 	cal := calendar.InitializeCalendar(time.Now(), "Month", events)
 
-	rightCalendarSidebar := Div(
-		Class("flex flex-col w-64 p-4 bg-gray-100 min-h-screen"),
-		RenderSmallCalendar(cal),
-	)
-
-	content := Div(Class("flex-grow p-4"),
-		Div(Class("mb-4"),
-			Input(Type("text"), Placeholder("Any thoughts..."), Class("w-full p-2 border rounded")),
-			Div(Class("flex space-x-2 mt-2"),
-				Span(Class("text-blue-500 cursor-pointer"), T("#")),
-				Span(Class("text-blue-500 cursor-pointer"), T("📎")),
-				Span(Class("text-blue-500 cursor-pointer"), T("📷")),
-				Span(Class("text-blue-500 cursor-pointer"), T("🔗")),
-			),
-		),
-		Div(Class("space-y-4"),
-			Div(Class("p-4 border rounded-lg shadow-sm"),
-				Div(Class("flex justify-between"),
-					Span(Class("text-gray-500 text-sm"), T("10 hours ago")),
-					Span(Class("text-gray-500 text-sm"), T("Private")),
-				),
-				Div(Class("mt-2"), Text("Hello world. This is my first memo! #hello")),
-				Div(Class("mt-2 text-sm text-blue-500"), Text("Referenced by (1)")),
-				Div(Class("flex space-x-2 mt-2"),
-					Span(Class("text-gray-500 cursor-pointer"), T("👍")),
-					Span(Class("text-gray-500 cursor-pointer"), T("❤️")),
-					Span(Class("text-gray-500 cursor-pointer"), T("🔥")),
-					Span(Class("text-gray-500 cursor-pointer"), T("😆")),
-				),
-			),
-			Div(Class("p-4 border rounded-lg shadow-sm"),
-				Div(Class("flex justify-between"),
-					Span(Class("text-gray-500 text-sm"), T("10 hours ago")),
-					Span(Class("text-gray-500 text-sm"), T("Private")),
-				),
-				Div(Class("mt-2"), Text("Wow, it can be referenced too! REALLY GREAT!!! #features")),
-				Div(Class("mt-2 text-sm text-blue-500"), Text("Referencing (1)")),
-			),
-			Div(Class("p-4 border rounded-lg shadow-sm"),
-				Div(Class("flex justify-between"),
-					Span(Class("text-gray-500 text-sm"), T("10 hours ago")),
-					Span(Class("text-gray-500 text-sm"), T("To-do")),
-				),
-				Div(Class("mt-2"), Text("And here are my tasks. #todo")),
-				Div(Class("mt-2"),
-					Input(Type("checkbox"), Checked(true)),
-					Span(Class("ml-2"), Text("deploy memos for myself;")),
-				),
-				Div(Class("mt-2"),
-					Input(Type("checkbox")),
-					Span(Class("ml-2"), Text("share to my friends;")),
-				),
-				Div(Class("mt-2"),
-					Input(Type("checkbox")),
-					Span(Class("ml-2"), Text("sounds good to me!")),
-				),
-			),
-		),
-	)
-	_ = Div(Class("flex"),
-		sidebar,
-		content,
-		rightCalendarSidebar,
-	)
 	return DefaultLayout(
 		Div(
-			Link(Href("/breadchris/static/editor.css"), Rel("stylesheet"), Type("text/css")),
+			Link(Href_("/breadchris/static/editor.css"), Rel("stylesheet"), Type("text/css")),
 			Script(Src("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js")),
 			Style(T(`
 					 h1 { font-size: 2em; }
@@ -125,8 +129,8 @@ func MemoInterface() *Node {
 					 h4 { font-size: 1.00em; }
 					 h5 { font-size: 0.8em; }
 				 `)),
-			RenderMemo(cal),
-			Script(Src("/breadchris/static/editor.js"), Type("module")),
+			RenderMemo(cal, notesState),
+			Script(Src_("/breadchris/static/editor.js"), Type("module")),
 		),
 	)
 }
@@ -139,14 +143,14 @@ func RenderSmallCalendar(state calendar.State) *Node {
 		}
 	}
 	return Div(
+		Class("hidden md:block"),
 		H2(
 			Class("text-base font-semibold text-gray-900"),
-			Text("Upcoming meetings"),
 		),
 		Div(
 			//Class("lg:grid lg:grid-cols-12 lg:gap-x-16"),
 			Div(
-				Class("mt-10 text-center lg:col-start-8 lg:col-end-13 lg:row-start-1 lg:mt-9 xl:col-start-9"),
+				Class("text-center lg:col-start-8 lg:col-end-13 lg:row-start-1 lg:mt-9 xl:col-start-9"),
 				Div(
 					Class("flex items-center text-gray-900"),
 					Button(
@@ -260,43 +264,6 @@ func renderEventDetails(event calendar.Event) *Node {
 	)
 }
 
-type PostState struct {
-	Date          string
-	CommentURL    string
-	Address       string
-	UserReactions []UserReaction
-	References    []Reference
-}
-
-type UserReaction struct {
-	Emoji string
-	Count int
-	Label string
-}
-
-type Reference struct {
-	ID   string
-	Text string
-	URL  string
-}
-
-func NewPostState() *PostState {
-	var reactions []UserReaction
-	reactions = append(reactions, UserReaction{Emoji: "👍", Count: 1, Label: "liked"})
-	reactions = append(reactions, UserReaction{Emoji: "🤔", Count: 1, Label: "thinking"})
-
-	var references []Reference
-	references = append(references, Reference{ID: "CwAHDF", Text: "Example text", URL: "/m/CwAHDFbMsGUmSdYXQfVdhq"})
-
-	return &PostState{
-		Date:          "2024-10-30T03:09:52.000Z",
-		CommentURL:    "/m/ZbJvasdLo8W4c9AJvdJWnh#comments",
-		Address:       "东北旺路, Shangdi, 东北旺村, Haidian District, Beijing, 100193, China",
-		UserReactions: reactions,
-		References:    references,
-	}
-}
-
 func Post(state *PostState) *Node {
 	var references []*Node
 	for _, ref := range state.References {
@@ -318,6 +285,7 @@ func Post(state *PostState) *Node {
 	}
 	return Div(
 		Class("group relative flex flex-col justify-start items-start w-full px-4 py-3 mb-2 gap-2 bg-white dark:bg-zinc-800 rounded-lg border border-white dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700"),
+		Id("div-"+state.ID),
 		Div(
 			Class("w-full flex flex-row justify-between items-center gap-2"),
 			Div(
@@ -329,6 +297,40 @@ func Post(state *PostState) *Node {
 			),
 			Div(
 				Class("flex flex-row justify-end items-center select-none shrink-0 gap-2"),
+				Div(
+					Class("w-auto invisible group-hover:visible flex flex-row justify-between items-center gap-2"),
+					Div(
+						AriaControls(":rq:"),
+						Tabindex("0"),
+						Class("MuiMenuButton-root MuiMenuButton-variantOutlined MuiMenuButton-colorNeutral MuiMenuButton-sizeMd"),
+						Role("button"),
+						AriaHaspopup("menu"),
+						AriaExpanded("false"),
+						Span(
+							Class("h-7 w-7 flex justify-center items-center rounded-full border dark:border-zinc-700 hover:opacity-70 border-none w-auto h-auto"),
+							HxGet("/"+state.ID),
+							RenderPencilSvg(),
+						),
+					),
+				),
+				Div(
+					Class("w-auto invisible group-hover:visible flex flex-row justify-between items-center gap-2"),
+					Div(
+						AriaControls(":rq:"),
+						Tabindex("0"),
+						Class("MuiMenuButton-root MuiMenuButton-variantOutlined MuiMenuButton-colorNeutral MuiMenuButton-sizeMd"),
+						Role("button"),
+						AriaHaspopup("menu"),
+						AriaExpanded("false"),
+						Span(
+							Class("h-7 w-7 flex justify-center items-center rounded-full border dark:border-zinc-700 hover:opacity-70 border-none w-auto h-auto"),
+							HxDelete("/"+state.ID),
+							HxTarget("#div-"+state.ID),
+							HxSwap("outerHTML"),
+							RenderTrashSvg(),
+						),
+					),
+				),
 				Div(
 					Class("w-auto invisible group-hover:visible flex flex-row justify-between items-center gap-2"),
 					Div(
@@ -354,19 +356,22 @@ func Post(state *PostState) *Node {
 						),
 					),
 				),
-				A(
-					Class("flex flex-row justify-start items-center hover:opacity-70 invisible group-hover:visible"),
-					Href(state.CommentURL),
-					Svg(
-						Fill("none"), StrokeLinecap("round"), StrokeLinejoin("round"),
-						Class("lucide lucide-message-circle-more w-4 h-4 mx-auto text-gray-500 dark:text-gray-400"),
-						StrokeWidth("2"), Xmlns("http://www.w3.org/2000/svg"), Width("24"), Height("24"),
-						ViewBox("0 0 24 24"), Stroke("currentColor"),
-						Path(D("M7.9 20A9 9 0 1 0 4 16.1L2 22Z")),
-						Path(D("M8 12h.01")),
-						Path(D("M12 12h.01")),
-						Path(D("M16 12h.01")),
+				If(state.CommentURL != "",
+					A(
+						Class("flex flex-row justify-start items-center hover:opacity-70 invisible group-hover:visible"),
+						Href(state.CommentURL),
+						Svg(
+							Fill("none"), StrokeLinecap("round"), StrokeLinejoin("round"),
+							Class("lucide lucide-message-circle-more w-4 h-4 mx-auto text-gray-500 dark:text-gray-400"),
+							StrokeWidth("2"), Xmlns("http://www.w3.org/2000/svg"), Width("24"), Height("24"),
+							ViewBox("0 0 24 24"), Stroke("currentColor"),
+							Path(D("M7.9 20A9 9 0 1 0 4 16.1L2 22Z")),
+							Path(D("M8 12h.01")),
+							Path(D("M12 12h.01")),
+							Path(D("M16 12h.01")),
+						),
 					),
+					Nil(),
 				),
 			),
 		),
@@ -374,45 +379,48 @@ func Post(state *PostState) *Node {
 			Class("w-full flex flex-col justify-start items-start text-gray-800 dark:text-gray-400"),
 			Div(
 				Class("relative w-full max-w-full word-break text-base leading-snug space-y-2 whitespace-pre-wrap"),
-				P(Span(Text("test"))),
+				P(Span(Raw(state.Content))),
 			),
 		),
-		P(
-			Class("w-full flex flex-row gap-0.5 items-center text-gray-500"),
-			Type("button"),
-			AriaHaspopup("dialog"),
-			AriaExpanded("false"),
-			AriaControls("radix-:r19:"),
-			Svg(
-				Width("24"), ViewBox("0 0 24 24"), Fill("none"), Stroke("currentColor"), StrokeLinecap("round"),
-				Class("lucide lucide-map-pin w-4 h-auto shrink-0"), Xmlns("http://www.w3.org/2000/svg"), Height("24"), StrokeWidth("2"), StrokeLinejoin("round"),
-				Path(D("M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0")),
-				Circle(Cx("12"), Cy("10"), R("3")),
-			),
-			Span(Class("text-sm font-normal text-ellipsis whitespace-nowrap overflow-hidden"), Text(state.Address)),
-		),
-		Div(
-			Class("relative flex flex-col justify-start items-start w-full px-2 pt-2 pb-1.5 bg-zinc-50 dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700"),
-			Div(
-				Class("w-full flex flex-row justify-start items-center mb-1 gap-3 opacity-60"),
-				Button(
-					Class("w-auto flex flex-row justify-start items-center text-xs gap-0.5 text-gray-500 text-gray-800 dark:text-gray-400"),
-					Svg(
-						Width("24"), Height("24"), StrokeWidth("2"), StrokeLinejoin("round"), Xmlns("http://www.w3.org/2000/svg"),
-						ViewBox("0 0 24 24"), Fill("none"), Stroke("currentColor"), StrokeLinecap("round"),
-						Class("lucide lucide-link w-3 h-auto shrink-0 opacity-70"),
-						Path(D("M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71")),
-						Path(D("M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71")),
-					),
-					Span(Text("Referencing")),
-					Span(Class("opacity-80"), Text("(1)")),
+		If(state.Address != "",
+			P(
+				Class("w-full flex flex-row gap-0.5 items-center text-gray-500"),
+				Type("button"),
+				AriaHaspopup("dialog"),
+				AriaExpanded("false"),
+				AriaControls("radix-:r19:"),
+				Svg(
+					Width("24"), ViewBox("0 0 24 24"), Fill("none"), Stroke("currentColor"), StrokeLinecap("round"),
+					Class("lucide lucide-map-pin w-4 h-auto shrink-0"), Xmlns("http://www.w3.org/2000/svg"), Height("24"), StrokeWidth("2"), StrokeLinejoin("round"),
+					Path(D("M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0")),
+					Circle(Cx("12"), Cy("10"), R("3")),
 				),
-			),
-			Div(
-				Class("w-full flex flex-col justify-start items-start"),
-				Ch(references),
-			),
+				Span(Class("text-sm font-normal text-ellipsis whitespace-nowrap overflow-hidden"), Text(state.Address)),
+			), Nil(),
 		),
+		If(len(references) > 0,
+			Div(
+				Class("relative flex flex-col justify-start items-start w-full px-2 pt-2 pb-1.5 bg-zinc-50 dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-700"),
+				Div(
+					Class("w-full flex flex-row justify-start items-center mb-1 gap-3 opacity-60"),
+					Button(
+						Class("w-auto flex flex-row justify-start items-center text-xs gap-0.5 text-gray-500 text-gray-800 dark:text-gray-400"),
+						Svg(
+							Width("24"), Height("24"), StrokeWidth("2"), StrokeLinejoin("round"), Xmlns("http://www.w3.org/2000/svg"),
+							ViewBox("0 0 24 24"), Fill("none"), Stroke("currentColor"), StrokeLinecap("round"),
+							Class("lucide lucide-link w-3 h-auto shrink-0 opacity-70"),
+							Path(D("M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71")),
+							Path(D("M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71")),
+						),
+						Span(Text("Referencing")),
+						Span(Class("opacity-80"), Text("(1)")),
+					),
+				),
+				Div(
+					Class("w-full flex flex-col justify-start items-start"),
+					Ch(references),
+				),
+			), Nil()),
 		Div(
 			Class("w-full flex flex-row justify-start items-start flex-wrap gap-1 select-none"),
 			Ch(reactions),
@@ -420,11 +428,49 @@ func Post(state *PostState) *Node {
 	)
 }
 
-func RenderMemo(cal calendar.State) *Node {
+func RenderPencilSvg() *Node {
+	return Svg(
+		Height("24"),
+		ViewBox("0 0 24 24"),
+		Fill("none"),
+		Stroke("currentColor"),
+		StrokeLinejoin("round"),
+		Class("lucide lucide-message-circle-more w-4 h-4 mx-auto text-gray-500 dark:text-gray-400"),
+		Xmlns("http://www.w3.org/2000/svg"),
+		Width("24"),
+		StrokeWidth("2"),
+		StrokeLinecap("round"),
+		Path(
+			D(
+				"M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z",
+			),
+		),
+		Path(D("m15 5 4 4")),
+	)
+}
+
+func RenderTrashSvg() *Node {
+	return Svg(
+		StrokeLinejoin("round"),
+		Xmlns("http://www.w3.org/2000/svg"),
+		ViewBox("0 0 24 24"),
+		Fill("none"),
+		StrokeLinecap("round"),
+		Class("lucide lucide-message-circle-more w-4 h-4 mx-auto text-gray-500 dark:text-gray-400"),
+		Width("24"),
+		Height("24"),
+		Stroke("currentColor"),
+		StrokeWidth("2"),
+		Path(D("M3 6h18")),
+		Path(D("M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6")),
+		Path(D("M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2")),
+	)
+}
+
+func RenderMemo(cal calendar.State, notesState NotesState) *Node {
 	var posts []*Node
-	for i := 0; i < 10; i++ {
-		s := NewPostState()
-		posts = append(posts, Post(s))
+	for _, s := range notesState.Posts {
+		posts = append(posts, Post(&s))
 	}
 	return Div(
 		Class("w-full min-h-full"),
@@ -434,7 +480,7 @@ func RenderMemo(cal calendar.State) *Node {
 			),
 			Div(
 				Class(
-					"group flex flex-col justify-start items-start fixed top-0 left-0 select-none border-r dark:border-zinc-800 h-full bg-zinc-50 dark:bg-zinc-800 dark:bg-opacity-40 transition-all hover:shadow-xl z-2 w-56 px-4",
+					"hidden sm:block group flex flex-col justify-start items-start fixed top-0 left-0 select-none border-r dark:border-zinc-800 h-full bg-zinc-50 dark:bg-zinc-800 dark:bg-opacity-40 transition-all hover:shadow-xl z-2 w-56 px-4",
 				),
 				Header(
 					Class(
@@ -455,16 +501,16 @@ func RenderMemo(cal calendar.State) *Node {
 								Class(
 									"py-1 my-1 w-auto flex flex-row justify-start items-center cursor-pointer text-gray-800 dark:text-gray-400 px-3",
 								),
-								Div(
-									Class("w-8 h-8 overflow-clip rounded-xl shrink-0"),
-									Img(
-										Class(
-											"w-full h-auto shadow min-w-full min-h-full object-cover dark:opacity-80",
-										),
-										Src("/full-logo.webp"),
-										Alt(""),
-									),
-								),
+								//Div(
+								//	Class("w-8 h-8 overflow-clip rounded-xl shrink-0"),
+								//	Img(
+								//		Class(
+								//			"w-full h-auto shadow min-w-full min-h-full object-cover dark:opacity-80",
+								//		),
+								//		Src("/full-logo.webp"),
+								//		Alt(""),
+								//	),
+								//),
 								Span(
 									Class(
 										"ml-2 text-lg font-medium text-slate-800 dark:text-gray-300 shrink truncate",
@@ -503,159 +549,6 @@ func RenderMemo(cal calendar.State) *Node {
 								),
 							),
 							Span(Class("ml-3 truncate"), Text("Home")),
-						),
-						A(
-							Id("header-resources"),
-							Class(
-								"px-2 py-2 rounded-2xl border flex flex-row items-center text-lg text-gray-800 dark:text-gray-400 hover:bg-white hover:border-gray-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 w-full px-4 border-transparent",
-							),
-							Href("/resources"),
-							Svg(
-								StrokeLinejoin("round"),
-								Xmlns("http://www.w3.org/2000/svg"),
-								Width("24"),
-								Height("24"),
-								Fill("none"),
-								Stroke("currentColor"),
-								StrokeWidth("2"),
-								StrokeLinecap("round"),
-								ViewBox("0 0 24 24"),
-								Class("lucide lucide-paperclip w-6 h-auto opacity-70 shrink-0"),
-								Path(
-									D(
-										"m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48",
-									),
-								),
-							),
-							Span(Class("ml-3 truncate"), Text("Resources")),
-						),
-						A(
-							Id("header-explore"),
-							Class(
-								"px-2 py-2 rounded-2xl border flex flex-row items-center text-lg text-gray-800 dark:text-gray-400 hover:bg-white hover:border-gray-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 w-full px-4 border-transparent",
-							),
-							Href("/explore"),
-							Svg(
-								Fill("none"),
-								StrokeWidth("2"),
-								StrokeLinejoin("round"),
-								Width("24"),
-								Height("24"),
-								Stroke("currentColor"),
-								StrokeLinecap("round"),
-								Class("lucide lucide-earth w-6 h-auto opacity-70 shrink-0"),
-								Xmlns("http://www.w3.org/2000/svg"),
-								ViewBox("0 0 24 24"),
-								Path(D("M21.54 15H17a2 2 0 0 0-2 2v4.54")),
-								Path(
-									D(
-										"M7 3.34V5a3 3 0 0 0 3 3a2 2 0 0 1 2 2c0 1.1.9 2 2 2a2 2 0 0 0 2-2c0-1.1.9-2 2-2h3.17",
-									),
-								),
-								Path(
-									D(
-										"M11 21.95V18a2 2 0 0 0-2-2a2 2 0 0 1-2-2v-1a2 2 0 0 0-2-2H2.05",
-									),
-								),
-								Circle(Cx("12"), Cy("12"), R("10")),
-							),
-							Span(Class("ml-3 truncate"), Text("Explore")),
-						),
-						A(
-							Id("header-profile"),
-							Class(
-								"px-2 py-2 rounded-2xl border flex flex-row items-center text-lg text-gray-800 dark:text-gray-400 hover:bg-white hover:border-gray-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 w-full px-4 border-transparent",
-							),
-							Href("/u/yourselfhosted"),
-							Svg(
-								StrokeLinejoin("round"),
-								Class("lucide lucide-user-round w-6 h-auto opacity-70 shrink-0"),
-								Width("24"),
-								Fill("none"),
-								Stroke("currentColor"),
-								StrokeWidth("2"),
-								Xmlns("http://www.w3.org/2000/svg"),
-								Height("24"),
-								ViewBox("0 0 24 24"),
-								StrokeLinecap("round"),
-								Circle(Cx("12"), Cy("8"), R("5")),
-								Path(D("M20 21a8 8 0 0 0-16 0")),
-							),
-							Span(Class("ml-3 truncate"), Text("Profile")),
-						),
-						A(
-							Id("header-inbox"),
-							Class(
-								"px-2 py-2 rounded-2xl border flex flex-row items-center text-lg text-gray-800 dark:text-gray-400 hover:bg-white hover:border-gray-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 w-full px-4 border-transparent",
-							),
-							Href("/inbox"),
-							Div(
-								Class("relative"),
-								Svg(
-									Height("24"),
-									Fill("none"),
-									StrokeLinecap("round"),
-									Xmlns("http://www.w3.org/2000/svg"),
-									Width("24"),
-									ViewBox("0 0 24 24"),
-									Stroke("currentColor"),
-									StrokeWidth("2"),
-									StrokeLinejoin("round"),
-									Class("lucide lucide-bell w-6 h-auto opacity-70 shrink-0"),
-									Path(D("M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9")),
-									Path(D("M10.3 21a1.94 1.94 0 0 0 3.4 0")),
-								),
-							),
-							Span(Class("ml-3 truncate"), Text("Inbox")),
-						),
-						A(
-							Id("header-archived"),
-							Class(
-								"px-2 py-2 rounded-2xl border flex flex-row items-center text-lg text-gray-800 dark:text-gray-400 hover:bg-white hover:border-gray-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 w-full px-4 border-transparent",
-							),
-							Href("/archived"),
-							Svg(
-								StrokeLinecap("round"),
-								Class("lucide lucide-archive w-6 h-auto opacity-70 shrink-0"),
-								Xmlns("http://www.w3.org/2000/svg"),
-								Width("24"),
-								ViewBox("0 0 24 24"),
-								Stroke("currentColor"),
-								Height("24"),
-								Fill("none"),
-								StrokeWidth("2"),
-								StrokeLinejoin("round"),
-								Rect(Y("3"), Rx("1"), Width("20"), Height("5"), X("2")),
-								Path(D("M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8")),
-								Path(D("M10 12h4")),
-							),
-							Span(Class("ml-3 truncate"), Text("Archived")),
-						),
-						A(
-							Class(
-								"px-2 py-2 rounded-2xl border flex flex-row items-center text-lg text-gray-800 dark:text-gray-400 hover:bg-white hover:border-gray-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 w-full px-4 border-transparent",
-							),
-							Href("/setting"),
-							Id("header-setting"),
-							Svg(
-								Height("24"),
-								Fill("none"),
-								StrokeWidth("2"),
-								StrokeLinecap("round"),
-								StrokeLinejoin("round"),
-								Class("lucide lucide-settings w-6 h-auto opacity-70 shrink-0"),
-								Xmlns("http://www.w3.org/2000/svg"),
-								Width("24"),
-								ViewBox("0 0 24 24"),
-								Stroke("currentColor"),
-								Path(
-									D(
-										"M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z",
-									),
-								),
-								Circle(R("3"), Cx("12"), Cy("12")),
-							),
-							Span(Class("ml-3 truncate"), Text("Settings")),
 						),
 					),
 				),
@@ -700,55 +593,67 @@ func RenderMemo(cal calendar.State) *Node {
 									"mb-2 relative w-full flex flex-col justify-start items-start bg-white dark:bg-zinc-800 px-4 pt-4 rounded-lg border border-gray-200 dark:border-zinc-700",
 								),
 								Tabindex("0"),
-								Div(
-									// editor
-									Class(
-										"flex flex-col justify-start items-start relative w-full h-auto max-h-[50vh] bg-inherit dark:text-gray-300",
-									),
-									//TextArea(
-									//	Class(
-									//		"w-full h-full my-1 text-base resize-none overflow-x-hidden overflow-y-auto bg-transparent outline-none whitespace-pre-wrap word-break",
-									//	),
-									//	Placeholder("Any thoughts..."),
-									//),
-									Div(Class("w-full"), Id("editor")),
-								),
-								Div(
-									Class(
-										"w-full flex flex-row justify-between items-center py-3 dark:border-t-zinc-500",
+								Form(
+									Class("w-full flex flex-col justify-start items-start"),
+									HxPost("/"),
+									HxTarget("#posts"),
+									HxSwap("afterbegin"),
+									Div(
+										// editor
+										Class(
+											"flex flex-col justify-start items-start relative w-full h-auto max-h-[50vh] bg-inherit dark:text-gray-300",
+										),
+										//TextArea(
+										//	Class(
+										//		"w-full h-full my-1 text-base resize-none overflow-x-hidden overflow-y-auto bg-transparent outline-none whitespace-pre-wrap word-break",
+										//	),
+										//	Placeholder("Any thoughts..."),
+										//),
+										Div(Class("w-full"), Id("editor")),
+										Input(Type("hidden"), Id("markdown"), Name("markdown")),
+										Input(Type("hidden"), Id("blocknote"), Name("blocknote")),
 									),
 									Div(
 										Class(
-											"shrink-0 flex flex-row justify-end items-center gap-2",
+											"w-full flex flex-row justify-between items-center py-3 dark:border-t-zinc-500",
 										),
-										Button(
+										Div(
 											Class(
-												"border-box inline-flex items-center justify-center rounded-md bg-primary text-zinc-50 dark:bg-primary-darker dark:text-zinc-100 text-sm px-3 py-2 h-9 opacity-60 cursor-not-allowed shadow-none",
+												"shrink-0 flex flex-row justify-end items-center gap-2",
 											),
-											Text("Save"),
-											Svg(
-												StrokeLinecap("round"),
-												StrokeLinejoin("round"),
-												Class("lucide lucide-send w-4 h-auto ml-1"),
-												ViewBox("0 0 24 24"),
-												Fill("none"),
-												Stroke("currentColor"),
-												StrokeWidth("2"),
-												Xmlns("http://www.w3.org/2000/svg"),
-												Width("24"),
-												Height("24"),
-												Path(
-													D(
-														"M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z",
-													),
+											Button(
+												Class(
+													"btn",
 												),
-												Path(D("m21.854 2.147-10.94 10.939")),
+												Type("submit"),
+												Text("Save"),
+												Svg(
+													StrokeLinecap("round"),
+													StrokeLinejoin("round"),
+													Class("lucide lucide-send w-4 h-auto ml-1"),
+													ViewBox("0 0 24 24"),
+													Fill("none"),
+													Stroke("currentColor"),
+													StrokeWidth("2"),
+													Xmlns("http://www.w3.org/2000/svg"),
+													Width("24"),
+													Height("24"),
+													Path(
+														D(
+															"M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z",
+														),
+													),
+													Path(D("m21.854 2.147-10.94 10.939")),
+												),
 											),
 										),
 									),
 								),
 							),
-							Ch(posts),
+							Div(
+								Id("posts"),
+								Ch(posts),
+							),
 						),
 						RenderSmallCalendar(cal),
 					),
@@ -1643,6 +1548,164 @@ func ToolbarIcons() *Node {
 			Class(
 				"MuiDivider-root MuiDivider-horizontal !mt-2 opacity-40 css-w2e6ki",
 			),
+		),
+	)
+}
+
+func Sidebar() *Node {
+	return Div(
+		A(
+			Id("header-resources"),
+			Class(
+				"px-2 py-2 rounded-2xl border flex flex-row items-center text-lg text-gray-800 dark:text-gray-400 hover:bg-white hover:border-gray-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 w-full px-4 border-transparent",
+			),
+			Href("/resources"),
+			Svg(
+				StrokeLinejoin("round"),
+				Xmlns("http://www.w3.org/2000/svg"),
+				Width("24"),
+				Height("24"),
+				Fill("none"),
+				Stroke("currentColor"),
+				StrokeWidth("2"),
+				StrokeLinecap("round"),
+				ViewBox("0 0 24 24"),
+				Class("lucide lucide-paperclip w-6 h-auto opacity-70 shrink-0"),
+				Path(
+					D(
+						"m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48",
+					),
+				),
+			),
+			Span(Class("ml-3 truncate"), Text("Resources")),
+		),
+		A(
+			Id("header-explore"),
+			Class(
+				"px-2 py-2 rounded-2xl border flex flex-row items-center text-lg text-gray-800 dark:text-gray-400 hover:bg-white hover:border-gray-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 w-full px-4 border-transparent",
+			),
+			Href("/explore"),
+			Svg(
+				Fill("none"),
+				StrokeWidth("2"),
+				StrokeLinejoin("round"),
+				Width("24"),
+				Height("24"),
+				Stroke("currentColor"),
+				StrokeLinecap("round"),
+				Class("lucide lucide-earth w-6 h-auto opacity-70 shrink-0"),
+				Xmlns("http://www.w3.org/2000/svg"),
+				ViewBox("0 0 24 24"),
+				Path(D("M21.54 15H17a2 2 0 0 0-2 2v4.54")),
+				Path(
+					D(
+						"M7 3.34V5a3 3 0 0 0 3 3a2 2 0 0 1 2 2c0 1.1.9 2 2 2a2 2 0 0 0 2-2c0-1.1.9-2 2-2h3.17",
+					),
+				),
+				Path(
+					D(
+						"M11 21.95V18a2 2 0 0 0-2-2a2 2 0 0 1-2-2v-1a2 2 0 0 0-2-2H2.05",
+					),
+				),
+				Circle(Cx("12"), Cy("12"), R("10")),
+			),
+			Span(Class("ml-3 truncate"), Text("Explore")),
+		),
+		A(
+			Id("header-profile"),
+			Class(
+				"px-2 py-2 rounded-2xl border flex flex-row items-center text-lg text-gray-800 dark:text-gray-400 hover:bg-white hover:border-gray-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 w-full px-4 border-transparent",
+			),
+			Href("/u/yourselfhosted"),
+			Svg(
+				StrokeLinejoin("round"),
+				Class("lucide lucide-user-round w-6 h-auto opacity-70 shrink-0"),
+				Width("24"),
+				Fill("none"),
+				Stroke("currentColor"),
+				StrokeWidth("2"),
+				Xmlns("http://www.w3.org/2000/svg"),
+				Height("24"),
+				ViewBox("0 0 24 24"),
+				StrokeLinecap("round"),
+				Circle(Cx("12"), Cy("8"), R("5")),
+				Path(D("M20 21a8 8 0 0 0-16 0")),
+			),
+			Span(Class("ml-3 truncate"), Text("Profile")),
+		),
+		A(
+			Id("header-inbox"),
+			Class(
+				"px-2 py-2 rounded-2xl border flex flex-row items-center text-lg text-gray-800 dark:text-gray-400 hover:bg-white hover:border-gray-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 w-full px-4 border-transparent",
+			),
+			Href("/inbox"),
+			Div(
+				Class("relative"),
+				Svg(
+					Height("24"),
+					Fill("none"),
+					StrokeLinecap("round"),
+					Xmlns("http://www.w3.org/2000/svg"),
+					Width("24"),
+					ViewBox("0 0 24 24"),
+					Stroke("currentColor"),
+					StrokeWidth("2"),
+					StrokeLinejoin("round"),
+					Class("lucide lucide-bell w-6 h-auto opacity-70 shrink-0"),
+					Path(D("M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9")),
+					Path(D("M10.3 21a1.94 1.94 0 0 0 3.4 0")),
+				),
+			),
+			Span(Class("ml-3 truncate"), Text("Inbox")),
+		),
+		A(
+			Id("header-archived"),
+			Class(
+				"px-2 py-2 rounded-2xl border flex flex-row items-center text-lg text-gray-800 dark:text-gray-400 hover:bg-white hover:border-gray-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 w-full px-4 border-transparent",
+			),
+			Href("/archived"),
+			Svg(
+				StrokeLinecap("round"),
+				Class("lucide lucide-archive w-6 h-auto opacity-70 shrink-0"),
+				Xmlns("http://www.w3.org/2000/svg"),
+				Width("24"),
+				ViewBox("0 0 24 24"),
+				Stroke("currentColor"),
+				Height("24"),
+				Fill("none"),
+				StrokeWidth("2"),
+				StrokeLinejoin("round"),
+				Rect(Y("3"), Rx("1"), Width("20"), Height("5"), X("2")),
+				Path(D("M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8")),
+				Path(D("M10 12h4")),
+			),
+			Span(Class("ml-3 truncate"), Text("Archived")),
+		),
+		A(
+			Class(
+				"px-2 py-2 rounded-2xl border flex flex-row items-center text-lg text-gray-800 dark:text-gray-400 hover:bg-white hover:border-gray-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 w-full px-4 border-transparent",
+			),
+			Href("/setting"),
+			Id("header-setting"),
+			Svg(
+				Height("24"),
+				Fill("none"),
+				StrokeWidth("2"),
+				StrokeLinecap("round"),
+				StrokeLinejoin("round"),
+				Class("lucide lucide-settings w-6 h-auto opacity-70 shrink-0"),
+				Xmlns("http://www.w3.org/2000/svg"),
+				Width("24"),
+				ViewBox("0 0 24 24"),
+				Stroke("currentColor"),
+				Path(
+					D(
+						"M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z",
+					),
+				),
+				Circle(R("3"), Cx("12"), Cy("12")),
+			),
+			Span(Class("ml-3 truncate"), Text("Settings")),
 		),
 	)
 }

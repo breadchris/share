@@ -1,6 +1,6 @@
 package html
 
-func Map[TC any, TR any](collection []TC, iteratee func(item TC, index int) TR) []TR { //yaegi:add
+func Map[TC any, TR any](collection []TC, iteratee func(item TC, index int) TR) []TR {
 	result := make([]TR, len(collection))
 
 	for i := range collection {
@@ -10,7 +10,7 @@ func Map[TC any, TR any](collection []TC, iteratee func(item TC, index int) TR) 
 	return result
 }
 
-func Filter[TC any, Slice ~[]TC](collection Slice, predicate func(item TC, index int) bool) Slice { //yaegi:add
+func Filter[TC any, Slice ~[]TC](collection Slice, predicate func(item TC, index int) bool) Slice {
 	result := make(Slice, 0, len(collection))
 
 	for i := range collection {
@@ -22,7 +22,7 @@ func Filter[TC any, Slice ~[]TC](collection Slice, predicate func(item TC, index
 	return result
 }
 
-func Keys[K comparable, V any](in map[K]V) []K { //yaegi:add
+func Keys[K comparable, V any](in map[K]V) []K {
 	result := make([]K, 0, len(in))
 
 	for k := range in {
@@ -32,7 +32,7 @@ func Keys[K comparable, V any](in map[K]V) []K { //yaegi:add
 	return result
 }
 
-func Contains[TC comparable](collection []TC, element TC) bool { //yaegi:add
+func Contains[TC comparable](collection []TC, element TC) bool {
 	for i := range collection {
 		if collection[i] == element {
 			return true
