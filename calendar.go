@@ -81,6 +81,27 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 	return m
 }
 
+// Serve the user dashboard
+func handleCalendar(w http.ResponseWriter, r *http.Request) {
+
+	user := getCurrentUser(r)
+	dataMutex.Lock()
+	userCalIDs := userCalendars[user.ID]
+	userCals := []*Calendar{}
+	for _, calID := range userCalIDs {
+		if cal, exists := calendars[calID]; exists {
+			userCals = append(userCals, cal)
+		}
+	}
+	dataMutex.Unlock()
+
+	calendarEvents := getCalenderEvents()
+
+	page := RenderCalendar(calendarEvents)
+
+	page.RenderPage(w, r)
+}
+
 func toggleCalendar(w http.ResponseWriter, r *http.Request) {
 	user := getCurrentUser(r)
 	calendarIDStr := r.FormValue("calendar_id")
@@ -174,7 +195,7 @@ func getCalenderEvents() []CalendarEvent {
 
 	eventsByDate := loadEvents()
 
-	for dateStr, events := range eventsByDate {
+	for dateStr, everoutEvents := range eventsByDate {
 		dateStr := strings.Split(dateStr, "-top")[0]
 		// Parse the date string into time.Time
 		eventDate, err := time.Parse("2006-01-02", dateStr)
@@ -182,13 +203,29 @@ func getCalenderEvents() []CalendarEvent {
 			fmt.Printf("Invalid date format: %s\n", dateStr)
 			continue
 		}
-		for _, evt := range events {
-			calendarEvents = append(calendarEvents, CalendarEvent{
+		for _, evt := range everoutEvents {
+			uuid := time.Now().Unix()
+
+			newEvent := CalendarEvent{
 				Name:        evt.Title,
 				Description: fmt.Sprintf("%s, %s", evt.Location, evt.Region),
 				Date:        eventDate,
-			})
+				ID:          int(uuid),
+			}
+
+			events[strconv.Itoa(newEvent.ID)] = newEvent
+
+			calendarEvents = append(calendarEvents, newEvent)
 		}
+	}
+
+	for _, evt := range events {
+		calendarEvents = append(calendarEvents, CalendarEvent{
+			ID:          evt.ID,
+			Name:        evt.Name,
+			Description: evt.Description,
+			Date:        evt.Date,
+		})
 	}
 	return calendarEvents
 }
@@ -378,42 +415,6 @@ func RenderCalendar(events []CalendarEvent) *Node {
 	return page
 }
 
-// Serve the user dashboard
-func handleCalendar(w http.ResponseWriter, r *http.Request) {
-
-	user := getCurrentUser(r)
-	dataMutex.Lock()
-	userCalIDs := userCalendars[user.ID]
-	userCals := []*Calendar{}
-	for _, calID := range userCalIDs {
-		if cal, exists := calendars[calID]; exists {
-			userCals = append(userCals, cal)
-		}
-	}
-	dataMutex.Unlock()
-
-	var calendarEvents []CalendarEvent
-	for dateStr, events := range loadEvents() {
-		// Parse the date string into time.Time
-		eventDate, err := time.Parse("2006-01-02", dateStr)
-		if err != nil {
-			fmt.Printf("Invalid date format: %s\n", dateStr)
-			continue
-		}
-		for _, evt := range events {
-			calendarEvents = append(calendarEvents, CalendarEvent{
-				Name:        evt.Title,
-				Description: fmt.Sprintf("%s, %s", evt.Location, evt.Region),
-				Date:        eventDate,
-			})
-		}
-	}
-
-	page := RenderCalendar(calendarEvents)
-
-	page.RenderPage(w, r)
-}
-
 func createEventForm(w http.ResponseWriter, r *http.Request) {
 	form := Div(
 		Class("modal"),
@@ -480,6 +481,8 @@ func submitEvent(w http.ResponseWriter, r *http.Request) {
 	}
 	events[strconv.Itoa(eventID)] = newEvent
 	// SaveEvents()
+
+	// SaveEvents()
 	dataMutex.Unlock()
 
 	// Collect events for the month and year
@@ -488,11 +491,11 @@ func submitEvent(w http.ResponseWriter, r *http.Request) {
 
 	dataMutex.Lock()
 	monthEvents := getCalenderEvents()
-	for _, evt := range events {
-		if evt.Date.Year() == year && int(evt.Date.Month()) == month {
-			monthEvents = append(monthEvents, evt)
-		}
-	}
+	// for _, evt := range events {
+	// 	if evt.Date.Year() == year && int(evt.Date.Month()) == month {
+	// 		monthEvents = append(monthEvents, evt)
+	// 	}
+	// }
 	dataMutex.Unlock()
 
 	// Generate the updated calendar
@@ -710,12 +713,7 @@ func deleteEvent(w http.ResponseWriter, r *http.Request) {
 	year := evt.Date.Year()
 
 	dataMutex.Lock()
-	monthEvents := []CalendarEvent{}
-	for _, e := range events {
-		if e.Date.Year() == year && int(e.Date.Month()) == month {
-			monthEvents = append(monthEvents, e)
-		}
-	}
+	monthEvents := getCalenderEvents()
 	dataMutex.Unlock()
 
 	// Generate the updated calendar
@@ -831,26 +829,32 @@ func submitCalendar(w http.ResponseWriter, r *http.Request) {
 }
 
 func SaveEvents() error {
+	fmt.Println("Saving events data to file:", eventsFilePath)
 	dataMutex.Lock()
 	defer dataMutex.Unlock()
 
 	// Marshal the events map to JSON
 	data, err := json.MarshalIndent(events, "", "  ")
 	if err != nil {
+		fmt.Println("Error marshalling events data:", err)
 		return err
 	}
 
-	// Ensure the directory exists
-	err = os.MkdirAll(filepath.Dir(eventsFilePath), os.ModePerm)
-	if err != nil {
-		return err
+	// if eventsFilePath does not exist, create it
+	if _, err := os.Stat(eventsFilePath); os.IsNotExist(err) {
+		err := os.MkdirAll(filepath.Dir(eventsFilePath), 0755)
+		if err != nil {
+			fmt.Println("Error creating events data directory:", err)
+			return err
+		}
 	}
 
 	// Write the JSON data to the file
 	err = os.WriteFile(eventsFilePath, data, 0644)
 	if err != nil {
+		fmt.Println("Error writing events data to file:", err)
 		return err
 	}
-
+	fmt.Println("Events data saved to file:", eventsFilePath)
 	return nil
 }
