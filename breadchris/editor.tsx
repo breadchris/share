@@ -17,7 +17,6 @@ import {WebsocketProvider} from "y-websocket";
 
 export const doc = new Y.Doc();
 
-
 import {
     Block,
     BlockNoteEditor,
@@ -65,6 +64,7 @@ const schema = BlockNoteSchema.create({
     blockSpecs: {
         ...defaultBlockSpecs,
         procode: CodeBlock,
+        location: LocationBlock,
     },
     inlineContentSpecs: {
         ...defaultInlineContentSpecs,
@@ -258,7 +258,6 @@ export const Editor = ({ props }) => {
         return <div>Loading...</div>;
     }
 
-    // Renders the editor instance.
     return (
         <BlockNoteView
             editor={editor}
@@ -273,7 +272,7 @@ export const Editor = ({ props }) => {
                 triggerCharacter={"/"}
                 getItems={async (query) =>
                     filterSuggestionItems(
-                        [...getDefaultReactSlashMenuItems(editor), insertCode(), insertAI(editor)],
+                        [...getDefaultReactSlashMenuItems(editor), insertCode(), insertLocation(), insertAI(editor)],
                         query
                     )
                 }
@@ -354,6 +353,7 @@ export const Slides = () => {
 import {createRoot} from 'react-dom/client';
 import {CodeBlock, insertCode} from "./CodeBlock";
 import {contentService} from "./ContentService";
+import {insertLocation, LocationBlock} from "./LocationPicker";
 const e = document.getElementById('editor');
 if (e) {
     const r = createRoot(e);

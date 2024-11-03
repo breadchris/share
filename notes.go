@@ -201,11 +201,11 @@ func RenderSmallCalendar(state calendar.State) *Node {
 						})
 					})),
 				),
-				Button(
-					Type("button"),
-					Class("mt-8 w-full rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"),
-					Text("Add event"),
-				),
+				//Button(
+				//	Type("button"),
+				//	Class("mt-8 w-full rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"),
+				//	Text("Add event"),
+				//),
 			),
 			Ol(
 				Class("mt-4 divide-y divide-gray-100 text-sm/6 lg:col-span-7 xl:col-span-8"),

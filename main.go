@@ -156,6 +156,7 @@ func startServer(useTLS bool, port int) {
 					".ts":    api.LoaderTS,
 					".tsx":   api.LoaderTSX,
 					".woff":  api.LoaderFile,
+					".png":   api.LoaderFile,
 					".woff2": api.LoaderFile,
 					".ttf":   api.LoaderFile,
 					".eot":   api.LoaderFile,
