@@ -33,6 +33,7 @@ type CalendarEvent struct {
 	Attendees   []string
 	Date        time.Time
 	ImageURL    string
+	EventURL    string
 }
 
 // In-memory Data Stores
@@ -213,6 +214,7 @@ func getCalenderEvents() []CalendarEvent {
 				Date:        eventDate,
 				ID:          hash(evt.EventURL),
 				ImageURL:    evt.ImageURL,
+				EventURL:    evt.EventURL,
 			}
 
 			events[newEvent.ID] = newEvent
@@ -655,6 +657,7 @@ func viewEvent(w http.ResponseWriter, r *http.Request) {
 			H2(Class("text-2xl font-bold mb-4"), T(evt.Name)),
 			P(Class("mb-2"), T("Description: "+evt.Description)),
 			P(Class("mb-2"), T("Date: "+evt.Date.Format("2006-01-02"))),
+			A(Class("mb-2 no-underline hover:underline"), Href(evt.EventURL), T("Event Link")),
 			Div(
 				Class("flex justify-end mt-4"),
 				Button(
@@ -839,6 +842,7 @@ func dayEventsHandler(w http.ResponseWriter, r *http.Request) {
 						),
 						H3(Class("text-xl font-semibold"), T(evt.Name)),
 						P(T(evt.Description)),
+						A(Class("mb-2 no-underline hover:underline"), Href(evt.EventURL), T("Event Link")),
 						Div(
 							Class("flex"),
 							Button(
