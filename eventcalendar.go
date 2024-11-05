@@ -41,7 +41,7 @@ var (
 	userCalendars  = map[string][]int{}    // User ID to Calendar IDs
 	eventAttendees = map[string][]string{} // Event ID to User IDs
 	dataMutex      sync.Mutex
-	eventsFilePath = "data/calendar/events.json"
+	eventsFilePath = "data/calendar2/events.json"
 )
 
 // Generate unique IDs
@@ -57,17 +57,17 @@ var (
 
 // Handlers
 func SetupCalendar() {
-	http.HandleFunc("/calendar/", handleCalendar)
-	http.HandleFunc("/calendar/month", createMonth)
-	http.HandleFunc("/calendar/create_event_form", createEventForm)
-	http.HandleFunc("/calendar/submit_event", submitEvent)
-	http.HandleFunc("/calendar/delete_event/", deleteEvent)
-	http.HandleFunc("/calendar/event/", viewEvent)
-	http.HandleFunc("/calendar/create_calendar_form", createCalendarForm)
-	http.HandleFunc("/calendar/submit_calendar", submitCalendar)
-	http.HandleFunc("/calendar/load_user_calendars", loadUserCalendars)
-	http.HandleFunc("/calendar/toggle_calendar", toggleCalendar)
-	http.HandleFunc("/calendar/day_events", dayEventsHandler)
+	http.HandleFunc("/calendar2/", handleCalendar)
+	http.HandleFunc("/calendar2/month", createMonth)
+	http.HandleFunc("/calendar2/create_event_form", createEventForm)
+	http.HandleFunc("/calendar2/submit_event", submitEvent)
+	http.HandleFunc("/calendar2/delete_event/", deleteEvent)
+	http.HandleFunc("/calendar2/event/", viewEvent)
+	http.HandleFunc("/calendar2/create_calendar_form", createCalendarForm)
+	http.HandleFunc("/calendar2/submit_calendar", submitCalendar)
+	http.HandleFunc("/calendar2/load_user_calendars", loadUserCalendars)
+	http.HandleFunc("/calendar2/toggle_calendar", toggleCalendar)
+	http.HandleFunc("/calendar2/day_events", dayEventsHandler)
 }
 
 func NewCalendar(d deps.Deps) *http.ServeMux {
@@ -164,7 +164,7 @@ func loadUserCalendars(w http.ResponseWriter, r *http.Request) {
 				Value(cal.ID),
 				Class("mr-2"),
 				Checked(true),
-				HxPost("/calendar/toggle_calendar"),
+				HxPost("/calendar2/toggle_calendar"),
 				HxTarget("#calendar-container"),
 				HxSwap("innerHTML"),
 				// HxVals(map[string]string{"calendar_id": cal.ID}),
@@ -274,7 +274,7 @@ func RenderCalendar(events []CalendarEvent) *Node {
 
 	// Create the form for month and year selection
 	selectionForm := Form(
-		Attr("hx-post", "/calendar/month"),
+		Attr("hx-post", "/calendar2/month"),
 		Attr("hx-target", "#calendar-container"),
 		Attr("hx-swap", "innerHTML"),
 		Attr("enctype", "multipart/form-data"),
@@ -299,7 +299,7 @@ func RenderCalendar(events []CalendarEvent) *Node {
 				T("Create Event"),
 				Type("button"),
 				Class("border border-gray-300 rounded px-2 py-1"),
-				HxGet("/calendar/create_event_form"),
+				HxGet("/calendar2/create_event_form"),
 				HxTarget("#event-modal"),
 				HxSwap("innerHTML"),
 			),
@@ -320,7 +320,7 @@ func RenderCalendar(events []CalendarEvent) *Node {
 				T("Create New Calendar"),
 				Type("button"),
 				Class("bg-blue-500 text-white px-4 py-2 rounded mt-4"),
-				HxGet("/calendar/create_calendar_form"),
+				HxGet("/calendar2/create_calendar_form"),
 				HxTarget("#calendar-list"),
 				HxSwap("innerHTML"),
 			),
@@ -428,8 +428,8 @@ func createEventForm(w http.ResponseWriter, r *http.Request) {
 			Class("modal-content"),
 			Form(
 				Method("POST"),
-				Action("/calendar/submit_event"),
-				Attr("hx-post", "/calendar/submit_event"),
+				Action("/calendar2/submit_event"),
+				Attr("hx-post", "/calendar2/submit_event"),
 				Attr("hx-target", "#calendar-container"),
 				Attr("hx-swap", "outerHTML"),
 				Class("space-y-4"),
@@ -592,7 +592,7 @@ func GenerateCalendar(month, year int, events []CalendarEvent) *Node {
 				A(
 					Href("#"),
 					T(evt.Name),
-					HxGet(fmt.Sprintf("/calendar/event/%d", evt.ID)),
+					HxGet(fmt.Sprintf("/calendar2/event/%d", evt.ID)),
 					HxTarget("#event-modal"),
 					HxSwap("innerHTML"),
 					Class("text-blue-700 hover:underline"),
@@ -602,7 +602,7 @@ func GenerateCalendar(month, year int, events []CalendarEvent) *Node {
 		cells = append(cells, Div(
 			Class("p-2 bg-white box-border h-full overflow-hidden"),
 			// Add HTMX attributes here
-			HxGet(fmt.Sprintf("/calendar/day_events?date=%s", dateStr)),
+			HxGet(fmt.Sprintf("/calendar2/day_events?date=%s", dateStr)),
 			HxTarget("#event-modal"),
 			HxSwap("innerHTML"),
 			Attr("style", "cursor:pointer"),
@@ -640,7 +640,7 @@ func GenerateCalendar(month, year int, events []CalendarEvent) *Node {
 
 func viewEvent(w http.ResponseWriter, r *http.Request) {
 	// Extract event ID from URL
-	idStr := strings.TrimPrefix(r.URL.Path, "/calendar/event/")
+	idStr := strings.TrimPrefix(r.URL.Path, "/calendar2/event/")
 	eventID, err := strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(w, "Invalid event ID", http.StatusBadRequest)
@@ -672,7 +672,7 @@ func viewEvent(w http.ResponseWriter, r *http.Request) {
 					T("Delete"),
 					Type("button"),
 					Class("bg-red-500 text-white px-4 py-2 rounded mr-2"),
-					HxPost(fmt.Sprintf("/calendar/delete_event/%d", evt.ID)),
+					HxPost(fmt.Sprintf("/calendar2/delete_event/%d", evt.ID)),
 					HxTarget("#calendar-container"),
 					HxSwap("innerHTML"),
 				),
@@ -692,7 +692,7 @@ func viewEvent(w http.ResponseWriter, r *http.Request) {
 
 func deleteEvent(w http.ResponseWriter, r *http.Request) {
 	// Extract event ID from URL
-	idStr := strings.TrimPrefix(r.URL.Path, "/calendar/delete_event/")
+	idStr := strings.TrimPrefix(r.URL.Path, "/calendar2/delete_event/")
 	eventID, err := strconv.Atoi(idStr)
 	if err != nil {
 		http.Error(w, "Invalid event ID", http.StatusBadRequest)
@@ -734,8 +734,8 @@ func createCalendarForm(w http.ResponseWriter, r *http.Request) {
 			Class("modal-content"),
 			Form(
 				Method("POST"),
-				Action("/calendar/submit_calendar"),
-				Attr("hx-post", "/calendar/submit_calendar"),
+				Action("/calendar2/submit_calendar"),
+				Attr("hx-post", "/calendar2/submit_calendar"),
 				Attr("hx-target", "#calendar-list"),
 				Attr("hx-swap", "innerHTML"),
 				Class("space-y-4"),
@@ -802,7 +802,7 @@ func submitCalendar(w http.ResponseWriter, r *http.Request) {
 			Value(cal.ID),
 			Class("mr-2"),
 			Checked(true),
-			HxPost("/calendar/toggle_calendar"),
+			HxPost("/calendar2/toggle_calendar"),
 			HxTarget("#calendar-container"),
 			HxSwap("innerHTML"),
 		)
@@ -860,7 +860,7 @@ func dayEventsHandler(w http.ResponseWriter, r *http.Request) {
 								T("View"),
 								Type("button"),
 								Class("bg-blue-500 text-white px-4 py-2 rounded mr-2"),
-								HxGet(fmt.Sprintf("/calendar/event/%d", evt.ID)),
+								HxGet(fmt.Sprintf("/calendar2/event/%d", evt.ID)),
 								HxTarget("#event-modal"),
 								HxSwap("innerHTML"),
 							),
@@ -868,7 +868,7 @@ func dayEventsHandler(w http.ResponseWriter, r *http.Request) {
 								T("Delete"),
 								Type("button"),
 								Class("bg-red-500 text-white px-4 py-2 rounded"),
-								HxPost(fmt.Sprintf("/calendar/delete_event/%d", evt.ID)),
+								HxPost(fmt.Sprintf("/calendar2/delete_event/%d", evt.ID)),
 								HxTarget("#calendar-container"),
 								HxSwap("innerHTML"),
 							),
