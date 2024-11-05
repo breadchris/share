@@ -137,6 +137,11 @@ func NewExtension() *http.ServeMux {
 				return
 			}
 
+			if err = writeMarkdown(state); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(j)
 		} else {
@@ -232,6 +237,46 @@ func NewExtension() *http.ServeMux {
 		}
 	})
 	return m
+}
+
+func writeMarkdown(state State) error {
+	filePath := "/Users/hacked/Documents/GitHub/notes/pages/justshare.md"
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %w", err)
+	}
+	defer file.Close()
+
+	_, err = file.WriteString("## 🔖 Articles\n")
+	if err != nil {
+		return fmt.Errorf("failed to write header: %w", err)
+	}
+
+	for _, page := range state.PageInfos {
+		createdAt := time.Unix(page.CreatedAt, 0).Format("Jan 2nd, 2006")
+		siteDomain := extractDomain(page.URL)
+
+		entry := fmt.Sprintf("        - [%s](%s)\n", page.Title, page.URL) +
+			"          collapsed:: true\n" +
+			fmt.Sprintf("          site:: [%s](%s)\n", siteDomain, page.URL) +
+			fmt.Sprintf("          date-saved:: [[%s]]\n", createdAt)
+		_, err = file.WriteString(entry)
+		if err != nil {
+			return fmt.Errorf("failed to write entry for %s: %w", page.ID, err)
+		}
+	}
+
+	return nil
+}
+
+func extractDomain(rawURL string) string {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return "" // return an empty string if URL parsing fails
+	}
+
+	domain := strings.TrimPrefix(parsedURL.Host, "www.")
+	return domain
 }
 
 type PageInfo struct {

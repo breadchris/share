@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import "@blocknote/core/fonts/inter.css";
 import {
+    createReactInlineContentSpec,
     DefaultReactSuggestionItem,
     getDefaultReactSlashMenuItems,
     SuggestionMenuController,
@@ -20,7 +21,7 @@ import {
     Block,
     BlockNoteEditor,
     BlockNoteSchema,
-    defaultBlockSpecs,
+    defaultBlockSpecs, defaultInlineContentSpecs,
     filterSuggestionItems, insertOrUpdateBlock,
     PartialBlock
 } from "@blocknote/core";
@@ -40,10 +41,34 @@ async function loadFromStorage() {
         : undefined;
 }
 
+export const Mention = createReactInlineContentSpec(
+    {
+        type: "mention",
+        propSchema: {
+            user: {
+                default: "Unknown",
+            },
+        },
+        content: "none",
+    },
+    {
+        render: (props) => (
+            <span style={{ backgroundColor: "#8400ff33" }}>
+        #{props.inlineContent.props.user}
+      </span>
+        ),
+    }
+);
+
 const schema = BlockNoteSchema.create({
     blockSpecs: {
         ...defaultBlockSpecs,
         procode: CodeBlock,
+        location: LocationBlock,
+    },
+    inlineContentSpecs: {
+        ...defaultInlineContentSpecs,
+        mention: Mention,
     }
 });
 
@@ -233,7 +258,6 @@ export const Editor = ({ props }) => {
         return <div>Loading...</div>;
     }
 
-    // Renders the editor instance.
     return (
         <BlockNoteView
             editor={editor}
@@ -248,15 +272,42 @@ export const Editor = ({ props }) => {
                 triggerCharacter={"/"}
                 getItems={async (query) =>
                     filterSuggestionItems(
-                        [...getDefaultReactSlashMenuItems(editor), insertCode(), insertAI(editor)],
+                        [...getDefaultReactSlashMenuItems(editor), insertCode(), insertLocation(), insertAI(editor)],
                         query
                     )
+                }
+            />
+            <SuggestionMenuController
+                triggerCharacter={"#"}
+                getItems={async (query) =>
+                    // Gets the mentions menu items
+                    filterSuggestionItems(getMentionMenuItems(editor), query)
                 }
             />
         </BlockNoteView>
     );
 }
 
+const getMentionMenuItems = (
+    editor: typeof schema.BlockNoteEditor
+): DefaultReactSuggestionItem[] => {
+    const users = ["Steve", "Bob", "Joe", "Mike"];
+
+    return users.map((user) => ({
+        title: user,
+        onItemClick: () => {
+            editor.insertInlineContent([
+                {
+                    type: "mention",
+                    props: {
+                        user,
+                    },
+                },
+                " ",
+            ]);
+        },
+    }));
+};
 
 export const Slides = () => {
     const deckDivRef = useRef<HTMLDivElement>(null); // reference to deck container div
@@ -302,6 +353,7 @@ export const Slides = () => {
 import {createRoot} from 'react-dom/client';
 import {CodeBlock, insertCode} from "./CodeBlock";
 import {contentService} from "./ContentService";
+import {insertLocation, LocationBlock} from "./LocationPicker";
 const e = document.getElementById('editor');
 if (e) {
     const r = createRoot(e);

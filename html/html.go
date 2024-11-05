@@ -24,6 +24,11 @@ var (
 func DefaultLayout(n *Node) *Node {
 	return Html(
 		Head(
+			Meta(Charset("UTF-8")),
+			Meta(Attrs(map[string]string{
+				"name":    "viewport",
+				"content": "width=device-width, initial-scale=1.0",
+			})),
 			DaisyUI,
 			TailwindCSS,
 			HTMX,
@@ -166,6 +171,7 @@ type Node struct {
 	Children     []*Node
 	transform    func(p *Node)
 	text         string
+	raw          string
 	locator      string
 	baseURL      string
 }
@@ -200,7 +206,10 @@ func (s *Node) RenderPageCtx(ctx context.Context, w http.ResponseWriter, r *http
 func (s *Node) RenderCtx(ctx context.Context) string {
 	c := ""
 	if s.text != "" {
-		c += s.text
+		c += template.HTMLEscapeString(s.text)
+	}
+	if s.raw != "" {
+		c += s.raw
 	}
 
 	if s.baseURL != "" {
@@ -219,9 +228,9 @@ func (s *Node) RenderCtx(ctx context.Context) string {
 	}
 
 	attrs := map[string]string{}
-	if s.locator != "" {
-		attrs["data-godom"] = s.locator
-	}
+	//if s.locator != "" {
+	//	attrs["data-godom"] = s.locator
+	//}
 	for k, v := range s.DynamicAttrs {
 		attrs[k] = v(ctx)
 	}
@@ -301,9 +310,11 @@ ws.onerror = function (error) {
 
 func (s *Node) RenderGoCode(fset *token.FileSet) *ast.CallExpr {
 	if s.text != "" {
+		// url escape the text
+		t := strings.ReplaceAll(s.text, "\n", "\\n")
 		return &ast.CallExpr{
 			Fun:  ast.NewIdent("Text"),
-			Args: []ast.Expr{&ast.BasicLit{Kind: token.STRING, Value: fmt.Sprintf("\"%s\"", s.text)}},
+			Args: []ast.Expr{&ast.BasicLit{Kind: token.STRING, Value: fmt.Sprintf("\"%s\"", t)}},
 		}
 	}
 
@@ -341,6 +352,14 @@ func Text(s string) *Node {
 	return &Node{
 		transform: func(p *Node) {
 			p.text = s
+		},
+	}
+}
+
+func Raw(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.raw = s
 		},
 	}
 }
@@ -547,6 +566,14 @@ func Datetime(s string) *Node {
 			p.Attrs["datetime"] = s
 		},
 	}
+}
+
+func Code(o ...*Node) *Node {
+	return NewNode("code", o)
+}
+
+func Aside(o ...*Node) *Node {
+	return NewNode("aside", o)
 }
 
 func ViewBox(s string) *Node {
@@ -794,6 +821,14 @@ func Src(s string) *Node {
 	}
 }
 
+func Src_(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["src"] = s
+		},
+	}
+}
+
 func Href(s string) *Node {
 	return &Node{
 		transform: func(p *Node) {
@@ -805,6 +840,14 @@ func Href(s string) *Node {
 				}
 				return s
 			}
+		},
+	}
+}
+
+func Href_(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["href"] = s
 		},
 	}
 }
@@ -1029,7 +1072,14 @@ func HxTrigger(s string) *Node {
 func HxGet(s string) *Node {
 	return &Node{
 		transform: func(p *Node) {
-			p.Attrs["hx-get"] = s
+			p.DynamicAttrs["hx-get"] = func(ctx context.Context) string {
+				if strings.HasPrefix(s, "/") {
+					if baseURL, ok := ctx.Value("baseURL").(string); ok {
+						return baseURL + s
+					}
+				}
+				return s
+			}
 		},
 	}
 }
@@ -1037,7 +1087,14 @@ func HxGet(s string) *Node {
 func HxPut(s string) *Node {
 	return &Node{
 		transform: func(p *Node) {
-			p.Attrs["hx-put"] = s
+			p.DynamicAttrs["hx-put"] = func(ctx context.Context) string {
+				if strings.HasPrefix(s, "/") {
+					if baseURL, ok := ctx.Value("baseURL").(string); ok {
+						return baseURL + s
+					}
+				}
+				return s
+			}
 		},
 	}
 }
@@ -1045,7 +1102,14 @@ func HxPut(s string) *Node {
 func HxDelete(s string) *Node {
 	return &Node{
 		transform: func(p *Node) {
-			p.Attrs["hx-delete"] = s
+			p.DynamicAttrs["hx-delete"] = func(ctx context.Context) string {
+				if strings.HasPrefix(s, "/") {
+					if baseURL, ok := ctx.Value("baseURL").(string); ok {
+						return baseURL + s
+					}
+				}
+				return s
+			}
 		},
 	}
 }
@@ -1088,4 +1152,80 @@ func AriaExpanded(s string) *Node {
 
 func Tabindex(s string) *Node {
 	return NewAttrNode("tabindex", s)
+}
+
+func Width(s string) *Node {
+	return NewAttrNode("width", s)
+}
+
+func Height(s string) *Node {
+	return NewAttrNode("height", s)
+}
+
+func Circle(o ...*Node) *Node {
+	return NewNode("circle", o)
+}
+
+func Cx(s string) *Node {
+	return NewAttrNode("cx", s)
+}
+
+func Cy(s string) *Node {
+	return NewAttrNode("cy", s)
+}
+
+func R(s string) *Node {
+	return NewAttrNode("r", s)
+}
+
+func Rect(o ...*Node) *Node {
+	return NewNode("rect", o)
+}
+
+func Rx(s string) *Node {
+	return NewAttrNode("rx", s)
+}
+
+func Ry(s string) *Node {
+	return NewAttrNode("ry", s)
+}
+
+func X(s string) *Node {
+	return NewAttrNode("x", s)
+}
+
+func Y(s string) *Node {
+	return NewAttrNode("y", s)
+}
+
+func AriaControls(s string) *Node {
+	return NewAttrNode("aria-controls", s)
+}
+
+func Focusable(s string) *Node {
+	return NewAttrNode("focusable", s)
+}
+
+func DataTestid(s string) *Node {
+	return NewAttrNode("data-testid", s)
+}
+
+func Line(o ...*Node) *Node {
+	return NewNode("line", o)
+}
+
+func X1(s string) *Node {
+	return NewAttrNode("x1", s)
+}
+
+func X2(s string) *Node {
+	return NewAttrNode("x2", s)
+}
+
+func Y1(s string) *Node {
+	return NewAttrNode("y1", s)
+}
+
+func Y2(s string) *Node {
+	return NewAttrNode("y2", s)
 }

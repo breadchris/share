@@ -41,7 +41,7 @@ func RenderBlog(entries []Entry) string {
 		}
 		en = append(en,
 			Div(Class("border p-4 rounded-lg"),
-				P(Class("mb-2"), T(e.Text)),
+				P(Class("mb-2"), Raw(e.Text)),
 				P(Class("text-sm text-gray-500"), T(e.Timestamp)),
 				P(Class("text-sm text-gray-500"), T(e.User.Email)),
 				Form(
@@ -51,7 +51,7 @@ func RenderBlog(entries []Entry) string {
 					Button(Type("submit"), Class("text-blue-500"), T("👍")),
 					Ch(reacts),
 				),
-				A(Href("/blog?id="+e.ID), Class("text-blue-500"), T("link")),
+				A(Href("/blog/"+e.ID), Class("text-blue-500"), T("link")),
 			),
 		)
 	}
@@ -101,7 +101,7 @@ func RenderBlog(entries []Entry) string {
 					Div(Class("space-y-4"),
 						Ch(en),
 					),
-					Script(Src("/breadchris/static/editor.js")),
+					Script(Src("/breadchris/static/editor.js"), Type("module")),
 					Script(T("hljs.highlightAll();")),
 				),
 			),
@@ -192,7 +192,7 @@ func (s *Auth) blogHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/blog", http.StatusFound)
 	}
 
-	id := r.URL.Query().Get("id")
+	id := r.PathValue("id")
 	if id != "" {
 		for _, e := range entries {
 			if e.ID == id {

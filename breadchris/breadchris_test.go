@@ -6,13 +6,31 @@ import (
 	"github.com/cogentcore/yaegi/interp"
 	"github.com/cogentcore/yaegi/stdlib"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 	"testing/fstest"
 )
 
 func TestGenerate(t *testing.T) {
-	if err := StaticSiteGenerator(); err != nil {
+	s, err := StaticSiteGenerator()
+	if err != nil {
+		t.Fatalf("Error: %v", err)
+	}
+
+	dst := "/Users/hacked/Documents/GitHub/notes/docs"
+	// remove all files in dst
+	c := exec.Command("rm", "-rf", dst)
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	if err := c.Run(); err != nil {
+		t.Fatalf("Error: %v", err)
+	}
+
+	c = exec.Command("cp", "-r", s.OutputDir, dst)
+	c.Stdout = os.Stdout
+	c.Stderr = os.Stderr
+	if err := c.Run(); err != nil {
 		t.Fatalf("Error: %v", err)
 	}
 }

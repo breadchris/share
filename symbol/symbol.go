@@ -1,6 +1,7 @@
 //go:generate go install github.com/cogentcore/yaegi/cmd/yaegi
 //go:generate yaegi extract github.com/breadchris/share/html
 //go:generate yaegi extract github.com/breadchris/share/deps
+//go:generate yaegi extract github.com/breadchris/share/calendar
 //go:generate yaegi extract github.com/breadchris/share/config
 //go:generate yaegi extract github.com/breadchris/share/llm
 //go:generate yaegi extract github.com/gosimple/slug
@@ -25,6 +26,7 @@
 //go:generate yaegi extract github.com/stripe/stripe-go/v80/checkout/session
 //go:generate yaegi extract github.com/PuerkitoBio/goquery
 //go:generate yaegi extract github.com/gorilla/websocket
+//go:generate yaegi extract github.com/russross/blackfriday/v2
 package symbol
 
 import "reflect"

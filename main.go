@@ -18,6 +18,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/breadchris/share/calendar"
+	"github.com/breadchris/share/graph"
+	"github.com/breadchris/share/paint"
+
 	"github.com/breadchris/share/breadchris"
 	"github.com/breadchris/share/code"
 	config2 "github.com/breadchris/share/config"
@@ -26,7 +30,6 @@ import (
 	"github.com/breadchris/share/editor/config"
 	"github.com/breadchris/share/editor/leaps"
 	"github.com/breadchris/share/editor/playground"
-	"github.com/breadchris/share/graph"
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/llm"
 	"github.com/breadchris/share/session"
@@ -98,10 +101,10 @@ func startServer(useTLS bool, port int) {
 		Config:  appConfig,
 	}
 
-	interpreted := func(f func(d deps2.Deps) *http.ServeMux) *http.ServeMux {
+	interpreted := func(f func(d deps2.Deps) *http.ServeMux, files ...string) *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			code.DynamicHTTPMux(f)(deps).ServeHTTP(w, r)
+			code.DynamicHTTPMux(f, files...)(deps).ServeHTTP(w, r)
 			//f(deps).ServeHTTP(w, r)
 		})
 		return m
@@ -109,6 +112,8 @@ func startServer(useTLS bool, port int) {
 
 	z := NewZineMaker(deps)
 
+	p("/paint", interpreted(paint.New))
+	p("/notes", interpreted(NewNotes))
 	p("/llm", interpreted(llm.NewChatGPT))
 	p("/mood", interpreted(NewMood))
 	p("/chat", interpreted(NewChat))
@@ -133,10 +138,11 @@ func startServer(useTLS bool, port int) {
 	p("/extension", NewExtension())
 	p("/git", interpreted(NewGit))
 	p("/music", interpreted(NewMusic))
-	p("/calendar", interpreted(NewCalendar))
+	p("/calendar", interpreted(calendar.NewCalendar))
 	p("/stripe", interpreted(NewStripe))
 	p("/everout", interpreted(NewEverout))
 	p("/graph", interpreted(graph.New))
+	p("/pipeport", interpreted(NewPipePort))
 
 	SetupCalendar()
 
@@ -153,15 +159,22 @@ func startServer(useTLS bool, port int) {
 					".ts":    api.LoaderTS,
 					".tsx":   api.LoaderTSX,
 					".woff":  api.LoaderFile,
+					".png":   api.LoaderFile,
 					".woff2": api.LoaderFile,
 					".ttf":   api.LoaderFile,
 					".eot":   api.LoaderFile,
 					".css":   api.LoaderCSS,
 				},
-				Outdir:    "breadchris/static",
-				Bundle:    true,
+				Outdir:            "breadchris/static",
+				Bundle:            true,
+				TreeShaking:       api.TreeShakingTrue,
+				MinifyWhitespace:  true,
+				MinifyIdentifiers: true,
+				MinifySyntax:      true,
+				//Splitting:         true,
+				Format:    api.FormatESModule,
 				Write:     true,
-				Sourcemap: api.SourceMapInline,
+				Sourcemap: api.SourceMapExternal,
 				LogLevel:  api.LogLevelInfo,
 			})
 
@@ -215,12 +228,16 @@ func startServer(useTLS bool, port int) {
 					".eot":   api.LoaderFile,
 					".css":   api.LoaderCSS,
 				},
-				Outdir:    "dist/",
-				Format:    api.FormatESModule,
-				Bundle:    true,
-				Write:     true,
-				Sourcemap: api.SourceMapInline,
-				LogLevel:  api.LogLevelInfo,
+				Outdir:            "dist/",
+				Format:            api.FormatESModule,
+				Bundle:            true,
+				Write:             true,
+				TreeShaking:       api.TreeShakingTrue,
+				MinifyWhitespace:  true,
+				MinifyIdentifiers: true,
+				MinifySyntax:      true,
+				Sourcemap:         api.SourceMapExternal,
+				LogLevel:          api.LogLevelInfo,
 			})
 
 			for _, warning := range result.Warnings {
@@ -247,8 +264,8 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/invite", a.handleInvite)
 	http.HandleFunc("/auth/google", a.startGoogleAuth)
 	http.HandleFunc("/auth/google/callback", a.handleGoogleCallback)
-	http.HandleFunc("/blog", a.blogHandler)
 	http.HandleFunc("/blog/react", a.reactHandler)
+	http.HandleFunc("/blog/{id...}", a.blogHandler)
 	http.HandleFunc("/files", fileHandler)
 	http.HandleFunc("/modify", modifyHandler)
 
@@ -332,6 +349,7 @@ func main() {
 					return nil
 				},
 			},
+			NewPipePortCli(),
 		},
 	}
 
