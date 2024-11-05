@@ -78,7 +78,7 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 		DefaultLayout(
 			Div(
 				ReloadNode("calendar.go"),
-				RenderCalendar(getCalenderEvents()),
+				RenderCalendar(getCalenderEvents(false)),
 			),
 		).RenderPage(w, r)
 	})
@@ -99,7 +99,7 @@ func handleCalendar(w http.ResponseWriter, r *http.Request) {
 	}
 	dataMutex.Unlock()
 
-	calendarEvents := getCalenderEvents()
+	calendarEvents := getCalenderEvents(false)
 
 	page := RenderCalendar(calendarEvents)
 
@@ -107,39 +107,15 @@ func handleCalendar(w http.ResponseWriter, r *http.Request) {
 }
 
 func toggleCalendar(w http.ResponseWriter, r *http.Request) {
-	user := getCurrentUser(r)
-	calendarIDStr := r.FormValue("calendar_id")
-	calendarID, _ := strconv.Atoi(calendarIDStr)
-
-	dataMutex.Lock()
-	defer dataMutex.Unlock()
-
-	if userSelectedCalendars[user.ID] == nil {
-		userSelectedCalendars[user.ID] = make(map[int]bool)
-	}
-
-	_, isSelected := userSelectedCalendars[user.ID][calendarID]
-	if isSelected {
-		delete(userSelectedCalendars[user.ID], calendarID)
-	} else {
-		userSelectedCalendars[user.ID][calendarID] = true
-	}
+	data := r.FormValue("everout")
 
 	// Update the calendar display
 	// Collect events for the current month and year
 	month := int(time.Now().Month())
 	year := time.Now().Year()
 
-	// Gather events from selected calendars
-	monthEvents := []CalendarEvent{}
-	for calID := range userSelectedCalendars[user.ID] {
-		for _, evt := range events {
-			if evt.CalendarID == calID && evt.Date.Year() == year && int(evt.Date.Month()) == month {
-				monthEvents = append(monthEvents, evt)
-			}
-		}
-	}
-
+	monthEvents := getCalenderEvents(data == "everout")
+	
 	// Generate the updated calendar
 	calendarNode := GenerateCalendar(month, year, monthEvents)
 
@@ -194,10 +170,16 @@ func getCurrentUser(r *http.Request) *User {
 	return &User{ID: "1", DisplayName: "Chris"}
 }
 
-func getCalenderEvents() []CalendarEvent {
+func getCalenderEvents(willLoadEvents bool) []CalendarEvent {
 	var calendarEvents []CalendarEvent
+	var eventsByDate map[string][]EverOutEvent
 
-	eventsByDate := loadEvents()
+	if willLoadEvents {
+		fmt.Println("Loading events")
+		eventsByDate = loadEvents()
+	}else {
+		fmt.Println("Not loading events")
+	}
 
 	for dateStr, everoutEvents := range eventsByDate {
 		dateStr := strings.Split(dateStr, "-top")[0]
@@ -217,7 +199,7 @@ func getCalenderEvents() []CalendarEvent {
 				EventURL:    evt.EventURL,
 			}
 
-			events[newEvent.ID] = newEvent
+			// events[newEvent.ID] = newEvent
 
 			calendarEvents = append(calendarEvents, newEvent)
 		}
@@ -260,12 +242,26 @@ func RenderCalendar(events []CalendarEvent) *Node {
 		yearOptions = append(yearOptions, option)
 	}
 
-	toggleSidePanelButton := Button(
-		T("Calendars"),
-		Type("button"),
-		Class("border border-gray-300 rounded px-2 py-1 mr-2"),
-		Attr("onclick", "toggleSidePanel()"),
+	everoutCheckBox := Div(
+		Label(T("EverOut")),
+		Input(
+			Type("checkbox"),
+			Name("everout"),
+			Value("everout"),
+			Class("mr-2"),
+			Checked(false),
+			HxPost("/calendar2/toggle_calendar"),
+			HxTarget("#calendar-container"),
+			HxSwap("innerHTML"),
+		),
 	)
+
+	// toggleSidePanelButton := Button(
+	// 	T("Calendars"),
+	// 	Type("button"),
+	// 	Class("border border-gray-300 rounded px-2 py-1 mr-2"),
+	// 	Attr("onclick", "toggleSidePanel()"),
+	// )
 
 	// Create the form for month and year selection
 	selectionForm := Form(
@@ -274,6 +270,7 @@ func RenderCalendar(events []CalendarEvent) *Node {
 		Attr("hx-swap", "innerHTML"),
 		Attr("enctype", "multipart/form-data"),
 		Class("flex items-center justify-center mb-4"),
+		everoutCheckBox,
 		Div(
 			Select(
 				Name("month"),
@@ -403,7 +400,7 @@ func RenderCalendar(events []CalendarEvent) *Node {
 			`)),
 		),
 		Body(
-			toggleSidePanelButton,
+			// toggleSidePanelButton,
 			selectionForm,
 			eventModal,
 			calendarModal,
@@ -489,7 +486,7 @@ func submitEvent(w http.ResponseWriter, r *http.Request) {
 	year := date.Year()
 
 	dataMutex.Lock()
-	monthEvents := getCalenderEvents()
+	monthEvents := getCalenderEvents(false)
 
 	dataMutex.Unlock()
 
@@ -517,7 +514,7 @@ func createMonth(w http.ResponseWriter, r *http.Request) {
 	month, _ := strconv.Atoi(monthStr)
 	year, _ := strconv.Atoi(yearStr)
 
-	monthEvents := getCalenderEvents()
+	monthEvents := getCalenderEvents(false)
 
 	// Generate the calendar node
 	calendarNode := GenerateCalendar(month, year, monthEvents)
@@ -708,7 +705,7 @@ func deleteEvent(w http.ResponseWriter, r *http.Request) {
 	year := evt.Date.Year()
 
 	dataMutex.Lock()
-	monthEvents := getCalenderEvents()
+	monthEvents := getCalenderEvents(false)
 	dataMutex.Unlock()
 
 	// Generate the updated calendar
@@ -817,7 +814,7 @@ func dayEventsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	allEvents := getCalenderEvents()
+	allEvents := getCalenderEvents(false)
 	eventsOnDate := []CalendarEvent{}
 	for _, evt := range allEvents {
 		if evt.Date.Format("2006-01-02") == dateStr {
