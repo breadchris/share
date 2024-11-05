@@ -81,9 +81,7 @@ func startServer(useTLS bool, port int) {
 	setupCursor()
 	setupRecipe()
 	fileUpload()
-	// go scheduleScraping()
-	// ScrapeEverOut(0, 350)
-	// go ScrapeDaysFrom(time.Now(), 60)
+	go scheduleScraping()
 
 	db, err := NewDBAny("data/testdb/")
 	if err != nil {
@@ -145,7 +143,7 @@ func startServer(useTLS bool, port int) {
 	p("/graph", interpreted(graph.New))
 	p("/pipeport", interpreted(NewPipePort))
 
-	SetupCalendar()
+	SetupCalendar(a)
 
 	go func() {
 		paths := []string{

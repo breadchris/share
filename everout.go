@@ -248,6 +248,7 @@ func ScrapeDaysFrom(startDate time.Time, days int) {
 		updateEvents(events)
 	}
 }
+
 // ScrapeEventsByDate scrapes all events for a specific date
 func ScrapeEventsByDate(date time.Time) ([]EverOutEvent, error) {
 	var allEvents []EverOutEvent
@@ -620,49 +621,30 @@ func scheduleScraping() {
 	// scrape the next two months
 	today := time.Now().In(loc)
 
-	for i := 0; i < 4; i++ {
-		date := today.AddDate(0, 0, i)
-		fmt.Println("Scraping date", date.Format("2006-01-02"))
-		events, err := ScrapeEventsByDate(date)
+	for {
+		thursStartMin := rand.Intn(60)
+		sunStartMin := rand.Intn(60)
 
-		eventsStr, err := json.MarshalIndent(events, "", "    ")
-		if err != nil {
-			fmt.Println("Error:", err)
-			return
+		nextThursday := nextOccurrence(time.Thursday, 4, thursStartMin, 0, loc)
+		nextSunday := nextOccurrence(time.Sunday, 4, sunStartMin, 0, loc)
+
+		var next time.Time
+		if nextThursday.Before(nextSunday) {
+			next = nextThursday
+		} else {
+			next = nextSunday
 		}
 
-		if err != nil {
-			fmt.Println("Error scraping date", date.Format("2006-01-02"), ":", err)
-		}
-		// Update the JSON file with the new events
-		// save the events to a file
-		os.WriteFile(eventDataDir+date.Format("2006-01-02")+".json", eventsStr, 0644)
+		now := time.Now().In(loc)
+		duration := next.Sub(now)
+		fmt.Printf("Sleeping for %v until %v\n", duration, next)
+
+		time.Sleep(duration)
+
+		// Run the scraper
+		fmt.Println("Running scraper at", time.Now().In(loc))
+		ScrapeDaysFrom(today, 60)
 	}
-
-	// for {
-	// 	thusStartMin := rand.Intn(60)
-	// 	sunStartMin := rand.Intn(60)
-
-	// 	nextThursday := nextOccurrence(time.Thursday, 4, thusStartMin, 0, loc)
-	// 	nextSunday := nextOccurrence(time.Sunday, 4, sunStartMin, 0, loc)
-
-	// 	var next time.Time
-	// 	if nextThursday.Before(nextSunday) {
-	// 		next = nextThursday
-	// 	} else {
-	// 		next = nextSunday
-	// 	}
-
-	// 	now := time.Now().In(loc)
-	// 	duration := next.Sub(now)
-	// 	fmt.Printf("Sleeping for %v until %v\n", duration, next)
-
-	// 	time.Sleep(duration)
-
-	// 	// Run the scraper
-	// 	fmt.Println("Running scraper at", time.Now().In(loc))
-	// 	ScrapeEverOut(1, 420)
-	// }
 }
 
 // nextOccurrence calculates the next occurrence of the specified weekday at the given time

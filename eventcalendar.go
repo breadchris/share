@@ -52,7 +52,6 @@ var (
 var (
 	userIDCounter     = 1
 	calendarIDCounter = 1
-	eventIDCounter    = 1
 )
 
 var (
@@ -60,16 +59,16 @@ var (
 )
 
 // Handlers
-func SetupCalendar() {
-	http.HandleFunc("/calendar2/", handleCalendar)
+func SetupCalendar(a *Auth) {
+	http.HandleFunc("/calendar2/", a.handleCalendar)
 	http.HandleFunc("/calendar2/month", createMonth)
 	http.HandleFunc("/calendar2/create_event_form", createEventForm)
 	http.HandleFunc("/calendar2/submit_event", submitEvent)
 	http.HandleFunc("/calendar2/delete_event/", deleteEvent)
 	http.HandleFunc("/calendar2/event/", viewEvent)
-	http.HandleFunc("/calendar2/create_calendar_form", createCalendarForm)
-	http.HandleFunc("/calendar2/submit_calendar", submitCalendar)
-	http.HandleFunc("/calendar2/load_user_calendars", loadUserCalendars)
+	// http.HandleFunc("/calendar2/create_calendar_form", createCalendarForm)
+	// http.HandleFunc("/calendar2/submit_calendar", submitCalendar)
+	// http.HandleFunc("/calendar2/load_user_calendars", loadUserCalendars)
 	http.HandleFunc("/calendar2/toggle_calendar", toggleCalendar)
 	http.HandleFunc("/calendar2/day_events", dayEventsHandler)
 }
@@ -88,18 +87,9 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 }
 
 // Serve the user dashboard
-func handleCalendar(w http.ResponseWriter, r *http.Request) {
-
-	user := getCurrentUser(r)
-	dataMutex.Lock()
-	userCalIDs := userCalendars[user.ID]
-	userCals := []*Calendar{}
-	for _, calID := range userCalIDs {
-		if cal, exists := calendars[calID]; exists {
-			userCals = append(userCals, cal)
-		}
-	}
-	dataMutex.Unlock()
+func (s *Auth) handleCalendar(w http.ResponseWriter, r *http.Request) {
+	uid, _ := s.s.GetUserID(r.Context())
+	fmt.Println("uid", uid)
 
 	calendarEvents := getCalenderEvents(false)
 
@@ -125,53 +115,6 @@ func toggleCalendar(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html")
 	fmt.Fprint(w, calendarNode.Render())
-}
-
-func loadUserCalendars(w http.ResponseWriter, r *http.Request) {
-	user := getCurrentUser(r)
-
-	dataMutex.Lock()
-	calIDs := userCalendars[user.ID]
-	dataMutex.Unlock()
-
-	calendarItems := []*Node{}
-	for _, calID := range calIDs {
-		dataMutex.Lock()
-		cal, exists := calendars[calID]
-		dataMutex.Unlock()
-		if exists {
-			checkbox := Input(
-				Type("checkbox"),
-				Name("calendar_ids"),
-				Value(cal.ID),
-				Class("mr-2"),
-				Checked(false),
-				HxPost("/calendar2/toggle_calendar"),
-				HxTarget("#calendar-container"),
-				HxSwap("innerHTML"),
-				// HxVals(map[string]string{"calendar_id": cal.ID}),
-			)
-			label := Label(
-				Class("flex items-center mb-2"),
-				checkbox,
-				Span(T(cal.Name)),
-			)
-			calendarItems = append(calendarItems, label)
-		}
-	}
-
-	list := Div(
-		Chl(calendarItems...),
-	)
-
-	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprint(w, list.Render())
-}
-
-// Simulate current logged-in user
-func getCurrentUser(r *http.Request) *User {
-	// Placeholder for user authentication
-	return &User{ID: "1", DisplayName: "Chris"}
 }
 
 func getCalenderEvents(willLoadEvents bool) []CalendarEvent {
@@ -479,15 +422,14 @@ func submitEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create new event
-	eventID := eventIDCounter
-	eventIDCounter++
+	eventID := hash(name + dateStr)+strconv.Itoa(len(events))
 	newEvent := CalendarEvent{
-		ID:          string(eventID),
+		ID:          eventID,
 		Name:        name,
 		Description: description,
 		Date:        date,
 	}
-	events[strconv.Itoa(eventID)] = newEvent
+	events[eventID] = newEvent
 	SaveEvents()
 
 	// Collect events for the month and year
@@ -725,95 +667,6 @@ func deleteEvent(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, calendarNode.Render())
 }
 
-func createCalendarForm(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("createCalendarForm")
-	form := createModal("event-modal",
-		Div(
-			Form(
-				Method("POST"),
-				Action("/calendar2/submit_calendar"),
-				Attr("hx-post", "/calendar2/submit_calendar"),
-				Attr("hx-target", "#calendar-list"),
-				Attr("hx-swap", "innerHTML"),
-				Class("space-y-4"),
-				Input(Type("text"), Name("name"), Placeholder("Calendar Name"), Class("w-full p-2 border border-gray-300 rounded")),
-				TextArea(Name("description"), Placeholder("Description"), Class("w-full p-2 border border-gray-300 rounded")),
-				Div(
-					Button(Type("submit"), T("Create Calendar"), Class("bg-blue-500 text-white px-4 py-2 rounded")),
-					Button(
-						T("Cancel"),
-						Type("button"),
-						Class("modal-close bg-gray-500 text-white px-4 py-2 rounded ml-2"),
-						Attr("onclick", "document.getElementById('calendar-modal').innerHTML = '';"),
-					),
-				),
-			),
-		),
-	)
-
-	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprint(w, form.Render())
-}
-
-func submitCalendar(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Parse form data
-	err := r.ParseForm()
-	if err != nil {
-		http.Error(w, "Error parsing form data", http.StatusBadRequest)
-		return
-	}
-
-	user := getCurrentUser(r)
-	name := r.FormValue("name")
-	description := r.FormValue("description")
-
-	// Create new calendar
-	dataMutex.Lock()
-	calendarID := calendarIDCounter
-	calendarIDCounter++
-	newCalendar := &Calendar{
-		ID:          string(calendarID),
-		Name:        name,
-		Description: description,
-		OwnerID:     user.ID,
-		IsPublic:    false,
-	}
-	calendars[calendarID] = newCalendar
-	userCalendars[user.ID] = append(userCalendars[user.ID], calendarID)
-	dataMutex.Unlock()
-
-	checkBoxes := Div()
-	for _, calID := range userCalendars[user.ID] {
-		cal := calendars[calID]
-		checkBox := Input(
-			Type("checkbox"),
-			Name("calendar_ids"),
-			Value(cal.ID),
-			Class("mr-2"),
-			Checked(false),
-			HxPost("/calendar2/toggle_calendar"),
-			HxTarget("#calendar-container"),
-			HxSwap("innerHTML"),
-		)
-		label := Label(
-			Class("flex items-center mb-2"),
-			checkBox,
-			Span(T(cal.Name)),
-		)
-		checkBoxes.Children = append(checkBoxes.Children, label)
-	}
-
-	responseHTML := checkBoxes.Render()
-
-	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprint(w, responseHTML)
-}
-
 func dayEventsHandler(w http.ResponseWriter, r *http.Request) {
 	dateStr := r.URL.Query().Get("date")
 	if dateStr == "" {
@@ -894,7 +747,7 @@ func SaveEvents() error {
 			existingEvents[evt.ID] = evt
 		}
 	}
-	
+
 	// Marshal the events map to JSON
 	data, err := json.MarshalIndent(existingEvents, "", "  ")
 	if err != nil {
@@ -962,3 +815,133 @@ func hash(s string) string {
 	h.Write([]byte(s))
 	return fmt.Sprintf("%d", h.Sum32())
 }
+
+// func createCalendarForm(w http.ResponseWriter, r *http.Request) {
+// 	fmt.Println("createCalendarForm")
+// 	form := createModal("event-modal",
+// 		Div(
+// 			Form(
+// 				Method("POST"),
+// 				Action("/calendar2/submit_calendar"),
+// 				Attr("hx-post", "/calendar2/submit_calendar"),
+// 				Attr("hx-target", "#calendar-list"),
+// 				Attr("hx-swap", "innerHTML"),
+// 				Class("space-y-4"),
+// 				Input(Type("text"), Name("name"), Placeholder("Calendar Name"), Class("w-full p-2 border border-gray-300 rounded")),
+// 				TextArea(Name("description"), Placeholder("Description"), Class("w-full p-2 border border-gray-300 rounded")),
+// 				Div(
+// 					Button(Type("submit"), T("Create Calendar"), Class("bg-blue-500 text-white px-4 py-2 rounded")),
+// 					Button(
+// 						T("Cancel"),
+// 						Type("button"),
+// 						Class("modal-close bg-gray-500 text-white px-4 py-2 rounded ml-2"),
+// 						Attr("onclick", "document.getElementById('calendar-modal').innerHTML = '';"),
+// 					),
+// 				),
+// 			),
+// 		),
+// 	)
+
+// 	w.Header().Set("Content-Type", "text/html")
+// 	fmt.Fprint(w, form.Render())
+// }
+
+// func submitCalendar(w http.ResponseWriter, r *http.Request) {
+// 	if r.Method != http.MethodPost {
+// 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+// 		return
+// 	}
+
+// 	// Parse form data
+// 	err := r.ParseForm()
+// 	if err != nil {
+// 		http.Error(w, "Error parsing form data", http.StatusBadRequest)
+// 		return
+// 	}
+
+// 	user := getCurrentUser(r)
+// 	name := r.FormValue("name")
+// 	description := r.FormValue("description")
+
+// 	// Create new calendar
+// 	dataMutex.Lock()
+// 	calendarID := calendarIDCounter
+// 	calendarIDCounter++
+// 	newCalendar := &Calendar{
+// 		ID:          string(calendarID),
+// 		Name:        name,
+// 		Description: description,
+// 		OwnerID:     user.ID,
+// 		IsPublic:    false,
+// 	}
+// 	calendars[calendarID] = newCalendar
+// 	userCalendars[user.ID] = append(userCalendars[user.ID], calendarID)
+// 	dataMutex.Unlock()
+
+// 	checkBoxes := Div()
+// 	for _, calID := range userCalendars[user.ID] {
+// 		cal := calendars[calID]
+// 		checkBox := Input(
+// 			Type("checkbox"),
+// 			Name("calendar_ids"),
+// 			Value(cal.ID),
+// 			Class("mr-2"),
+// 			Checked(false),
+// 			HxPost("/calendar2/toggle_calendar"),
+// 			HxTarget("#calendar-container"),
+// 			HxSwap("innerHTML"),
+// 		)
+// 		label := Label(
+// 			Class("flex items-center mb-2"),
+// 			checkBox,
+// 			Span(T(cal.Name)),
+// 		)
+// 		checkBoxes.Children = append(checkBoxes.Children, label)
+// 	}
+
+// 	responseHTML := checkBoxes.Render()
+
+// 	w.Header().Set("Content-Type", "text/html")
+// 	fmt.Fprint(w, responseHTML)
+// }
+
+// func loadUserCalendars(w http.ResponseWriter, r *http.Request) {
+// 	user := getCurrentUser(r)
+
+// 	dataMutex.Lock()
+// 	calIDs := userCalendars[user.ID]
+// 	dataMutex.Unlock()
+
+// 	calendarItems := []*Node{}
+// 	for _, calID := range calIDs {
+// 		dataMutex.Lock()
+// 		cal, exists := calendars[calID]
+// 		dataMutex.Unlock()
+// 		if exists {
+// 			checkbox := Input(
+// 				Type("checkbox"),
+// 				Name("calendar_ids"),
+// 				Value(cal.ID),
+// 				Class("mr-2"),
+// 				Checked(false),
+// 				HxPost("/calendar2/toggle_calendar"),
+// 				HxTarget("#calendar-container"),
+// 				HxSwap("innerHTML"),
+// 				// HxVals(map[string]string{"calendar_id": cal.ID}),
+// 			)
+// 			label := Label(
+// 				Class("flex items-center mb-2"),
+// 				checkbox,
+// 				Span(T(cal.Name)),
+// 			)
+// 			calendarItems = append(calendarItems, label)
+// 		}
+// 	}
+
+// 	list := Div(
+// 		Chl(calendarItems...),
+// 	)
+
+// 	w.Header().Set("Content-Type", "text/html")
+// 	fmt.Fprint(w, list.Render())
+// }
