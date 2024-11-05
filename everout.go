@@ -144,7 +144,10 @@ func RenderEverout(eventsByDate map[string][]EverOutEvent) *Node {
 
 // ScrapeEverOut scrapes events from the specified page range and updates the JSON file
 func ScrapeEverOut(startPage, endPage int) {
-	var allEvents []EverOutEvent
+	// var allEvents []EverOutEvent
+
+	date := time.Now()
+	dateStr := date.Format("2006-01-02")
 
 	// Loop through the specified page range
 	for page := startPage; page <= endPage; page++ {
@@ -152,10 +155,13 @@ func ScrapeEverOut(startPage, endPage int) {
 		time.Sleep(sleepDuration)
 
 		var url string
+		var topUrl string
 		if page == 1 {
 			url = "https://everout.com/seattle/events/"
+			topUrl = "https://everout.com/seattle/events/?staff-pick=true"
 		} else {
 			url = fmt.Sprintf("https://everout.com/seattle/events/?page=%d", page)
+			topUrl = fmt.Sprintf("https://everout.com/seattle/events/?page=%d&staff-pick=true", page)
 		}
 		fmt.Printf("Scraping page %d: %s\n", page, url)
 		events, err := ScrapeEvents(url)
@@ -167,11 +173,39 @@ func ScrapeEverOut(startPage, endPage int) {
 			fmt.Println("No more events found on page", page)
 			break
 		}
-		allEvents = append(allEvents, events...)
+
+		topEvents, err := ScrapeEvents(topUrl)
+		if err != nil {
+			fmt.Println("Error scraping top events for page", page, ":", err)
+			continue
+		}
+		if len(topEvents) == 0 {
+			fmt.Println("No more top events found on page", page)
+			break
+		}
+
+		SaveEveroutEvents(events, fmt.Sprintf("data/everout/%s.json", dateStr))
+		SaveEveroutEvents(topEvents, fmt.Sprintf("data/everout/%s-top.json", dateStr))
+
+		date = date.AddDate(0, 0, 1)
+		dateStr = date.Format("2006-01-02")
+
+		// allEvents = append(allEvents, events...)
 	}
 
 	// Update the JSON file with the new events
-	updateEvents(allEvents)
+	// updateEvents(allEvents)
+}
+
+func SaveEveroutEvents(events []EverOutEvent, path string) {
+	eventsStr, err := json.MarshalIndent(events, "", "    ")
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	// save the events to a file
+	os.WriteFile(path, eventsStr, 0644)
 }
 
 // ScrapeEverOutByDate scrapes events day by day until there are no more new events

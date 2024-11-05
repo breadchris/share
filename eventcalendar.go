@@ -40,6 +40,7 @@ type CalendarEvent struct {
 var (
 	calendars      = map[int]*Calendar{}
 	events         = map[string]CalendarEvent{}
+	allEvents      = map[string]CalendarEvent{}
 	userCalendars  = map[string][]int{}    // User ID to Calendar IDs
 	eventAttendees = map[string][]string{} // Event ID to User IDs
 	dataMutex      sync.Mutex
@@ -115,7 +116,7 @@ func toggleCalendar(w http.ResponseWriter, r *http.Request) {
 	year := time.Now().Year()
 
 	monthEvents := getCalenderEvents(data == "everout")
-	
+
 	// Generate the updated calendar
 	calendarNode := GenerateCalendar(month, year, monthEvents)
 
@@ -141,7 +142,7 @@ func loadUserCalendars(w http.ResponseWriter, r *http.Request) {
 				Name("calendar_ids"),
 				Value(cal.ID),
 				Class("mr-2"),
-				Checked(true),
+				Checked(false),
 				HxPost("/calendar2/toggle_calendar"),
 				HxTarget("#calendar-container"),
 				HxSwap("innerHTML"),
@@ -177,7 +178,7 @@ func getCalenderEvents(willLoadEvents bool) []CalendarEvent {
 	if willLoadEvents {
 		fmt.Println("Loading events")
 		eventsByDate = loadEvents()
-	}else {
+	} else {
 		fmt.Println("Not loading events")
 	}
 
@@ -200,13 +201,14 @@ func getCalenderEvents(willLoadEvents bool) []CalendarEvent {
 			}
 
 			// events[newEvent.ID] = newEvent
-
+			allEvents[newEvent.ID] = newEvent
 			calendarEvents = append(calendarEvents, newEvent)
 		}
 	}
 
 	for _, evt := range events {
 		calendarEvents = append(calendarEvents, evt)
+		allEvents[evt.ID] = evt
 	}
 	return calendarEvents
 }
@@ -476,9 +478,8 @@ func submitEvent(w http.ResponseWriter, r *http.Request) {
 		Date:        date,
 	}
 	events[strconv.Itoa(eventID)] = newEvent
-	// SaveEvents()
+	SaveEvents()
 
-	// SaveEvents()
 	dataMutex.Unlock()
 
 	// Collect events for the month and year
@@ -638,7 +639,8 @@ func viewEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dataMutex.Lock()
-	evt, exists := events[strconv.Itoa(eventID)]
+
+	evt, exists := allEvents[strconv.Itoa(eventID)]
 	dataMutex.Unlock()
 	if !exists {
 		http.Error(w, "Event not found", http.StatusNotFound)
@@ -777,9 +779,6 @@ func submitCalendar(w http.ResponseWriter, r *http.Request) {
 	userCalendars[user.ID] = append(userCalendars[user.ID], calendarID)
 	dataMutex.Unlock()
 
-	// Return success and close the modal
-	// responseHTML := `<div id="calendar-modal"></div>`
-
 	checkBoxes := Div()
 	for _, calID := range userCalendars[user.ID] {
 		cal := calendars[calID]
@@ -788,7 +787,7 @@ func submitCalendar(w http.ResponseWriter, r *http.Request) {
 			Name("calendar_ids"),
 			Value(cal.ID),
 			Class("mr-2"),
-			Checked(true),
+			Checked(false),
 			HxPost("/calendar2/toggle_calendar"),
 			HxTarget("#calendar-container"),
 			HxSwap("innerHTML"),
@@ -814,7 +813,6 @@ func dayEventsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	allEvents := getCalenderEvents(false)
 	eventsOnDate := []CalendarEvent{}
 	for _, evt := range allEvents {
 		if evt.Date.Format("2006-01-02") == dateStr {
