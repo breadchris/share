@@ -229,7 +229,25 @@ func ScrapeTopEventsByDate(startDate time.Time) {
 	// Update the JSON file with the new top events
 	updateEvents(events)
 }
+func ScrapeDaysFrom(startDate time.Time, days int) {
+	for i := 0; i < days; i++ {
+		date := startDate.AddDate(0, 0, i)
+		fmt.Println("Scraping date", date.Format("2006-01-02"))
+		events, err := ScrapeEventsByDate(date)
+		if err != nil {
+			fmt.Println("Error scraping date", date.Format("2006-01-02"), ":", err)
+		}
 
+		topEvents, err := ScrapeTopEventsForDate(date)
+		if err != nil {
+			fmt.Println("Error scraping top events for date", date.Format("2006-01-02"), ":", err)
+		}
+		SaveEveroutEvents(events, fmt.Sprintf("data/everout/%s.json", date.Format("2006-01-02")))
+		SaveEveroutEvents(topEvents, fmt.Sprintf("data/everout/%s-top.json", date.Format("2006-01-02")))
+		// Update the JSON file with the new events
+		updateEvents(events)
+	}
+}
 // ScrapeEventsByDate scrapes all events for a specific date
 func ScrapeEventsByDate(date time.Time) ([]EverOutEvent, error) {
 	var allEvents []EverOutEvent

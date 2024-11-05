@@ -82,7 +82,8 @@ func startServer(useTLS bool, port int) {
 	setupRecipe()
 	fileUpload()
 	// go scheduleScraping()
-	// ScrapeEverOut(0, 2)
+	// ScrapeEverOut(0, 350)
+	// go ScrapeDaysFrom(time.Now(), 60)
 
 	db, err := NewDBAny("data/testdb/")
 	if err != nil {

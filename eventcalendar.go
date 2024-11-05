@@ -108,14 +108,16 @@ func handleCalendar(w http.ResponseWriter, r *http.Request) {
 }
 
 func toggleCalendar(w http.ResponseWriter, r *http.Request) {
-	data := r.FormValue("everout")
-
+	everout := r.FormValue("everout") == "everout"
+	month, _ := strconv.Atoi(r.FormValue("month"))
+	year, _ := strconv.Atoi(r.FormValue("year"))
+	fmt.Println("Toggle Calendar", everout, month, year)
 	// Update the calendar display
 	// Collect events for the current month and year
-	month := int(time.Now().Month())
-	year := time.Now().Year()
+	// month := int(time.Now().Month())
+	// year := time.Now().Year()
 
-	monthEvents := getCalenderEvents(data == "everout")
+	monthEvents := getCalenderEvents(everout)
 
 	// Generate the updated calendar
 	calendarNode := GenerateCalendar(month, year, monthEvents)
@@ -903,6 +905,28 @@ func SaveEvents() error {
 	}
 	fmt.Println("Events data saved to file:", eventsFilePath)
 	return nil
+}
+
+func loadUserCreatedEvents() map[string][]CalendarEvent {
+	var UserEvents = map[string][]CalendarEvent{}
+	dataMutex.Lock()
+	defer dataMutex.Unlock()
+
+	// Read the JSON data from the file
+	data, err := os.ReadFile(eventsFilePath)
+	if err != nil {
+		fmt.Println("Error reading events data from file:", err)
+		return UserEvents
+	}
+
+	// Unmarshal the JSON data into the events map
+	err = json.Unmarshal(data, &UserEvents)
+	if err != nil {
+		fmt.Println("Error unmarshalling events data:", err)
+		return UserEvents
+	}
+	fmt.Println("Events data loaded from file:", eventsFilePath)
+	return UserEvents
 }
 
 func createModal(containerID string, content *Node) *Node {
