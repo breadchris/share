@@ -38,13 +38,14 @@ type CalendarEvent struct {
 
 // In-memory Data Stores
 var (
-	calendars      = map[int]*Calendar{}
-	events         = map[string]CalendarEvent{}
-	allEvents      = map[string]CalendarEvent{}
-	userCalendars  = map[string][]int{}    // User ID to Calendar IDs
-	eventAttendees = map[string][]string{} // Event ID to User IDs
-	dataMutex      sync.Mutex
-	eventsFilePath = "data/calendar2/events.json"
+	calendars          = map[int]*Calendar{}
+	events             = map[string]CalendarEvent{}
+	allEvents          = map[string]CalendarEvent{}
+	userCalendars      = map[string][]int{}    // User ID to Calendar IDs
+	eventAttendees     = map[string][]string{} // Event ID to User IDs
+	dataMutex          sync.Mutex
+	userEventsFilePath = "data/calendar2/"
+	userEventsFilename = "user-events.json"
 )
 
 // Generate unique IDs
@@ -208,9 +209,17 @@ func getCalenderEvents(willLoadEvents bool) []CalendarEvent {
 		}
 	}
 
-	for _, evt := range events {
+	userEvents := loadUserCreatedEvents()
+	for _, evt := range userEvents {
 		calendarEvents = append(calendarEvents, evt)
 		allEvents[evt.ID] = evt
+	}
+	for _, evt := range events {
+		// if calendarEvents does not contain evt, append evt to calendarEvents
+		if _, exists := allEvents[evt.ID]; !exists {
+			calendarEvents = append(calendarEvents, evt)
+			allEvents[evt.ID] = evt
+		}
 	}
 	return calendarEvents
 }
@@ -470,7 +479,6 @@ func submitEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create new event
-	dataMutex.Lock()
 	eventID := eventIDCounter
 	eventIDCounter++
 	newEvent := CalendarEvent{
@@ -481,8 +489,6 @@ func submitEvent(w http.ResponseWriter, r *http.Request) {
 	}
 	events[strconv.Itoa(eventID)] = newEvent
 	SaveEvents()
-
-	dataMutex.Unlock()
 
 	// Collect events for the month and year
 	month := int(date.Month())
@@ -802,7 +808,7 @@ func submitCalendar(w http.ResponseWriter, r *http.Request) {
 		checkBoxes.Children = append(checkBoxes.Children, label)
 	}
 
-	responseHTML := checkBoxes.Render() + `<div id="calendar-modal"></div>`
+	responseHTML := checkBoxes.Render()
 
 	w.Header().Set("Content-Type", "text/html")
 	fmt.Fprint(w, responseHTML)
@@ -877,26 +883,35 @@ func dayEventsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func SaveEvents() error {
-	fmt.Println("Saving events data to file:", eventsFilePath)
+	fmt.Println("Saving events data")
 	dataMutex.Lock()
 	defer dataMutex.Unlock()
 
+	existingEvents := loadUserCreatedEvents()
+	for _, evt := range events {
+		// if existingEvents does not contain evt, append evt to existingEvents
+		if _, exists := existingEvents[evt.ID]; !exists {
+			existingEvents[evt.ID] = evt
+		}
+	}
+	
 	// Marshal the events map to JSON
-	data, err := json.MarshalIndent(events, "", "  ")
+	data, err := json.MarshalIndent(existingEvents, "", "  ")
 	if err != nil {
 		fmt.Println("Error marshalling events data:", err)
 		return err
 	}
 
 	// if eventsFilePath does not exist, create it
-	if _, err := os.Stat(eventsFilePath); os.IsNotExist(err) {
-		err := os.MkdirAll(filepath.Dir(eventsFilePath), 0755)
+	if _, err := os.Stat(userEventsFilePath); os.IsNotExist(err) {
+		fmt.Println("Creating events data directory")
+		err := os.MkdirAll(filepath.Dir(userEventsFilePath), 0755)
 		if err != nil {
 			fmt.Println("Error creating events data directory:", err)
 			return err
 		}
 	}
-
+	eventsFilePath := filepath.Join(userEventsFilePath, userEventsFilename)
 	// Write the JSON data to the file
 	err = os.WriteFile(eventsFilePath, data, 0644)
 	if err != nil {
@@ -907,11 +922,11 @@ func SaveEvents() error {
 	return nil
 }
 
-func loadUserCreatedEvents() map[string][]CalendarEvent {
-	var UserEvents = map[string][]CalendarEvent{}
-	dataMutex.Lock()
-	defer dataMutex.Unlock()
+func loadUserCreatedEvents() map[string]CalendarEvent {
+	fmt.Println("Loading user created events")
+	var UserEvents = map[string]CalendarEvent{}
 
+	eventsFilePath := filepath.Join(userEventsFilePath, userEventsFilename)
 	// Read the JSON data from the file
 	data, err := os.ReadFile(eventsFilePath)
 	if err != nil {
