@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -24,7 +25,7 @@ type Calendar struct {
 }
 
 type CalendarEvent struct {
-	ID          int
+	ID          string
 	CalendarID  int
 	Name        string
 	Description string
@@ -206,30 +207,22 @@ func getCalenderEvents() []CalendarEvent {
 			continue
 		}
 		for _, evt := range everoutEvents {
-			uuid := time.Now().Unix()
-
 			newEvent := CalendarEvent{
 				Name:        evt.Title,
 				Description: fmt.Sprintf("%s, %s", evt.Location, evt.Region),
 				Date:        eventDate,
-				ID:          int(uuid),
+				ID:          hash(evt.EventURL),
 				ImageURL:    evt.ImageURL,
 			}
 
-			events[strconv.Itoa(newEvent.ID)] = newEvent
+			events[newEvent.ID] = newEvent
 
 			calendarEvents = append(calendarEvents, newEvent)
 		}
 	}
 
 	for _, evt := range events {
-		calendarEvents = append(calendarEvents, CalendarEvent{
-			ID:          evt.ID,
-			Name:        evt.Name,
-			Description: evt.Description,
-			Date:        evt.Date,
-			ImageURL:    evt.ImageURL,
-		})
+		calendarEvents = append(calendarEvents, evt)
 	}
 	return calendarEvents
 }
@@ -422,10 +415,8 @@ func RenderCalendar(events []CalendarEvent) *Node {
 }
 
 func createEventForm(w http.ResponseWriter, r *http.Request) {
-	form := Div(
-		Class("modal"),
+	form := createModal("event-modal",
 		Div(
-			Class("modal-content"),
 			Form(
 				Method("POST"),
 				Action("/calendar2/submit_event"),
@@ -480,7 +471,7 @@ func submitEvent(w http.ResponseWriter, r *http.Request) {
 	eventID := eventIDCounter
 	eventIDCounter++
 	newEvent := CalendarEvent{
-		ID:          eventID,
+		ID:          string(eventID),
 		Name:        name,
 		Description: description,
 		Date:        date,
@@ -592,7 +583,7 @@ func GenerateCalendar(month, year int, events []CalendarEvent) *Node {
 				A(
 					Href("#"),
 					T(evt.Name),
-					HxGet(fmt.Sprintf("/calendar2/event/%d", evt.ID)),
+					HxGet(fmt.Sprintf("/calendar2/event/%s", evt.ID)),
 					HxTarget("#event-modal"),
 					HxSwap("innerHTML"),
 					Class("text-blue-700 hover:underline"),
@@ -656,10 +647,8 @@ func viewEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create modal content
-	modalContent := Div(
-		Class("modal"),
+	modalContent := createModal("event-modal",
 		Div(
-			Class("modal-content"),
 			Img(
 				Src(evt.ImageURL),
 			),
@@ -672,7 +661,7 @@ func viewEvent(w http.ResponseWriter, r *http.Request) {
 					T("Delete"),
 					Type("button"),
 					Class("bg-red-500 text-white px-4 py-2 rounded mr-2"),
-					HxPost(fmt.Sprintf("/calendar2/delete_event/%d", evt.ID)),
+					HxPost(fmt.Sprintf("/calendar2/delete_event/%s", evt.ID)),
 					HxTarget("#calendar-container"),
 					HxSwap("innerHTML"),
 				),
@@ -728,10 +717,8 @@ func deleteEvent(w http.ResponseWriter, r *http.Request) {
 
 func createCalendarForm(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("createCalendarForm")
-	form := Div(
-		Class("modal"),
+	form := createModal("event-modal",
 		Div(
-			Class("modal-content"),
 			Form(
 				Method("POST"),
 				Action("/calendar2/submit_calendar"),
@@ -836,10 +823,8 @@ func dayEventsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create modal content
-	modalContent := Div(
-		Class("modal"),
+	modalContent := createModal("event-modal",
 		Div(
-			Class("modal-content"),
 			H2(Class("text-2xl font-bold mb-4"), T(fmt.Sprintf("Events on %s", dateStr))),
 			func() *Node {
 				if len(eventsOnDate) == 0 {
@@ -860,7 +845,7 @@ func dayEventsHandler(w http.ResponseWriter, r *http.Request) {
 								T("View"),
 								Type("button"),
 								Class("bg-blue-500 text-white px-4 py-2 rounded mr-2"),
-								HxGet(fmt.Sprintf("/calendar2/event/%d", evt.ID)),
+								HxGet(fmt.Sprintf("/calendar2/event/%s", evt.ID)),
 								HxTarget("#event-modal"),
 								HxSwap("innerHTML"),
 							),
@@ -868,7 +853,7 @@ func dayEventsHandler(w http.ResponseWriter, r *http.Request) {
 								T("Delete"),
 								Type("button"),
 								Class("bg-red-500 text-white px-4 py-2 rounded"),
-								HxPost(fmt.Sprintf("/calendar2/delete_event/%d", evt.ID)),
+								HxPost(fmt.Sprintf("/calendar2/delete_event/%s", evt.ID)),
 								HxTarget("#calendar-container"),
 								HxSwap("innerHTML"),
 							),
@@ -919,4 +904,23 @@ func SaveEvents() error {
 	}
 	fmt.Println("Events data saved to file:", eventsFilePath)
 	return nil
+}
+
+func createModal(containerID string, content *Node) *Node {
+	modalContent := Div(
+		Class("modal-content"),
+	)
+	modalContent.Children = append(modalContent.Children, content.Children...)
+
+	return Div(
+		Class("modal"),
+		Attr("onclick", fmt.Sprintf("if(event.target === this){ document.getElementById('%s').innerHTML = ''; }", containerID)),
+		modalContent,
+	)
+}
+
+func hash(s string) string {
+	h := fnv.New32a()
+	h.Write([]byte(s))
+	return fmt.Sprintf("%d", h.Sum32())
 }
