@@ -5,9 +5,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"github.com/breadchris/share/calendar"
-	"github.com/breadchris/share/graph"
-	"github.com/breadchris/share/paint"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -20,6 +17,10 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/breadchris/share/calendar"
+	"github.com/breadchris/share/graph"
+	"github.com/breadchris/share/paint"
 
 	"github.com/breadchris/share/breadchris"
 	"github.com/breadchris/share/code"
@@ -81,7 +82,6 @@ func startServer(useTLS bool, port int) {
 	setupRecipe()
 	fileUpload()
 	go scheduleScraping()
-	// ScrapeEverOut(0, 10)
 
 	db, err := NewDBAny("data/testdb/")
 	if err != nil {
@@ -120,7 +120,7 @@ func startServer(useTLS bool, port int) {
 	p("/leaps", lm.Mux)
 	p("/vote", interpreted(NewVote))
 	p("/breadchris", interpreted(breadchris.New))
-	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./everout.go"}))
+	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./eventcalendar.go", "./everout.go"}))
 	p("/filecode", func() *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -142,6 +142,8 @@ func startServer(useTLS bool, port int) {
 	p("/everout", interpreted(NewEverout))
 	p("/graph", interpreted(graph.New))
 	p("/pipeport", interpreted(NewPipePort))
+
+	SetupCalendar(a)
 
 	go func() {
 		paths := []string{
