@@ -60,7 +60,7 @@ var (
 
 // Handlers
 func SetupCalendar(a *Auth) {
-	http.HandleFunc("/calendar2/", a.handleCalendar)
+	http.HandleFunc("/calendar2/", handleCalendar)
 	http.HandleFunc("/calendar2/month", createMonth)
 	http.HandleFunc("/calendar2/create_event_form", createEventForm)
 	http.HandleFunc("/calendar2/submit_event", submitEvent)
@@ -87,10 +87,7 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 }
 
 // Serve the user dashboard
-func (s *Auth) handleCalendar(w http.ResponseWriter, r *http.Request) {
-	uid, _ := s.s.GetUserID(r.Context())
-	fmt.Println("uid", uid)
-
+func handleCalendar(w http.ResponseWriter, r *http.Request) {
 	calendarEvents := getCalenderEvents(false)
 
 	page := RenderCalendar(calendarEvents)
@@ -422,7 +419,7 @@ func submitEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create new event
-	eventID := hash(name + dateStr)+strconv.Itoa(len(events))
+	eventID := hash(name+dateStr) + strconv.Itoa(len(events))
 	newEvent := CalendarEvent{
 		ID:          eventID,
 		Name:        name,
