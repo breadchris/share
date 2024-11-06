@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/breadchris/share/deps"
-	"github.com/sashabaranov/go-openai"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
+
+	"github.com/breadchris/share/deps"
+	"github.com/sashabaranov/go-openai"
 
 	. "github.com/breadchris/share/html"
 	"github.com/chromedp/chromedp"
