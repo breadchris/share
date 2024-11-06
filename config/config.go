@@ -27,6 +27,11 @@ type Stripe struct {
 	SecretKey string `json:"secret_key"`
 }
 
+type GithubConfig struct {
+	ClientID     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+}
+
 type AppConfig struct {
 	OpenAIKey          string        `json:"openai_key"`
 	SMTP               SMTPConfig    `json:"smtp"`
@@ -38,6 +43,7 @@ type AppConfig struct {
 	Blog               BlogConfig    `json:"blog"`
 	Stripe             Stripe        `json:"stripe"`
 	Figma              string        `json:"figma"`
+	Github             GithubConfig  `json:"github"`
 }
 
 func New() AppConfig {

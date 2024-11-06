@@ -34,6 +34,22 @@ func New() (*SessionManager, error) {
 	}, nil
 }
 
+func (s *SessionManager) GetValue(ctx context.Context, key string) (string, error) {
+	val := s.GetString(ctx, key)
+	if val == "" {
+		return "", errors.New("value not found")
+	}
+	return val, nil
+}
+
+func (s *SessionManager) SetValue(ctx context.Context, key, value string) {
+	s.Put(ctx, key, value)
+}
+
+func (s *SessionManager) ClearValue(ctx context.Context, key string) {
+	s.Remove(ctx, key)
+}
+
 func (s *SessionManager) GetUserID(ctx context.Context) (string, error) {
 	userID := s.GetString(ctx, UserIDCtxKey)
 	if userID == "" {

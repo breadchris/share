@@ -132,9 +132,22 @@ func startServer(useTLS bool, port int) {
 		})
 		return m
 	}())
-	p("/code", interpreted(wasmcode.New))
 
-	p("/extension", NewExtension())
+	g := NewGithub(deps)
+
+	p("/repl", interpreted(func(d deps2.Deps) *http.ServeMux {
+		m := http.NewServeMux()
+		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			DefaultLayout(
+				Div(T("repl")),
+			).RenderPage(w, r)
+		})
+		return m
+	}))
+	p("/code", interpreted(wasmcode.New))
+	p("/github", interpreted(g.Routes))
+	p("/group", interpreted(NewGroup))
+	p("/extension", interpreted(NewExtension))
 	p("/git", interpreted(NewGit))
 	p("/music", interpreted(NewMusic))
 	p("/calendar", interpreted(calendar.NewCalendar))

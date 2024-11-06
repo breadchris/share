@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 	"github.com/markbates/goth/gothic"
+	"github.com/markbates/goth/providers/github"
 	"github.com/markbates/goth/providers/google"
 	"github.com/samber/lo"
 	"log"
@@ -24,11 +25,27 @@ import (
 	"os"
 	"path/filepath"
 	"testing/fstest"
+	"time"
 )
 
 type Invite struct {
 	From string
 	To   string
+}
+
+type Account struct {
+	ID         int        `json:"id"`
+	Name       string     `json:"name"`
+	CreatedAt  time.Time  `json:"created_at"`
+	Identities []Identity `json:"identities"`
+}
+
+type Identity struct {
+	ID         int       `json:"id"`
+	AccountID  int       `json:"account_id"`
+	Provider   string    `json:"provider"`
+	ProviderID string    `json:"provider_id"`
+	CreatedAt  time.Time `json:"created_at"`
 }
 
 var (
@@ -73,6 +90,12 @@ func NewAuth(s *session.SessionManager, e *SMTPEmail, c config.AppConfig) *Auth 
 					c.GoogleClientSecret,
 					fmt.Sprintf("%s/auth/google/callback", c.ExternalURL),
 					"email", "profile"),
+				github.New(
+					c.Github.ClientID,
+					c.Github.ClientSecret,
+					fmt.Sprintf("%s/auth/github/callback", c.ExternalURL),
+					"repo", "user:email",
+				),
 			),
 		),
 	}

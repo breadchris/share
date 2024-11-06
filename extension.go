@@ -2,11 +2,14 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	"github.com/go-shiori/dom"
 	"github.com/go-shiori/go-readability"
+	"github.com/google/uuid"
 	"go/format"
 	"go/printer"
 	"go/token"
@@ -15,6 +18,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -50,6 +54,13 @@ func loadState() {
 		slog.Error("failed to unmarshal state", "error", err)
 		return
 	}
+
+	for id, pageInfo := range state.PageInfos {
+		if pageInfo.ID == "" {
+			pageInfo.ID = uuid.NewString()
+			state.PageInfos[id] = pageInfo
+		}
+	}
 }
 
 func saveState() {
@@ -66,7 +77,7 @@ func saveState() {
 	}
 }
 
-func NewExtension() *http.ServeMux {
+func NewExtension(d deps.Deps) *http.ServeMux {
 	m := http.NewServeMux()
 	m.HandleFunc("/save", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
@@ -149,8 +160,35 @@ func NewExtension() *http.ServeMux {
 		}
 	})
 
-	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	m.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+
 		if r.Method == "GET" {
+			if id != "" {
+				// TODO breadchris pages should be stored by ID
+				var pi PageInfo
+				for _, pageInfo := range state.PageInfos {
+					if pageInfo.ID == id {
+						pi = pageInfo
+						break
+					}
+				}
+
+				if pi.ID == "" {
+					http.Error(w, "Page not found", http.StatusNotFound)
+					return
+				}
+
+				ctx := context.WithValue(r.Context(), "baseURL", "/extension")
+				DefaultLayout(
+					Div(
+						Class("mx-auto w-3/4 pt-6 space-y-6"),
+						P(Class("text-xl"), T(pi.Title)),
+						P(Raw(pi.Article)),
+					),
+				).RenderPageCtx(ctx, w, r)
+				return
+			}
 			pages := Div()
 			for _, pageInfo := range state.PageInfos {
 				pages.Children = append(pages.Children, Div(
@@ -163,9 +201,10 @@ func NewExtension() *http.ServeMux {
 					),
 				))
 			}
+			ctx := context.WithValue(r.Context(), "baseURL", "/extension")
 			DefaultLayout(
 				RenderMasonry(state),
-			).RenderPage(w, r)
+			).RenderPageCtx(ctx, w, r)
 			return
 		}
 		if r.Method == "POST" {
@@ -302,7 +341,15 @@ func shortText(n int, s string) string {
 
 func RenderMasonry(state State) *Node {
 	var cards []*Node
+	// sort by created at
+	var pi []PageInfo
 	for _, pageInfo := range state.PageInfos {
+		pi = append(pi, pageInfo)
+	}
+	sort.Slice(pi, func(i, j int) bool {
+		return pi[i].CreatedAt > pi[j].CreatedAt
+	})
+	for _, pageInfo := range pi {
 		card := Div(
 			Class("bg-white rounded-lg shadow-md hover:shadow-lg card"),
 			Style_("grid-row-end: span 8;"),
@@ -310,18 +357,18 @@ func RenderMasonry(state State) *Node {
 				Class("flex flex-col"),
 				Div(
 					Class("w-full aspect-video p-4"),
-					P(T(shortText(200, pageInfo.Article))),
+					A(Href("/"+pageInfo.ID), T(shortText(200, pageInfo.Article))),
 				),
 				Div(
 					Class("text-gray-800 p-2 basis-14"),
 					Div(
 						Class("flex justify-between"),
-						P(Class("text-md font-bold leading-6 "), Text(pageInfo.Title)), // Dynamic Title
+						A(Href(pageInfo.URL), Class("text-md font-bold leading-6 "), Text(pageInfo.Title)),
 						Div(
 							Class("flex items-center justify-between text-sm text-gray-500 space-x-1"),
 							Div(
 								Class("flex gap-1 mt-1"),
-								Span(Text(fmt.Sprintf("%d", pageInfo.HitCount))), // Dynamic HitCount
+								Span(Text(fmt.Sprintf("%d", pageInfo.HitCount))),
 								Svg(
 									StrokeWidth("1.5"),
 									Stroke("currentColor"),

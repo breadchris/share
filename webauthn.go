@@ -37,11 +37,13 @@ func setupWebauthn() {
 }
 
 type User struct {
-	ID          string
-	Email       string
-	DisplayName string
-	Icon        string
-	Credentials []webauthn.Credential
+	ID             string
+	Email          string
+	AccessToken    string
+	GithubUsername string
+	DisplayName    string
+	Icon           string
+	Credentials    []webauthn.Credential
 	// TODO breadchris make these expire
 	Secrets   []string
 	Audiences []string

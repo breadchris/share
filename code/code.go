@@ -1,6 +1,8 @@
 package code
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -12,8 +14,10 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"io/ioutil"
 	"log/slog"
 	"net/http"
+	"os"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -304,4 +308,73 @@ func GetFunctions(filePath string) ([]string, error) {
 		return true
 	})
 	return functions, nil
+}
+
+func ParseImports(filename string) ([]string, error) {
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, filename, nil, parser.ImportsOnly)
+	if err != nil {
+		return nil, err
+	}
+
+	var imports []string
+	for _, imp := range file.Imports {
+		path := imp.Path.Value[1 : len(imp.Path.Value)-1] // Trim quotes
+		imports = append(imports, path)
+	}
+	return imports, nil
+}
+
+func ExtractGeneratePackages(filename string) ([]string, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var packages []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "//go:generate yaegi extract ") {
+			pkg := strings.TrimPrefix(line, "//go:generate yaegi extract ")
+			packages = append(packages, pkg)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+	return packages, nil
+}
+
+// Difference - finds elements in slice2 that are not in slice1
+func Difference(slice1, slice2 []string) []string {
+	diff := []string{}
+	set := make(map[string]struct{}, len(slice1))
+	for _, s := range slice1 {
+		set[s] = struct{}{}
+	}
+	for _, s := range slice2 {
+		if _, found := set[s]; !found {
+			diff = append(diff, s)
+		}
+	}
+	return diff
+}
+
+func WriteImports(filename string, imports []string) error {
+	fileData, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return err
+	}
+
+	var buffer bytes.Buffer
+	buffer.Write(fileData)
+
+	buffer.WriteString("\n// Added imports\n")
+	for _, imp := range imports {
+		buffer.WriteString(fmt.Sprintf("import _ \"%s\"\n", imp))
+	}
+
+	return ioutil.WriteFile(filename, buffer.Bytes(), 0644)
 }

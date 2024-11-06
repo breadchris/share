@@ -4,6 +4,7 @@
 //go:generate yaegi extract github.com/breadchris/share/calendar
 //go:generate yaegi extract github.com/breadchris/share/config
 //go:generate yaegi extract github.com/breadchris/share/llm
+//go:generate yaegi extract github.com/breadchris/share/session
 //go:generate yaegi extract github.com/gosimple/slug
 //go:generate yaegi extract github.com/samber/lo
 //go:generate yaegi extract github.com/yuin/goldmark
@@ -27,6 +28,14 @@
 //go:generate yaegi extract github.com/PuerkitoBio/goquery
 //go:generate yaegi extract github.com/gorilla/websocket
 //go:generate yaegi extract github.com/russross/blackfriday/v2
+//go:generate yaegi extract github.com/go-shiori/dom
+//go:generate yaegi extract github.com/go-shiori/go-readability
+//go:generate yaegi extract github.com/markbates/goth/providers/github
+//go:generate yaegi extract github.com/google/go-github/v55/github
+//go:generate yaegi extract github.com/gorilla/sessions
+//go:generate yaegi extract github.com/markbates/goth/gothic
+//go:generate yaegi extract golang.org/x/oauth2
+
 package symbol
 
 import "reflect"

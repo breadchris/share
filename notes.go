@@ -145,17 +145,17 @@ func RenderSmallCalendar(state calendar.State) *Node {
 	return Div(
 		Class("hidden md:block"),
 		H2(
-			Class("text-base font-semibold text-gray-900"),
+			Class("text-base font-semibold"),
 		),
 		Div(
 			//Class("lg:grid lg:grid-cols-12 lg:gap-x-16"),
 			Div(
 				Class("text-center lg:col-start-8 lg:col-end-13 lg:row-start-1 lg:mt-9 xl:col-start-9"),
 				Div(
-					Class("flex items-center text-gray-900"),
+					Class("flex items-center"),
 					Button(
 						Type("button"),
-						Class("-m-1.5 flex flex-none items-center justify-center p-1.5 text-gray-400 hover:text-gray-500"),
+						Class("-m-1.5 flex flex-none items-center justify-center p-1.5"),
 						Span(Class("sr-only"), Text("Previous month")),
 						Svg(
 							Class("h-5 w-5"),
@@ -219,7 +219,7 @@ func RenderSmallCalendar(state calendar.State) *Node {
 						),
 						Div(
 							Class("flex-auto"),
-							H3(Class("pr-10 font-semibold text-gray-900 xl:pr-0"), Text(event.Title)),
+							H3(Class("pr-10 font-semibold xl:pr-0"), Text(event.Title)),
 							Dl(
 								Class("mt-2 flex flex-col text-gray-500 xl:flex-row"),
 								renderEventDetails(event),
