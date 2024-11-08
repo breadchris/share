@@ -630,15 +630,10 @@ func viewEvent(w http.ResponseWriter, r *http.Request) {
 
 func deleteEvent(w http.ResponseWriter, r *http.Request) {
 	// Extract event ID from URL
-	idStr := strings.TrimPrefix(r.URL.Path, "/calendar2/delete_event/")
-	eventID, err := strconv.Atoi(idStr)
-	if err != nil {
-		http.Error(w, "Invalid event ID", http.StatusBadRequest)
-		return
-	}
+	eventID := strings.TrimPrefix(r.URL.Path, "/calendar2/delete_event/")
 
 	dataMutex.Lock()
-	evt, exists := events[strconv.Itoa(eventID)]
+	evt, exists := allEvents[eventID]
 	if !exists {
 		dataMutex.Unlock()
 		http.Error(w, "Event not found", http.StatusNotFound)
@@ -646,8 +641,15 @@ func deleteEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Remove the event from the events map
-	delete(events, strconv.Itoa(eventID))
+	delete(events, eventID)
+	delete(allEvents, eventID)
 	dataMutex.Unlock()
+
+	err := SaveEvents()
+	if err != nil {
+		http.Error(w, "Error saving events", http.StatusInternalServerError)
+		return
+	}
 
 	// Collect events for the month and year
 	month := int(evt.Date.Month())
