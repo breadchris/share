@@ -89,4 +89,5 @@ func uploadDirectoryToS3(bucketName, dir string) error {
 			return err
 		}
 	}
+	return nil
 }
