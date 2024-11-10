@@ -57,7 +57,8 @@ export class GoProcess {
    * @param params Program startup params.
    */
   async start(image: ArrayBuffer, stdio: SyncStdio, params?: StartupParams) {
-    this.worker = new Worker(new URL('/dist/wasmcode/go.worker.js', import.meta.url), {
+    // TODO breadchris needs to be dist?
+    this.worker = new Worker(new URL('/static/wasmcode/go.worker.js', import.meta.url), {
       type: 'module',
     })
 

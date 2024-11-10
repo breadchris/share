@@ -60,11 +60,13 @@ export const Mention = createReactInlineContentSpec(
     }
 );
 
+
 const schema = BlockNoteSchema.create({
     blockSpecs: {
         ...defaultBlockSpecs,
         procode: CodeBlock,
         location: LocationBlock,
+        monaco: MonacoBlock,
     },
     inlineContentSpecs: {
         ...defaultInlineContentSpecs,
@@ -79,7 +81,7 @@ export const Editor = ({ props }) => {
     // TODO breadchris this will become problematic with multiple forms on the page, need provider
     useEffect(() => {
         if (props?.provider_url) {
-            providerRef.current = new WebsocketProvider(props.provider_url, props.room, doc);
+            // providerRef.current = new WebsocketProvider(props.provider_url, props.room, doc);
         }
         return () => {
             if (abortControllerRef.current) {
@@ -213,24 +215,27 @@ export const Editor = ({ props }) => {
 
     const [initialContent, setInitialContent] = useState<
         PartialBlock[] | undefined | "loading"
-    >("loading");
+    >(props.post?.Blocknote ? JSON.parse(props.post.Blocknote) : "loading");
 
-    // Loads the previously stored editor contents.
     useEffect(() => {
-        loadFromStorage().then((content) => {
-            setInitialContent(content);
-        });
+        // TODO breadchris how to handle loading from storage when blocknote is provided
+        if (!props.post?.Blocknote) {
+            console.log("loading from storage", props.post);
+            loadFromStorage().then((content) => {
+                setInitialContent(content);
+            });
+        }
     }, []);
     // Creates a new editor instance.
     // We use useMemo + createBlockNoteEditor instead of useCreateBlockNote so we
     // can delay the creation of the editor until the initial content is loaded.
     const editor = useMemo(() => {
-        if (initialContent === "loading" || (props?.provider_url && providerRef.current === undefined)) {
+        if (initialContent === "loading") { // || (props?.provider_url && providerRef.current === undefined)) {
             return undefined;
         }
 
         // TODO breadchris when content is loaded, set the form inputs
-        return BlockNoteEditor.create({
+        const e = BlockNoteEditor.create({
             initialContent,
             uploadFile: async (file: File) => {
                 const body = new FormData();
@@ -242,16 +247,26 @@ export const Editor = ({ props }) => {
                 });
                 return await ret.text();
             },
-            collaboration: {
-                provider: providerRef.current,
-                fragment: doc.getXmlFragment("blocknote"),
-                user: {
-                    name: props?.username || "Anonymous",
-                    color: "blue",
-                }
-            },
+            // collaboration: {
+            //     provider: providerRef.current,
+            //     fragment: doc.getXmlFragment("blocknote"),
+            //     user: {
+            //         name: props?.username || "Anonymous",
+            //         color: "blue",
+            //     }
+            // },
             schema: schema,
         });
+
+        saveToStorage(e.document);
+        
+        (async () => {
+            document.getElementById("html").value = await e.blocksToFullHTML(e.document);
+            document.getElementById("markdown").value = await e.blocksToMarkdownLossy()
+            document.getElementById("blocknote").value = JSON.stringify(e.document);
+        })();
+
+        return e;
     }, [initialContent]);
 
     if (editor === undefined) {
@@ -263,6 +278,7 @@ export const Editor = ({ props }) => {
             editor={editor}
             onChange={async () => {
                 saveToStorage(editor.document);
+                document.getElementById("html").value = await editor.blocksToFullHTML(editor.document);
                 document.getElementById("markdown").value = await editor.blocksToMarkdownLossy()
                 document.getElementById("blocknote").value = JSON.stringify(editor.document);
             }}
@@ -272,7 +288,13 @@ export const Editor = ({ props }) => {
                 triggerCharacter={"/"}
                 getItems={async (query) =>
                     filterSuggestionItems(
-                        [...getDefaultReactSlashMenuItems(editor), insertCode(), insertLocation(), insertAI(editor)],
+                        [
+                            ...getDefaultReactSlashMenuItems(editor),
+                            insertCode(),
+                            insertLocation(),
+                            insertAI(editor),
+                            insertMonaco(),
+                        ],
                         query
                     )
                 }
@@ -351,7 +373,7 @@ export const Slides = () => {
 }
 
 import {createRoot} from 'react-dom/client';
-import {CodeBlock, insertCode} from "./CodeBlock";
+import {CodeBlock, insertCode, insertMonaco, MonacoBlock} from "./CodeBlock";
 import {contentService} from "./ContentService";
 import {insertLocation, LocationBlock} from "./LocationPicker";
 const e = document.getElementById('editor');

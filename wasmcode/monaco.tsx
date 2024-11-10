@@ -19,6 +19,7 @@ function listenEvent(eventName, callback) {
     });
 }
 
+
 let loaderConfigured = false;
 export const configureMonacoLoader = () => {
     if (loaderConfigured) {
@@ -29,7 +30,8 @@ export const configureMonacoLoader = () => {
     loaderConfigured = true;
 };
 
-const nodeModules = '/dist/node_modules/monaco-editor/esm/vs/';
+// TODO breadchris should be dist
+const nodeModules = '/static/node_modules/monaco-editor/esm/vs/';
 window.MonacoEnvironment = {
     getWorkerUrl: function (moduleId, label) {
         if (label === 'json') {
@@ -73,7 +75,9 @@ interface State {
     selectedFunction: string;
 }
 
-const CodeEditor = ({ serverURL, id, fileName, darkMode, func, vimModeEnabled, isServerEnvironment, code: initialCode }) => {
+export const CodeEditor = ({ props }) => {
+    const {onChange, collab, serverURL, id, fileName, darkMode, func, vimModeEnabled, isServerEnvironment, code: initialCode} = props;
+
     const syntaxChecker = useRef<GoSyntaxChecker>(null);
     const [code, setCode] = useState(initialCode);
     const [data, setData] = useState(localStorage.getItem('data') || '{}');
@@ -136,17 +140,17 @@ const CodeEditor = ({ serverURL, id, fileName, darkMode, func, vimModeEnabled, i
             return r.value ?? [];
         });
 
+
         if (!editorInstance.current) return;
         monacoInstance.current?.editor.setModelMarkers(editorInstance.current.getModel(), editorInstance.current.getId(), markers);
     };
 
     const dataEditorDidMount = (editor, monaco) => {
-        editor.onKeyDown((e) => {
-            if (vimModeEnabled) {
-                return;
-            }
-            vimCommandAdapter.current?.handleKeyDownEvent(e, '');
-        });
+        if (vimModeEnabled) {
+            editor.onKeyDown((e) => {
+                vimCommandAdapter.current?.handleKeyDownEvent(e, '');
+            });
+        }
 
         const [vimAdapterInstance, statusAdapter] = createVimModeAdapter(editor);
         vimAdapter.current = vimAdapterInstance;
@@ -178,116 +182,123 @@ const CodeEditor = ({ serverURL, id, fileName, darkMode, func, vimModeEnabled, i
             editor.setValue(document.getElementById(data.id).textContent);
         });
 
-        const cursorsManager = new RemoteCursorManager({
-            editor,
-            tooltips: true,
-            tooltipDuration: 2,
-        });
-        cursors.current = cursorsManager;
+        if (collab) {
+            const cursorsManager = new RemoteCursorManager({
+                editor,
+                tooltips: true,
+                tooltipDuration: 2,
+            });
+            cursors.current = cursorsManager;
 
-        const selectionManager = new RemoteSelectionManager({
-            editor,
-        })
-        selection.current = selectionManager;
+            const selectionManager = new RemoteSelectionManager({
+                editor,
+            })
+            selection.current = selectionManager;
+            const leapClient = new leap_client();
+            leapClient.on('error', (body) => console.error(body));
+            leapClient.on('disconnect', () => {
+                console.log('we are disconnected and stuff')
+                // TODO breadchris add reconnect logic
+                setConnected(false);
+            });
+            leapClient.on('connect', (body) => {
+                console.log('we are connected and stuff', body);
+                leapClient.subscribe(file);
+                setConnected(true);
+            });
+            leapClient.on('user', (update) => console.log('user update', update));
+            leapClient.on('global_metadata', (update) => {
+                console.log('global_metadata update', update);
 
-        const leapClient = new leap_client();
-        leapClient.on('error', (body) => console.error(body));
-        leapClient.on('disconnect', () => {
-            console.log('we are disconnected and stuff')
-            // TODO breadchris add reconnect logic
-            setConnected(false);
-        });
-        leapClient.on('connect', (body) => {
-            console.log('we are connected and stuff', body);
-            leapClient.subscribe(file);
-            setConnected(true);
-        });
-        leapClient.on('user', (update) => console.log('user update', update));
-        leapClient.on('global_metadata', (update) => {
-            console.log('global_metadata update', update);
-
-            if (update.metadata.type === 'cursor_update') {
-                try {
-                    cursorsManager.getCursor(update.client.username);
-                } catch (e) {
-                    cursorsManager.addCursor(update.client.username, 'red', update.client.username);
-                } finally {
-                    cursorsManager.setCursorPosition(update.client.username, {
-                        lineNumber: update.metadata.body.position.lineNumber,
-                        column: update.metadata.body.position.column,
-                    });
+                if (update.metadata.type === 'cursor_update') {
+                    try {
+                        cursorsManager.getCursor(update.client.username);
+                    } catch (e) {
+                        cursorsManager.addCursor(update.client.username, 'red', update.client.username);
+                    } finally {
+                        cursorsManager.setCursorPosition(update.client.username, {
+                            lineNumber: update.metadata.body.position.lineNumber,
+                            column: update.metadata.body.position.column,
+                        });
+                    }
                 }
-            }
 
-            if (update.metadata.type === 'selection_update') {
-                console.log('selection_update', update);
-                // try {
-                //     // cursorsManager.getCursor(update.client.username);
-                //     selectionManager.setSelectionOffsets(update.client.username, );
-                // } catch (e) {
-                //     cursorsManager.addCursor(update.client.username, 'red', update.client.username);
-                // } finally {
-                //     cursorsManager.setCursorPosition(update.client.username, {
-                //         lineNumber: update.metadata.body.position.lineNumber,
-                //         column: update.metadata.body.position.column,
-                //     });
-                // }
-                // const start = {
-                //     lineNumber: update.metadata.body.selection.startLineNumber,
-                //     column: update.metadata.body.selection.startColumn,
-                // };
-                //
-                // const end = {
-                //     lineNumber: update.metadata.body.selection.endLineNumber,
-                //     column: update.metadata.body.selection.endColumn,
-                // };
-                //
-                // console.log('Setting selection', start, end);
-                // selectionManager.setSelectionPositions(update.client.username || '1', start, end);
-            }
-        });
-
-        new LeapMonacoBinding(leapClient, editor, file);
-
-        leapClient.connect('ws://' + window.location.host + '/leaps/ws?username=' + id.current);
-
-        client.current = leapClient;
-
-        editor.onKeyDown((e) => {
-            if (vimModeEnabled) {
-                return;
-            }
-            vimCommandAdapter.current?.handleKeyDownEvent(e, '');
-        });
-
-        editor.onDidChangeCursorSelection((e) => {
-            const { selection } = e;
-
-            leapClient.send_global_metadata({
-                type: 'selection_update',
-                body: {
-                    selection,
-                    document: {
-                        id: file,
-                    },
-                },
+                if (update.metadata.type === 'selection_update') {
+                    console.log('selection_update', update);
+                    // try {
+                    //     // cursorsManager.getCursor(update.client.username);
+                    //     selectionManager.setSelectionOffsets(update.client.username, );
+                    // } catch (e) {
+                    //     cursorsManager.addCursor(update.client.username, 'red', update.client.username);
+                    // } finally {
+                    //     cursorsManager.setCursorPosition(update.client.username, {
+                    //         lineNumber: update.metadata.body.position.lineNumber,
+                    //         column: update.metadata.body.position.column,
+                    //     });
+                    // }
+                    // const start = {
+                    //     lineNumber: update.metadata.body.selection.startLineNumber,
+                    //     column: update.metadata.body.selection.startColumn,
+                    // };
+                    //
+                    // const end = {
+                    //     lineNumber: update.metadata.body.selection.endLineNumber,
+                    //     column: update.metadata.body.selection.endColumn,
+                    // };
+                    //
+                    // console.log('Setting selection', start, end);
+                    // selectionManager.setSelectionPositions(update.client.username || '1', start, end);
+                }
             });
-        })
 
-        editor.onDidChangeCursorPosition((e) => {
-            const { position } = e;
-            console.log(`Cursor position: ${position.lineNumber}:${position.column}`);
+            new LeapMonacoBinding(leapClient, editor, file);
 
-            leapClient.send_global_metadata({
-                type: 'cursor_update',
-                body: {
-                    position,
-                    document: {
-                        id: file,
+            leapClient.connect('ws://' + window.location.host + '/leaps/ws?username=' + id.current);
+
+            client.current = leapClient;
+
+            editor.onDidChangeCursorSelection((e) => {
+                const { selection } = e;
+
+                leapClient.send_global_metadata({
+                    type: 'selection_update',
+                    body: {
+                        selection,
+                        document: {
+                            id: file,
+                        },
                     },
-                },
+                });
+            })
+
+            editor.onDidChangeCursorPosition((e) => {
+                const { position } = e;
+                console.log(`Cursor position: ${position.lineNumber}:${position.column}`);
+
+                leapClient.send_global_metadata({
+                    type: 'cursor_update',
+                    body: {
+                        position,
+                        document: {
+                            id: file,
+                        },
+                    },
+                });
             });
-        });
+
+            disposables.current.push(
+                {
+                    dispose: () => {
+                        leapClient.close();
+                    }
+                }
+            )
+        }
+        if (vimModeEnabled) {
+            editor.onKeyDown((e) => {
+                vimCommandAdapter.current?.handleKeyDownEvent(e, '');
+            });
+        }
 
         const [vimAdapterInstance, statusAdapter] = createVimModeAdapter(editor);
         vimAdapter.current = vimAdapterInstance;
@@ -333,14 +344,6 @@ const CodeEditor = ({ serverURL, id, fileName, darkMode, func, vimModeEnabled, i
                 }
             })
         );
-
-        disposables.current.push(
-            {
-                dispose: () => {
-                    leapClient.close();
-                }
-            }
-        )
 
         actions.forEach((action) => editor.addAction(action));
         attachCustomCommands(editor);
@@ -396,13 +399,16 @@ const CodeEditor = ({ serverURL, id, fileName, darkMode, func, vimModeEnabled, i
         }
     }, [vimModeEnabled]);
 
-    const onChange = (newVal, e) => {
+    const onCodeChange = (newVal, e) => {
         localStorage.setItem('data', newVal);
         if (syntaxChecker.current && editorInstance.current) {
             syntaxChecker.current.requestModelMarkers(editorInstance.current.getModel(), editorInstance.current, {});
         }
         setCode(newVal);
         runCode();
+        if (onChange) {
+            onChange(newVal);
+        }
     }
 
     const modalRef = useRef(null);
@@ -427,20 +433,6 @@ const CodeEditor = ({ serverURL, id, fileName, darkMode, func, vimModeEnabled, i
         };
     }, [modalRef])
 
-    const [htmlContent, setHtmlContent] = useState('');
-
-    useEffect(() => {
-        // Fetch the HTML from /wasmcode/sidebar
-        fetch('/code/sidebar')
-            .then((response) => response.text())
-            .then((html) => {
-                setHtmlContent(html); // Store the HTML content
-            })
-            .catch((error) => {
-                console.error('Error fetching HTML:', error);
-            });
-    }, []);
-
     return (
         <>
             <dialog id="my_modal_1" className="modal" ref={modalRef}>
@@ -452,24 +444,23 @@ const CodeEditor = ({ serverURL, id, fileName, darkMode, func, vimModeEnabled, i
                 </div>
             </dialog>
 
-            <PanelGroup direction="horizontal">
-                <Panel defaultSize={20}>
-                    {connected ? <div className={"bg-green-500 text-white p-2"}>Connected</div> : <div className={"bg-red-500 text-white p-2"}>Disconnected</div>}
-                    {state.parse && (
-                        <>
-                            {state.parse.error && <div className={"bg-red-500 text-white p-2"}>{state.parse.error}</div>}
-                            <ul>
-                                {state.parse.functions?.map((f) => (
-                                    <li key={f} className={"bg-blue-500 text-white p-2"} onClick={() => {
-                                        setState((state) => ({ ...state, selectedFunction: f }));
-                                    }}>{f}</li>
-                                ))}
-                            </ul>
-                        </>
-                    )}
-                    {/*<div className={"overflow-auto h-full"} dangerouslySetInnerHTML={{__html: htmlContent}}/>*/}
-                </Panel>
-                <PanelResizeHandle className="w-2 bg-gray-300"/>
+            <PanelGroup direction="vertical">
+                {/*<Panel defaultSize={20}>*/}
+                {/*    {connected ? <div className={"bg-green-500 text-white p-2"}>Connected</div> : <div className={"bg-red-500 text-white p-2"}>Disconnected</div>}*/}
+                {/*    {state.parse && (*/}
+                {/*        <>*/}
+                {/*            {state.parse.error && <div className={"bg-red-500 text-white p-2"}>{state.parse.error}</div>}*/}
+                {/*            <ul>*/}
+                {/*                {state.parse.functions?.map((f) => (*/}
+                {/*                    <li key={f} className={"bg-blue-500 text-white p-2"} onClick={() => {*/}
+                {/*                        setState((state) => ({ ...state, selectedFunction: f }));*/}
+                {/*                    }}>{f}</li>*/}
+                {/*                ))}*/}
+                {/*            </ul>*/}
+                {/*        </>*/}
+                {/*    )}*/}
+                {/*</Panel>*/}
+                {/*<PanelResizeHandle className="w-2 bg-gray-300"/>*/}
                 <Panel>
                     <PanelGroup direction="vertical">
                         <Panel>
@@ -480,15 +471,16 @@ const CodeEditor = ({ serverURL, id, fileName, darkMode, func, vimModeEnabled, i
                                 defaultValue={code}
                                 path={fileName}
                                 options={{}}
-                                onChange={onChange}
+                                onChange={onCodeChange}
                                 onMount={(e, m) => editorDidMount(e, m, fileName)}
                                 loading={<span className={'loading loading-spinner'}>Loading...</span>}
                             />
                         </Panel>
-                        <PanelResizeHandle className="h-2 bg-gray-300"/>
-                        <Panel defaultSize={20}>
-                            <iframe className={"w-full h-full"} src={"/chat"} />
-                        </Panel>
+
+                        {/*<PanelResizeHandle className="h-2 bg-gray-300"/>*/}
+                        {/*<Panel defaultSize={20}>*/}
+                        {/*    <iframe className={"w-full h-full"} src={"/chat"} />*/}
+                        {/*</Panel>*/}
                         {/*<PanelResizeHandle className="h-2 bg-gray-300"/>*/}
                         {/*<Panel defaultSize={20}>*/}
                         {/*    <MonacoEditor*/}
@@ -517,14 +509,38 @@ const CodeEditor = ({ serverURL, id, fileName, darkMode, func, vimModeEnabled, i
     );
 };
 
+const monacoElements = document.querySelectorAll('[data-content-type="monaco"]');
+console.log('loading monaco editors', monacoElements)
+monacoElements.forEach(element => {
+    const r = createRoot(element);
+
+    // TODO breadchris get props from data
+    const code = element.getAttribute('data-data');
+    const props = {
+        serverURL: "http://localhost:8080",
+        id: "1",
+        fileName: "main.go",
+        darkMode: true,
+        func: "main.Render",
+        vimModeEnabled: false,
+        code: code,
+    }
+    console.log("loading monaco editor", props);
+    r.render(<CodeEditor props={props} />);
+});
+
 const s = document.getElementById('monaco-editor');
 if (s) {
     const r = createRoot(s);
-    // get filename from data-filename attribute
-    const fileName = s.getAttribute('data-filename');
-    const func = s.getAttribute('data-function');
-    const code = s.getAttribute('data-code');
-    const id = s.getAttribute('data-id');
-    const serverURL = s.getAttribute('data-server-url');
-    r.render(<CodeEditor serverURL={serverURL} code={code} id={id} darkMode={false} fileName={fileName} func={func} vimModeEnabled={true} isServerEnvironment={false}/>);
+
+    // TODO breadchris get props from data
+    let props = JSON.parse(s.getAttribute('data-props'));
+    props = {
+        ...props,
+        darkMode: false,
+        vimModeEnabled: true,
+        isServerEnvironment: false,
+    }
+    console.log("loading monaco editor", props);
+    r.render(<CodeEditor props={props} />);
 }

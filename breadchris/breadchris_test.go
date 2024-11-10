@@ -2,6 +2,7 @@ package breadchris
 
 import (
 	"encoding/json"
+	"github.com/breadchris/share/breadchris/posts"
 	"github.com/breadchris/share/symbol"
 	"github.com/cogentcore/yaegi/interp"
 	"github.com/cogentcore/yaegi/stdlib"
@@ -13,7 +14,20 @@ import (
 )
 
 func TestGenerate(t *testing.T) {
-	s, err := StaticSiteGenerator()
+	//domain := "localhost:8080"
+	//domainDir := path.Join("data", "sites", "generated", domain)
+
+	//baseURL := "http://localhost:8080/" + domainDir + "/latest"
+	//bread := StaticSite{
+	//	Domain:  domain,
+	//	BaseURL: baseURL,
+	//}
+
+	bread := StaticSite{
+		Domain:  "breadchris.com",
+		BaseURL: "https://breadchris.com",
+	}
+	s, err := StaticSiteGenerator(bread)
 	if err != nil {
 		t.Fatalf("Error: %v", err)
 	}
@@ -53,7 +67,7 @@ func TestRun(t *testing.T) {
 	}
 
 	s := HomeState{
-		Posts: []Post{
+		Posts: []posts.Post{
 			{
 				Title: "Hello, World!",
 				Tags:  []string{"blog"},
@@ -109,7 +123,7 @@ func TestHome(t *testing.T) {
 	}
 
 	s := HomeState{
-		Posts: []Post{
+		Posts: []posts.Post{
 			{
 				Title: "Hello, World!",
 				Tags:  []string{"blog"},

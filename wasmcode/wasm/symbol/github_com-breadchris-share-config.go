@@ -15,6 +15,7 @@ func init() {
 		// type definitions
 		"AppConfig":     reflect.ValueOf((*config.AppConfig)(nil)),
 		"BlogConfig":    reflect.ValueOf((*config.BlogConfig)(nil)),
+		"GithubConfig":  reflect.ValueOf((*config.GithubConfig)(nil)),
 		"SMTPConfig":    reflect.ValueOf((*config.SMTPConfig)(nil)),
 		"SpotifyConfig": reflect.ValueOf((*config.SpotifyConfig)(nil)),
 		"Stripe":        reflect.ValueOf((*config.Stripe)(nil)),

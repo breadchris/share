@@ -2,7 +2,8 @@ import type * as monaco from 'monaco-editor'
 import '../lib/go/wasm_exec.js'
 import {instantiateStreaming} from "../lib/go";
 
-export const getWasmUrl = (name) => `/dist/${name}@v1.wasm`
+// TODO breadchris should be dist
+export const getWasmUrl = (name) => `/static/${name}@v1.wasm`
 
 type JSONCallback = (rsp: string) => void
 type CallArgs = [...any[], JSONCallback]

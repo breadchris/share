@@ -5,7 +5,8 @@ import type { IDisposable } from 'monaco-editor'
 export type AnalyzerWorker = Comlink.Remote<WorkerHandler>
 
 export const spawnAnalyzerWorker = (): [AnalyzerWorker, IDisposable] => {
-  const worker = new Worker(new URL('/dist/wasmcode/analyzer/analyzer.worker.js', import.meta.url), {
+  // TODO breadchris needs to be dist?
+  const worker = new Worker(new URL('/static/wasmcode/analyzer/analyzer.worker.js', import.meta.url), {
     type: 'module',
   })
 

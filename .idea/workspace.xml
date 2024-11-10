@@ -5,35 +5,62 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/group.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/breadchris/posts/load.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/s3.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test/test.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/x/util.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/share.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/share.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/admin.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/auth.go" beforeDir="false" afterPath="$PROJECT_DIR$/auth.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/CodeBlock.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/CodeBlock.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/breadchris.go" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/breadchris.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/breadchris_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/breadchris_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/editor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/editor.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/markdown_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/markdown_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/posts/coding-as-a-lifestyle.md" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/posts/coding-as-a-lifestyle.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/static/editor.css" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/editor.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/static/editor.css.map" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/editor.css.map" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/static/editor.js" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/editor.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/static/editor.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/editor.js.map" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/code/code.go" beforeDir="false" afterPath="$PROJECT_DIR$/code/code.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cursor.html" beforeDir="false" afterPath="$PROJECT_DIR$/x/cursor.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dir.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension.go" beforeDir="false" afterPath="$PROJECT_DIR$/extension.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/monaco.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/code/monaco.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/analyzer@v1.wasm" beforeDir="false" afterPath="$PROJECT_DIR$/dist/analyzer@v1.wasm" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/code/monaco.css" beforeDir="false" afterPath="$PROJECT_DIR$/dist/code/monaco.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/code/monaco.js" beforeDir="false" afterPath="$PROJECT_DIR$/dist/code/monaco.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/graph/graph.css" beforeDir="false" afterPath="$PROJECT_DIR$/dist/graph/graph.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/graph/graph.js" beforeDir="false" afterPath="$PROJECT_DIR$/dist/graph/graph.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/music.js" beforeDir="false" afterPath="$PROJECT_DIR$/dist/music.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/wasmcode/analyzer/analyzer.worker.js" beforeDir="false" afterPath="$PROJECT_DIR$/dist/wasmcode/analyzer/analyzer.worker.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/wasmcode/monaco.css" beforeDir="false" afterPath="$PROJECT_DIR$/dist/wasmcode/monaco.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/wasmcode/monaco.js" beforeDir="false" afterPath="$PROJECT_DIR$/dist/wasmcode/monaco.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/github.go" beforeDir="false" afterPath="$PROJECT_DIR$/github.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/index.go" beforeDir="false" afterPath="$PROJECT_DIR$/index.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/group.go" beforeDir="false" afterPath="$PROJECT_DIR$/user/group.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notes.go" beforeDir="false" afterPath="$PROJECT_DIR$/notes.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/session/session.go" beforeDir="false" afterPath="$PROJECT_DIR$/session/session.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-config.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-config.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/symbol/symbol.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/symbol.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wasmcode/analyzer/bootstrap.ts" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/analyzer/bootstrap.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wasmcode/analyzer/client.ts" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/analyzer/client.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wasmcode/code.go" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/code.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wasmcode/go/client.ts" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/go/client.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wasmcode/language/client.ts" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/language/client.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wasmcode/monaco.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/monaco.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wasmcode/wasm/symbol/github_com-breadchris-share-config.go" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/wasm/symbol/github_com-breadchris-share-config.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wasmcode/wasm/symbol/github_com-breadchris-share-html.go" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/wasm/symbol/github_com-breadchris-share-html.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/webauthn.go" beforeDir="false" afterPath="$PROJECT_DIR$/webauthn.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Go File" />
+      </list>
+    </option>
   </component>
   <component name="GOROOT" url="file:///opt/homebrew/opt/go/libexec" />
   <component name="Git.Settings">
@@ -52,6 +79,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "DefaultGoTemplateProperty": "Go File",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.go.formatter.settings.were.checked": "true",
@@ -67,10 +95,16 @@
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
+    "ts.external.directory.path": "/Users/hacked/Documents/GitHub/share/node_modules/typescript/lib",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager">
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/user" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Go Test.TestGenerate in github.com/breadchris/share/breadchris">
     <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
       <module name="share" />
       <working_directory value="$PROJECT_DIR$" />
@@ -91,6 +125,29 @@
       <output_directory value="$PROJECT_DIR$/data" />
       <method v="2" />
     </configuration>
+    <configuration name="TestGenerate in github.com/breadchris/share/breadchris (1)" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="share" />
+      <working_directory value="$PROJECT_DIR$/breadchris" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/breadchris/share/breadchris" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestGenerate\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestGenerate in github.com/breadchris/share/breadchris" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="share" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/breadchris/share/breadchris" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestGenerate\E$" />
+      <method v="2" />
+    </configuration>
     <configuration default="true" type="GoTestRunConfiguration" factoryName="Go Test">
       <module name="share" />
       <working_directory value="$PROJECT_DIR$" />
@@ -101,6 +158,17 @@
       <framework value="gotest" />
       <method v="2" />
     </configuration>
+    <list>
+      <item itemvalue="Go Build.share" />
+      <item itemvalue="Go Test.TestGenerate in github.com/breadchris/share/breadchris (1)" />
+      <item itemvalue="Go Test.TestGenerate in github.com/breadchris/share/breadchris" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Go Test.TestGenerate in github.com/breadchris/share/breadchris" />
+        <item itemvalue="Go Test.TestGenerate in github.com/breadchris/share/breadchris (1)" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
@@ -111,7 +179,8 @@
       <option name="presentableId" value="Default" />
       <updated>1730866796853</updated>
       <workItem from="1730866797883" duration="126000" />
-      <workItem from="1730866961438" duration="8658000" />
+      <workItem from="1730866961438" duration="10483000" />
+      <workItem from="1730954775854" duration="27703000" />
     </task>
     <servers />
   </component>

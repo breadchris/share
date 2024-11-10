@@ -43,6 +43,7 @@ type User struct {
 	GithubUsername string
 	DisplayName    string
 	Icon           string
+	Repo           string
 	Credentials    []webauthn.Credential
 	// TODO breadchris make these expire
 	Secrets   []string

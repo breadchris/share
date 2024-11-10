@@ -72,22 +72,73 @@ func (s *Github) Routes(d deps.Deps) *http.ServeMux {
 				return
 			}
 
-			println("cloning repo", repo)
-			repoURL := fmt.Sprintf("https://github.com/%s/%s.git", user.GithubUsername, repo)
-			clRepo, err := CloneRepo(repoURL)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
+			// TODO breadchris replace with sql
+			user.Repo = repo
+			users[u] = user
+			saveJSON(authFile, users)
+
+			repoDir := fmt.Sprintf("%s/%s", user.GithubUsername, repo)
+			repoURL := fmt.Sprintf("https://github.com/%s.git", repoDir)
+
+			repoPath := path.Join("./data/repos", repoDir)
+
+			var auth = &ghttp.BasicAuth{
+				Username: user.GithubUsername,
+				Password: user.AccessToken,
+			}
+
+			if _, err := os.Stat(repoPath); err != nil {
+				if err := os.MkdirAll(repoPath, 0755); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				println("cloning repo", repoURL, "into path", repoPath)
+				_, err := git.PlainClone(repoPath, false, &git.CloneOptions{
+					URL:          repoURL,
+					Progress:     os.Stdout,
+					SingleBranch: true,
+				})
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			} else {
+				println("pulling repo", repoURL, "into path", repoPath)
+				re, err := git.PlainOpen(repoPath)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				wt, err := re.Worktree()
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				if err = wt.Pull(&git.PullOptions{
+					RemoteName: "origin",
+					Auth:       auth,
+					Force:      true,
+				}); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 			}
 
 			println("generating static site")
-			s, err := breadchris.StaticSiteGenerator()
+			// TODO breadchris make this configurable
+			s, err := breadchris.StaticSiteGenerator(breadchris.StaticSite{
+				Domain:  "breadchris.com",
+				BaseURL: "https://breadchris.com",
+			})
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 
-			dst := path.Join(clRepo, "docs")
+			dst := path.Join(repoPath, "docs")
 			c := exec.Command("rm", "-rf", dst)
 			c.Stdout = os.Stdout
 			c.Stderr = os.Stderr
@@ -105,7 +156,7 @@ func (s *Github) Routes(d deps.Deps) *http.ServeMux {
 			}
 
 			println("committing changes")
-			re, err := git.PlainOpen(clRepo)
+			re, err := git.PlainOpen(repoPath)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -129,11 +180,6 @@ func (s *Github) Routes(d deps.Deps) *http.ServeMux {
 				return
 			}
 
-			var auth = &ghttp.BasicAuth{
-				Username: user.GithubUsername,
-				Password: user.AccessToken,
-			}
-
 			println("pushing changes")
 			err = re.Push(&git.PushOptions{
 				RemoteName: "origin",
@@ -145,6 +191,14 @@ func (s *Github) Routes(d deps.Deps) *http.ServeMux {
 			}
 
 			http.Redirect(w, r, "/github/commit", http.StatusFound)
+			return
+		}
+
+		if user.Repo != "" {
+			ctx := context.WithValue(r.Context(), "baseURL", "/github")
+			DefaultLayout(
+				Text("Repo: "+user.Repo),
+			).RenderPageCtx(ctx, w, r)
 			return
 		}
 
@@ -249,11 +303,11 @@ func (s *Github) callback(w http.ResponseWriter, r *http.Request) {
 			AccessToken:    u.AccessToken,
 			GithubUsername: u.NickName,
 		}
-		saveJSON(authFile, users)
 	} else {
 		users[id].AccessToken = u.AccessToken
 		users[id].GithubUsername = u.NickName
 	}
+	saveJSON(authFile, users)
 	s.s.SetUserID(r.Context(), id)
 
 	http.Redirect(w, r, "/github/commit", http.StatusFound)

@@ -1,6 +1,7 @@
 package wasmcode
 
 import (
+	"encoding/json"
 	"fmt"
 	. "github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
@@ -72,6 +73,18 @@ func Render() *Node {
 
 		switch r.Method {
 		case http.MethodGet:
+			props := map[string]string{
+				"fileName":  file,
+				"id":        id,
+				"function":  function,
+				"code":      string(code),
+				"serverURL": fmt.Sprintf("%s/code/ws", d.Config.ExternalURL),
+			}
+			mp, err := json.Marshal(props)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 			w.Write([]byte(Html(
 				Head(
 					Title(T("Code")),
@@ -114,11 +127,7 @@ function sendEvent(eventName, data) {
 							Div(
 								Class("w-full h-full"),
 								Id("monaco-editor"),
-								Attr("data-filename", file),
-								Attr("data-id", id),
-								Attr("data-function", function),
-								Attr("data-code", string(code)),
-								Attr("data-server-url", fmt.Sprintf("%s/code/ws", d.Config.ExternalURL)),
+								Attr("data-props", string(mp)),
 							),
 							Script(Attr("src", "/dist/wasmcode/monaco.js"), Attr("type", "module")),
 						),

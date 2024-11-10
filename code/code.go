@@ -150,8 +150,8 @@ func DynamicHTTPMux(f func(d Deps) *http.ServeMux, files ...string) func(Deps) *
 	parts := strings.Split(function, "/")
 	if len(parts) > 1 {
 		file = "./" + filepath.Base(filepath.Dir(file))
-		//function = "main." + strings.Split(parts[len(parts)-1], ".")[1]
-		function = parts[len(parts)-1]
+		function = strings.Split(parts[len(parts)-1], ".")[1]
+		//function = parts[len(parts)-1]
 	}
 
 	i := interp.New(interp.Options{
@@ -175,9 +175,15 @@ func DynamicHTTPMux(f func(d Deps) *http.ServeMux, files ...string) func(Deps) *
 		return f
 	}
 
-	fr, err := i.Eval(function)
-	if err != nil {
-		slog.Warn("failed to eval function", "error", err)
+	//fr, err := i.Eval(function)
+	//if err != nil {
+	//	slog.Warn("failed to eval function", "error", err)
+	//	return f
+	//}
+
+	fr, ok := i.Symbols(file)[file][function]
+	if !ok {
+		slog.Warn("failed to eval function", "error", err, "file", file, "function", function)
 		return f
 	}
 

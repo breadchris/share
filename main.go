@@ -5,6 +5,8 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/test"
+	"github.com/breadchris/share/x"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -111,6 +113,7 @@ func startServer(useTLS bool, port int) {
 
 	z := NewZineMaker(deps)
 
+	p("/test", interpreted(test.New))
 	p("/paint", interpreted(paint.New))
 	p("/notes", interpreted(NewNotes))
 	p("/llm", interpreted(llm.NewChatGPT))
@@ -146,7 +149,6 @@ func startServer(useTLS bool, port int) {
 	}))
 	p("/code", interpreted(wasmcode.New))
 	p("/github", interpreted(g.Routes))
-	p("/group", interpreted(NewGroup))
 	p("/extension", interpreted(NewExtension))
 	p("/git", interpreted(NewGit))
 	p("/music", interpreted(NewMusic))
@@ -161,6 +163,7 @@ func startServer(useTLS bool, port int) {
 	go func() {
 		paths := []string{
 			"./breadchris/editor.tsx",
+			"./breadchris/CodeBlock.tsx",
 		}
 		if err := WatchFilesAndFolders(paths, func(s string) {
 			result := api.Build(api.BuildOptions{
@@ -262,6 +265,16 @@ func startServer(useTLS bool, port int) {
 
 			for _, f := range result.OutputFiles {
 				fmt.Println(f.Path)
+			}
+
+			if err = x.CopyPaths([]string{
+				"dist/wasmcode",
+				"dist/analyzer@v1.wasm",
+				"dist/leapclient.js",
+				"dist/leap-bind-textarea.js",
+				"dist/node_modules",
+			}, "breadchris/static"); err != nil {
+				log.Fatalf("Failed to copy paths: %v", err)
 			}
 		}); err != nil {
 			log.Fatalf("Failed to watch files: %v", err)

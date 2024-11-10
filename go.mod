@@ -48,7 +48,7 @@ require (
 	github.com/go-shiori/go-readability v0.0.0-20241012063810-92284fa8a71f
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/go-webauthn/webauthn v0.10.2
-	github.com/goccy/go-json v0.10.2
+	github.com/goccy/go-json v0.10.3
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/golang-jwt/jwt/v4 v4.4.3
 	github.com/gomarkdown/markdown v0.0.0-20240419095408-642f0ee99ae2
@@ -251,6 +251,7 @@ require (
 	github.com/jbenet/go-temp-err-catcher v0.1.0 // indirect
 	github.com/jbenet/goprocess v0.1.4 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
@@ -280,6 +281,8 @@ require (
 	github.com/mikioh/tcpopt v0.0.0-20190314235656-172688c1accc // indirect
 	github.com/minio/sha256-simd v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
+	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mr-tron/base58 v1.2.0 // indirect
 	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/multiformats/go-base32 v0.1.0 // indirect
@@ -336,6 +339,7 @@ require (
 	github.com/snabb/diagio v1.0.4 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/steveyen/gtreap v0.1.0 // indirect
+	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/temoto/robotstxt v1.1.2 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
@@ -375,4 +379,6 @@ require (
 	modernc.org/memory v1.8.0 // indirect
 	modernc.org/strutil v1.2.0 // indirect
 	modernc.org/token v1.1.0 // indirect
+	xorm.io/builder v0.3.13 // indirect
+	xorm.io/xorm v1.3.9 // indirect
 )

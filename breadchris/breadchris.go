@@ -5,19 +5,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/breadchris/posts"
 	"github.com/breadchris/share/config"
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	"github.com/gosimple/slug"
 	"github.com/snabb/sitemap"
 	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/parser"
-	"go.abhg.dev/goldmark/frontmatter"
 	"golang.org/x/net/html"
 	"gopkg.in/yaml.v3"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -25,60 +23,93 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
 )
 
-func loadPosts() ([]Post, error) {
-	var posts []Post
-	posts, err := loadPostsFromDir("breadchris/posts")
-	if err != nil {
-		return nil, fmt.Errorf("failed to load posts: %w", err)
-	}
-
-	for i := range posts {
-		posts[i].CreatedAtParsed, err = time.Parse(time.RFC3339, posts[i].CreatedAt)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse created at: %w", err)
-		}
-	}
-
-	sort.Slice(posts, func(i, j int) bool {
-		return posts[i].CreatedAtParsed.After(posts[j].CreatedAtParsed)
-	})
-	return posts, nil
-}
-
 func NewRoutes(d deps.Deps) []Route {
-	posts, err := loadPosts()
+	ps, err := posts.LoadPosts()
 	if err != nil {
 		log.Fatalf("Failed to load posts: %v", err)
 	}
 	tags := map[string]any{}
-	for _, post := range posts {
+	for _, post := range ps {
 		for _, tag := range post.Tags {
 			tags[tag] = struct{}{}
 		}
 	}
+	var tagsSlice []string
+	for tag := range tags {
+		tagsSlice = append(tagsSlice, tag)
+	}
 
 	ctx := context.WithValue(context.Background(), "baseURL", d.Config.Blog.BaseURL)
+
+	var filteredPosts []posts.Post
+	for _, post := range ps {
+		for _, tag := range post.Tags {
+			if strings.HasPrefix(tag, "blog") {
+				filteredPosts = append(filteredPosts, post)
+			}
+		}
+	}
+
+	var postSlugs []string
+	for _, post := range ps {
+		postSlugs = append(postSlugs, post.Slug)
+	}
 
 	routes := []Route{
 		NewRoute(
 			"/", ServeNodeCtx(ctx, RenderHome(HomeState{
-				Posts: Filter[Post](posts, func(post Post, i int) bool {
-					for _, tag := range post.Tags {
-
-						if strings.HasPrefix(tag, "blog") {
-							return true
-						}
-					}
-					return false
-				}),
+				Posts: filteredPosts,
 			})),
 		),
+		NewRoute("/code", func(w http.ResponseWriter, r *http.Request) {
+			ctx := context.WithValue(context.Background(), "baseURL", d.Config.Blog.BaseURL)
+			props := map[string]string{
+				"fileName":  "test.go",
+				"id":        "id",
+				"function":  "main",
+				"code":      "\"package main\\n\\nfunc main() {\\n\\tprintln(\\\"Hello, World!\\\")\\n}",
+				"serverURL": fmt.Sprintf("%s/code/ws", d.Config.ExternalURL),
+			}
+			mp, err := json.Marshal(props)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			Html(
+				Head(
+					Title(T("Code")),
+					DaisyUI,
+					TailwindCSS,
+				),
+				Body(
+					Div(Class("wrapper"),
+						Div(
+							Script(T(`
+function sendEvent(eventName, data) {
+    const event = new CustomEvent(eventName, { detail: data });
+    document.dispatchEvent(event);
+}
+`)),
+							Script(Src("/static/leapclient.js")),
+							Script(Src("/static/leap-bind-textarea.js")),
+							Link(Rel("stylesheet"), Href("/static/wasmcode/monaco.css")),
+							Div(
+								Class("w-full h-full"),
+								Id("monaco-editor"),
+								Attr("data-props", string(mp)),
+							),
+							Script(Src("/static/wasmcode/monaco.js"), Attr("type", "module")),
+						),
+					),
+					HTMX,
+				),
+			).RenderPageCtx(ctx, w, r)
+		}),
 		NewRoute("/omnivore/{id...}", func(w http.ResponseWriter, r *http.Request) {
 			id := r.PathValue("id")
 			intID := 0
@@ -143,24 +174,26 @@ func NewRoutes(d deps.Deps) []Route {
 				return
 			}
 
-			var p []Post
-			for _, post := range posts {
+			var p []posts.Post
+			for _, post := range ps {
 				for _, tag := range post.Tags {
 					if tag == t {
 						p = append(p, post)
 					}
 				}
 			}
+			var articles []*Node
+			for _, post := range p {
+				articles = append(articles, newArticlePreview(post))
+			}
 			PageLayout(
 				Div(
 					H1(Class("my-6 text-4xl"), T(t)),
-					Ch(Map(p, func(post Post, i int) *Node {
-						return newArticlePreview(post)
-					})),
+					Ch(articles),
 				),
 			).RenderPageCtx(ctx, w, r)
 		}, WithValues(map[string][]string{
-			"tag": Keys(tags),
+			"tag": tagsSlice,
 		})),
 		NewRoute("/new/render", func(w http.ResponseWriter, r *http.Request) {
 			content := r.FormValue("content")
@@ -175,7 +208,20 @@ func NewRoutes(d deps.Deps) []Route {
 				Script(T("hljs.highlightAll();")),
 			).RenderPageCtx(ctx, w, r)
 		}, Ignore()),
-		NewRoute("/new", func(w http.ResponseWriter, r *http.Request) {
+		NewRoute("/new/{id...}", func(w http.ResponseWriter, r *http.Request) {
+			id := r.PathValue("id")
+
+			// TODO breadchris use id instead of slug
+			var post posts.Post
+			if id != "" {
+				for _, p := range ps {
+					if p.Slug == id {
+						post = p
+						break
+					}
+				}
+			}
+
 			u, err := d.Session.GetUserID(r.Context())
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -187,40 +233,61 @@ func NewRoutes(d deps.Deps) []Route {
 				tags := strings.Split(r.FormValue("tags"), ",")
 				content := r.FormValue("markdown")
 				blocknote := r.FormValue("blocknote")
-				p := Post{
+				ht := r.FormValue("html")
+				p := posts.Post{
 					Title:     title,
 					Tags:      tags,
 					CreatedAt: time.Now().Format(time.RFC3339),
 					Content:   content,
 					Blocknote: blocknote,
+					Slug:      slug.Make(title),
+					HTML:      ht,
 				}
-				posts = append(posts, p)
+				if id != "" {
+					for i, p := range ps {
+						if p.Slug == id {
+							ps[i] = p
+							break
+						}
+					}
+				} else {
+					ps = append(ps, p)
+				}
 				err := writeMarkdownFile(fmt.Sprintf("breadchris/posts/%s.md", slug.Make(title)), p)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
 				}
-				http.Redirect(w, r, "/", http.StatusSeeOther)
+				http.Redirect(w, r, d.Config.Blog.BaseURL+"/blog/"+id, http.StatusSeeOther)
 				return
 			}
 			type Props struct {
-				ProviderURL string `json:"provider_url"`
-				Room        string `json:"room"`
-				Username    string `json:"username"`
+				ProviderURL string     `json:"provider_url"`
+				Room        string     `json:"room"`
+				Username    string     `json:"username"`
+				Post        posts.Post `json:"post"`
 			}
 			props := Props{
 				ProviderURL: d.Config.Blog.YJSURL,
 				Room:        "blog",
 				Username:    u,
+				Post:        post,
 			}
 			b, err := json.Marshal(props)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+			action := "/new"
+			if id != "" {
+				action = fmt.Sprintf("/new/%s", id)
+			}
+
 			PageLayout(
 				Div(
 					Link(Href("https://cdn.jsdelivr.net/npm/daisyui@4.12.2/dist/full.min.css"), Rel("stylesheet"), Type("text/css")),
 					Link(Href("/static/editor.css"), Rel("stylesheet"), Type("text/css")),
+					Link(Rel("stylesheet"), Href("/static/wasmcode/monaco.css")),
 					Script(Src("https://cdn.tailwindcss.com")),
 					Script(Src("https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js")),
 					Script(Src("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js")),
@@ -234,7 +301,7 @@ func NewRoutes(d deps.Deps) []Route {
 					Class("w-full max-w-2xl mx-auto"),
 					Form(
 						Method("POST"),
-						Action("/new"),
+						Action(action),
 						Class("flex flex-col space-y-4"),
 						//TextArea(
 						//	Name("content"),
@@ -246,12 +313,13 @@ func NewRoutes(d deps.Deps) []Route {
 						//),
 						Input(Type("hidden"), Name("markdown"), Id("markdown")),
 						Input(Type("hidden"), Name("blocknote"), Id("blocknote")),
+						Input(Type("hidden"), Name("html"), Id("html")),
 						Div(Id("editor"), Attrs(map[string]string{
 							"props": string(b),
 						})),
 						Div(Class("flex flex-row space-x-4"),
-							Input(Type("text"), Class("input w-full"), Name("title"), Placeholder("Title")),
-							Input(Type("text"), Class("input w-full"), Name("tags"), Placeholder("Tags")),
+							Input(Type("text"), Value(post.Title), Class("input w-full"), Name("title"), Placeholder("Title")),
+							Input(Type("text"), Value(strings.Join(post.Tags, ",")), Class("input w-full"), Name("tags"), Placeholder("Tags")),
 						),
 						Div(Class("flex justify-end"),
 							Button(Type("submit"), Class("btn"), T("Submit")),
@@ -264,22 +332,27 @@ func NewRoutes(d deps.Deps) []Route {
 		}, Ignore()),
 		NewRoute("/blog/{slug}", func(w http.ResponseWriter, r *http.Request) {
 			s := r.PathValue("slug")
-			for _, post := range posts {
+			for _, post := range ps {
 				if post.Slug == s {
-					ServeNodeCtx(ctx, ArticleView(post))(w, r)
+					ArticleView(post).RenderPageCtx(ctx, w, r)
 					return
 				}
 			}
 			http.NotFound(w, r)
 		}, WithValues(map[string][]string{
-			"slug": Map(posts, func(post Post, i int) string {
-				return post.Slug
-			}),
+			"slug": postSlugs,
 		})),
 	}
-	for _, post := range posts {
-		if Contains(post.Tags, "page") {
-			routes = append(routes, NewRoute("/"+post.Title, func(w http.ResponseWriter, r *http.Request) {
+	for _, post := range ps {
+		var contains bool
+		for _, tag := range post.Tags {
+			if tag == "page" {
+				contains = true
+				break
+			}
+		}
+		if contains {
+			routes = append(routes, NewRoute("/"+post.Slug, func(w http.ResponseWriter, r *http.Request) {
 				ServeNodeCtx(ctx, ArticleView(post))(w, r)
 			}))
 		}
@@ -295,9 +368,21 @@ func New(d deps.Deps) *http.ServeMux {
 	return mux
 }
 
-func ArticleView(state Post) *Node {
+func ArticleView(state posts.Post) *Node {
+	var tags []*Node
+	for _, tag := range state.Tags {
+		tags = append(tags, Li(Class("post-tag"),
+			A(Href(fmt.Sprintf("/tags/%s", tag)), T(tag)),
+		))
+	}
+	c := state.HTML
+	if c == "" {
+		c = state.Content
+	}
+	println(c)
 	return PageLayout(
 		Article(Class("post-single"),
+			Link(Rel("stylesheet"), Href("/static/wasmcode/monaco.css")),
 			Header(Class("post-header"),
 				H1(Class("post-title entry-hint-parent"), T(state.Title)),
 				Div(Class("post-meta"),
@@ -312,38 +397,38 @@ func ArticleView(state Post) *Node {
 			}
 			`)),
 			Div(Class("post-content"),
-				Raw(state.Content),
+				Raw(c),
 			),
 			Script(Src("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js")),
 			Script(Raw("hljs.highlightAll();")),
 			Footer(Class("post-footer"),
 				Ul(
 					Class("post-tags"),
-					Ch(Map(state.Tags, func(tag string, i int) *Node {
-						return Li(Class("post-tag"),
-							A(Href(fmt.Sprintf("/tags/%s", tag)), T(tag)),
-						)
-					})),
+					Ch(tags),
 				),
+				A(Href("/new/"+state.Slug), Class("btn"), T("edit")),
 			),
+			Script(Src("/static/wasmcode/monaco.js"), Type("module")),
 		),
 	)
 }
 
-type Post struct {
-	Slug            string     `yaml:"-"`
-	Title           string     `yaml:"title"`
-	Tags            []string   `yaml:"tags"`
-	CreatedAt       string     `yaml:"created_at"`
-	Content         string     `yaml:"-"`
-	TextContent     string     `yaml:"-"`
-	Blocknote       string     `yaml:"blocknote"`
-	CreatedAtParsed time.Time  `yaml:"-"`
-	DOMNode         *html.Node `yaml:"-"`
+type HomeState struct {
+	Posts []posts.Post
 }
 
-type HomeState struct {
-	Posts []Post
+func writeMarkdownFile(path string, post posts.Post) error {
+	yml, err := yaml.Marshal(post)
+	if err != nil {
+		return fmt.Errorf("json marshal: %w", err)
+	}
+
+	content := fmt.Sprintf("---\n%s\n---\n%s", yml, post.Content)
+
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		return fmt.Errorf("write file: %w", err)
+	}
+	return nil
 }
 
 func RenderHome(state HomeState) *Node {
@@ -454,7 +539,7 @@ func shortText(n int, s string) string {
 	return s
 }
 
-func newArticlePreview(a Post) *Node {
+func newArticlePreview(a posts.Post) *Node {
 	return Article(Class("post-entry m-64"),
 		Header(Class("entry-header"),
 			H2(Class("entry-hint-parent"), T(a.Title)),
@@ -471,105 +556,18 @@ func newArticlePreview(a Post) *Node {
 	)
 }
 
-func loadPostsFromDir(dir string) ([]Post, error) {
-	var posts []Post
-
-	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if !d.IsDir() && filepath.Ext(path) == ".md" {
-			post, err := parseMarkdownFile(path)
-			if err != nil {
-				log.Printf("Failed to parse file %s: %v", path, err)
-				return nil
-			}
-			post.Slug = slug.Make(post.Title)
-			posts = append(posts, post)
-		}
-
-		return nil
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to read directory: %w", err)
-	}
-
-	return posts, nil
-}
-
-func writeMarkdownFile(path string, post Post) error {
-	yml, err := yaml.Marshal(post)
-	if err != nil {
-		return fmt.Errorf("json marshal: %w", err)
-	}
-
-	content := fmt.Sprintf("---\n%s\n---\n%s", yml, post.Content)
-
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-		return fmt.Errorf("write file: %w", err)
-	}
-	return nil
-}
-
-func parseMarkdownFile(path string) (Post, error) {
-	var post Post
-
-	content, err := ioutil.ReadFile(path)
-	if err != nil {
-		return post, fmt.Errorf("read file: %w", err)
-	}
-
-	md := goldmark.New(
-		goldmark.WithExtensions(
-			&frontmatter.Extender{},
-		),
-	)
-
-	ctx := parser.NewContext()
-
-	var buf bytes.Buffer
-	if err := md.Convert(content, &buf, parser.WithContext(ctx)); err != nil {
-		return post, fmt.Errorf("parse markdown: %w", err)
-	}
-
-	data := frontmatter.Get(ctx)
-	if data != nil {
-		if err = data.Decode(&post); err != nil {
-			return post, fmt.Errorf("decode frontmatter: %w", err)
-		}
-	}
-
-	post.Content = buf.String()
-	post.DOMNode, err = html.Parse(strings.NewReader(post.Content))
-	if err != nil {
-		return post, fmt.Errorf("error parsing HTML: %v", err)
-	}
-	post.TextContent = ExtractText(post.DOMNode)
-	return post, nil
-}
-
-// ExtractText extracts and returns all the text from an HTML node tree.
-func ExtractText(n *html.Node) string {
-	if n.Type == html.TextNode {
-		return n.Data
-	}
-
-	text := ""
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		text += ExtractText(c)
-	}
-
-	return text
-}
-
 type Site struct {
 	OutputDir string
 }
 
-func StaticSiteGenerator() (*Site, error) {
-	domain := "breadchris.com"
+type StaticSite struct {
+	Domain   string
+	BaseURL  string
+	LocalDir string
+}
+
+func StaticSiteGenerator(s StaticSite) (*Site, error) {
+	domain := s.Domain
 	domainDir := path.Join("data", "sites", "generated", domain)
 	outputDir := path.Join(domainDir, "latest")
 
@@ -578,7 +576,7 @@ func StaticSiteGenerator() (*Site, error) {
 	}
 
 	//baseURL := "http://localhost:8080/" + domainDir + "/latest"
-	baseURL := "https://breadchris.com"
+	baseURL := s.BaseURL
 
 	if _, err := os.Stat(outputDir); err == nil {
 		backupDir := path.Join(domainDir, time.Now().Format("2006-01-02-15-04-05"))
@@ -596,7 +594,8 @@ func StaticSiteGenerator() (*Site, error) {
 		return nil, fmt.Errorf("failed to write CNAME file: %v", err)
 	}
 
-	posts, err := loadPosts()
+	// TODO breadchris this should accept a dir
+	posts, err := posts.LoadPosts()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load posts: %w", err)
 	}
@@ -696,7 +695,7 @@ func StaticSiteGenerator() (*Site, error) {
 	return site, nil
 }
 
-func GenerateSitemap(posts []Post, baseURL, outputPath string) error {
+func GenerateSitemap(posts []posts.Post, baseURL, outputPath string) error {
 	f, err := os.Create(outputPath)
 	if err != nil {
 		return fmt.Errorf("failed to create sitemap file: %w", err)
