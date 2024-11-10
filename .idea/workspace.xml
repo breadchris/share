@@ -4,52 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/breadchris/posts/load.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/s3.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/test/test.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/x/util.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/CodeBlock.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/CodeBlock.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/breadchris.go" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/breadchris.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/breadchris_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/breadchris_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/editor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/editor.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/markdown_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/markdown_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/posts/coding-as-a-lifestyle.md" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/posts/coding-as-a-lifestyle.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/static/editor.css" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/editor.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/static/editor.css.map" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/editor.css.map" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/static/editor.js" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/editor.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/static/editor.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/editor.js.map" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/code.go" beforeDir="false" afterPath="$PROJECT_DIR$/code/code.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/monaco.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/code/monaco.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/analyzer@v1.wasm" beforeDir="false" afterPath="$PROJECT_DIR$/dist/analyzer@v1.wasm" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/code/monaco.css" beforeDir="false" afterPath="$PROJECT_DIR$/dist/code/monaco.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/code/monaco.js" beforeDir="false" afterPath="$PROJECT_DIR$/dist/code/monaco.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/graph/graph.css" beforeDir="false" afterPath="$PROJECT_DIR$/dist/graph/graph.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/graph/graph.js" beforeDir="false" afterPath="$PROJECT_DIR$/dist/graph/graph.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/music.js" beforeDir="false" afterPath="$PROJECT_DIR$/dist/music.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/wasmcode/analyzer/analyzer.worker.js" beforeDir="false" afterPath="$PROJECT_DIR$/dist/wasmcode/analyzer/analyzer.worker.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/wasmcode/monaco.css" beforeDir="false" afterPath="$PROJECT_DIR$/dist/wasmcode/monaco.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/wasmcode/monaco.js" beforeDir="false" afterPath="$PROJECT_DIR$/dist/wasmcode/monaco.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/github.go" beforeDir="false" afterPath="$PROJECT_DIR$/github.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/group.go" beforeDir="false" afterPath="$PROJECT_DIR$/user/group.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/symbol.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/symbol.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/wasmcode/analyzer/bootstrap.ts" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/analyzer/bootstrap.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/wasmcode/analyzer/client.ts" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/analyzer/client.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/wasmcode/code.go" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/code.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/wasmcode/go/client.ts" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/go/client.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/wasmcode/language/client.ts" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/language/client.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/wasmcode/monaco.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/monaco.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/wasmcode/wasm/symbol/github_com-breadchris-share-config.go" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/wasm/symbol/github_com-breadchris-share-config.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/wasmcode/wasm/symbol/github_com-breadchris-share-html.go" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/wasm/symbol/github_com-breadchris-share-html.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/webauthn.go" beforeDir="false" afterPath="$PROJECT_DIR$/webauthn.go" afterDir="false" />
-    </list>
+    <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -180,7 +135,7 @@
       <updated>1730866796853</updated>
       <workItem from="1730866797883" duration="126000" />
       <workItem from="1730866961438" duration="10483000" />
-      <workItem from="1730954775854" duration="27703000" />
+      <workItem from="1730954775854" duration="28528000" />
     </task>
     <servers />
   </component>
