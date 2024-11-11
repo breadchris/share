@@ -88,6 +88,7 @@ func RenderBlog(entries []Entry) string {
 						Class("flex flex-col space-y-4"),
 						Input(Type("hidden"), Name("markdown"), Id("markdown")),
 						Input(Type("hidden"), Name("blocknote"), Id("blocknote")),
+						Input(Type("hidden"), Name("html"), Id("html")),
 						Div(Id("editor")),
 						//Div(Class("flex flex-row space-x-4"),
 						//	Input(Type("text"), Class("input w-full"), Name("title"), Placeholder("Title")),

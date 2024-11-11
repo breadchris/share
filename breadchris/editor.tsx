@@ -215,12 +215,12 @@ export const Editor = ({ props }) => {
 
     const [initialContent, setInitialContent] = useState<
         PartialBlock[] | undefined | "loading"
-    >(props.post?.Blocknote ? JSON.parse(props.post.Blocknote) : "loading");
+    >(props?.post?.Blocknote ? JSON.parse(props?.post.Blocknote) : "loading");
 
     useEffect(() => {
         // TODO breadchris how to handle loading from storage when blocknote is provided
-        if (!props.post?.Blocknote) {
-            console.log("loading from storage", props.post);
+        if (!props?.post?.Blocknote) {
+            console.log("loading from storage");
             loadFromStorage().then((content) => {
                 setInitialContent(content);
             });
@@ -259,7 +259,7 @@ export const Editor = ({ props }) => {
         });
 
         saveToStorage(e.document);
-        
+
         (async () => {
             document.getElementById("html").value = await e.blocksToFullHTML(e.document);
             document.getElementById("markdown").value = await e.blocksToMarkdownLossy()

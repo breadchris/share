@@ -12,6 +12,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import {GoSyntaxChecker} from "./checker";
 import {ParseResponse} from "./analyzer/bootstrap";
 import {spawnLanguageWorker} from "./language/client";
+import {DocumentMetadataCache} from "./autocomplete/cache";
 
 function listenEvent(eventName, callback) {
     document.addEventListener(eventName, (event) => {
@@ -75,6 +76,8 @@ interface State {
     selectedFunction: string;
 }
 
+const metadataCache = new DocumentMetadataCache();
+
 export const CodeEditor = ({ props }) => {
     const {onChange, collab, serverURL, id, fileName, darkMode, func, vimModeEnabled, isServerEnvironment, code: initialCode} = props;
 
@@ -108,7 +111,9 @@ export const CodeEditor = ({ props }) => {
     useEffect(() => {
         syntaxChecker.current = new GoSyntaxChecker();
         const [langWorker, workerDisposer] = spawnLanguageWorker()
-        disposables.current = registerGoLanguageProviders(langWorker);
+        disposables.current = registerGoLanguageProviders((a: any) => {
+            console.log(a);
+        }, metadataCache, langWorker);
 
         return () => {
             disposables.current.forEach((d) => d.dispose());
