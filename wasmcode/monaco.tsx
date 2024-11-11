@@ -10,8 +10,8 @@ import {RemoteCursorManager, RemoteSelectionManager} from './collab';
 import * as monaco from 'monaco-editor';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import {GoSyntaxChecker} from "./checker";
-import { MonacoBinding } from "y-monaco";
 import {ParseResponse} from "./analyzer/bootstrap";
+import {spawnLanguageWorker} from "./language/client";
 
 function listenEvent(eventName, callback) {
     document.addEventListener(eventName, (event) => {
@@ -106,13 +106,15 @@ export const CodeEditor = ({ props }) => {
     const [connected, setConnected] = useState(false);
 
     useEffect(() => {
-        disposables.current = registerGoLanguageProviders();
         syntaxChecker.current = new GoSyntaxChecker();
+        const [langWorker, workerDisposer] = spawnLanguageWorker()
+        disposables.current = registerGoLanguageProviders(langWorker);
 
         return () => {
             disposables.current.forEach((d) => d.dispose());
             analyzer.current?.dispose();
             vimAdapter.current?.dispose();
+            workerDisposer.dispose();
             if (editorInstance.current) {
                 monacoInstance.current?.editor.removeAllMarkers(editorInstance.current.getId());
                 monacoInstance.current?.editor.getModels().forEach((m) => m.dispose());
@@ -146,11 +148,11 @@ export const CodeEditor = ({ props }) => {
     };
 
     const dataEditorDidMount = (editor, monaco) => {
-        if (vimModeEnabled) {
-            editor.onKeyDown((e) => {
-                vimCommandAdapter.current?.handleKeyDownEvent(e, '');
-            });
-        }
+        // if (vimModeEnabled) {
+        //     editor.onKeyDown((e) => {
+        //         vimCommandAdapter.current?.handleKeyDownEvent(e, '');
+        //     });
+        // }
 
         const [vimAdapterInstance, statusAdapter] = createVimModeAdapter(editor);
         vimAdapter.current = vimAdapterInstance;
@@ -177,6 +179,10 @@ export const CodeEditor = ({ props }) => {
     const editorDidMount = (editor, monaco, file) => {
         editorInstance.current = editor;
         monacoInstance.current = monaco;
+
+        (async () => {
+            await runCode()
+        })();
 
         listenEvent('example', (data) => {
             editor.setValue(document.getElementById(data.id).textContent);
@@ -294,11 +300,11 @@ export const CodeEditor = ({ props }) => {
                 }
             )
         }
-        if (vimModeEnabled) {
-            editor.onKeyDown((e) => {
-                vimCommandAdapter.current?.handleKeyDownEvent(e, '');
-            });
-        }
+        // if (vimModeEnabled) {
+        //     editor.onKeyDown((e) => {
+        //         vimCommandAdapter.current?.handleKeyDownEvent(e, '');
+        //     });
+        // }
 
         const [vimAdapterInstance, statusAdapter] = createVimModeAdapter(editor);
         vimAdapter.current = vimAdapterInstance;
@@ -351,7 +357,6 @@ export const CodeEditor = ({ props }) => {
 
         debouncedAnalyzeFunc.current(fileName, code);
     };
-
 
     const runCode = async (d?: string) => {
         if (syntaxChecker.current && editorInstance.current) {
@@ -445,24 +450,24 @@ export const CodeEditor = ({ props }) => {
             </dialog>
 
             <PanelGroup direction="vertical">
-                {/*<Panel defaultSize={20}>*/}
-                {/*    {connected ? <div className={"bg-green-500 text-white p-2"}>Connected</div> : <div className={"bg-red-500 text-white p-2"}>Disconnected</div>}*/}
-                {/*    {state.parse && (*/}
-                {/*        <>*/}
-                {/*            {state.parse.error && <div className={"bg-red-500 text-white p-2"}>{state.parse.error}</div>}*/}
-                {/*            <ul>*/}
-                {/*                {state.parse.functions?.map((f) => (*/}
-                {/*                    <li key={f} className={"bg-blue-500 text-white p-2"} onClick={() => {*/}
-                {/*                        setState((state) => ({ ...state, selectedFunction: f }));*/}
-                {/*                    }}>{f}</li>*/}
-                {/*                ))}*/}
-                {/*            </ul>*/}
-                {/*        </>*/}
-                {/*    )}*/}
-                {/*</Panel>*/}
-                {/*<PanelResizeHandle className="w-2 bg-gray-300"/>*/}
                 <Panel>
-                    <PanelGroup direction="vertical">
+                    <PanelGroup direction="horizontal">
+                        <Panel defaultSize={20}>
+                            {/*{connected ? <div className={"bg-green-500 text-white p-2"}>Connected</div> : <div className={"bg-red-500 text-white p-2"}>Disconnected</div>}*/}
+                            {state.parse && (
+                                <>
+                                    {state.parse.error && <div className={"bg-red-500 text-white p-2"}>{state.parse.error}</div>}
+                                    <ul>
+                                        {state.parse.functions?.map((f) => (
+                                            <li key={f} className={"bg-blue-500 text-white p-2"} onClick={() => {
+                                                setState((state) => ({ ...state, selectedFunction: f }));
+                                            }}>{f}</li>
+                                        ))}
+                                    </ul>
+                                </>
+                            )}
+                        </Panel>
+                        <PanelResizeHandle className="w-2 bg-gray-300"/>
                         <Panel>
                             <MonacoEditor
                                 language={LANGUAGE_GOLANG}

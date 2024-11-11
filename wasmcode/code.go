@@ -121,15 +121,15 @@ function sendEvent(eventName, data) {
     document.dispatchEvent(event);
 }
 `)),
-							Script(Src("/dist/leapclient.js")),
-							Script(Src("/dist/leap-bind-textarea.js")),
-							Link(Rel("stylesheet"), Href("/dist/wasmcode/monaco.css")),
+							Script(Src("/static/leapclient.js")),
+							Script(Src("/static/leap-bind-textarea.js")),
+							Link(Rel("stylesheet"), Href("/static/wasmcode/monaco.css")),
 							Div(
 								Class("w-full h-full"),
 								Id("monaco-editor"),
 								Attr("data-props", string(mp)),
 							),
-							Script(Attr("src", "/dist/wasmcode/monaco.js"), Attr("type", "module")),
+							Script(Attr("src", "/static/wasmcode/monaco.js"), Attr("type", "module")),
 						),
 					),
 					HTMX,

@@ -11,6 +11,7 @@ const getExpireTime = () => addDays(new Date(), TTL_DAYS)
 
 const isPackageQuery = (q: SuggestionQuery): q is PackageSymbolQuery => 'packageName' in q
 
+
 export class WorkerHandler {
   private cachePopulated = false
   private populatePromise?: Promise<void>
@@ -96,6 +97,7 @@ export class WorkerHandler {
    * Returns symbol or literal suggestions by prefix and package name.
    */
   async getSymbolSuggestions(query: SuggestionQuery) {
+    console.log(query)
     await this.checkCacheReady()
 
     if (isPackageQuery(query)) {
@@ -169,7 +171,7 @@ export class WorkerHandler {
     if (!this.populatePromise) {
       // Cache population might be triggered by multiple actors outside.
       this.populatePromise = (async () => {
-        const rsp = await fetch('/data/go-index.json')
+        const rsp = await fetch('/static/go-index.json')
         if (!rsp.ok) {
           throw new Error(`${rsp.status} ${rsp.statusText}`)
         }
@@ -180,6 +182,7 @@ export class WorkerHandler {
           return
         }
 
+        console.log(data)
         const packages = constructPackages(data.packages)
         const symbols = constructSymbols(data.symbols)
 

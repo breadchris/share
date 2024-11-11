@@ -1,91 +1,25 @@
 [
     {
-        "Title": "The Art of Studio Ghibli",
+        "Title": "Keith Haring: A Radiant Legacy",
         "Category": "Stranger Suggests",
-        "Date": "Everyday,throughNovember14",
+        "Date": "Everyday,throughMarch23,2025",
         "Time": "",
-        "Location": "SIFF Cinema Downtown",
-        "Region": "Belltown",
-        "Price": "$14.50 - $19.50",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyOTc5NjAyMDk2NTcwOS1DSU5fR2hpYmxpU2VyaWVzXzE2MDB4OTAwLmpwZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
-        "EventURL": "https://everout.com/seattle/events/the-art-of-studio-ghibli/e190541/"
-    },
-    {
-        "Title": "Gummo",
-        "Category": "Stranger Suggests",
-        "Date": "MultipledatesbetweenNovember9-November13",
-        "Time": "",
-        "Location": "The Beacon",
-        "Region": "ColumbiaCity",
-        "Price": "$12.50",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDEzNjg0MzQ3NjM1Ny1UQi1HVU1NTy5wbmciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
-        "EventURL": "https://everout.com/seattle/events/gummo/e190665/"
-    },
-    {
-        "Title": "Satoshi Kon: Anime Auteur",
-        "Category": "Film",
-        "Date": "EveryMonday\u0026Tuesday,throughNovember26",
-        "Time": "",
-        "Location": "SIFF Film Center",
+        "Location": "Museum of Pop Culture (MoPOP)",
         "Region": "Uptown",
-        "Price": "$15 - $125",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDEzNjMwODUxMjU0LUVEVV9GaWxtVGFsay1TYXRvc2hpXzE2MDB4OTAwLmpwZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
-        "EventURL": "https://everout.com/seattle/events/satoshi-kon-anime-auteur/e190662/"
+        "Price": "Special exhibition +$7 to general admission",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyNTM5ODEwMDkzMjcyNy1TY3JlZW5zaG90XzIwMjQtMDktMDNfYXRfMi4xNC40NV9QTS5wbmciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
+        "EventURL": "https://everout.com/seattle/events/keith-haring-a-radiant-legacy/e185713/"
     },
     {
-        "Title": "Wicked",
-        "Category": "Performance",
-        "Date": "Everyday,fromNovember6–December1",
-        "Time": "",
-        "Location": "Paramount Theatre",
-        "Region": "DowntownSeattle",
-        "Price": "",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcwNzMzMzM5NDU4NTA0My13aWNrZWQuanBlZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
-        "EventURL": "https://everout.com/seattle/events/wicked/e168532/"
-    },
-    {
-        "Title": "Hello Auntie, Hello Uncle: Conversations with Our Elders",
-        "Category": "Visual Art",
-        "Date": "EveryWednesday–Monday,throughFebruary23,2025",
-        "Time": "",
-        "Location": "Wing Luke Museum",
-        "Region": "Chinatown-InternationalDistrict",
-        "Price": "$0 - $17",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcxMzM3MjI0OTI4MTM3OS1TY3JlZW5zaG90XzIwMjQtMDQtMTdfYXRfOS40NC4wMV9BTS5wbmciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
-        "EventURL": "https://everout.com/seattle/events/hello-auntie-hello-uncle-conversations-with-our-elders/e174504/"
-    },
-    {
-        "Title": "Washington State Parks Free Days",
-        "Category": "Juneteenth",
-        "Date": "MultipledatesthroughNovember29",
-        "Time": "",
-        "Location": "",
-        "Region": "",
-        "Price": "Free",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcwMjQzMzM1ODM0NzM0My1lbGkuanBlZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
-        "EventURL": "https://everout.com/seattle/events/washington-state-parks-free-days/e164438/"
-    },
-    {
-        "Title": "Victoria Sambunaris: Traces of the Manifest",
-        "Category": "Exhibit",
-        "Date": "Everyday,throughDecember15",
-        "Time": "",
-        "Location": "Photographic Center Northwest",
-        "Region": "CapitolHill",
-        "Price": "Free",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyODMzMDc4NDM5NzEyNi11c2VyaW1hZ2UtMTcyNjYxNDE1NDY5MTQwOC1WaWN0b3JpYS1TYW1idW5hcmlzX1VudGl0bGVkLUFsbC1BbWVyaWNhbi1DYW5hbC1uZWFyLVl1bWEtQ2FsaWZvcm5pYS0tMjAyMS5qcGVnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
-        "EventURL": "https://everout.com/seattle/events/victoria-sambunaris-traces-of-the-manifest/e188812/"
-    },
-    {
-        "Title": "Cinema Italian Style",
+        "Title": "Paprika",
         "Category": "Film",
-        "Date": "Everyday,fromNovember7–14",
+        "Date": "Monday,November11",
         "Time": "",
         "Location": "SIFF Cinema Uptown",
         "Region": "Uptown",
-        "Price": "Passes $100-$125",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDEzNTg1NzQ4MjIxMi1DSU5fQ0lTMjRfMTYwMHg5MDAuanBnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
-        "EventURL": "https://everout.com/seattle/events/cinema-italian-style/e190660/"
+        "Price": "",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDg0NjUxOTIwOTgzMy11c2VyaW1hZ2UtMTcyODU4NjM0ODk2MTE1LUVEVV9GaWxtVGFsay1QYXByaWthXzE2MDB4OTAwLmpwZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/paprika/e191465/"
     },
     {
         "Title": "Northwest Trolls: Way of the Bird King",
@@ -99,6 +33,61 @@
         "EventURL": "https://everout.com/seattle/events/northwest-trolls-way-of-the-bird-king/e157170/"
     },
     {
+        "Title": "Anora",
+        "Category": "Stranger Suggests",
+        "Date": "Everyday,throughNovember14",
+        "Time": "",
+        "Location": "SIFF Cinema Uptown",
+        "Region": "Uptown",
+        "Price": "$14.50 - $15.50",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyNzEzMTIxMzM3MzEwNi1DSU5fQW5vcmFfMTYwMHg5MDAuanBnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/anora/e187547/"
+    },
+    {
+        "Title": "Victoria Sambunaris: Traces of the Manifest",
+        "Category": "Exhibit",
+        "Date": "Everyday,throughDecember15",
+        "Time": "",
+        "Location": "Photographic Center Northwest",
+        "Region": "CapitolHill",
+        "Price": "Free",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyODMzMDc4NDM5NzEyNi11c2VyaW1hZ2UtMTcyNjYxNDE1NDY5MTQwOC1WaWN0b3JpYS1TYW1idW5hcmlzX1VudGl0bGVkLUFsbC1BbWVyaWNhbi1DYW5hbC1uZWFyLVl1bWEtQ2FsaWZvcm5pYS0tMjAyMS5qcGVnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/victoria-sambunaris-traces-of-the-manifest/e188812/"
+    },
+    {
+        "Title": "Hello Auntie, Hello Uncle: Conversations with Our Elders",
+        "Category": "Visual Art",
+        "Date": "EveryWednesday–Monday,throughFebruary23,2025",
+        "Time": "",
+        "Location": "Wing Luke Museum",
+        "Region": "Chinatown-InternationalDistrict",
+        "Price": "$0 - $17",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcxMzM3MjI0OTI4MTM3OS1TY3JlZW5zaG90XzIwMjQtMDQtMTdfYXRfOS40NC4wMV9BTS5wbmciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
+        "EventURL": "https://everout.com/seattle/events/hello-auntie-hello-uncle-conversations-with-our-elders/e174504/"
+    },
+    {
+        "Title": "Conclave",
+        "Category": "Stranger Suggests",
+        "Date": "Everyday,throughNovember14",
+        "Time": "",
+        "Location": "SIFF Cinema Uptown",
+        "Region": "Uptown",
+        "Price": "$15.50",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTY1Nzg0MDc3MzE2MzQ3Mi1TY3JlZW5fU2hvdF8yMDIyLTA3LTE0X2F0XzQuMTkuMDdfUE0ucG5nIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/conclave/e189871/"
+    },
+    {
+        "Title": "Wicked",
+        "Category": "Performance",
+        "Date": "Everyday,throughDecember1",
+        "Time": "",
+        "Location": "Paramount Theatre",
+        "Region": "DowntownSeattle",
+        "Price": "",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcwNzMzMzM5NDU4NTA0My13aWNrZWQuanBlZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/wicked/e168532/"
+    },
+    {
         "Title": "Almost Live! (Almost an Exhibit)",
         "Category": "Stranger Suggests",
         "Date": "Everyday,throughFebruary23,2025",
@@ -110,15 +99,70 @@
         "EventURL": "https://everout.com/seattle/events/almost-live-almost-an-exhibit/e182755/"
     },
     {
-        "Title": "Keith Haring: A Radiant Legacy",
-        "Category": "Stranger Suggests",
-        "Date": "Everyday,throughMarch23,2025",
+        "Title": "Satoshi Kon: Anime Auteur",
+        "Category": "Film",
+        "Date": "EveryMonday\u0026Tuesday,throughNovember26",
         "Time": "",
-        "Location": "Museum of Pop Culture (MoPOP)",
+        "Location": "SIFF Film Center",
         "Region": "Uptown",
-        "Price": "Special exhibition +$7 to general admission",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyNTM5ODEwMDkzMjcyNy1TY3JlZW5zaG90XzIwMjQtMDktMDNfYXRfMi4xNC40NV9QTS5wbmciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
-        "EventURL": "https://everout.com/seattle/events/keith-haring-a-radiant-legacy/e185713/"
+        "Price": "$15 - $125",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDEzNjMwODUxMjU0LUVEVV9GaWxtVGFsay1TYXRvc2hpXzE2MDB4OTAwLmpwZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/satoshi-kon-anime-auteur/e190662/"
+    },
+    {
+        "Title": "Gummo",
+        "Category": "Stranger Suggests",
+        "Date": "MultipledatesthroughNovember13",
+        "Time": "",
+        "Location": "The Beacon",
+        "Region": "ColumbiaCity",
+        "Price": "$12.50",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDEzNjg0MzQ3NjM1Ny1UQi1HVU1NTy5wbmciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
+        "EventURL": "https://everout.com/seattle/events/gummo/e190665/"
+    },
+    {
+        "Title": "The Art of Studio Ghibli",
+        "Category": "Stranger Suggests",
+        "Date": "Everyday,throughNovember14",
+        "Time": "",
+        "Location": "SIFF Cinema Downtown",
+        "Region": "Belltown",
+        "Price": "$14.50 - $19.50",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyOTc5NjAyMDk2NTcwOS1DSU5fR2hpYmxpU2VyaWVzXzE2MDB4OTAwLmpwZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/the-art-of-studio-ghibli/e190541/"
+    },
+    {
+        "Title": "Cinema Italian Style",
+        "Category": "Film",
+        "Date": "Everyday,throughNovember14",
+        "Time": "",
+        "Location": "SIFF Cinema Uptown",
+        "Region": "Uptown",
+        "Price": "Passes $100-$125",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDEzNTg1NzQ4MjIxMi1DSU5fQ0lTMjRfMTYwMHg5MDAuanBnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/cinema-italian-style/e190660/"
+    },
+    {
+        "Title": "Washington State Parks Free Days",
+        "Category": "Juneteenth",
+        "Date": "MultipledatesthroughNovember29",
+        "Time": "",
+        "Location": "",
+        "Region": "",
+        "Price": "Free",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcwMjQzMzM1ODM0NzM0My1lbGkuanBlZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/washington-state-parks-free-days/e164438/"
+    },
+    {
+        "Title": "Li'l Woody's Fast Food Month",
+        "Category": "Food and Drink",
+        "Date": "Everyday,throughDecember2",
+        "Time": "",
+        "Location": "Li'l Woody's",
+        "Region": "CapitolHill",
+        "Price": "",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMTAyMTk5NzM0MTg4OS1TY3JlZW5fU2hvdF8yMDI0LTExLTA3X2F0XzMuMjUuNDVfUE0ucG5nIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/lil-woodys-fast-food-month/e191694/"
     },
     {
         "Title": "Free Entrance Days in the National Parks",
@@ -143,6 +187,50 @@
         "EventURL": "https://everout.com/seattle/events/massive-the-power-of-pop-culture/e170525/"
     },
     {
+        "Title": "Meow Brow",
+        "Category": "Exhibit",
+        "Date": "MultipledatesthroughDecember9",
+        "Time": "varioustimes",
+        "Location": "Gallery ERGO",
+        "Region": "PikePlaceMarket",
+        "Price": "Free",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDc2NzI4MTg0NzY2OC1TY3JlZW5zaG90XzIwMjQtMTEtMDRfYXRfNC40MC4zMVBNLnBuZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/meow-brow/e191276/"
+    },
+    {
+        "Title": "Bistro Homer - Restaurant Homer Solidarity Dinner",
+        "Category": "Food and Drink",
+        "Date": "Monday,November11",
+        "Time": "5–9:30pm",
+        "Location": "Homer",
+        "Region": "NorthBeaconHill",
+        "Price": "$85",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDkxNzI5ODAwMjUxOS11c2VyaW1hZ2UtMTczMDQwMjU0OTU1MzM4MS1CSVNUUk8tSE9NRVItRkxZRVItMS5wbmciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
+        "EventURL": "https://everout.com/seattle/events/bistro-homer-restaurant-homer-solidarity-dinner/e191554/"
+    },
+    {
+        "Title": "Christmas Dive Bar",
+        "Category": "Food and Drink",
+        "Date": "Everyday,throughJanuary1,2025",
+        "Time": "5pm",
+        "Location": "1512 11th Ave",
+        "Region": "Pike/Pine",
+        "Price": "",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDk0MTYwNzIyMDMxNS1TY3JlZW5zaG90XzIwMjQtMTEtMDZfYXRfNS4wNi4zN1BNLnBuZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/christmas-dive-bar/e191627/"
+    },
+    {
+        "Title": "TRANSA Listening Party",
+        "Category": "Live Music",
+        "Date": "Monday,November11",
+        "Time": "6pm",
+        "Location": "Vera Project",
+        "Region": "Uptown",
+        "Price": "Free",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDg0NTI2NDI1NTQ1Mi1TY3JlZW5zaG90XzIwMjQtMTEtMDVfYXRfMi4yMC41Nl9QTS5wbmciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
+        "EventURL": "https://everout.com/seattle/events/transa-listening-party/e191430/"
+    },
+    {
         "Title": "PawPaw Rod",
         "Category": "Live Music",
         "Date": "Monday,November11",
@@ -165,17 +253,6 @@
         "EventURL": "https://everout.com/seattle/events/loves-labors-lost/e189792/"
     },
     {
-        "Title": "Usher",
-        "Category": "Live Music",
-        "Date": "Everyday,fromNovember10–11",
-        "Time": "8pm",
-        "Location": "Climate Pledge Arena",
-        "Region": "Uptown",
-        "Price": "",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcwNzc1NjEzMjQ3NjA2Ni11c2hlci5qcGVnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
-        "EventURL": "https://everout.com/seattle/events/usher/e168913/"
-    },
-    {
         "Title": "Collide-O-Scope",
         "Category": "Film",
         "Date": "Multipledates",
@@ -187,17 +264,6 @@
         "EventURL": "https://everout.com/seattle/events/collide-o-scope/e27813/"
     },
     {
-        "Title": "Lucero",
-        "Category": "Live Music",
-        "Date": "MultipledatesbetweenNovember11-November12",
-        "Time": "8pm",
-        "Location": "Tractor Tavern",
-        "Region": "Ballard",
-        "Price": "",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyMTMxOTkzOTA5MDY1MS1sdWMuanBnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
-        "EventURL": "https://everout.com/seattle/events/lucero/e182281/"
-    },
-    {
         "Title": "Elyanna",
         "Category": "Live Music",
         "Date": "Monday,November11",
@@ -207,6 +273,17 @@
         "Price": "$27",
         "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyMTE2Mjc4MzIzODUyOS1lbHkuanBnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
         "EventURL": "https://everout.com/seattle/events/elyanna/e182088/"
+    },
+    {
+        "Title": "Usher",
+        "Category": "Live Music",
+        "Date": "Everyday,throughNovember11",
+        "Time": "8pm",
+        "Location": "Climate Pledge Arena",
+        "Region": "Uptown",
+        "Price": "",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcwNzc1NjEzMjQ3NjA2Ni11c2hlci5qcGVnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/usher/e168913/"
     },
     {
         "Title": "Julio Torres: Color Theories",

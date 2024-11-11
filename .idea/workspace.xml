@@ -4,7 +4,541 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="" />
+    <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/share.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/share.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/breadchris.go" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/breadchris.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/static/wasmcode/analyzer/analyzer.worker.js" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/wasmcode/analyzer/analyzer.worker.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/static/wasmcode/analyzer/analyzer.worker.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/wasmcode/analyzer/analyzer.worker.js.map" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/static/wasmcode/monaco.css" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/wasmcode/monaco.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/static/wasmcode/monaco.css.map" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/wasmcode/monaco.css.map" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/static/wasmcode/monaco.js" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/wasmcode/monaco.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/static/wasmcode/monaco.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/wasmcode/monaco.js.map" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/analyzer.worker.ts" beforeDir="false" afterPath="$PROJECT_DIR$/code/analyzer.worker.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/code.go" beforeDir="false" afterPath="$PROJECT_DIR$/code/code.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-09-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-09-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-09.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-09.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-10-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-10-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-10.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-10.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-11-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-11-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-11.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-11.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-12-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-12-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-12.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-12.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-13-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-13-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-13.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-13.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-14-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-14-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-14.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-14.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-15-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-15-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-15.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-15.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-16-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-16-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-16.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-16.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-17-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-17-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-17.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-17.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-18-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-18-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-18.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-18.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-19-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-19-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-19.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-19.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-20-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-20-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-20.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-20.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-21-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-21-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-21.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-21.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-22-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-22-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-22.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-22.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-23-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-23-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-23.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-23.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-24-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-24-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-24.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-24.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-25-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-25-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-25.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-25.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-26-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-26-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-26.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-26.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-27-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-27-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-27.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-27.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-28-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-28-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-28.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-28.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-29-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-29-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-29.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-29.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-30-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-30-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-30.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-11-30.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-01-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-01-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-01.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-01.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-02-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-02-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-02.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-02.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-03-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-03-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-03.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-03.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-04-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-04-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-04.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-04.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-05-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-05-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-05.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-05.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-06-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-06-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-06.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-06.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-07-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-07-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-07.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-07.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-08-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-08-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-08.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-08.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-09-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-09-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-09.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-09.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-10-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-10-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-10.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-10.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-11-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-11-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-11.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-11.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-12-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-12-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-12.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-12.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-13-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-13-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-13.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-13.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-14-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-14-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-14.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-14.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-15-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-15-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-15.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-15.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-16-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-16-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-16.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-16.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-17-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-17-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-17.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-17.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-18-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-18-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-18.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-18.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-19-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-19-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-19.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-19.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-20-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-20-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-20.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-20.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-21-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-21-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-21.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-21.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-22-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-22-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-22.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-22.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-23-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-23-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-23.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-23.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-24-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-24-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-24.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-24.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-25-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-25-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-25.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-25.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-26-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-26-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-26.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-26.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-27-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-27-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-27.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-27.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-28-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-28-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-28.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-28.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-29-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-29-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-29.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-29.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-30-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-30-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-30.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-30.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-31-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-31-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-31.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2024-12-31.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2025-01-01-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2025-01-01-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2025-01-01.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2025-01-01.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2025-01-02-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2025-01-02-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2025-01-02.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2025-01-02.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2025-01-03-top.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2025-01-03-top.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2025-01-03.json" beforeDir="false" afterPath="$PROJECT_DIR$/data/everout/2025-01-03.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/analyzer@v1.wasm" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/code/monaco.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/code/monaco.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/codicon-37A3DWZT.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/editor.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/editor.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/inter-v12-latin-100-5TM4DKYR.woff" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/inter-v12-latin-100-VSADEURJ.woff2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/inter-v12-latin-200-DZGPWWN7.woff" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/inter-v12-latin-200-OEECIQJZ.woff2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/inter-v12-latin-300-MZZBOGC4.woff" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/inter-v12-latin-300-TQHN65LL.woff2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/inter-v12-latin-500-GL36QTH7.woff" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/inter-v12-latin-500-W67HLOMG.woff2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/inter-v12-latin-600-GB4DBAJI.woff" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/inter-v12-latin-600-UPUTVIFF.woff2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/inter-v12-latin-700-CR2HV5PP.woff" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/inter-v12-latin-700-PXPTYEPO.woff2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/inter-v12-latin-800-DQ77IE4H.woff2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/inter-v12-latin-800-IBJXBXQ6.woff" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/inter-v12-latin-900-GB6BUSG4.woff2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/inter-v12-latin-900-SROB4Y52.woff" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/inter-v12-latin-regular-JE4TJ54C.woff2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/inter-v12-latin-regular-MSVC73I4.woff" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/source-sans-pro-italic-7N2CPYHO.woff" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/source-sans-pro-italic-LMYCXFOZ.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/source-sans-pro-italic-QLASXZHI.eot" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/source-sans-pro-regular-AB2C6B7N.eot" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/source-sans-pro-regular-F3PUZ5WY.woff" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/source-sans-pro-regular-JIUUBFGM.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/source-sans-pro-semibold-EJHBWGH5.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/source-sans-pro-semibold-PDWX33YA.eot" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/source-sans-pro-semibold-X7M52VOF.woff" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/source-sans-pro-semibolditalic-HWZEWOW4.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/source-sans-pro-semibolditalic-PTTDB7R6.eot" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/editor/source-sans-pro-semibolditalic-WD67NPUS.woff" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/graph/graph.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/graph/graph.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/leap-bind-textarea.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/leapclient.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/music.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/node_modules/monaco-editor/esm/vs/editor/editor.worker.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/node_modules/monaco-editor/esm/vs/language/css/css.worker.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/node_modules/monaco-editor/esm/vs/language/html/html.worker.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/node_modules/monaco-editor/esm/vs/language/json/json.worker.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/node_modules/monaco-editor/esm/vs/language/typescript/ts.worker.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/wasmcode/analyzer/analyzer.worker.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/wasmcode/monaco.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dist/wasmcode/monaco.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/pkgindex/parser.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/pkgindex/parser_test.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/pkgindex/queue.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/pkgindex/result.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/pkgindex/scanner.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/pkgindex/scanner_test.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/pkgindex/testdata/badpkg/notagofile.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/pkgindex/testdata/foopkg/emptypkg/foo.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/pkgindex/testdata/foopkg/pkgbar/doc.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/pkgindex/testdata/foopkg/pkgbar/pkg.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/pkgindex/utils.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/tools/collect-builtin/main.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/tools/collect-builtin/template.gohtml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/tools/collector/collector.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/tools/cover.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/tools/pkgindexer/main.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/.eslintignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/.eslintrc.cjs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/.prettierrc.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/package-lock.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/package.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/404.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/examples/colors/main.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/examples/image/main.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/examples/multiple-files/foo/bar.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/examples/multiple-files/go.mod" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/examples/multiple-files/main.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/examples/templates/bench_test.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/examples/templates/unit_test.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/examples/testing/bench_test.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/examples/testing/example_test.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/examples/testing/fuzz_test.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/examples/testing/mock_test.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/examples/wasm/main.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/favicon.ico" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/CascadiaCode.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/FiraCode-Bold.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/FiraCode-Medium.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/FiraCode-Regular.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/FiraCode-Retina.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/FiraCode-SemiBold.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/JetBrainsMono-Bold.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/JetBrainsMono-Medium.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/JetBrainsMono-Regular.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/comic-mono/ComicMono-Bold.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/comic-mono/ComicMono.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/hack/hack-bold.woff" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/hack/hack-bold.woff2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/hack/hack-bolditalic.woff" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/hack/hack-bolditalic.woff2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/hack/hack-italic.woff" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/hack/hack-italic.woff2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/hack/hack-regular.woff" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/hack/hack-regular.woff2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/ibm-plex-mono/IBMPlexMono-Bold.woff2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/ibm-plex-mono/IBMPlexMono-BoldItalic.woff2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/ibm-plex-mono/IBMPlexMono-Italic.woff2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/ibm-plex-mono/IBMPlexMono-Medium.woff2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/ibm-plex-mono/IBMPlexMono-MediumItalic.woff2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/ibm-plex-mono/IBMPlexMono-Regular.woff2" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/zed-mono/zed-mono-extended.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/zed-mono/zed-mono-extendedbold.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/zed-mono/zed-mono-extendedbolditalic.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/zed-mono/zed-mono-extendeditalic.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/zed-mono/zed-mono-extendedmedium.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/fonts/zed-mono/zed-mono-extendedsemibold.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/github-mark-light-32px.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/go-logo-blue.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/gopher.svg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/logo192.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/logo512.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/manifest.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/robots.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/service-worker.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/public/wasm/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/App.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/App.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/changelog.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/CodeEditor/CodeEditor.css" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/gopls.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/CodeEditor/CodeEditor.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/CodeEditor/autocomplete/imports/provider.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/CodeEditor/autocomplete/register.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/CodeEditor/autocomplete/symbols/parse.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/CodeEditor/autocomplete/symbols/provider.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/CodeEditor/autocomplete/symbols/snippets.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/CodeEditor/commands.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/CodeEditor/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/CodeEditor/loader.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/CodeEditor/props.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/CodeEditor/utils.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/ContentPlaceholder/ContentPlaceholder.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/ContentPlaceholder/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Dialog/Dialog.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Dialog/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Dialog/styles.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/DialogActions/DialogActions.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/DialogActions/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/FlexContainer/FlexContainer.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/FlexContainer/index.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/NewFileModal/NewFileModal.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/NewFileModal/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/NotFoundPage/NotFoundPage.module.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/NotFoundPage/NotFoundPage.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/NotFoundPage/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/ConfirmModal/ConfirmContext.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/ConfirmModal/ConfirmModal.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/ConfirmModal/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Console/Console.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Console/Console.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Console/format.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Console/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Console/utils.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Header/AboutModal.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Header/Header.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Header/Header.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Header/Kbd/Kbd.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Header/Kbd/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Header/RunTargetSelector/RunTargetSelector.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Header/RunTargetSelector/RunTargetSelector.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Header/RunTargetSelector/dropdown.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Header/RunTargetSelector/options.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Header/RunTargetSelector/utils.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Header/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/InspectorPanel/InspectorPanel.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/InspectorPanel/InspectorPanel.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/InspectorPanel/PanelAction/PanelAction.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/InspectorPanel/PanelAction/PanelAction.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/InspectorPanel/PanelAction/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/InspectorPanel/PanelHeader/PanelHeader.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/InspectorPanel/PanelHeader/PanelHeader.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/InspectorPanel/PanelHeader/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/InspectorPanel/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Layout/Layout.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Layout/Layout.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Layout/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Notification/Notification.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Notification/Notification.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Notification/NotificationHost.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Notification/NotificationHost.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/Notification/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/PlaygroundPage.module.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/PlaygroundPage.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/RunOutput/RunOutput.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/RunOutput/RunOutput.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/RunOutput/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/RunOutput/parser.test.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/RunOutput/parser.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/PlaygroundPage/utils.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/StatusBar/StatusBar.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/StatusBar/StatusBar.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/StatusBar/StatusBarItem.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/StatusBar/StatusBarItem.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/StatusBar/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/StatusBar/vim/VimStatusBarItem.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/StatusBar/vim/VimStatusBarItem.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/StatusBar/vim/editor.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Workspace/Poster/Poster.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Workspace/Poster/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Workspace/TailwindHelpers.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Workspace/Workspace.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Workspace/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Workspace/tabs/TabActionBar/TabActionBar.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Workspace/tabs/TabActionBar/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Workspace/tabs/TabActionBar/styles.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Workspace/tabs/TabHeader/TabHeader.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Workspace/tabs/TabHeader/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Workspace/tabs/TabLabel/TabLabel.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Workspace/tabs/TabLabel/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Workspace/tabs/TabPanelPlaceholder/TabPanelPlaceholder.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Workspace/tabs/TabPanelPlaceholder/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Workspace/tabs/TabSelector/TabSelector.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Workspace/tabs/TabSelector/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Workspace/tabs/TabView/TabView.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Workspace/tabs/TabView/debounce.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Workspace/tabs/TabView/index.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Workspace/tabs/TabView/styles.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Workspace/tabs/types.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/Workspace/utils.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/collab/EditorContentManager.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/collab/OnDisposed.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/collab/RemoteCursor.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/collab/RemoteCursorManager.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/collab/RemoteCursorWidget.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/collab/RemoteSelection.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/collab/RemoteSelectionManager.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/collab/Validation.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/collab/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/examples/ExamplesModal/ExamplesModal.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/examples/ExamplesModal/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/examples/ExamplesSection/ExamplesSection.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/examples/ExamplesSection/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/settings/AnimatedPivot/AnimatedPivot.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/settings/AnimatedPivot/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/settings/SettingsModal.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/settings/SettingsProperty.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/settings/SettingsSection.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/settings/options.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/settings/styles.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/utils/ConnectedThemeProvider.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/utils/EllipsisText.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/utils/EllipsisText.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/utils/SharePopup.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/utils/ThemeableComponent.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/utils/XTerm/XTerm.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/utils/XTerm/hooks.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/utils/XTerm/index.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/components/utils/XTerm/utils.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/environment.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/icons.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/index.css" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/index.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/@types/index.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/common.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/debug/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/debug/memory.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/debug/utils.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/memory/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/memory/view.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/pkg/syscall/errors.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/pkg/syscall/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/pkg/syscall/js/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/pkg/syscall/js/ref.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/pkg/syscall/js/value.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/pkg/syscall/tables.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/stack/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/stack/reader.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/stack/writer.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/types/basic/boolean.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/types/basic/dataview.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/types/basic/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/types/basic/uint64.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/types/common.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/types/complex/array.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/types/complex/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/types/complex/struct.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/types/complex/u8array.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/types/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/types/refs/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/types/refs/slice.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/types/refs/string.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/types/spec.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/wasm_exec.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/wrapper/instance.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/wrapper/interface.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/go/wrapper/wrapper.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/sourceutil/analysis.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/sourceutil/flags.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/sourceutil/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/wrpc/client.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/wrpc/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/lib/wrpc/protocol.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/pages/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/serviceWorkerRegistration.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/analyzer.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/api/client.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/api/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/api/interface.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/api/models.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/api/provider.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/api/resources.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/api/singleton.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/cache/db.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/cache/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/cache/memory.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/cache/types.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/colors.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/completion/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/completion/service.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/completion/types.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/config/config.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/config/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/config/monaco.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/config/target.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/examples/client.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/examples/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/examples/snippets.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/examples/types.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/examples/utils.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/fonts.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/go/foundation.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/go/fs.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/go/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/go/process.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/go/stdio.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/services/routes.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/actions/actions.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/actions/build.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/actions/editor.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/actions/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/actions/settings.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/actions/ui.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/configure.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/connect.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/dispatchers/build.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/dispatchers/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/dispatchers/settings.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/dispatchers/utils.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/helpers.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/notifications/actions.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/notifications/dispatchers.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/notifications/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/notifications/predefined.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/notifications/reducers.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/notifications/state.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/reducers.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/state.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/terminal/actions.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/terminal/config.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/terminal/dispatchers.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/terminal/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/terminal/reducers.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/terminal/state.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/terminal/types.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/vim/actions.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/vim/reducers.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/vim/state.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/workspace/actions.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/workspace/config.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/workspace/dispatchers/files.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/workspace/dispatchers/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/workspace/dispatchers/snippet.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/workspace/dispatchers/utils.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/workspace/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/workspace/reducers.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/store/workspace/state.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/styles/layout.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/styles/modal.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/types/custom.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/types/monaco-vim/index.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/utils/dom.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/utils/duration.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/utils/http.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/utils/path.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/utils/theme.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/utils/types.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/vite-env.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/src/workers/analyzer.worker.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/tsconfig.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/tsconfig.paths.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/web/vite.config.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/everout.json" beforeDir="false" afterPath="$PROJECT_DIR$/everout.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/graph/graph.go" beforeDir="false" afterPath="$PROJECT_DIR$/graph/graph.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/music.go" beforeDir="false" afterPath="$PROJECT_DIR$/music.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wasmcode/analyzer/client.ts" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/analyzer/client.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wasmcode/autocomplete/register.ts" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/autocomplete/register.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wasmcode/autocomplete/symbols/provider.ts" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/autocomplete/symbols/provider.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wasmcode/code.go" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/code.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wasmcode/language/client.ts" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/language/client.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wasmcode/language/language.worker.ts" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/language/language.worker.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wasmcode/monaco.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/monaco.tsx" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -44,22 +578,25 @@
     "git-widget-placeholder": "master",
     "go.import.settings.migrated": "true",
     "go.sdk.automatically.set": "true",
-    "last_opened_file_path": "/Users/hacked/Documents/GitHub/share",
+    "last_opened_file_path": "/Users/hacked/Documents/GitHub/share/static",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
-    "ts.external.directory.path": "/Users/hacked/Documents/GitHub/share/node_modules/typescript/lib",
+    "ts.external.directory.path": "/Users/hacked/Documents/GitHub/share/screenshare/ui/node_modules/typescript/lib",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/static" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/user" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Test.TestGenerate in github.com/breadchris/share/breadchris">
+  <component name="RunManager" selected="Go Build.share">
     <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
       <module name="share" />
       <working_directory value="$PROJECT_DIR$" />
@@ -135,7 +672,7 @@
       <updated>1730866796853</updated>
       <workItem from="1730866797883" duration="126000" />
       <workItem from="1730866961438" duration="10483000" />
-      <workItem from="1730954775854" duration="28528000" />
+      <workItem from="1730954775854" duration="42668000" />
     </task>
     <servers />
   </component>
@@ -144,5 +681,16 @@
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/breadchris/breadchris.go</url>
+          <line>231</line>
+          <option name="timeStamp" value="16" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

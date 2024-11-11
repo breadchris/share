@@ -11,7 +11,7 @@ export class GoCompletionItemProvider implements monaco.languages.CompletionItem
 
   constructor(private readonly client: IAPIClient) {
     this.getSuggestionFunc = asyncDebounce(
-      async (query) => await client.getSuggestions(query),
+      async (query) => await client.getSymbolSuggestions(query),
       SUGGESTIONS_DEBOUNCE_DELAY,
     )
   }
@@ -63,7 +63,7 @@ export class GoCompletionItemProvider implements monaco.languages.CompletionItem
         suggestions: relatedSnippets.concat(suggestions.map((s) => ({ ...s, range }))),
       }
     } catch (err: any) {
-      console.error(`Failed to get code completion from server: ${err.message}`)
+      console.error(err);
       return { suggestions: relatedSnippets }
     }
   }

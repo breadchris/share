@@ -278,7 +278,7 @@ function sendEvent(eventName, data) {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			action := "/new"
+			action := "/new/"
 			if id != "" {
 				action = fmt.Sprintf("/new/%s", id)
 			}

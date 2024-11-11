@@ -61,6 +61,7 @@ require (
 	github.com/gorilla/sessions v1.4.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/gosimple/slug v1.14.0
+	github.com/hashicorp/go-set/v3 v3.0.0
 	github.com/hsanjuan/ipfs-lite v1.8.2
 	github.com/invopop/jsonschema v0.12.0
 	github.com/ipfs/go-datastore v0.6.0

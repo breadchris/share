@@ -1,140 +1,8 @@
 [
     {
-        "Title": "Seattle Restored",
-        "Category": "Visual Art",
-        "Date": "Everyday",
-        "Time": "",
-        "Location": "",
-        "Region": "",
-        "Price": "Free",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTY1MDA2MDMyMTAzMjgzOS1TY3JlZW5fU2hvdF8yMDIyLTA0LTE1X2F0XzMuMDUuMDlfUE0ucG5nIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
-        "EventURL": "https://everout.com/seattle/events/seattle-restored/e115730/"
-    },
-    {
-        "Title": "Satoshi Kon: Anime Auteur",
-        "Category": "Film",
-        "Date": "EveryMonday\u0026Tuesday,throughNovember26",
-        "Time": "",
-        "Location": "SIFF Film Center",
-        "Region": "Uptown",
-        "Price": "$15 - $125",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDEzNjMwODUxMjU0LUVEVV9GaWxtVGFsay1TYXRvc2hpXzE2MDB4OTAwLmpwZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
-        "EventURL": "https://everout.com/seattle/events/satoshi-kon-anime-auteur/e190662/"
-    },
-    {
-        "Title": "Miracle on 2nd",
-        "Category": "Food and Drink",
-        "Date": "Everyday,fromNovember16–December26",
-        "Time": "",
-        "Location": "Rob Roy",
-        "Region": "Belltown",
-        "Price": "",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyOTg3NzcyMjg3Mzc1NS1taXJhY2xlX29uXzJuZC5wbmciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
-        "EventURL": "https://everout.com/seattle/events/miracle-on-2nd/e190592/"
-    },
-    {
-        "Title": "Bad Bar Good Comedy",
-        "Category": "Comedy",
-        "Date": "EveryMonday",
-        "Time": "",
-        "Location": "Bad Bar",
-        "Region": "Uptown",
-        "Price": "Free",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcxMzMwNzYxMTc1NzA5My11c2VyaW1hZ2UtMTcxMjYzMjU2NTUzNTc3NC1CYXJiYXJjb21lZHlfb3Blbm1pYy0wMS5wbmciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
-        "EventURL": "https://everout.com/seattle/events/bad-bar-good-comedy/e174432/"
-    },
-    {
-        "Title": "A Very Die Hard Christmas",
-        "Category": "Performance",
-        "Date": "Everyday,fromNovember22–December22",
-        "Time": "",
-        "Location": "Seattle Public Theater",
-        "Region": "GreenLake",
-        "Price": "",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcxNjMzODQ0Mzc2ODYzMi14bWFzLmpwZWciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
-        "EventURL": "https://everout.com/seattle/events/a-very-die-hard-christmas/e177456/"
-    },
-    {
-        "Title": "Kringle’s Inventionasium",
-        "Category": "Winter Holidays",
-        "Date": "Everyday,fromNovember22–December24",
-        "Time": "",
-        "Location": "LIT Immersive",
-        "Region": "StadiumDistrict",
-        "Price": "$44",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyOTc5MzU2NjIzNDQ1NC11bm5hbWVkLmpwZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
-        "EventURL": "https://everout.com/seattle/events/kringles-inventionasium/e190536/"
-    },
-    {
-        "Title": "Snowed In (Again)",
-        "Category": "Performance",
-        "Date": "Everyday,fromNovember21–December22",
-        "Time": "",
-        "Location": "ArtsWest",
-        "Region": "Junction",
-        "Price": "",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcxOTQ0MTI2MDkzNjExNy1zbm93LnBuZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
-        "EventURL": "https://everout.com/seattle/events/snowed-in-again/e180649/"
-    },
-    {
-        "Title": "Seattle Symphony 2024/25 Season",
-        "Category": "Live Music",
-        "Date": "Everyday,throughJune22,2025",
-        "Time": "",
-        "Location": "Benaroya Hall",
-        "Region": "DowntownSeattle",
-        "Price": "",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcwOTg0NzYyNDUxNzkyOC1zeW1waC5qcGVnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
-        "EventURL": "https://everout.com/seattle/events/seattle-symphony-2024-25-season/e171194/"
-    },
-    {
-        "Title": "Titanic. The Exhibition",
-        "Category": "Exhibit",
-        "Date": "EveryWednesday–Monday,throughDecember15",
-        "Time": "",
-        "Location": "Maritime Building",
-        "Region": "DowntownSeattle",
-        "Price": "$24 - $48",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyMDU0ODgzMTEzNzgwOC1TY3JlZW5zaG90XzIwMjQtMDctMDlfYXRfMTEuMTMuNDJBTS5wbmciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
-        "EventURL": "https://everout.com/seattle/events/titanic-the-exhibition/e181435/"
-    },
-    {
-        "Title": "Mary Poppins",
-        "Category": "Performance",
-        "Date": "Everyday,fromNovember22–December22",
-        "Time": "",
-        "Location": "The 5th Avenue Theatre",
-        "Region": "DowntownSeattle",
-        "Price": "",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcwOTc1MzgxNTU4NTQ5My1tYXJ5LmpwZWciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
-        "EventURL": "https://everout.com/seattle/events/mary-poppins/e171090/"
-    },
-    {
-        "Title": "Seattle Christmas Market",
-        "Category": "Food and Drink",
-        "Date": "Everyday,fromNovember21–December24",
-        "Time": "",
-        "Location": "Seattle Center",
-        "Region": "Uptown",
-        "Price": "$15.99 - $35.99",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyMDQ4MzM0MTEwMDYzMi14bWFzLmpwZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
-        "EventURL": "https://everout.com/seattle/events/seattle-christmas-market/e181386/"
-    },
-    {
-        "Title": "$10 Pizza Mondays",
-        "Category": "Food and Drink",
-        "Date": "EveryMonday",
-        "Time": "",
-        "Location": "Cafe Lago",
-        "Region": "Montlake",
-        "Price": "",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTYwODM0Mzg0MTY0MjUxMy11bmtub3duLTEuanBnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
-        "EventURL": "https://everout.com/seattle/events/10-pizza-mondays/e125083/"
-    },
-    {
         "Title": "Wicked",
         "Category": "Performance",
-        "Date": "Everyday,fromNovember6–December1",
+        "Date": "Everyday,throughDecember1",
         "Time": "",
         "Location": "Paramount Theatre",
         "Region": "DowntownSeattle",
@@ -152,28 +20,6 @@
         "Price": "Free",
         "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDQwNDkzMzczNDAyLWhvbWUuanBnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
         "EventURL": "https://everout.com/seattle/events/going-home-exhibit/e190980/"
-    },
-    {
-        "Title": "TESSERAE Space Habitat Pavilion",
-        "Category": "Exhibit",
-        "Date": "Everyday,throughJanuary12,2025",
-        "Time": "",
-        "Location": "The Museum of Flight",
-        "Region": "Tukwila",
-        "Price": "",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyNzQ3NzE3MzAyODM1OS10ZXNzLmpwZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
-        "EventURL": "https://everout.com/seattle/events/tesserae-space-habitat-pavilion/e188004/"
-    },
-    {
-        "Title": "Victoria Sambunaris: Traces of the Manifest",
-        "Category": "Exhibit",
-        "Date": "Everyday,throughDecember15",
-        "Time": "",
-        "Location": "Photographic Center Northwest",
-        "Region": "CapitolHill",
-        "Price": "Free",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyODMzMDc4NDM5NzEyNi11c2VyaW1hZ2UtMTcyNjYxNDE1NDY5MTQwOC1WaWN0b3JpYS1TYW1idW5hcmlzX1VudGl0bGVkLUFsbC1BbWVyaWNhbi1DYW5hbC1uZWFyLVl1bWEtQ2FsaWZvcm5pYS0tMjAyMS5qcGVnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
-        "EventURL": "https://everout.com/seattle/events/victoria-sambunaris-traces-of-the-manifest/e188812/"
     },
     {
         "Title": "Keith Haring: A Radiant Legacy",
@@ -198,6 +44,182 @@
         "EventURL": "https://everout.com/seattle/events/northwest-trolls-way-of-the-bird-king/e157170/"
     },
     {
+        "Title": "Li'l Woody's Fast Food Month",
+        "Category": "Food and Drink",
+        "Date": "Everyday,throughDecember2",
+        "Time": "",
+        "Location": "Li'l Woody's",
+        "Region": "CapitolHill",
+        "Price": "",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMTAyMTk5NzM0MTg4OS1TY3JlZW5fU2hvdF8yMDI0LTExLTA3X2F0XzMuMjUuNDVfUE0ucG5nIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/lil-woodys-fast-food-month/e191694/"
+    },
+    {
+        "Title": "Mary Poppins",
+        "Category": "Performance",
+        "Date": "Everyday,fromNovember22–December22",
+        "Time": "",
+        "Location": "The 5th Avenue Theatre",
+        "Region": "DowntownSeattle",
+        "Price": "",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcwOTc1MzgxNTU4NTQ5My1tYXJ5LmpwZWciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
+        "EventURL": "https://everout.com/seattle/events/mary-poppins/e171090/"
+    },
+    {
+        "Title": "Northwest Native Art",
+        "Category": "Visual Art",
+        "Date": "Everyday",
+        "Time": "",
+        "Location": "Burke Museum",
+        "Region": "UniversityDistrict",
+        "Price": "",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTYzMzk3Mzk0OTY1MzQ2Mi1OV05hdGl2ZUFydC1Mb29raW5nRG93bi0xMTAweDU1NS1BbmRyZXdXYWl0cy5qcGVnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/northwest-native-art/e104674/"
+    },
+    {
+        "Title": "Dahomey",
+        "Category": "Film",
+        "Date": "Everyday,fromNovember22–28",
+        "Time": "",
+        "Location": "SIFF Cinema Uptown",
+        "Region": "Uptown",
+        "Price": "",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDg0OTE1OTg2OTc1Ni11c2VyaW1hZ2UtMTcyODkyNTA4NDUwNDgxNy1EYWhvbWV5LmpwZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/dahomey/e191504/"
+    },
+    {
+        "Title": "TESSERAE Space Habitat Pavilion",
+        "Category": "Exhibit",
+        "Date": "Everyday,throughJanuary12,2025",
+        "Time": "",
+        "Location": "The Museum of Flight",
+        "Region": "Tukwila",
+        "Price": "",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyNzQ3NzE3MzAyODM1OS10ZXNzLmpwZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/tesserae-space-habitat-pavilion/e188004/"
+    },
+    {
+        "Title": "THIS UNGRASPABLE WHOLE",
+        "Category": "Visual Art",
+        "Date": "Everyday,throughDecember2",
+        "Time": "",
+        "Location": "San Juan Islands Museum of Art (SJIMA)",
+        "Region": "FridayHarbor",
+        "Price": "$10",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyNDcyMTk3MzA3ODI5My11c2VyaW1hZ2UtMTcyMjk3MjA2MzUxOTA1Ni05X0tlc3NsZXJfVGhpcy1VbmdyYXNwYWJsZS1XaG9sZV9pbmstb24tcGFwZXJfMy1mZWV0LXgtNi1mZWV0XzIwMjEuanBnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/this-ungraspable-whole/e185357/"
+    },
+    {
+        "Title": "Tokyo Godfathers",
+        "Category": "Film",
+        "Date": "Monday,November25",
+        "Time": "",
+        "Location": "SIFF Cinema Uptown",
+        "Region": "Uptown",
+        "Price": "",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDg0NjUyODUyODc4Ny11c2VyaW1hZ2UtMTcyODU4NjM0ODc5NzcxOS1FRFVfRmlsbVRhbGstVG9reW9Hb2RmYXRoZXJzXzE2MDB4OTAwLmpwZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/tokyo-godfathers/e191466/"
+    },
+    {
+        "Title": "Bellevue Downtown Ice Rink",
+        "Category": "Winter Holidays",
+        "Date": "Everyday,fromNovember15,2024–January12,2025",
+        "Time": "",
+        "Location": "Bellevue Downtown Park",
+        "Region": "Bellevue",
+        "Price": "$15 - $25",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDg1MTUyMzYyMjk4My11c2VyaW1hZ2UtMTczMDg1MDIyODUzOTc2LTIwMjRfQkRBX0ljZS1yaW5rLXdlYi1hc3NldHNfU1FVQVJFLTE3LTE3LmpwZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/bellevue-downtown-ice-rink/e191538/"
+    },
+    {
+        "Title": "Almost Live! (Almost an Exhibit)",
+        "Category": "Stranger Suggests",
+        "Date": "Everyday,throughFebruary23,2025",
+        "Time": "",
+        "Location": "Museum of History \u0026 Industry (MOHAI)",
+        "Region": "SouthLakeUnion",
+        "Price": "$0 - $25",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyMTkyOTk5ODc3ODkyNS1TY3JlZW5zaG90XzIwMjQtMDctMjVfYXRfMTAuNTIuMjdfQU0ucG5nIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/almost-live-almost-an-exhibit/e182755/"
+    },
+    {
+        "Title": "Festival of Trees",
+        "Category": "Winter Holidays",
+        "Date": "Everyday,fromNovember20,2024–January5,2025",
+        "Time": "",
+        "Location": "White River Valley Museum",
+        "Region": "Auburn",
+        "Price": "",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMTAyMzU3OTg2MjUwOC1GT1QuanBnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/festival-of-trees/e191728/"
+    },
+    {
+        "Title": "Seattle Symphony 2024/25 Season",
+        "Category": "Live Music",
+        "Date": "Everyday,throughJune22,2025",
+        "Time": "",
+        "Location": "Benaroya Hall",
+        "Region": "DowntownSeattle",
+        "Price": "",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcwOTg0NzYyNDUxNzkyOC1zeW1waC5qcGVnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/seattle-symphony-2024-25-season/e171194/"
+    },
+    {
+        "Title": "Wicked",
+        "Category": "Film",
+        "Date": "Everyday,fromNovember21–December5",
+        "Time": "",
+        "Location": "SIFF Cinema Downtown",
+        "Region": "Belltown",
+        "Price": "",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDg0NjQ0MjE4ODM3OC11c2VyaW1hZ2UtMTcyODU4NjM0OTgxNDcxNi1DSU5fV2lja2VkXzE2MDB4OTAwLmpwZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/wicked/e191464/"
+    },
+    {
+        "Title": "Seattle Christmas Market",
+        "Category": "Food and Drink",
+        "Date": "Everyday,fromNovember21–December24",
+        "Time": "",
+        "Location": "Seattle Center",
+        "Region": "Uptown",
+        "Price": "$15.99 - $35.99",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyMDQ4MzM0MTEwMDYzMi14bWFzLmpwZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/seattle-christmas-market/e181386/"
+    },
+    {
+        "Title": "$10 Pizza Mondays",
+        "Category": "Food and Drink",
+        "Date": "EveryMonday",
+        "Time": "",
+        "Location": "Cafe Lago",
+        "Region": "Montlake",
+        "Price": "",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTYwODM0Mzg0MTY0MjUxMy11bmtub3duLTEuanBnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/10-pizza-mondays/e125083/"
+    },
+    {
+        "Title": "Seattle Festival of Trees",
+        "Category": "Winter Holidays",
+        "Date": "Everyday,fromNovember21–December2",
+        "Time": "",
+        "Location": "Fairmont Olympic Hotel",
+        "Region": "PikePineRetailCore",
+        "Price": "Free",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMTAyNDE0NzUzNjkxMy1TY3JlZW5zaG90XzIwMjQtMTEtMDdfYXRfNC4wMi4xNFBNLnBuZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/seattle-festival-of-trees/e191737/"
+    },
+    {
+        "Title": "Victoria Sambunaris: Traces of the Manifest",
+        "Category": "Exhibit",
+        "Date": "Everyday,throughDecember15",
+        "Time": "",
+        "Location": "Photographic Center Northwest",
+        "Region": "CapitolHill",
+        "Price": "Free",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyODMzMDc4NDM5NzEyNi11c2VyaW1hZ2UtMTcyNjYxNDE1NDY5MTQwOC1WaWN0b3JpYS1TYW1idW5hcmlzX1VudGl0bGVkLUFsbC1BbWVyaWNhbi1DYW5hbC1uZWFyLVl1bWEtQ2FsaWZvcm5pYS0tMjAyMS5qcGVnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/victoria-sambunaris-traces-of-the-manifest/e188812/"
+    },
+    {
         "Title": "Can Can's Wonderland: The 11th Anniversary",
         "Category": "Performance",
         "Date": "Everyday,fromNovember21,2024–January5,2025",
@@ -207,28 +229,6 @@
         "Price": "",
         "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyMzE0Nzg3MjYxOTkyNi13b25kZXIuanBnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
         "EventURL": "https://everout.com/seattle/events/can-cans-wonderland-the-11th-anniversary/e183554/"
-    },
-    {
-        "Title": "Hello Auntie, Hello Uncle: Conversations with Our Elders",
-        "Category": "Visual Art",
-        "Date": "EveryWednesday–Monday,throughFebruary23,2025",
-        "Time": "",
-        "Location": "Wing Luke Museum",
-        "Region": "Chinatown-InternationalDistrict",
-        "Price": "$0 - $17",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcxMzM3MjI0OTI4MTM3OS1TY3JlZW5zaG90XzIwMjQtMDQtMTdfYXRfOS40NC4wMV9BTS5wbmciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
-        "EventURL": "https://everout.com/seattle/events/hello-auntie-hello-uncle-conversations-with-our-elders/e174504/"
-    },
-    {
-        "Title": "Bad Bar Good Comedy",
-        "Category": "Comedy",
-        "Date": "EveryMonday",
-        "Time": "",
-        "Location": "Bad Bar",
-        "Region": "Uptown",
-        "Price": "Free",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcxMzMwNzYxMTc1NzA5My11c2VyaW1hZ2UtMTcxMjYzMjU2NTUzNTc3NC1CYXJiYXJjb21lZHlfb3Blbm1pYy0wMS5wbmciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
-        "EventURL": "https://everout.com/seattle/events/bad-bar-good-comedy/e174432/"
     },
     {
         "Title": "Titanic. The Exhibition",
@@ -242,15 +242,92 @@
         "EventURL": "https://everout.com/seattle/events/titanic-the-exhibition/e181435/"
     },
     {
-        "Title": "Can Can's Wonderland: The 11th Anniversary",
-        "Category": "Performance",
-        "Date": "Everyday,fromNovember21,2024–January5,2025",
+        "Title": "Hello Auntie, Hello Uncle: Conversations with Our Elders",
+        "Category": "Visual Art",
+        "Date": "EveryWednesday–Monday,throughFebruary23,2025",
         "Time": "",
-        "Location": "Can Can",
-        "Region": "PikePlaceMarket",
+        "Location": "Wing Luke Museum",
+        "Region": "Chinatown-InternationalDistrict",
+        "Price": "$0 - $17",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcxMzM3MjI0OTI4MTM3OS1TY3JlZW5zaG90XzIwMjQtMDQtMTdfYXRfOS40NC4wMV9BTS5wbmciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
+        "EventURL": "https://everout.com/seattle/events/hello-auntie-hello-uncle-conversations-with-our-elders/e174504/"
+    },
+    {
+        "Title": "Seattle Festival of Trees",
+        "Category": "Winter Holidays",
+        "Date": "Everyday,fromNovember21–December2",
+        "Time": "",
+        "Location": "Fairmont Olympic Hotel",
+        "Region": "PikePineRetailCore",
+        "Price": "Free",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMTAyNDE0NzUzNjkxMy1TY3JlZW5zaG90XzIwMjQtMTEtMDdfYXRfNC4wMi4xNFBNLnBuZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/seattle-festival-of-trees/e191737/"
+    },
+    {
+        "Title": "Tokyo Godfathers",
+        "Category": "Film",
+        "Date": "Monday,November25",
+        "Time": "",
+        "Location": "SIFF Cinema Uptown",
+        "Region": "Uptown",
         "Price": "",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyMzE0Nzg3MjYxOTkyNi13b25kZXIuanBnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
-        "EventURL": "https://everout.com/seattle/events/can-cans-wonderland-the-11th-anniversary/e183554/"
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDg0NjUyODUyODc4Ny11c2VyaW1hZ2UtMTcyODU4NjM0ODc5NzcxOS1FRFVfRmlsbVRhbGstVG9reW9Hb2RmYXRoZXJzXzE2MDB4OTAwLmpwZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/tokyo-godfathers/e191466/"
+    },
+    {
+        "Title": "Almost Live! (Almost an Exhibit)",
+        "Category": "Stranger Suggests",
+        "Date": "Everyday,throughFebruary23,2025",
+        "Time": "",
+        "Location": "Museum of History \u0026 Industry (MOHAI)",
+        "Region": "SouthLakeUnion",
+        "Price": "$0 - $25",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyMTkyOTk5ODc3ODkyNS1TY3JlZW5zaG90XzIwMjQtMDctMjVfYXRfMTAuNTIuMjdfQU0ucG5nIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/almost-live-almost-an-exhibit/e182755/"
+    },
+    {
+        "Title": "Northwest Native Art",
+        "Category": "Visual Art",
+        "Date": "Everyday",
+        "Time": "",
+        "Location": "Burke Museum",
+        "Region": "UniversityDistrict",
+        "Price": "",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTYzMzk3Mzk0OTY1MzQ2Mi1OV05hdGl2ZUFydC1Mb29raW5nRG93bi0xMTAweDU1NS1BbmRyZXdXYWl0cy5qcGVnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/northwest-native-art/e104674/"
+    },
+    {
+        "Title": "Seattle Restored",
+        "Category": "Visual Art",
+        "Date": "Everyday",
+        "Time": "",
+        "Location": "",
+        "Region": "",
+        "Price": "Free",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTY1MDA2MDMyMTAzMjgzOS1TY3JlZW5fU2hvdF8yMDIyLTA0LTE1X2F0XzMuMDUuMDlfUE0ucG5nIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/seattle-restored/e115730/"
+    },
+    {
+        "Title": "THIS UNGRASPABLE WHOLE",
+        "Category": "Visual Art",
+        "Date": "Everyday,throughDecember2",
+        "Time": "",
+        "Location": "San Juan Islands Museum of Art (SJIMA)",
+        "Region": "FridayHarbor",
+        "Price": "$10",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyNDcyMTk3MzA3ODI5My11c2VyaW1hZ2UtMTcyMjk3MjA2MzUxOTA1Ni05X0tlc3NsZXJfVGhpcy1VbmdyYXNwYWJsZS1XaG9sZV9pbmstb24tcGFwZXJfMy1mZWV0LXgtNi1mZWV0XzIwMjEuanBnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/this-ungraspable-whole/e185357/"
+    },
+    {
+        "Title": "Seattle Symphony 2024/25 Season",
+        "Category": "Live Music",
+        "Date": "Everyday,throughJune22,2025",
+        "Time": "",
+        "Location": "Benaroya Hall",
+        "Region": "DowntownSeattle",
+        "Price": "",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcwOTg0NzYyNDUxNzkyOC1zeW1waC5qcGVnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/seattle-symphony-2024-25-season/e171194/"
     },
     {
         "Title": "Longing For Home: An Art Exhibit by the Korean American Artists Association of Washington",
@@ -264,6 +341,17 @@
         "EventURL": "https://everout.com/seattle/events/longing-for-home-an-art-exhibit-by-the-korean-american-artists-association-of-washington/e181845/"
     },
     {
+        "Title": "30th Annual Sheraton Grand Seattle Gingerbread Village",
+        "Category": "Winter Holidays",
+        "Date": "MultipledatesbetweenNovember21-January1,2025",
+        "Time": "9am",
+        "Location": "Sheraton Hotel",
+        "Region": "PikePineRetailCore",
+        "Price": "Donations encouraged",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDk0MTI2MDQ0NDU3OS1TY3JlZW5zaG90XzIwMjQtMTEtMDZfYXRfNS4wMC40NFBNLnBuZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/30th-annual-sheraton-grand-seattle-gingerbread-village/e191625/"
+    },
+    {
         "Title": "Weekend Meditation Workshop",
         "Category": "Readings and Talks",
         "Date": "Everyday",
@@ -273,6 +361,28 @@
         "Price": "$200 - $300",
         "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyOTIwMjE2ODY4MjU0OC11c2VyaW1hZ2UtMTcyNjc3MjM1OTQwNzU0Ny1TZWF0dGxlX0FURV9TZXBfMjAyNC5wbmciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
         "EventURL": "https://everout.com/seattle/events/weekend-meditation-workshop/e189990/"
+    },
+    {
+        "Title": "Luminosity: An Annual Group Glass Exhibition",
+        "Category": "Visual Art",
+        "Date": "Everyday,throughNovember30",
+        "Time": "10am–5pm",
+        "Location": "Stonington Gallery",
+        "Region": "PioneerSquare",
+        "Price": "Free",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyODA4MjkyNTYyMDYwMy11c2VyaW1hZ2UtMTcyODA3NTMwODQ1NzA4OC1MVU1JTk9TSVRZLTE1LnBuZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/luminosity-an-annual-group-glass-exhibition/e188539/"
+    },
+    {
+        "Title": "Polarity",
+        "Category": "Visual Art",
+        "Date": "Everyday,throughDecember1",
+        "Time": "10am–5pm",
+        "Location": "SAM Gallery",
+        "Region": "DowntownSeattle",
+        "Price": "Free",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyOTAzMzkxNDQ3NzA0NC11c2VyaW1hZ2UtMTcyNjg1NTQwMjg1ODI4NS1UaWVycmEtU3VlbHRhLUlJSS5qcGciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
+        "EventURL": "https://everout.com/seattle/events/polarity/e189826/"
     },
     {
         "Title": "Massive: The Power of Pop Culture",
@@ -297,31 +407,9 @@
         "EventURL": "https://everout.com/seattle/events/home-beyond-earth/e171736/"
     },
     {
-        "Title": "Polarity",
-        "Category": "Visual Art",
-        "Date": "Everyday,fromNovember6–December1",
-        "Time": "10am–5pm",
-        "Location": "SAM Gallery",
-        "Region": "DowntownSeattle",
-        "Price": "Free",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyOTAzMzkxNDQ3NzA0NC11c2VyaW1hZ2UtMTcyNjg1NTQwMjg1ODI4NS1UaWVycmEtU3VlbHRhLUlJSS5qcGciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
-        "EventURL": "https://everout.com/seattle/events/polarity/e189826/"
-    },
-    {
-        "Title": "Luminosity: An Annual Group Glass Exhibition",
-        "Category": "Visual Art",
-        "Date": "Everyday,throughNovember30",
-        "Time": "10am–5pm",
-        "Location": "Stonington Gallery",
-        "Region": "PioneerSquare",
-        "Price": "Free",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyODA4MjkyNTYyMDYwMy11c2VyaW1hZ2UtMTcyODA3NTMwODQ1NzA4OC1MVU1JTk9TSVRZLTE1LnBuZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
-        "EventURL": "https://everout.com/seattle/events/luminosity-an-annual-group-glass-exhibition/e188539/"
-    },
-    {
         "Title": "Meow Brow",
         "Category": "Exhibit",
-        "Date": "MultipledatesbetweenNovember8-December9",
+        "Date": "MultipledatesthroughDecember9",
         "Time": "varioustimes",
         "Location": "Gallery ERGO",
         "Region": "PikePlaceMarket",
@@ -332,7 +420,7 @@
     {
         "Title": "Paul Kuniholm Studio Visits",
         "Category": "Visual Art",
-        "Date": "Thursday,November7,andthenevery6days",
+        "Date": "Wednesday,November13,andthenevery6days",
         "Time": "2–3pm",
         "Location": "Studio of Paul Kuniholm",
         "Region": "Belltown",
@@ -385,6 +473,17 @@
         "EventURL": "https://everout.com/seattle/events/artusi-pasta-wine-night/e125084/"
     },
     {
+        "Title": "Christmas Dive Bar",
+        "Category": "Food and Drink",
+        "Date": "Everyday,throughJanuary1,2025",
+        "Time": "5pm",
+        "Location": "1512 11th Ave",
+        "Region": "Pike/Pine",
+        "Price": "",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDk0MTYwNzIyMDMxNS1TY3JlZW5zaG90XzIwMjQtMTEtMDZfYXRfNS4wNi4zN1BNLnBuZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/christmas-dive-bar/e191627/"
+    },
+    {
         "Title": "Bizarre Run Buds Run Club",
         "Category": "Sports and Recreation",
         "Date": "Multipledates",
@@ -396,15 +495,15 @@
         "EventURL": "https://everout.com/seattle/events/bizarre-run-buds-run-club/e165371/"
     },
     {
-        "Title": "Open Mic Night",
-        "Category": "Community",
-        "Date": "LastMondayofevery3months",
-        "Time": "6:30pm–8:30am\u00266:30–8:30pm",
-        "Location": "Folio: The Seattle Athenaeum",
-        "Region": "PikePlaceMarket",
-        "Price": "Free",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcxODc0MjA5MTAxMjg1Ny11c2VyaW1hZ2UtMTcxODQwNTY4NDAyMDQ2LVNjcmVlbnNob3QtMjAyNC0wNi0xNC1hdC0zLjU0LjMzUE0ucG5nIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
-        "EventURL": "https://everout.com/seattle/events/open-mic-night/e179886/"
+        "Title": "SEATTLE Naked! Yoga and Pilates",
+        "Category": "Sports and Recreation",
+        "Date": "Monday,November25",
+        "Time": "6:30–8pm",
+        "Location": "AETHER",
+        "Region": "Uptown",
+        "Price": "$30 Financial Assistance is Available",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDg0MzE1OTQ4MDk2Ny11c2VyaW1hZ2UtMTcyOTIxMDkwOTA0NjY0NS00MzU1MTY1MDBfOTMyNTk1NzY4ODY2NjYyXzkxNzI5Njc4MzQwMzg1NDg2MzRfbi5qcGciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
+        "EventURL": "https://everout.com/seattle/events/seattle-naked-yoga-and-pilates/e191411/"
     },
     {
         "Title": "Trivia at the Neighbor Lady Public House",
@@ -418,6 +517,17 @@
         "EventURL": "https://everout.com/seattle/events/trivia-at-the-neighbor-lady-public-house/e166418/"
     },
     {
+        "Title": "Open Mic Night",
+        "Category": "Community",
+        "Date": "LastMondayofevery3months",
+        "Time": "6:30pm–8:30am\u00266:30–8:30pm",
+        "Location": "Folio: The Seattle Athenaeum",
+        "Region": "PikePlaceMarket",
+        "Price": "Free",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcxODc0MjA5MTAxMjg1Ny11c2VyaW1hZ2UtMTcxODQwNTY4NDAyMDQ2LVNjcmVlbnNob3QtMjAyNC0wNi0xNC1hdC0zLjU0LjMzUE0ucG5nIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/open-mic-night/e179886/"
+    },
+    {
         "Title": "King Trivia at Schilling Cider House, Seattle",
         "Category": "Community",
         "Date": "EveryMonday",
@@ -427,17 +537,6 @@
         "Price": "",
         "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyNjI1MjIyMjk1OTYzNi11c2VyaW1hZ2UtMTcyNTY1NTU5MzI1NDgxMy1TY2hpbGxpbmdfQ2lkZXJfSG91c2VfU0VBX1RyaXZpYS5wbmciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
         "EventURL": "https://everout.com/seattle/events/king-trivia-at-schilling-cider-house-seattle/e186612/"
-    },
-    {
-        "Title": "Hogan Cup Finals 2024",
-        "Category": "Comedy",
-        "Date": "Monday,November25",
-        "Time": "7–9pm",
-        "Location": "Unexpected Productions' Market Theater",
-        "Region": "PikePlaceMarket",
-        "Price": "$15",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDQ4ODA4NDQ0MDA1OS1ob2dhbi5qcGVnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
-        "EventURL": "https://everout.com/seattle/events/hogan-cup-finals-2024/e191064/"
     },
     {
         "Title": "Music Bingo",
@@ -451,15 +550,26 @@
         "EventURL": "https://everout.com/seattle/events/music-bingo/e180613/"
     },
     {
-        "Title": "Music Bingo",
+        "Title": "Hogan Cup Finals 2024",
+        "Category": "Comedy",
+        "Date": "Monday,November25",
+        "Time": "7–9pm",
+        "Location": "Unexpected Productions' Market Theater",
+        "Region": "PikePlaceMarket",
+        "Price": "$15",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDQ4ODA4NDQ0MDA1OS1ob2dhbi5qcGVnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/hogan-cup-finals-2024/e191064/"
+    },
+    {
+        "Title": "Trivia at Jules Maes",
         "Category": "Geek and Gaming",
         "Date": "EveryMonday",
         "Time": "7pm",
-        "Location": "Reuben's Brews",
-        "Region": "WestWoodland",
-        "Price": "Free",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyNzk4ODY5NzM1Mjc3My1tYi5wbmciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
-        "EventURL": "https://everout.com/seattle/events/music-bingo/e188345/"
+        "Location": "Jules Maes Saloon",
+        "Region": "Georgetown",
+        "Price": "",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTY0MDg5MzQyNDc0NjcwMi0yNzAyMjc4MTZfMzUxODQ2NDAzNDE4ODc5XzY3Mjg2MDA3ODk4NzY5NTgxNjFfbi5qcGVnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/trivia-at-jules-maes/e107825/"
     },
     {
         "Title": "Tractor Tavern Square Dance:- Evan Snoey and Friends with Caroline Oakley",
@@ -484,15 +594,15 @@
         "EventURL": "https://everout.com/seattle/events/science-on-tap/e26514/"
     },
     {
-        "Title": "Trivia at Jules Maes",
+        "Title": "Music Bingo",
         "Category": "Geek and Gaming",
         "Date": "EveryMonday",
         "Time": "7pm",
-        "Location": "Jules Maes Saloon",
-        "Region": "Georgetown",
-        "Price": "",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTY0MDg5MzQyNDc0NjcwMi0yNzAyMjc4MTZfMzUxODQ2NDAzNDE4ODc5XzY3Mjg2MDA3ODk4NzY5NTgxNjFfbi5qcGVnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
-        "EventURL": "https://everout.com/seattle/events/trivia-at-jules-maes/e107825/"
+        "Location": "Reuben's Brews",
+        "Region": "WestWoodland",
+        "Price": "Free",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyNzk4ODY5NzM1Mjc3My1tYi5wbmciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
+        "EventURL": "https://everout.com/seattle/events/music-bingo/e188345/"
     },
     {
         "Title": "🤠🪩 Dance Rangers: Monday Night Line Dance",
@@ -517,17 +627,6 @@
         "EventURL": "https://everout.com/seattle/events/quizfix-trivia-night/e102240/"
     },
     {
-        "Title": "The Taj Mahal Quintet",
-        "Category": "Live Music",
-        "Date": "MultipledatesbetweenNovember22-December1",
-        "Time": "varioustimes",
-        "Location": "Jazz Alley",
-        "Region": "Belltown",
-        "Price": "$83.50",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDgyNzE0MTE5NDYzMy1TY3JlZW5zaG90XzIwMjQtMTEtMDVfYXRfOS4xOC41M19BTS5wbmciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
-        "EventURL": "https://everout.com/seattle/events/the-taj-mahal-quintet/e191315/"
-    },
-    {
         "Title": "South Hudson Music Project Presents: New Music Mondays",
         "Category": "Live Music",
         "Date": "EveryMonday",
@@ -537,6 +636,17 @@
         "Price": "Donation",
         "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTY3NjA3MzQxMzkzNzQ2NS02MjU4NTYuanBnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
         "EventURL": "https://everout.com/seattle/events/south-hudson-music-project-presents-new-music-mondays/e139452/"
+    },
+    {
+        "Title": "The Taj Mahal Quintet",
+        "Category": "Live Music",
+        "Date": "MultipledatesbetweenNovember22-December1",
+        "Time": "varioustimes",
+        "Location": "Jazz Alley",
+        "Region": "Belltown",
+        "Price": "$83.50",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDgyNzE0MTE5NDYzMy1TY3JlZW5zaG90XzIwMjQtMTEtMDVfYXRfOS4xOC41M19BTS5wbmciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
+        "EventURL": "https://everout.com/seattle/events/the-taj-mahal-quintet/e191315/"
     },
     {
         "Title": "Amigo The Devil with Blitzen Trapper",
@@ -561,15 +671,15 @@
         "EventURL": "https://everout.com/seattle/events/monday-line-dance-night/e152206/"
     },
     {
-        "Title": "Karaoke at the 4Bs",
+        "Title": "Latto",
         "Category": "Live Music",
-        "Date": "EveryFriday–Wednesday",
+        "Date": "Monday,November25",
         "Time": "8pm",
-        "Location": "4Bs Tavern",
-        "Region": "Fremont",
-        "Price": "Free",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTY4MTkyMjcxNTA3NjgzNC11c2VyaW1hZ2UtMTY4MTg2MDcwNzMzNDU2Ni1rYXJhb2tlLWthcmFva2UtbmlnaHQta2FyYW9rZS1wYXJ0eS5qcGciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
-        "EventURL": "https://everout.com/seattle/events/karaoke-at-the-4bs/e144604/"
+        "Location": "WaMu Theater",
+        "Region": "SoDo",
+        "Price": "",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyMzY1MTQyNzc1MTc2NC11c2VyaW1hZ2UtMTcyMzY0NDAxMjAxNDI5Ni02NmJiZWU2OGJmYmE5M2I5N2IzZDgyYWJfVW50aXRsZWQtNi5qcGciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
+        "EventURL": "https://everout.com/seattle/events/latto/e184114/"
     },
     {
         "Title": "Trivia",
@@ -583,15 +693,15 @@
         "EventURL": "https://everout.com/seattle/events/trivia/e126126/"
     },
     {
-        "Title": "Latto",
+        "Title": "Karaoke at the 4Bs",
         "Category": "Live Music",
-        "Date": "Monday,November25",
+        "Date": "EveryFriday–Wednesday",
         "Time": "8pm",
-        "Location": "WaMu Theater",
-        "Region": "SoDo",
-        "Price": "",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyMzY1MTQyNzc1MTc2NC11c2VyaW1hZ2UtMTcyMzY0NDAxMjAxNDI5Ni02NmJiZWU2OGJmYmE5M2I5N2IzZDgyYWJfVW50aXRsZWQtNi5qcGciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
-        "EventURL": "https://everout.com/seattle/events/latto/e184114/"
+        "Location": "4Bs Tavern",
+        "Region": "Fremont",
+        "Price": "Free",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTY4MTkyMjcxNTA3NjgzNC11c2VyaW1hZ2UtMTY4MTg2MDcwNzMzNDU2Ni1rYXJhb2tlLWthcmFva2UtbmlnaHQta2FyYW9rZS1wYXJ0eS5qcGciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
+        "EventURL": "https://everout.com/seattle/events/karaoke-at-the-4bs/e144604/"
     },
     {
         "Title": "King Diamond",
@@ -638,17 +748,6 @@
         "EventURL": "https://everout.com/seattle/events/andy-coe-band/e25948/"
     },
     {
-        "Title": "House Party",
-        "Category": "Parties and Nightlife",
-        "Date": "EveryMonday",
-        "Time": "9pm",
-        "Location": "Chop Suey",
-        "Region": "CapitolHill",
-        "Price": "Free",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTY0NDI1Njk4NTI5MDk4NS0yOV9FZHAtc2RaWGRwLnRtcF8ucG5nIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
-        "EventURL": "https://everout.com/seattle/events/house-party/e109579/"
-    },
-    {
         "Title": "SPIN: A Weekly Dance Night Featuring Rotating Local DJs",
         "Category": "Parties and Nightlife",
         "Date": "EveryMonday",
@@ -658,17 +757,6 @@
         "Price": "Free",
         "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyMzg0NDQ2ODk1MzQ1Ny1TY3JlZW5zaG90XzIwMjQtMDgtMTZfYXRfMi40MS4wMF9QTS5wbmciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
         "EventURL": "https://everout.com/seattle/events/spin-a-weekly-dance-night-featuring-rotating-local-djs/e184467/"
-    },
-    {
-        "Title": "Royal Room Jazz Jam Session Hosted by Thomas Marriott",
-        "Category": "Live Music",
-        "Date": "EveryMonday",
-        "Time": "9pm",
-        "Location": "The Royal Room",
-        "Region": "ColumbiaCity",
-        "Price": "Free",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTY0NDI1NjY4NzY5MzYzMi1KYW1TZXNzaW9uLTY5MHg4OTEuanBlZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
-        "EventURL": "https://everout.com/seattle/events/royal-room-jazz-jam-session-hosted-by-thomas-marriott/e109578/"
     },
     {
         "Title": "Monday Night Industry Night",
@@ -682,15 +770,26 @@
         "EventURL": "https://everout.com/seattle/events/monday-night-industry-night/e167805/"
     },
     {
-        "Title": "Old Skool Mondays",
-        "Category": "Live Music",
-        "Date": "EveryMonday,everyotherweek",
-        "Time": "10pm–2am",
-        "Location": "",
-        "Region": "Uptown",
+        "Title": "House Party",
+        "Category": "Parties and Nightlife",
+        "Date": "EveryMonday",
+        "Time": "9pm",
+        "Location": "Chop Suey",
+        "Region": "CapitolHill",
         "Price": "Free",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTY0NzM2NTQzODU2NTcxNC11c2VyaW1hZ2UtMTY0NzMwMjQwOTIzODIwMS1WaWV3LXJlY2VudC1waG90b3MtMi5qcGVnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
-        "EventURL": "https://everout.com/seattle/events/old-skool-mondays/e112701/"
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTY0NDI1Njk4NTI5MDk4NS0yOV9FZHAtc2RaWGRwLnRtcF8ucG5nIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/house-party/e109579/"
+    },
+    {
+        "Title": "Royal Room Jazz Jam Session Hosted by Thomas Marriott",
+        "Category": "Live Music",
+        "Date": "EveryMonday",
+        "Time": "9pm",
+        "Location": "The Royal Room",
+        "Region": "ColumbiaCity",
+        "Price": "Free",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTY0NDI1NjY4NzY5MzYzMi1KYW1TZXNzaW9uLTY5MHg4OTEuanBlZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/royal-room-jazz-jam-session-hosted-by-thomas-marriott/e109578/"
     },
     {
         "Title": "Mutate (RKD Sound): Techno All Night Long",
@@ -702,6 +801,17 @@
         "Price": "$5",
         "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyNTkwNzI3MDY2OTMxLXVzZXJpbWFnZS0xNzI1MzQyNjAxNjEwNjk1LW11dGF0ZS0yLmpwZWciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
         "EventURL": "https://everout.com/seattle/events/mutate-rkd-sound-techno-all-night-long/e186129/"
+    },
+    {
+        "Title": "Old Skool Mondays",
+        "Category": "Live Music",
+        "Date": "EveryMonday,everyotherweek",
+        "Time": "10pm–2am",
+        "Location": "",
+        "Region": "Uptown",
+        "Price": "Free",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTY0NzM2NTQzODU2NTcxNC11c2VyaW1hZ2UtMTY0NzMwMjQwOTIzODIwMS1WaWV3LXJlY2VudC1waG90b3MtMi5qcGVnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/old-skool-mondays/e112701/"
     },
     {
         "Title": "Motown on Mondays",

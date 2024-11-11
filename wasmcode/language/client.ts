@@ -6,7 +6,7 @@ export type LanguageWorker = Comlink.Remote<WorkerHandler>
 
 export const spawnLanguageWorker = (): [LanguageWorker, IDisposable] => {
   // TODO breadchris needs to be dist?
-  const worker = new Worker(new URL('/static/wasmcode/language.worker.js', import.meta.url), {
+  const worker = new Worker(new URL('/static/wasmcode/language/language.worker.js', import.meta.url), {
     type: 'module',
   })
 

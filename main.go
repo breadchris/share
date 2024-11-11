@@ -147,6 +147,91 @@ func startServer(useTLS bool, port int) {
 		})
 		return m
 	}))
+	//http.HandleFunc("/gopls", func(w http.ResponseWriter, r *http.Request) {
+	//	println("gopls")
+	//	c, err := upgrader.Upgrade(w, r, nil)
+	//	if err != nil {
+	//		log.Println(err)
+	//		return
+	//	}
+	//	defer c.Close()
+	//
+	//	cmd := exec.Command("gopls", "-rpc.trace", "-v")
+	//	stdin, err := cmd.StdinPipe()
+	//	if err != nil {
+	//		log.Println("Failed to get stdin pipe:", err)
+	//		return
+	//	}
+	//	stdout, err := cmd.StdoutPipe()
+	//	if err != nil {
+	//		log.Println("Failed to get stdout pipe:", err)
+	//		return
+	//	}
+	//	cmd.Stderr = os.Stderr
+	//
+	//	if err := cmd.Start(); err != nil {
+	//		log.Println("Failed to start gopls:", err)
+	//		return
+	//	}
+	//	scanner := bufio.NewScanner(stdout)
+	//	go func() {
+	//		var buffer bytes.Buffer
+	//		for scanner.Scan() {
+	//			line := scanner.Text()
+	//			if strings.TrimSpace(line) == "" {
+	//				break
+	//			}
+	//			buffer.WriteString(line + "\n")
+	//		}
+	//		if err := scanner.Err(); err != nil {
+	//			fmt.Fprintf(os.Stderr, "Error reading from stdout: %v\n", err)
+	//			return
+	//		}
+	//		fmt.Printf("Response Header:\n%s\n", buffer.String())
+	//
+	//		responseBody := bufio.NewReader(stdout)
+	//		response, err := responseBody.ReadString('}')
+	//		if err != nil && err != io.EOF {
+	//			fmt.Fprintf(os.Stderr, "Error reading response body: %v\n", err)
+	//			return
+	//		}
+	//
+	//		fmt.Printf("Response Body:\n%s\n", response)
+	//		buf := make([]byte, 2048)
+	//		for {
+	//			n, err := stdout.Read(buf)
+	//			println(n)
+	//			if err != nil {
+	//				if err == io.EOF {
+	//					continue
+	//				}
+	//				log.Println("Failed to read from gopls:", err)
+	//				break
+	//			}
+	//			if n > 0 {
+	//				c.WriteMessage(websocket.TextMessage, buf[:n])
+	//			}
+	//		}
+	//	}()
+	//
+	//	for {
+	//		_, message, err := c.ReadMessage()
+	//		if err != nil {
+	//			log.Println("WebSocket read error:", err)
+	//			break
+	//		}
+	//
+	//		content := fmt.Sprintf("Content-Length: %d\r\n\r\n%s", len(message), message)
+	//		if _, err := io.WriteString(stdin, content); err != nil {
+	//			fmt.Fprintf(os.Stderr, "Failed to write to stdin: %v\n", err)
+	//			return
+	//		}
+	//	}
+	//
+	//	if err := cmd.Wait(); err != nil {
+	//		log.Println("gopls process ended with error:", err)
+	//	}
+	//})
 	p("/code", interpreted(wasmcode.New))
 	p("/github", interpreted(g.Routes))
 	p("/extension", interpreted(NewExtension))
@@ -180,12 +265,12 @@ func startServer(useTLS bool, port int) {
 					".eot":   api.LoaderFile,
 					".css":   api.LoaderCSS,
 				},
-				Outdir:            "breadchris/static",
-				Bundle:            true,
-				TreeShaking:       api.TreeShakingTrue,
-				MinifyWhitespace:  true,
-				MinifyIdentifiers: true,
-				MinifySyntax:      true,
+				Outdir:      "breadchris/static",
+				Bundle:      true,
+				TreeShaking: api.TreeShakingTrue,
+				//MinifyWhitespace:  true,
+				//MinifyIdentifiers: true,
+				//MinifySyntax:      true,
 				//Splitting:         true,
 				Format:    api.FormatESModule,
 				Write:     true,
@@ -215,6 +300,7 @@ func startServer(useTLS bool, port int) {
 			"./music.tsx",
 			"./wasmcode/monaco.tsx",
 			"./wasmcode/analyzer/analyzer.worker.ts",
+			"./wasmcode/language/language.worker.ts",
 		}
 		paths := make([]string, len(entrypoints))
 		copy(paths, entrypoints)
@@ -243,16 +329,16 @@ func startServer(useTLS bool, port int) {
 					".eot":   api.LoaderFile,
 					".css":   api.LoaderCSS,
 				},
-				Outdir:            "dist/",
-				Format:            api.FormatESModule,
-				Bundle:            true,
-				Write:             true,
-				TreeShaking:       api.TreeShakingTrue,
-				MinifyWhitespace:  true,
-				MinifyIdentifiers: true,
-				MinifySyntax:      true,
-				Sourcemap:         api.SourceMapExternal,
-				LogLevel:          api.LogLevelInfo,
+				Outdir:      "static/",
+				Format:      api.FormatESModule,
+				Bundle:      true,
+				Write:       true,
+				TreeShaking: api.TreeShakingTrue,
+				//MinifyWhitespace:  true,
+				//MinifyIdentifiers: true,
+				//MinifySyntax:      true,
+				Sourcemap: api.SourceMapInline,
+				LogLevel:  api.LogLevelInfo,
 			})
 
 			for _, warning := range result.Warnings {
@@ -268,11 +354,11 @@ func startServer(useTLS bool, port int) {
 			}
 
 			if err = x.CopyPaths([]string{
-				"dist/wasmcode",
-				"dist/analyzer@v1.wasm",
-				"dist/leapclient.js",
-				"dist/leap-bind-textarea.js",
-				"dist/node_modules",
+				"static/wasmcode",
+				"static/analyzer@v1.wasm",
+				"static/leapclient.js",
+				"static/leap-bind-textarea.js",
+				"static/node_modules",
 			}, "breadchris/static"); err != nil {
 				log.Fatalf("Failed to copy paths: %v", err)
 			}

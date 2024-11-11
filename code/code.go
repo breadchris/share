@@ -87,11 +87,11 @@ func New(d Deps) *http.ServeMux {
 				Body(
 					Div(Class("wrapper"),
 						Div(
-							Script(Src("/dist/leapclient.js")),
-							Script(Src("/dist/leap-bind-textarea.js")),
-							Link(Rel("stylesheet"), Href("/dist/code/monaco.css")),
+							Script(Src("/static/leapclient.js")),
+							Script(Src("/static/leap-bind-textarea.js")),
+							Link(Rel("stylesheet"), Href("/static/code/monaco.css")),
 							Div(Class("w-full h-full"), Id("monaco-editor"), Attr("data-filename", file), Attr("data-function", function)),
-							Script(Attr("src", "/dist/code/monaco.js"), Attr("type", "module")),
+							Script(Attr("src", "/static/code/monaco.js"), Attr("type", "module")),
 						),
 					),
 				),

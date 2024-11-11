@@ -1,14 +1,25 @@
 [
     {
-        "Title": "George Balanchine’s The Nutcracker",
-        "Category": "Winter Holidays",
-        "Date": "MultipledatesbetweenNovember29-December28",
+        "Title": "Winterfest",
+        "Category": "Winter",
+        "Date": "Everyday,fromNovember29–December31",
         "Time": "",
-        "Location": "McCaw Hall",
+        "Location": "Seattle Center",
         "Region": "Uptown",
-        "Price": "$65 - $207",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcxNzYyMzI4Nzc2ODUwNi1udXQuanBlZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
-        "EventURL": "https://everout.com/seattle/events/george-balanchines-the-nutcracker/e178565/"
+        "Price": "",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyOTcyMTgxODMyNjA1My1TY3JlZW5zaG90XzIwMjQtMTAtMjNfYXRfMy4xNi4zOFBNLnBuZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/winterfest/e190485/"
+    },
+    {
+        "Title": "PARKS ANDERSON: Black and Blue",
+        "Category": "Visual Art",
+        "Date": "EveryTuesday–Saturday,throughDecember21",
+        "Time": "",
+        "Location": "Traver Gallery",
+        "Region": "DowntownSeattle",
+        "Price": "Free",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMTAxMzgzMTUzMzkwNy1FLTQyX1BhcmtzX0FuZGVyc29uLTEtMTA2MXg4MTAuanBnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/parks-anderson-black-blue/e191659/"
     },
     {
         "Title": "Kringle's Filling Station Holiday Experience",
@@ -42,6 +53,17 @@
         "Price": "$35",
         "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcxODczNzAyOTA2NTI3OS1lbmNoYW50LmpwZWciLCAiZWRpdHMiOiB7InJlc2l6ZSI6IHsiZml0IjogImNvdmVyIiwgInBvc2l0aW9uIjogImNlbnRyZSIsICJ3aWR0aCI6IDQwMCwgImhlaWdodCI6IDMwMH19fQ==",
         "EventURL": "https://everout.com/seattle/events/enchant-christmas/e179821/"
+    },
+    {
+        "Title": "Bellevue Downtown Ice Rink",
+        "Category": "Winter Holidays",
+        "Date": "Everyday,fromNovember15,2024–January12,2025",
+        "Time": "",
+        "Location": "Bellevue Downtown Park",
+        "Region": "Bellevue",
+        "Price": "$15 - $25",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDg1MTUyMzYyMjk4My11c2VyaW1hZ2UtMTczMDg1MDIyODUzOTc2LTIwMjRfQkRBX0ljZS1yaW5rLXdlYi1hc3NldHNfU1FVQVJFLTE3LTE3LmpwZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/bellevue-downtown-ice-rink/e191538/"
     },
     {
         "Title": "Northwest Trolls: Way of the Bird King",
@@ -112,7 +134,7 @@
     {
         "Title": "Fischersund: Faux Flora",
         "Category": "Stranger Suggests",
-        "Date": "EveryTuesday–Sunday,fromNovember8,2024–January26,2025",
+        "Date": "EveryTuesday–Sunday,throughJanuary26,2025",
         "Time": "",
         "Location": "National Nordic Museum",
         "Region": "Ballard",
@@ -176,15 +198,26 @@
         "EventURL": "https://everout.com/seattle/events/miracle-on-2nd/e190592/"
     },
     {
-        "Title": "Winterfest",
-        "Category": "Winter",
-        "Date": "Everyday,fromNovember29–December31",
+        "Title": "George Balanchine’s The Nutcracker",
+        "Category": "Winter Holidays",
+        "Date": "MultipledatesbetweenNovember29-December28",
         "Time": "",
-        "Location": "Seattle Center",
+        "Location": "McCaw Hall",
         "Region": "Uptown",
-        "Price": "",
-        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyOTcyMTgxODMyNjA1My1TY3JlZW5zaG90XzIwMjQtMTAtMjNfYXRfMy4xNi4zOFBNLnBuZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
-        "EventURL": "https://everout.com/seattle/events/winterfest/e190485/"
+        "Price": "$65 - $207",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcxNzYyMzI4Nzc2ODUwNi1udXQuanBlZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/george-balanchines-the-nutcracker/e178565/"
+    },
+    {
+        "Title": "30th Annual Sheraton Grand Seattle Gingerbread Village",
+        "Category": "Winter Holidays",
+        "Date": "MultipledatesbetweenNovember21-January1,2025",
+        "Time": "9am",
+        "Location": "Sheraton Hotel",
+        "Region": "PikePineRetailCore",
+        "Price": "Donations encouraged",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDk0MTI2MDQ0NDU3OS1TY3JlZW5zaG90XzIwMjQtMTEtMDZfYXRfNS4wMC40NFBNLnBuZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/30th-annual-sheraton-grand-seattle-gingerbread-village/e191625/"
     },
     {
         "Title": "Massive: The Power of Pop Culture",
@@ -218,6 +251,28 @@
         "Price": "$29.95 - $33.95",
         "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTcyMzE2MTM0MTY1ODEyMy13aWxkLmpwZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
         "EventURL": "https://everout.com/seattle/events/wildlanterns/e183600/"
+    },
+    {
+        "Title": "Garden d’Lights",
+        "Category": "Community",
+        "Date": "MultipledatesbetweenNovember30-December31",
+        "Time": "4:30pm",
+        "Location": "Bellevue Botanical Garden",
+        "Region": "Wilburton",
+        "Price": "$5 - $8",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMTAyODE2MzE0MDg0MS11c2VyaW1hZ2UtMTczMDAzNzk3NTEzOTg3Ni0wNzNfRC1MaXRlc19MSDBBMzY1OV9NX0J1cnRvbl8yMDE4LVJFRFVDRUQuanBnIiwgImVkaXRzIjogeyJyZXNpemUiOiB7ImZpdCI6ICJjb3ZlciIsICJwb3NpdGlvbiI6ICJjZW50cmUiLCAid2lkdGgiOiA0MDAsICJoZWlnaHQiOiAzMDB9fX0=",
+        "EventURL": "https://everout.com/seattle/events/garden-dlights/e191752/"
+    },
+    {
+        "Title": "Christmas Dive Bar",
+        "Category": "Food and Drink",
+        "Date": "Everyday,throughJanuary1,2025",
+        "Time": "5pm",
+        "Location": "1512 11th Ave",
+        "Region": "Pike/Pine",
+        "Price": "",
+        "ImageURL": "https://d2sa0osf92td39.cloudfront.net/eyJidWNrZXQiOiAiZXZlcm91dC1pbWFnZXMtcHJvZHVjdGlvbiIsICJrZXkiOiAiaW1hZ2UtMTczMDk0MTYwNzIyMDMxNS1TY3JlZW5zaG90XzIwMjQtMTEtMDZfYXRfNS4wNi4zN1BNLnBuZyIsICJlZGl0cyI6IHsicmVzaXplIjogeyJmaXQiOiAiY292ZXIiLCAicG9zaXRpb24iOiAiY2VudHJlIiwgIndpZHRoIjogNDAwLCAiaGVpZ2h0IjogMzAwfX19",
+        "EventURL": "https://everout.com/seattle/events/christmas-dive-bar/e191627/"
     },
     {
         "Title": "Classified Cinema",

@@ -234,7 +234,7 @@ func New(d deps.Deps) *http.ServeMux {
 			Link(Attr("rel", "stylesheet"), Attr("type", "text/css"), Attr("href", "/dist/graph/graph.css")),
 			Style(Text(style)),
 			Div(Id("graph"), Attr("data-id", id)),
-			Script(Src("/dist/graph/graph.js"), Attr("type", "module")),
+			Script(Src("/static/graph/graph.js"), Attr("type", "module")),
 		).RenderPage(w, r)
 	})
 	return mux
