@@ -5,25 +5,214 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/wasmcode/state.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/blog.go" beforeDir="false" afterPath="$PROJECT_DIR$/blog.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/editor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/editor.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/static/CodeBlock.css" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/CodeBlock.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/static/CodeBlock.css.map" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/CodeBlock.css.map" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/static/CodeBlock.js" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/CodeBlock.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/static/CodeBlock.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/CodeBlock.js.map" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/static/editor.css" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/editor.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/static/editor.css.map" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/editor.css.map" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/static/editor.js" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/editor.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/static/editor.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/editor.js.map" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/static/wasmcode/monaco.js" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/wasmcode/monaco.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/wasmcode/autocomplete/imports/provider.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/wasmcode/autocomplete/register.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/wasmcode/autocomplete/symbols/parse.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/wasmcode/autocomplete/symbols/provider.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/wasmcode/autocomplete/symbols/snippets.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/wasmcode/monaco.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/monaco.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/breadchris/posts/proof-of-stake.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/breadchris/static/wasmcode/language/language.worker.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/cmd/common.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/cmd/flags.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/cmd/imports.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/cmd/index.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/cmd/root.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/docutil/comments.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/docutil/comments_test.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/docutil/decl.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/docutil/doc.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/docutil/filter.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/docutil/filter_test.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/docutil/func.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/docutil/testdata/bufio/bufio.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/docutil/testdata/bufio/expect.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/docutil/testdata/builtin/builtin.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/docutil/testdata/builtin/expect.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/docutil/testdata/simple/expect.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/docutil/testdata/simple/types.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/docutil/traverse.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/docutil/traverse_test.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/docutil/type.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/docutil/types.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/docutil/utils.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/docutil/value.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/imports/parser.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/imports/parser_test.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/imports/queue.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/imports/result.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/imports/scanner.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/imports/scanner_test.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/imports/testdata/badpkg/notagofile.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/imports/testdata/foopkg/emptypkg/foo.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/imports/testdata/foopkg/pkgbar/doc.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/imports/testdata/foopkg/pkgbar/pkg.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/imports/utils.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/index/parse.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/index/parse_test.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/index/scanner.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/index/traverse.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/editor/pkgindex/index/types.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/analyzer@v1.wasm" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/code/monaco.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/code/monaco.css.map" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/code/monaco.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/code/monaco.js.map" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/codicon-37A3DWZT.ttf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/go-index.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/graph/graph.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/graph/graph.css.map" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/graph/graph.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/graph/graph.js.map" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/leap-bind-textarea.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/leapclient.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/music.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/music.js.map" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/wasmcode/analyzer/analyzer.worker.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/wasmcode/analyzer/analyzer.worker.js.map" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/wasmcode/language/language.worker.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/wasmcode/monaco.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/wasmcode/monaco.css.map" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/wasmcode/monaco.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/wasmcode/monaco.js.map" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/wasmcode/autocomplete/base.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/wasmcode/autocomplete/cache.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/wasmcode/autocomplete/hover/parse.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/wasmcode/autocomplete/hover/provider.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/wasmcode/autocomplete/imports/provider.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/wasmcode/autocomplete/parser/imports.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/wasmcode/autocomplete/parser/tokens.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/wasmcode/autocomplete/register.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/wasmcode/autocomplete/symbols/parse.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/wasmcode/autocomplete/symbols/provider.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/wasmcode/autocomplete/symbols/snippets.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/wasmcode/autocomplete/utils.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-10-29.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-10-30-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-10-30.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-10-31-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-10-31.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-01-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-01.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-02-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-02.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-03-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-03.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-05-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-05.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-06-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-06.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-07-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-07.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-08-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-08.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-09-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-09.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-10-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-10.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-11-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-11.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-12-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-12.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-13-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-13.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-14-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-14.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-15-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-15.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-16-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-16.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-17-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-17.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-18-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-18.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-19-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-19.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-20-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-20.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-21-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-21.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-22-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-22.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-23-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-23.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-24-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-24.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-25-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-25.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-26-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-26.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-27-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-27.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-28-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-28.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-29-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-29.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-30-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-11-30.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-01-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-01.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-02-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-02.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-03-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-03.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-04-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-04.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-05-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-05.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-06-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-06.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-07-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-07.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-08-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-08.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-09-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-09.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-10-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-10.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-11-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-11.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-12-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-12.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-13-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-13.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-14-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-14.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-15-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-15.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-16-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-16.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-17-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-17.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-18-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-18.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-19-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-19.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-20-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-20.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-21-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-21.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-22-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-22.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-23-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-23.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-24-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-24.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-25-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-25.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-26-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-26.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-27-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-27.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-28-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-28.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-29-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-29.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-30-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-30.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-31-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2024-12-31.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2025-01-01-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2025-01-01.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2025-01-02-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2025-01-02.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2025-01-03-top.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/everout/2025-01-03.json" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -158,7 +347,7 @@
       <updated>1730866796853</updated>
       <workItem from="1730866797883" duration="126000" />
       <workItem from="1730866961438" duration="10483000" />
-      <workItem from="1730954775854" duration="44253000" />
+      <workItem from="1730954775854" duration="44679000" />
     </task>
     <servers />
   </component>
