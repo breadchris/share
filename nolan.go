@@ -58,7 +58,7 @@ func NewNolan(d deps.Deps) *http.ServeMux {
 		}
 
 		id = uuid.NewString()
-		ctx := context.WithValue(r.Context(), "baseURL", r.URL.Path)
+		ctx := context.WithValue(r.Context(), "baseURL", "/nolanisslow")
 		switch r.Method {
 		case "GET":
 			nl, err := nolan.List()
