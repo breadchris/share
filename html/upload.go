@@ -62,7 +62,6 @@ func Upload(action string) *Node {
 			H1(T("Upload a File")),
 			Form(Method("POST"), Action(action), Attr("enctype", "multipart/form-data"),
 				Input(Type("file"), Id("file"), Name("file"), Attr("required", "true")),
-				TextArea(Name("schema"), Placeholder("Schema")),
 				Button(Type("submit"), T("Submit")),
 			),
 		),

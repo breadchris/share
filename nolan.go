@@ -79,7 +79,10 @@ func NewNolan(d deps.Deps) *http.ServeMux {
 			}
 
 			DefaultLayout(
-				Upload("/"),
+				Form(Method("POST"), Action("/"), Attr("enctype", "multipart/form-data"),
+					Input(Type("file"), Id("file"), Name("file"), Attr("required", "true")),
+					Button(Type("submit"), T("Submit")),
+				),
 			).RenderPageCtx(ctx, w, r)
 			return
 		case "POST":
