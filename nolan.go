@@ -28,6 +28,8 @@ type NolanState struct {
 
 type SomeSchema struct {
 	Description string `json:"description" description:"A short description of the content"`
+	Hours       int    `json:"hours" description:"The number of hours needed to complete the task"`
+	Cost        int    `json:"cost" description:"The cost of the task in USD"`
 }
 
 func init() {
@@ -58,7 +60,7 @@ func NewNolan(d deps.Deps) *http.ServeMux {
 					H1(T(ns.Name)),
 					Div(T(ns.Error)),
 					Div(T(t)),
-					If(ns.Processing, Script(T(`
+					If(ns.Processing, Script(Raw(`
 // refresh every 5 seconds
 setTimeout(() => window.location.reload(), 5000)
 `)), Nil()),
