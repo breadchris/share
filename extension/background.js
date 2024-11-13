@@ -96,16 +96,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             body: JSON.stringify({ element, name })
         })
             .then(response => {
-                // send response to the content script
-                sendResponse({ ok: response.ok });
+                console.log(response)
                 if (response.ok) {
+                    sendResponse({ ok: response.ok, response });
                     console.log('Element sent successfully!');
                 } else {
+                    sendResponse({ ok: false, error: response });
                     console.error('Failed to send element.');
                 }
             })
             .catch(error => {
                 console.error('Error while sending element:', error);
+                sendResponse({ok: false, error})
             });
     }
     if (message.action === 'sharePage') {

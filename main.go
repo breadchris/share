@@ -242,6 +242,7 @@ func startServer(useTLS bool, port int) {
 	p("/everout", interpreted(NewEverout))
 	p("/graph", interpreted(graph.New))
 	p("/pipeport", interpreted(NewPipePort))
+	p("/nolanisslow", interpreted(NewNolan))
 
 	SetupCalendar(a)
 
@@ -537,7 +538,7 @@ func convertMovToMp4(inputFile, outputFile string) error {
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		w.Write([]byte(Upload().Render()))
+		w.Write([]byte(Upload("/upload").Render()))
 		return
 	case "POST":
 		r.ParseMultipartForm(10 << 20)

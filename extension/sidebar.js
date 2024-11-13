@@ -11,7 +11,7 @@ document.getElementById('send-element').addEventListener('click', async () => {
             if (response.ok) {
                 console.log('Element sent successfully!');
             } else {
-                console.error('Failed to send element.');
+                console.error('Failed to send element.', response);
             }
         });
         return;

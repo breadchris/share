@@ -175,16 +175,31 @@ func DynamicHTTPMux(f func(d Deps) *http.ServeMux, files ...string) func(Deps) *
 		return f
 	}
 
-	//fr, err := i.Eval(function)
-	//if err != nil {
-	//	slog.Warn("failed to eval function", "error", err)
-	//	return f
-	//}
+	// TODO breadchris not ideal, should figure out how to
+	// do this properly
+	var fr reflect.Value
+	if strings.HasPrefix(file, "/") {
+		fr, err = i.Eval(function)
+		if err != nil {
+			slog.Warn("failed to eval function", "error", err)
+			return f
+		}
+	} else {
+		sym := i.Symbols(file)
+		for k, v := range sym {
+			println(k, v)
+		}
+		s, ok := sym[file]
+		if !ok {
+			slog.Warn("failed to get symbols", "file", file)
+			return f
+		}
 
-	fr, ok := i.Symbols(file)[file][function]
-	if !ok {
-		slog.Warn("failed to eval function", "error", err, "file", file, "function", function)
-		return f
+		fr, ok = s[function]
+		if !ok {
+			slog.Warn("failed to eval function", "error", err, "file", file, "function", function)
+			return f
+		}
 	}
 
 	fn, ok := fr.Interface().(func(db Deps) *http.ServeMux)

@@ -103,6 +103,38 @@ func (ds *DocumentStore) Get(id string, val any) error {
 	return nil
 }
 
+type Document struct {
+	Id   string `json:"id"`
+	Data any    `json:"data"`
+}
+
+func (ds *DocumentStore) List() ([]Document, error) {
+	query := `SELECT id, value FROM document WHERE collection = $1`
+	rows, err := ds.db.QueryContext(context.Background(), query, ds.collection)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var documents []Document
+	for rows.Next() {
+		var (
+			id        string
+			jsonValue string
+		)
+		if err := rows.Scan(&id, &jsonValue); err != nil {
+			return nil, err
+		}
+
+		var value any
+		if err := json.Unmarshal([]byte(jsonValue), &value); err != nil {
+			return nil, err
+		}
+		documents = append(documents, Document{Id: id, Data: value})
+	}
+	return documents, nil
+}
+
 func (ds *DocumentStore) Find(ctx context.Context, key, value string) ([]any, error) {
 	if !isValidKey(key) {
 		return nil, fmt.Errorf("invalid key: %s", key)
