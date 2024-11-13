@@ -104,8 +104,8 @@ func (ds *DocumentStore) Get(id string, val any) error {
 }
 
 type Document struct {
-	Id   string `json:"id"`
-	Data any    `json:"data"`
+	Id   string          `json:"id"`
+	Data json.RawMessage `json:"data"`
 }
 
 func (ds *DocumentStore) List() ([]Document, error) {
@@ -120,17 +120,12 @@ func (ds *DocumentStore) List() ([]Document, error) {
 	for rows.Next() {
 		var (
 			id        string
-			jsonValue string
+			jsonValue json.RawMessage
 		)
 		if err := rows.Scan(&id, &jsonValue); err != nil {
 			return nil, err
 		}
-
-		var value any
-		if err := json.Unmarshal([]byte(jsonValue), &value); err != nil {
-			return nil, err
-		}
-		documents = append(documents, Document{Id: id, Data: value})
+		documents = append(documents, Document{Id: id, Data: jsonValue})
 	}
 	return documents, nil
 }

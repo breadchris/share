@@ -22,6 +22,7 @@ type NolanState struct {
 	Name       string
 	Path       string
 	Processing bool
+	Error      string
 	Data       string
 }
 
@@ -56,6 +57,7 @@ func NewNolan(d deps.Deps) *http.ServeMux {
 			DefaultLayout(
 				Div(
 					H1(T(ns.Name)),
+					Div(T(ns.Error)),
 					Div(T(t)),
 				),
 			).RenderPage(w, r)
@@ -74,14 +76,21 @@ func NewNolan(d deps.Deps) *http.ServeMux {
 
 			var items []*Node
 			for _, n := range nl {
-				ns := n.Data.(NolanState)
+				var ns NolanState
+				if err := json.Unmarshal([]byte(ns.Data), &ns); err != nil {
+					println(err.Error())
+					continue
+				}
 				items = append(items, A(Attr("href", "/"+n.Id), T(ns.Name)))
 			}
 
 			DefaultLayout(
-				Form(Method("POST"), Action("/"), Attr("enctype", "multipart/form-data"),
-					Input(Type("file"), Id("file"), Name("file"), Attr("required", "true")),
-					Button(Type("submit"), T("Submit")),
+				Div(
+					Ch(items),
+					Form(Method("POST"), Action("/"), Attr("enctype", "multipart/form-data"),
+						Input(Type("file"), Id("file"), Name("file"), Attr("required", "true")),
+						Button(Type("submit"), T("Submit")),
+					),
 				),
 			).RenderPageCtx(ctx, w, r)
 			return
@@ -120,25 +129,31 @@ func NewNolan(d deps.Deps) *http.ServeMux {
 				return
 			}
 
+			ns := NolanState{
+				Name:       h.Filename,
+				Path:       name,
+				Processing: true,
+			}
+			if err := nolan.Set(id, ns); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 			go func() {
 				ss := &SomeSchema{}
 				if err := ParsePDFWithSchema(d.Config.ExternalURL, d.AI, name, ss); err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
-
-				if err := nolan.Set(id, NolanState{
-					Name:       h.Filename,
-					Path:       name,
-					Processing: true,
-				}); err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
+					ns.Error = err.Error()
+					if err := nolan.Set(id, ns); err != nil {
+						println(err.Error())
+					}
 					return
 				}
 
 				b, err := json.Marshal(ss)
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
+					ns.Error = err.Error()
+					if err := nolan.Set(id, ns); err != nil {
+						println(err.Error())
+					}
 					return
 				}
 
@@ -148,7 +163,10 @@ func NewNolan(d deps.Deps) *http.ServeMux {
 					Processing: false,
 					Data:       string(b),
 				}); err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
+					ns.Error = err.Error()
+					if err := nolan.Set(id, ns); err != nil {
+						println(err.Error())
+					}
 					return
 				}
 			}()
