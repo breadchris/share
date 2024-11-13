@@ -22,7 +22,7 @@ type NolanState struct {
 	Name       string
 	Path       string
 	Processing bool
-	Metadata   map[string]string
+	Data       string
 }
 
 type SomeSchema struct {
@@ -49,9 +49,14 @@ func NewNolan(d deps.Deps) *http.ServeMux {
 				return
 			}
 
+			t := ns.Data
+			if ns.Processing {
+				t = "Processing..."
+			}
 			DefaultLayout(
 				Div(
 					H1(T(ns.Name)),
+					Div(T(t)),
 				),
 			).RenderPage(w, r)
 			return
@@ -70,7 +75,7 @@ func NewNolan(d deps.Deps) *http.ServeMux {
 			var items []*Node
 			for _, n := range nl {
 				ns := n.Data.(NolanState)
-				items = append(items, A(Attr("href", "/"+n.Id), T(ns.Metadata["file"])))
+				items = append(items, A(Attr("href", "/"+n.Id), T(ns.Name)))
 			}
 
 			DefaultLayout(
@@ -112,15 +117,33 @@ func NewNolan(d deps.Deps) *http.ServeMux {
 				return
 			}
 
+			ss := &SomeSchema{}
+			if err := ParsePDFWithSchema(d.Config.ExternalURL, d.AI, name, ss); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
 			if err := nolan.Set(id, NolanState{
-				Name: h.Filename,
-				Path: name,
+				Name:       h.Filename,
+				Path:       name,
+				Processing: true,
 			}); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 
-			if err := ParsePDFWithSchema(d.Config.ExternalURL, d.AI, name, &SomeSchema{}); err != nil {
+			b, err := json.Marshal(ss)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			if err := nolan.Set(id, NolanState{
+				Name:       h.Filename,
+				Path:       name,
+				Processing: false,
+				Data:       string(b),
+			}); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}

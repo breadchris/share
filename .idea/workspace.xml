@@ -5,17 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/nolan.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/nolan_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/code.go" beforeDir="false" afterPath="$PROJECT_DIR$/code/code.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/doc.go" beforeDir="false" afterPath="$PROJECT_DIR$/db/doc.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/background.js" beforeDir="false" afterPath="$PROJECT_DIR$/extension/background.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/sidebar.js" beforeDir="false" afterPath="$PROJECT_DIR$/extension/sidebar.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/upload.go" beforeDir="false" afterPath="$PROJECT_DIR$/html/upload.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/nolan.go" beforeDir="false" afterPath="$PROJECT_DIR$/nolan.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -176,7 +166,7 @@
       <updated>1730866796853</updated>
       <workItem from="1730866797883" duration="126000" />
       <workItem from="1730866961438" duration="10483000" />
-      <workItem from="1730954775854" duration="54991000" />
+      <workItem from="1730954775854" duration="55317000" />
     </task>
     <servers />
   </component>
