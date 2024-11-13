@@ -120,36 +120,39 @@ func NewNolan(d deps.Deps) *http.ServeMux {
 				return
 			}
 
-			ss := &SomeSchema{}
-			if err := ParsePDFWithSchema(d.Config.ExternalURL, d.AI, name, ss); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
+			go func() {
+				ss := &SomeSchema{}
+				if err := ParsePDFWithSchema(d.Config.ExternalURL, d.AI, name, ss); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 
-			if err := nolan.Set(id, NolanState{
-				Name:       h.Filename,
-				Path:       name,
-				Processing: true,
-			}); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
+				if err := nolan.Set(id, NolanState{
+					Name:       h.Filename,
+					Path:       name,
+					Processing: true,
+				}); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 
-			b, err := json.Marshal(ss)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
+				b, err := json.Marshal(ss)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 
-			if err := nolan.Set(id, NolanState{
-				Name:       h.Filename,
-				Path:       name,
-				Processing: false,
-				Data:       string(b),
-			}); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
+				if err := nolan.Set(id, NolanState{
+					Name:       h.Filename,
+					Path:       name,
+					Processing: false,
+					Data:       string(b),
+				}); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}()
+			http.Redirect(w, r, "/nolanisslow/"+id, http.StatusSeeOther)
 			return
 		}
 		w.Write([]byte("invalid method"))
