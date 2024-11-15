@@ -19,6 +19,17 @@ type CodeRequest struct {
 // analyze code https://github.com/x1unix/go-playground/tree/9cc0c4d80f44fb3589fcb22df432563fa065feed/internal/analyzer
 func New(d Deps) *http.ServeMux {
 	mux := http.NewServeMux()
+	mux.HandleFunc("/completion", func(w http.ResponseWriter, r *http.Request) {
+		type CompletionResponse struct {
+			Completion string `json:"completion"`
+		}
+
+		c := CompletionResponse{
+			Completion: "hello",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(c)
+	})
 	mux.HandleFunc("/sidebar", func(w http.ResponseWriter, r *http.Request) {
 		code := `
 package main

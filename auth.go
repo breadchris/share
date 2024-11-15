@@ -11,31 +11,20 @@ import (
 	"github.com/markbates/goth/gothic"
 	"github.com/markbates/goth/providers/github"
 	"github.com/markbates/goth/providers/google"
-	"gorm.io/driver/sqlite"
+	"github.com/samber/lo"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
-	"log"
 	"log/slog"
 	"net/http"
 	"time"
 )
 
 var (
-	db           *gorm.DB
 	invites      []Invite
 	inviteLookup = map[string]string{}
 )
 
 func init() {
-	var err error
-	db, err = gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
-	if err != nil {
-		log.Fatalf("failed to connect database: %v", err)
-	}
-
-	// AutoMigrate will create or update the tables based on the models
-	db.AutoMigrate(&models.User{}, &models.Identity{}, &models.Group{}, &models.GroupMembership{})
-
 	i := uuid.NewString()
 	inviteLookup[i] = i
 	println("Invite code:", i)
@@ -52,14 +41,19 @@ type Auth struct {
 	c   config.AppConfig
 	h   *gothic.Handler
 	cfg config.AppConfig
+	db  *gorm.DB
 }
 
-func NewAuth(s *session.SessionManager, e *SMTPEmail, c config.AppConfig) *Auth {
+func NewAuth(
+	s *session.SessionManager, e *SMTPEmail, c config.AppConfig,
+	db *gorm.DB,
+) *Auth {
 	return &Auth{
 		s:   s,
 		e:   e,
 		c:   c,
 		cfg: c,
+		db:  db,
 		h: gothic.NewHandler(
 			sessions.NewCookieStore([]byte(c.SessionSecret)),
 			gothic.WithProviders(
@@ -100,14 +94,14 @@ func (a *Auth) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 	// find or create user by email
 	var user models.User
-	if err := db.Where("username = ?", u.Email).First(&user).Error; err != nil {
+	if err := a.db.Where("username = ?", u.Email).First(&user).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			user = models.User{
 				ID:        uuid.NewString(),
 				CreatedAt: time.Now(),
 				Username:  u.Email,
 			}
-			if err := db.Create(&user).Error; err != nil {
+			if err := a.db.Create(&user).Error; err != nil {
 				http.Error(w, "Database error", http.StatusInternalServerError)
 				return
 			}
@@ -147,7 +141,7 @@ func (s *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		var user models.User
-		if err := db.Where("secrets LIKE ?", fmt.Sprintf("%%%s%%", sec)).First(&user).Error; err == nil {
+		if err := s.db.Where("secrets LIKE ?", fmt.Sprintf("%%%s%%", sec)).First(&user).Error; err == nil {
 			s.s.SetUserID(r.Context(), user.ID)
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
@@ -162,7 +156,7 @@ func (s *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 		f := r.FormValue("email")
 		if f != "" {
 			var user models.User
-			if err := db.Preload(clause.Associations).Where("username = ?", f).First(&user).Error; err == nil {
+			if err := s.db.Preload(clause.Associations).Where("username = ?", f).First(&user).Error; err == nil {
 				msg := fmt.Sprintf("Click <a href=\"%s/login?sec=%s\">here</a> to login.", s.c.ExternalURL, user.Secrets[0])
 				e := s.e.SendRecoveryEmail(user.Username, "Recover your account", msg, user.Secrets[0].Secret)
 				if e != nil {
@@ -179,7 +173,7 @@ func (s *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 		sec := r.FormValue("id")
 		var user models.User
-		if err := db.Where("secrets LIKE ?", fmt.Sprintf("%%%s%%", sec)).First(&user).Error; err == nil {
+		if err := s.db.Where("secrets LIKE ?", fmt.Sprintf("%%%s%%", sec)).First(&user).Error; err == nil {
 			s.s.SetUserID(r.Context(), user.ID)
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
@@ -214,7 +208,7 @@ func (s *Auth) handleRegister(w http.ResponseWriter, r *http.Request) {
 		invites = append(invites, Invite{From: inviteFrom, To: id})
 
 		var existingUser models.User
-		if err := db.Where("username = ?", email).First(&existingUser).Error; err == nil {
+		if err := s.db.Where("username = ?", email).First(&existingUser).Error; err == nil {
 			http.Error(w, "User already exists", http.StatusBadRequest)
 			return
 		}
@@ -225,7 +219,7 @@ func (s *Auth) handleRegister(w http.ResponseWriter, r *http.Request) {
 			Username:  email,
 			CreatedAt: time.Now(),
 		}
-		db.Create(&user)
+		s.db.Create(&user)
 		s.s.SetUserID(r.Context(), id)
 		Div(
 			Img(Src("/qr?data="+sec)),
@@ -233,6 +227,77 @@ func (s *Auth) handleRegister(w http.ResponseWriter, r *http.Request) {
 			A(Href("/"), T("go home")),
 		).RenderPage(w, r)
 	}
+}
+
+func (s *Auth) accountHandler(w http.ResponseWriter, r *http.Request) {
+	id, err := s.s.GetUserID(r.Context())
+	if err != nil {
+		http.Error(w, "Not logged in", http.StatusUnauthorized)
+		return
+	}
+
+	var user models.User
+	if err := s.db.Where("id = ?", id).First(&user).Error; err != nil {
+		http.Error(w, "User not found", http.StatusNotFound)
+		return
+	}
+
+	// Fetch invites from inviteLookup
+	var inv []string
+	for k, v := range inviteLookup {
+		if v == id {
+			inv = append(inv, k)
+		}
+	}
+
+	Html(
+		Head(
+			Meta(Charset("UTF-8")),
+			Meta(Name("viewport"), Content("width=device-width, initial-scale=1.0")),
+			Title(T("Authentication")),
+			Script(Src("https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js")),
+			Link(Rel("stylesheet"), Href("https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.css")),
+			Script(Src("https://cdn.tailwindcss.com")),
+		),
+		Body(Class("bg-gray-100 flex items-center justify-center min-h-screen"),
+			Div(Class("bg-white p-8 rounded shadow-md w-full max-w-md"),
+				H1(Class("text-2xl font-bold mb-4"), T("Home")),
+				P(T("Hello "+user.Username)),
+				Hr(Class("my-5")),
+				Text("User Invites"),
+				Ch(
+					lo.Map(
+						lo.Filter(invites, func(i Invite, idx int) bool {
+							return i.From == id
+						}),
+						func(i Invite, idx int) *Node {
+							if us, ok := inviteLookup[i.To]; ok {
+								return Div(Class("border p-4 rounded-lg bg-gray-50"),
+									Text(us),
+								)
+							}
+							return nil
+						},
+					),
+				),
+				Hr(Class("my-5")),
+				P(Class("text-lg"), T("Invites")),
+				Form(
+					HxPost("/invite"),
+					HxTarget("#result"),
+					Button(Class("btn"), Type("submit"), T("Invite")),
+				),
+				Div(Id("result")),
+				Ch(
+					lo.Map(inv, func(i string, idx int) *Node {
+						return Div(Class("border p-4 rounded-lg bg-gray-50"),
+							A(Href("/register?invite="+i), T("/register?invite="+i)),
+						)
+					}),
+				),
+			),
+		),
+	).RenderPage(w, r)
 }
 
 func LoginPage(s AuthState) *Node {

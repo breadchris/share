@@ -12,6 +12,7 @@ import (
 	"github.com/breadchris/share/test"
 	"github.com/breadchris/share/user"
 	"github.com/breadchris/share/x"
+	"github.com/fsnotify/fsnotify"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"html/template"
@@ -82,7 +83,6 @@ func startServer(useTLS bool, port int) {
 	}
 
 	setupWebauthn()
-	setupPrompt()
 	setupCursor()
 	setupRecipe()
 	fileUpload()
@@ -936,4 +936,57 @@ func NewTLSConfig(
 		Certificates: []tls.Certificate{cert},
 		ClientCAs:    certPool,
 	}
+}
+
+func WatchFilesAndFolders(paths []string, callback func(string)) error {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return fmt.Errorf("failed to create watcher: %w", err)
+	}
+	defer watcher.Close()
+
+	// Add the paths to the watcher
+	for _, path := range paths {
+		absPath, err := filepath.Abs(path)
+		if err != nil {
+			return fmt.Errorf("failed to get absolute path for %s: %w", path, err)
+		}
+
+		err = watcher.Add(absPath)
+		if err != nil {
+			return fmt.Errorf("failed to add %s to watcher: %w", absPath, err)
+		}
+	}
+
+	done := make(chan bool)
+
+	go func() {
+		for {
+			select {
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return
+				}
+				if event.Op != fsnotify.Write {
+					continue
+				}
+
+				absPath, err := filepath.Abs(event.Name)
+				if err != nil {
+					log.Printf("failed to get absolute path for %s: %v", event.Name, err)
+					continue
+				}
+				callback(absPath)
+
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					return
+				}
+				log.Printf("error: %v", err)
+			}
+		}
+	}()
+
+	<-done
+	return nil
 }

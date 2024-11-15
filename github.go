@@ -28,6 +28,8 @@ type Github struct {
 	s *session.SessionManager
 }
 
+var users = map[string]*User{}
+
 func NewGithub(d deps.Deps) *Github {
 	return &Github{
 		h: gothic.NewHandler(
@@ -75,7 +77,6 @@ func (s *Github) Routes(d deps.Deps) *http.ServeMux {
 			// TODO breadchris replace with sql
 			user.Repo = repo
 			users[u] = user
-			saveJSON(authFile, users)
 
 			repoDir := fmt.Sprintf("%s/%s", user.GithubUsername, repo)
 			repoURL := fmt.Sprintf("https://github.com/%s.git", repoDir)
@@ -307,7 +308,6 @@ func (s *Github) callback(w http.ResponseWriter, r *http.Request) {
 		users[id].AccessToken = u.AccessToken
 		users[id].GithubUsername = u.NickName
 	}
-	saveJSON(authFile, users)
 	s.s.SetUserID(r.Context(), id)
 
 	http.Redirect(w, r, "/github/commit", http.StatusFound)

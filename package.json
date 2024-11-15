@@ -29,7 +29,7 @@
     "monaco-editor": "^0.50.0",
     "monaco-languageclient": "^8.8.3",
     "monaco-vim": "^0.4.1",
-    "monacopilot": "^0.14.0",
+    "monacopilot": "^0.14.1",
     "nanoid": "4.0.0",
     "pdfjs-dist": "^3.4.120",
     "randomcolor": "0.6.2",

@@ -13,6 +13,7 @@ import {GoSyntaxChecker} from "./checker";
 import {ParseResponse} from "./analyzer/bootstrap";
 import {spawnLanguageWorker} from "./language/client";
 import {DocumentMetadataCache} from "./autocomplete/cache";
+import {registerCompletion} from "monacopilot";
 
 function listenEvent(eventName, callback) {
     document.addEventListener(eventName, (event) => {
@@ -184,6 +185,12 @@ export const CodeEditor = ({ props }) => {
     const editorDidMount = (editor, monaco, file) => {
         editorInstance.current = editor;
         monacoInstance.current = monaco;
+
+
+        registerCompletion(monaco, editor, {
+            endpoint: '/code/completion',
+            language: 'go',
+        });
 
         (async () => {
             await runCode()
