@@ -254,6 +254,7 @@ func startServer(useTLS bool, port int) {
 	p("/nolanisslow", interpreted(NewNolan))
 
 	SetupCalendar(a)
+	SetupWebsockets()
 
 	go func() {
 		paths := []string{
