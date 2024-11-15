@@ -125,7 +125,9 @@ func startServer(useTLS bool, port int) {
 	}
 
 	z := NewZineMaker(deps)
-
+	z.SetupZineRoutes()
+	
+	p("/websocket", interpreted(WebsocketUI))
 	p("/test", interpreted(test.New))
 	p("/user", interpreted(user.New))
 	p("/paint", interpreted(paint.New))
@@ -137,7 +139,7 @@ func startServer(useTLS bool, port int) {
 	p("/leaps", lm.Mux)
 	p("/vote", interpreted(NewVote))
 	p("/breadchris", interpreted(breadchris.New))
-	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./eventcalendar.go", "./everout.go"}))
+	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./eventcalendar.go", "./everout.go", "./websocket.go"}))
 	p("/filecode", func() *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -258,8 +260,6 @@ func startServer(useTLS bool, port int) {
 	p("/nolanisslow", interpreted(NewNolan))
 	//p("/calendar", interpreted(calendar.NewCalendar))
 	p("/calendar", interpreted(NewCalendar))
-
-	SetupWebsockets()
 
 	go func() {
 		paths := []string{
@@ -382,8 +382,6 @@ func startServer(useTLS bool, port int) {
 			log.Fatalf("Failed to watch files: %v", err)
 		}
 	}()
-
-	z.SetupZineRoutes()
 
 	http.HandleFunc("/register", a.handleRegister)
 	http.HandleFunc("/account", a.accountHandler)

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	"github.com/gorilla/websocket"
 )
@@ -42,8 +43,13 @@ var hub = Hub{
 	unregister: make(chan *WebsocketClient),
 }
 
-func WebsocketUI() {
-	http.HandleFunc("/websocket/", func(w http.ResponseWriter, r *http.Request) {
+func WebsocketUI(d deps.Deps) *http.ServeMux {
+	setupHandlers()
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/ws", websocketHandler2)
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		Html(
 			Head(
 				Title(T("Websocket Test")),
@@ -75,7 +81,7 @@ func WebsocketUI() {
 					Id("container-1"),
 					Attr("hx-swap-oob", "innerHTML"),
 				),
-				
+
 				Div(
 					Id("container-2"),
 					Attr("hx-swap-oob", "innerHTML"),
@@ -83,58 +89,50 @@ func WebsocketUI() {
 			),
 			)).RenderPage(w, r)
 	})
-}
-
-func SetupWebsockets() {
-	go hub.run()
-	WebsocketUI()
-	http.HandleFunc("/websocket/ws", websocketHandler2)
-
-	setupHandlers()
+	return mux
 }
 
 func setupHandlers() {
 	commandHandlers["1"] = func() string {
-        message := Div(
-            Id("container-1"),
-            Attr("hx-swap-oob", "innerHTML"),
-            T("container 1"),
-        ).Render()
-        return message
-    }
+		message := Div(
+			Id("container-1"),
+			Attr("hx-swap-oob", "innerHTML"),
+			T("container 1"),
+		).Render()
+		return message
+	}
 
-    commandHandlers["2"] = func() string {
-        message := Div(
-            Id("container-2"),
-            Attr("hx-swap-oob", "innerHTML"),
-            T("container 2"),
-        ).Render()
-        return message
-    }
+	commandHandlers["2"] = func() string {
+		message := Div(
+			Id("container-2"),
+			Attr("hx-swap-oob", "innerHTML"),
+			T("container 2"),
+		).Render()
+		return message
+	}
 
-    commandHandlers["ping"] = func() string {
-        message := Div(
-            Id("container-1"),
-            Attr("hx-swap-oob", "innerHTML"),
-            T("Pong"),
-        ).Render()
-        return message
-    }
+	commandHandlers["ping"] = func() string {
+		message := Div(
+			Id("container-1"),
+			Attr("hx-swap-oob", "innerHTML"),
+			T("Pong"),
+		).Render()
+		return message
+	}
 }
-
 
 func runCommand(command string) string {
 	if handler, ok := commandHandlers[command]; ok {
-        return handler()
-    } else {
-        log.Println("Unknown command:", command)
-        message := Div(
-            Id("container-1"),
-            Attr("hx-swap-oob", "innerHTML"),
-            T("Unknown command"),
-        ).Render()
-        return message
-    }
+		return handler()
+	} else {
+		log.Println("Unknown command:", command)
+		message := Div(
+			Id("container-1"),
+			Attr("hx-swap-oob", "innerHTML"),
+			T("Unknown command"),
+		).Render()
+		return message
+	}
 }
 
 func (h *Hub) run() {
