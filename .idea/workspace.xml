@@ -5,8 +5,38 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/breadchris/posts/go-append.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/models/models.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/share/ext/Base.lproj/MainInterface.storyboard" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/share/ext/Info.plist" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/share/ext/ShareViewController.swift" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/share/share.xcodeproj/project.pbxproj" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/share/share.xcodeproj/project.xcworkspace/contents.xcworkspacedata" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/share/share.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/share/share.xcodeproj/project.xcworkspace/xcuserdata/hacked.xcuserdatad/UserInterfaceState.xcuserstate" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/share/share.xcodeproj/xcuserdata/hacked.xcuserdatad/xcschemes/xcschememanagement.plist" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/share/share/Assets.xcassets/AccentColor.colorset/Contents.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/share/share/Assets.xcassets/AppIcon.appiconset/Contents.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/share/share/Assets.xcassets/Contents.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/share/share/ContentView.swift" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/share/share/Preview Content/Preview Assets.xcassets/Contents.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/share/share/shareApp.swift" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-models.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/symbol/gorm_io-driver-sqlite.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/symbol/gorm_io-gorm-schema.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/symbol/gorm_io-gorm.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/user/user.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/nolan.go" beforeDir="false" afterPath="$PROJECT_DIR$/nolan.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/auth.go" beforeDir="false" afterPath="$PROJECT_DIR$/auth.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/code.go" beforeDir="false" afterPath="$PROJECT_DIR$/code/code.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/deps/deps.go" beforeDir="false" afterPath="$PROJECT_DIR$/deps/deps.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notes.go" beforeDir="false" afterPath="$PROJECT_DIR$/notes.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/symbol.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/symbol.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/user/group.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/vote.go" beforeDir="false" afterPath="$PROJECT_DIR$/vote.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -167,7 +197,7 @@
       <updated>1730866796853</updated>
       <workItem from="1730866797883" duration="126000" />
       <workItem from="1730866961438" duration="10483000" />
-      <workItem from="1730954775854" duration="56807000" />
+      <workItem from="1730954775854" duration="74320000" />
     </task>
     <servers />
   </component>

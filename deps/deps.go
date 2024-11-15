@@ -6,10 +6,11 @@ import (
 	"github.com/breadchris/share/editor/leaps"
 	"github.com/breadchris/share/session"
 	"github.com/sashabaranov/go-openai"
+	"gorm.io/gorm"
 )
 
 type Deps struct {
-	DB      *db.DBAny
+	DB      *gorm.DB
 	Docs    *db.DocumentStore
 	Session *session.SessionManager
 	Leaps   *leaps.Leaps

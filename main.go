@@ -5,8 +5,15 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/calendar"
+	"github.com/breadchris/share/graph"
+	"github.com/breadchris/share/models"
+	"github.com/breadchris/share/paint"
 	"github.com/breadchris/share/test"
+	"github.com/breadchris/share/user"
 	"github.com/breadchris/share/x"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -19,10 +26,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-
-	"github.com/breadchris/share/calendar"
-	"github.com/breadchris/share/graph"
-	"github.com/breadchris/share/paint"
 
 	"github.com/breadchris/share/breadchris"
 	"github.com/breadchris/share/code"
@@ -85,9 +88,14 @@ func startServer(useTLS bool, port int) {
 	fileUpload()
 	go scheduleScraping()
 
-	db, err := NewDBAny("data/testdb/")
+	db, err := gorm.Open(sqlite.Open("data/db.sqlite"), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Failed to create db: %v", err)
+	}
+
+	if err := db.AutoMigrate(
+		&models.User{}, &models.Identity{}, &models.Group{}, &models.GroupMembership{}); err != nil {
+		log.Fatalf("Failed to migrate db: %v", err)
 	}
 
 	oai := openai.NewClient(appConfig.OpenAIKey)
@@ -114,6 +122,7 @@ func startServer(useTLS bool, port int) {
 	z := NewZineMaker(deps)
 
 	p("/test", interpreted(test.New))
+	p("/user", interpreted(user.New))
 	p("/paint", interpreted(paint.New))
 	p("/notes", interpreted(NewNotes))
 	p("/llm", interpreted(llm.NewChatGPT))

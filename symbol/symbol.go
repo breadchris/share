@@ -36,6 +36,8 @@
 //go:generate yaegi extract github.com/gorilla/sessions
 //go:generate yaegi extract github.com/markbates/goth/gothic
 //go:generate yaegi extract golang.org/x/oauth2
+//go:generate yaegi extract gorm.io/gorm
+//go:generate yaegi extract github.com/breadchris/share/models
 
 package symbol
 

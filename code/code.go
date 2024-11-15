@@ -186,9 +186,9 @@ func DynamicHTTPMux(f func(d Deps) *http.ServeMux, files ...string) func(Deps) *
 		}
 	} else {
 		sym := i.Symbols(file)
-		for k, v := range sym {
-			println(k, v)
-		}
+		//for k, v := range sym {
+		//	println(k, v)
+		//}
 		s, ok := sym[file]
 		if !ok {
 			slog.Warn("failed to get symbols", "file", file)

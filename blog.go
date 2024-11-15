@@ -197,14 +197,14 @@ func (s *Auth) blogHandler(w http.ResponseWriter, r *http.Request) {
 	if id != "" {
 		for _, e := range entries {
 			if e.ID == id {
-				ur, ok := users[e.UserID]
-				if !ok {
-					ur = &User{ID: e.UserID, Email: "unknown"}
-				}
-				e.User = EntryUser{
-					ID:    ur.ID,
-					Email: ur.Email,
-				}
+				//ur, ok := users[e.UserID]
+				//if !ok {
+				//	ur = &User{ID: e.UserID, Email: "unknown"}
+				//}
+				//e.User = EntryUser{
+				//	ID:    ur.ID,
+				//	Email: ur.Email,
+				//}
 				renderer := blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{})
 
 				b := blackfriday.Run([]byte(e.Text), blackfriday.WithRenderer(renderer), blackfriday.WithExtensions(blackfriday.HardLineBreak))
@@ -218,14 +218,14 @@ func (s *Auth) blogHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	e := lo.Map(entries, func(e Entry, idx int) Entry {
-		ur, ok := users[e.UserID]
-		if !ok {
-			ur = &User{ID: e.UserID, Email: "unknown"}
-		}
-		e.User = EntryUser{
-			ID:    ur.ID,
-			Email: ur.Email,
-		}
+		//ur, ok := users[e.UserID]
+		//if !ok {
+		//	ur = &User{ID: e.UserID, Email: "unknown"}
+		//}
+		//e.User = EntryUser{
+		//	ID:    ur.ID,
+		//	Email: ur.Email,
+		//}
 		renderer := blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{})
 
 		b := blackfriday.Run([]byte(e.Text), blackfriday.WithRenderer(renderer), blackfriday.WithExtensions(blackfriday.HardLineBreak))

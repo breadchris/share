@@ -76,6 +76,7 @@ func NewNotes(d deps.Deps) *http.ServeMux {
 			}
 
 			md := r.FormValue("markdown")
+			//h := r.FormValue("html")
 			//bn := r.FormValue("blocknote")
 
 			renderer := blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{})
@@ -611,6 +612,7 @@ func RenderMemo(cal calendar.State, notesState NotesState) *Node {
 										//),
 										Div(Class("w-full"), Id("editor")),
 										Input(Type("hidden"), Id("markdown"), Name("markdown")),
+										Input(Type("hidden"), Id("html"), Name("html")),
 										Input(Type("hidden"), Id("blocknote"), Name("blocknote")),
 									),
 									Div(

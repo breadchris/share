@@ -156,7 +156,7 @@ func NewVote(d deps.Deps) *http.ServeMux {
 		id := r.PathValue("id")
 		if id == "" {
 			poll.ID = uuid.NewString()
-			err = d.DB.Set(poll.ID, poll)
+			err = d.Docs.Set(poll.ID, poll)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -167,8 +167,8 @@ func NewVote(d deps.Deps) *http.ServeMux {
 			if strings.HasSuffix(id, "/") {
 				id = id[:len(id)-1]
 			}
-			ok := d.DB.Get(id, &poll)
-			if !ok {
+			err = d.Docs.Get(id, &poll)
+			if err != nil {
 				http.Error(w, "Poll not found", http.StatusNotFound)
 				return
 			}
@@ -193,7 +193,7 @@ func NewVote(d deps.Deps) *http.ServeMux {
 				return
 			}
 			poll = newPoll
-			err = d.DB.Set(poll.ID, poll)
+			err = d.Docs.Set(poll.ID, poll)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -228,7 +228,7 @@ func NewVote(d deps.Deps) *http.ServeMux {
 				return
 			}
 			poll = newPoll
-			err = d.DB.Set(poll.ID, poll)
+			err = d.Docs.Set(poll.ID, poll)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -240,7 +240,7 @@ func NewVote(d deps.Deps) *http.ServeMux {
 		f := BuildForm("", &poll)
 
 		if fieldName != "" {
-			err := d.DB.Set(poll.ID, poll)
+			err := d.Docs.Set(poll.ID, poll)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -291,7 +291,7 @@ func NewVote(d deps.Deps) *http.ServeMux {
 			id = id[:len(id)-1]
 		}
 		var poll Poll
-		if ok := d.DB.Get(id, &poll); !ok {
+		if err := d.Docs.Get(id, &poll); err != nil {
 			http.Error(w, "Poll not found", http.StatusNotFound)
 			return
 		}
@@ -319,7 +319,7 @@ func NewVote(d deps.Deps) *http.ServeMux {
 				recipeVoteCount++
 			}
 
-			err := d.DB.Set(id, poll)
+			err := d.Docs.Set(id, poll)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
