@@ -18,6 +18,10 @@ var websockerUpgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
+type CommandFunc func() string
+
+var commandHandlers = make(map[string]CommandFunc)
+
 type WebsocketClient struct {
 	conn *websocket.Conn
 	send chan []byte
@@ -85,34 +89,52 @@ func SetupWebsockets() {
 	go hub.run()
 	WebsocketUI()
 	http.HandleFunc("/websocket/ws", websocketHandler2)
+
+	setupHandlers()
 }
 
-func runCommand(command string, client *WebsocketClient) {
-	switch command {
-	case "1":
-		message := Div(
-			Id("container-1"),
-			Attr("hx-swap-oob", "innerHTML"),
-			T("container 1"),
-		).Render()
-		client.send <- []byte(message)
-	case "2":
-		message := Div(
-			Id("container-2"),
-			Attr("hx-swap-oob", "innerHTML"),
-			T("container 2"),
-		).Render()
-		client.send <- []byte(message)
-	case "ping":
-		pingMessage := Div(
-			Id("container-1"),
-			Attr("hx-swap-oob", "innerHTML"),
-			T("Pong"),
-		).Render()
-		hub.broadcast <- []byte(pingMessage)
-	default:
-		log.Println("Unknown command:", command)
-	}
+func setupHandlers() {
+	commandHandlers["1"] = func() string {
+        message := Div(
+            Id("container-1"),
+            Attr("hx-swap-oob", "innerHTML"),
+            T("container 1"),
+        ).Render()
+        return message
+    }
+
+    commandHandlers["2"] = func() string {
+        message := Div(
+            Id("container-2"),
+            Attr("hx-swap-oob", "innerHTML"),
+            T("container 2"),
+        ).Render()
+        return message
+    }
+
+    commandHandlers["ping"] = func() string {
+        message := Div(
+            Id("container-1"),
+            Attr("hx-swap-oob", "innerHTML"),
+            T("Pong"),
+        ).Render()
+        return message
+    }
+}
+
+
+func runCommand(command string) string {
+	if handler, ok := commandHandlers[command]; ok {
+        return handler()
+    } else {
+        log.Println("Unknown command:", command)
+        message := Div(
+            Id("container-1"),
+            Attr("hx-swap-oob", "innerHTML"),
+            T("Unknown command"),
+        ).Render()
+        return message
+    }
 }
 
 func (h *Hub) run() {
@@ -176,7 +198,8 @@ func (c *WebsocketClient) readPump(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		fmt.Println("Command:", command)
-		runCommand(command, c)
+		cmdMsg := runCommand(command)
+		c.send <- []byte(cmdMsg)
 	}
 }
 
