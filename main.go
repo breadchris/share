@@ -71,12 +71,22 @@ func startServer(useTLS bool, port int) {
 	entries = newEntries
 	saveJSON(dataFile, entries)
 
+	db, err := gorm.Open(sqlite.Open("data/db.sqlite"), &gorm.Config{})
+	if err != nil {
+		log.Fatalf("Failed to create db: %v", err)
+	}
+
+	if err := db.AutoMigrate(
+		&models.User{}, &models.Identity{}, &models.Group{}, &models.GroupMembership{}); err != nil {
+		log.Fatalf("Failed to migrate db: %v", err)
+	}
+
 	s, err := session.New()
 	if err != nil {
 		log.Fatalf("Failed to create session store: %v", err)
 	}
 	e := NewSMTPEmail(&appConfig)
-	a := NewAuth(s, e, appConfig)
+	a := NewAuth(s, e, appConfig, db)
 
 	p := func(p string, s *http.ServeMux) {
 		http.Handle(p+"/", http.StripPrefix(p, s))
@@ -87,16 +97,6 @@ func startServer(useTLS bool, port int) {
 	setupRecipe()
 	fileUpload()
 	go scheduleScraping()
-
-	db, err := gorm.Open(sqlite.Open("data/db.sqlite"), &gorm.Config{})
-	if err != nil {
-		log.Fatalf("Failed to create db: %v", err)
-	}
-
-	if err := db.AutoMigrate(
-		&models.User{}, &models.Identity{}, &models.Group{}, &models.GroupMembership{}); err != nil {
-		log.Fatalf("Failed to migrate db: %v", err)
-	}
 
 	oai := openai.NewClient(appConfig.OpenAIKey)
 	lm := leaps.RegisterRoutes(leaps.NewLogger())
