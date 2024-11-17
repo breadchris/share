@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/breadchris/share/deps"
@@ -21,12 +22,29 @@ var websockerUpgrader = websocket.Upgrader{
 
 type CommandFunc func() string
 
-var commandHandlers = make(map[string]CommandFunc)
+type CommandRegistry struct {
+	handlers map[string]CommandFunc
+	mu       sync.RWMutex
+}
+
+func NewCommandRegistry() *CommandRegistry {
+	return &CommandRegistry{
+		handlers: make(map[string]CommandFunc),
+	}
+}
+
+func (cr *CommandRegistry) Register(command string, handler CommandFunc) {
+	cr.mu.Lock()
+	defer cr.mu.Unlock()
+	cr.handlers[command] = handler
+}
 
 type WebsocketClient struct {
-	conn *websocket.Conn
-	send chan []byte
+	conn     *websocket.Conn
+	send     chan []byte
+	registry *CommandRegistry
 }
+
 
 type Hub struct {
 	clients    map[*WebsocketClient]bool
@@ -63,12 +81,12 @@ func NewWebsocketPage(children []*Node) *Node {
 	)
 }
 
-func WebsocketUI(d deps.Deps) *http.ServeMux {
+func WebsocketUI(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
 	go hub.run()
-	setupHandlers()
+	setupHandlers(registry)
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/ws", websocketHandler2)
+	mux.HandleFunc("/ws", websocketHandler2(registry))
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		body := Div(
@@ -100,46 +118,47 @@ func WebsocketUI(d deps.Deps) *http.ServeMux {
 	return mux
 }
 
-func setupHandlers() {
-	commandHandlers["1"] = func() string {
-		message := Div(
+
+func setupHandlers(registry *CommandRegistry) {
+	registry.Register("1", func() string {
+		return Div(
 			Id("container-1"),
 			Attr("hx-swap-oob", "innerHTML"),
 			T("container 1"),
 		).Render()
-		return message
-	}
+	})
 
-	commandHandlers["2"] = func() string {
-		message := Div(
+	registry.Register("2", func() string {
+		return Div(
 			Id("container-2"),
 			Attr("hx-swap-oob", "innerHTML"),
 			T("container 2"),
 		).Render()
-		return message
-	}
+	})
 
-	commandHandlers["ping"] = func() string {
-		message := Div(
+	registry.Register("ping", func() string {
+		return Div(
 			Id("container-1"),
 			Attr("hx-swap-oob", "innerHTML"),
 			T("Pong"),
 		).Render()
-		return message
-	}
+	})
 }
 
-func runCommand(command string) string {
-	if handler, ok := commandHandlers[command]; ok {
+
+func (cr *CommandRegistry) Run(command string) string {
+	cr.mu.RLock()
+	handler, ok := cr.handlers[command]
+	cr.mu.RUnlock()
+	if ok {
 		return handler()
 	} else {
 		log.Println("Unknown command:", command)
-		message := Div(
+		return Div(
 			Id("container-1"),
 			Attr("hx-swap-oob", "innerHTML"),
 			T("Unknown command"),
 		).Render()
-		return message
 	}
 }
 
@@ -204,10 +223,11 @@ func (c *WebsocketClient) readPump(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		fmt.Println("Command:", command)
-		cmdMsg := runCommand(command)
+		cmdMsg := c.registry.Run(command)
 		c.send <- []byte(cmdMsg)
 	}
 }
+
 
 func (c *WebsocketClient) writePump() {
 	defer c.conn.Close()
@@ -220,20 +240,92 @@ func (c *WebsocketClient) writePump() {
 	}
 }
 
-func websocketHandler2(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("Websocket connection")
-	conn, err := websockerUpgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Println("Upgrade error:", err)
-		return
-	}
+func websocketHandler2(registry *CommandRegistry) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("Websocket connection")
+		conn, err := websockerUpgrader.Upgrade(w, r, nil)
+		if err != nil {
+			log.Println("Upgrade error:", err)
+			return
+		}
 
-	client := &WebsocketClient{
-		conn: conn,
-		send: make(chan []byte, 256),
-	}
-	hub.register <- client
+		client := &WebsocketClient{
+			conn:     conn,
+			send:     make(chan []byte, 256),
+			registry: registry,
+		}
+		hub.register <- client
 
-	go client.writePump()
-	client.readPump(w, r)
+		go client.writePump()
+		client.readPump(w, r)
+	}
+}
+
+func Card(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
+	registry.Register("edit", func() string {
+		return Div(
+			Id("content"),
+			Attr("hx-swap-oob", "innerHTML"),
+			Input(
+				Type("text"),
+			),
+		).Render()
+	})
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		isMobile := strings.Contains(r.Header.Get("User-Agent"), "Android") || strings.Contains(r.Header.Get("User-Agent"), "iPhone")
+
+		NewWebsocketPage(createCard(isMobile).Children).RenderPage(w, r)
+	})
+	return mux
+}
+
+
+func createCard(isMobile bool) *Node {
+	cardStyle := Class("mx-auto my-10 rounded-lg shadow-lg md:w-[250px] md:h-[350px] md:aspect-auto")
+	if isMobile {
+		cardStyle = Class("mx-auto my-10 w-[90vw] aspect-[5/7] rounded-lg shadow-lg")
+	}
+	return Div(
+		Div(
+			cardStyle,
+			// Image Section
+			Div(
+				Class("w-full h-[60%] bg-gray-200 rounded-t-lg overflow-hidden"),
+				Img(
+					Class("w-full h-full object-cover"),
+					Attr("src", "https://via.placeholder.com/250x210"),
+					Attr("alt", "Pokemon"),
+				),
+			),
+			// Content Section
+			Div(
+				Id("content"),
+				Class("p-4"),
+				H2(
+					Class("text-xl font-bold"),
+					T("Pokemon Name"),
+				),
+				P(
+					Class("text-sm mt-2"),
+					T("This is a description of the Pokemon card."),
+				),
+			),
+			// Edit Button
+			Form(
+				Attr("ws-send", "submit"),
+				Input(
+					Type("hidden"),
+					Name("command"),
+					Value("edit"),
+				),
+				Input(
+					Class("mt-4 w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"),
+					Type("submit"),
+					Value("Edit Card"),
+				),
+			),
+		),
+	)
 }
