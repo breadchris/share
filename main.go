@@ -126,7 +126,9 @@ func startServer(useTLS bool, port int) {
 
 	z := NewZineMaker(deps)
 	z.SetupZineRoutes()
+	// SocketUI()
 	
+	// SocketUI()
 	p("/websocket", interpreted(WebsocketUI))
 	p("/test", interpreted(test.New))
 	p("/user", interpreted(user.New))

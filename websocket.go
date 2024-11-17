@@ -43,51 +43,59 @@ var hub = Hub{
 	unregister: make(chan *WebsocketClient),
 }
 
+func NewWebsocketPage(children []*Node) *Node {
+	return Html(
+		Head(
+			Title(T("Websocket Test")),
+			Script(
+				Src("https://unpkg.com/htmx.org@1.9.12"),
+			),
+			Script(
+				Src("https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"),
+			),
+			TailwindCSS,
+		),
+		Body(Div(
+			Attr("hx-ext", "ws"),
+			Attr("ws-connect", "/websocket/ws"),
+			Ch(children),
+		)),
+	)
+}
+
 func WebsocketUI(d deps.Deps) *http.ServeMux {
+	go hub.run()
 	setupHandlers()
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/ws", websocketHandler2)
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		Html(
-			Head(
-				Title(T("Websocket Test")),
-				Script(
-					Src("https://unpkg.com/htmx.org@1.9.12"),
+		body := Div(
+			ReloadNode("websocket.go"),
+			P(T("Websocket")),
+			Form(
+				Attr("ws-send", "submit"),
+				Input(
+					Type("text"),
+					Name("command"),
 				),
-				Script(
-					Src("https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"),
+				Input(
+					Type("submit"),
+					Value("Send"),
 				),
-				TailwindCSS,
 			),
-			Body(Div(
-				Attr("hx-ext", "ws"),
-				Attr("ws-connect", "/websocket/ws"),
-				ReloadNode("websocket.go"),
-				T("Websocket"),
-				Form(
-					Attr("ws-send", "submit"),
-					Input(
-						Type("text"),
-						Name("command"),
-					),
-					Input(
-						Type("submit"),
-						Value("Send"),
-					),
-				),
-				Div(
-					Id("container-1"),
-					Attr("hx-swap-oob", "innerHTML"),
-				),
+			Div(
+				Id("container-1"),
+				Attr("hx-swap-oob", "innerHTML"),
+			),
+			Div(
+				Id("container-2"),
+				Attr("hx-swap-oob", "innerHTML"),
+			),
+		)
 
-				Div(
-					Id("container-2"),
-					Attr("hx-swap-oob", "innerHTML"),
-				),
-			),
-			)).RenderPage(w, r)
+		NewWebsocketPage(body.Children).RenderPage(w, r)
 	})
 	return mux
 }

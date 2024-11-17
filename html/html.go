@@ -286,7 +286,7 @@ func RenderGoFunction(fset *token.FileSet, name string, s ast.Expr) *ast.FuncDec
 }
 
 func ReloadNode(filename string) *Node {
-	return Script(T(fmt.Sprintf(`
+	return Script(Raw(fmt.Sprintf(`
 const ws = new WebSocket("ws://localhost:8080/reload/");
 
 ws.onmessage = function (event) {
