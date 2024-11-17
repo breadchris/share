@@ -5,16 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/html/patchpath.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/html/patchpath_test.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/auth.go" beforeDir="false" afterPath="$PROJECT_DIR$/auth.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/github.go" beforeDir="false" afterPath="$PROJECT_DIR$/github.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/eventcalendar.go" beforeDir="false" afterPath="$PROJECT_DIR$/eventcalendar.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/everout.json" beforeDir="false" afterPath="$PROJECT_DIR$/everout.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/prompt.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/promptview.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/wasmcode/code.go" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/code.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/wasmcode/monaco.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/monaco.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/analyzer@v1.wasm" beforeDir="false" afterPath="$PROJECT_DIR$/static/analyzer@v1.wasm" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wasmcode/wasm/symbol/symbol.go" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/wasm/symbol/symbol.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -43,28 +41,28 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "DefaultGoTemplateProperty": "Go File",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.go.formatter.settings.were.checked": "true",
-    "RunOnceActivity.go.migrated.go.modules.settings": "true",
-    "RunOnceActivity.go.modules.automatic.dependencies.download": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "git-widget-placeholder": "master",
-    "go.import.settings.migrated": "true",
-    "go.sdk.automatically.set": "true",
-    "last_opened_file_path": "/Users/hacked/Documents/GitHub/share/static",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "ts.external.directory.path": "/Users/hacked/Documents/GitHub/share/screenshare/ui/node_modules/typescript/lib",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultGoTemplateProperty&quot;: &quot;Go File&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.modules.automatic.dependencies.download&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
+    &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/hacked/Documents/GitHub/share/static&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;/Users/hacked/Documents/GitHub/share/screenshare/ui/node_modules/typescript/lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/static" />
@@ -139,6 +137,18 @@
       <pattern value="^\QTestGenerate\E$" />
       <method v="2" />
     </configuration>
+    <configuration name="TestPatchPath in github.com/breadchris/share/html" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="share" />
+      <working_directory value="$PROJECT_DIR$/html" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/breadchris/share/html" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestPatchPath\E$" />
+      <method v="2" />
+    </configuration>
     <configuration default="true" type="GoTestRunConfiguration" factoryName="Go Test">
       <module name="share" />
       <working_directory value="$PROJECT_DIR$" />
@@ -151,6 +161,7 @@
     </configuration>
     <list>
       <item itemvalue="Go Build.share" />
+      <item itemvalue="Go Test.TestPatchPath in github.com/breadchris/share/html" />
       <item itemvalue="Go Test.TestChatGPt in github.com/breadchris/share" />
       <item itemvalue="Go Test.TestExtractPagesAsImages in github.com/breadchris/share" />
       <item itemvalue="Go Test.TestGenerate in github.com/breadchris/share/breadchris (1)" />
@@ -158,6 +169,7 @@
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Test.TestPatchPath in github.com/breadchris/share/html" />
         <item itemvalue="Go Test.TestChatGPt in github.com/breadchris/share" />
         <item itemvalue="Go Test.TestExtractPagesAsImages in github.com/breadchris/share" />
         <item itemvalue="Go Test.TestGenerate in github.com/breadchris/share/breadchris" />
@@ -175,7 +187,8 @@
       <updated>1730866796853</updated>
       <workItem from="1730866797883" duration="126000" />
       <workItem from="1730866961438" duration="10483000" />
-      <workItem from="1730954775854" duration="76205000" />
+      <workItem from="1730954775854" duration="79184000" />
+      <workItem from="1731815313498" duration="9765000" />
     </task>
     <servers />
   </component>

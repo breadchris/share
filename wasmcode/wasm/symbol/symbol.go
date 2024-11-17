@@ -8,6 +8,7 @@
 //go:generate yaegi extract golang.org/x/net/html
 //go:generate yaegi extract gopkg.in/yaml.v3
 //go:generate yaegi extract github.com/gosimple/slug
+//go:generate yaegi extract syscall/js
 package symbol
 
 import "reflect"

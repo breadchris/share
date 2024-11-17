@@ -5,7 +5,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"github.com/breadchris/share/calendar"
 	"github.com/breadchris/share/graph"
 	"github.com/breadchris/share/models"
 	"github.com/breadchris/share/paint"
@@ -77,7 +76,11 @@ func startServer(useTLS bool, port int) {
 	}
 
 	if err := db.AutoMigrate(
-		&models.User{}, &models.Identity{}, &models.Group{}, &models.GroupMembership{}); err != nil {
+		&models.User{},
+		&models.Identity{},
+		&models.Group{},
+		&models.GroupMembership{},
+	); err != nil {
 		log.Fatalf("Failed to migrate db: %v", err)
 	}
 
@@ -96,7 +99,9 @@ func startServer(useTLS bool, port int) {
 	setupCursor()
 	setupRecipe()
 	fileUpload()
-	go scheduleScraping()
+
+	// TODO breadchris enable this
+	//go scheduleScraping()
 
 	oai := openai.NewClient(appConfig.OpenAIKey)
 	lm := leaps.RegisterRoutes(leaps.NewLogger())
@@ -246,14 +251,14 @@ func startServer(useTLS bool, port int) {
 	p("/extension", interpreted(NewExtension))
 	p("/git", interpreted(NewGit))
 	p("/music", interpreted(NewMusic))
-	p("/calendar", interpreted(calendar.NewCalendar))
 	p("/stripe", interpreted(NewStripe))
 	p("/everout", interpreted(NewEverout))
 	p("/graph", interpreted(graph.New))
 	p("/pipeport", interpreted(NewPipePort))
 	p("/nolanisslow", interpreted(NewNolan))
+	//p("/calendar", interpreted(calendar.NewCalendar))
+	p("/calendar", interpreted(NewCalendar))
 
-	SetupCalendar(a)
 	SetupWebsockets()
 
 	go func() {
