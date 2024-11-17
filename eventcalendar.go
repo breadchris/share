@@ -33,22 +33,6 @@ type CalendarEvent struct {
 	EventURL    string
 }
 
-var (
-	userCalendars      = map[string][]int{}    // User ID to Calendar IDs
-	eventAttendees     = map[string][]string{} // Event ID to User IDs
-	userEventsFilePath = "data/calendar2/"
-	userEventsFilename = "user-events.json"
-)
-
-var (
-	userIDCounter     = 1
-	calendarIDCounter = 1
-)
-
-var (
-	userSelectedCalendars = map[string]map[int]bool{} // User ID to selected Calendar IDs
-)
-
 func NewCalendar(d deps.Deps) *http.ServeMux {
 	db := d.Docs.WithCollection("calendar")
 
@@ -60,7 +44,6 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 	m.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 		if id == "" {
-			// create new calendar
 			id = uuid.NewString()
 			c := Calendar{
 				ID: id,
