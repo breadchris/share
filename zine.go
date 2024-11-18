@@ -135,7 +135,7 @@ func PanelNav(sessionID string) *Node {
 		Button(Id("6"), Class("panelselctionbutton bg-emerald-500 hover:bg-emerald-700 active:bg-emerald-900 text-gray-800 font-bold py-2 px-4 rounded"), Attr("value", "6"), T("Page 6")),
 		Button(Id("7"), Class("panelselctionbutton bg-emerald-500 hover:bg-emerald-700 active:bg-emerald-900 text-gray-800 font-bold py-2 px-4 rounded"), Attr("value", "7"), T("Page 7")),
 		Button(Id("8"), Class("panelselctionbutton bg-emerald-500 hover:bg-emerald-700 active:bg-emerald-900 text-gray-800 font-bold py-2 px-4 rounded"), Attr("value", "8"), T("Page 8")),
-		Script(T(fmt.Sprintf(`
+		Script(Raw(fmt.Sprintf(`
 						buttons = document.getElementsByClassName("panelselctionbutton")
 						for (var i = 0; i < buttons.length; i++) {
 							buttons[i].addEventListener("click", function() {

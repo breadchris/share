@@ -5,15 +5,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"github.com/breadchris/share/graph"
-	"github.com/breadchris/share/models"
-	"github.com/breadchris/share/paint"
-	"github.com/breadchris/share/test"
-	"github.com/breadchris/share/user"
-	"github.com/breadchris/share/x"
-	"github.com/fsnotify/fsnotify"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -26,6 +17,16 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/breadchris/share/graph"
+	"github.com/breadchris/share/models"
+	"github.com/breadchris/share/paint"
+	"github.com/breadchris/share/test"
+	"github.com/breadchris/share/user"
+	"github.com/breadchris/share/x"
+	"github.com/fsnotify/fsnotify"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 
 	"github.com/breadchris/share/breadchris"
 	"github.com/breadchris/share/code"
@@ -125,7 +126,17 @@ func startServer(useTLS bool, port int) {
 	}
 
 	z := NewZineMaker(deps)
+	z.SetupZineRoutes()
 
+	registry := NewCommandRegistry()
+	setupHandlers(registry)
+
+	p("/card", interpreted(func(deps deps2.Deps) *http.ServeMux {
+		return Card(deps, registry)
+	}))
+	p("/websocket", interpreted(func(deps deps2.Deps) *http.ServeMux {
+		return WebsocketUI(deps, registry)
+	}))
 	p("/test", interpreted(test.New))
 	p("/user", interpreted(user.New))
 	p("/paint", interpreted(paint.New))
@@ -137,7 +148,7 @@ func startServer(useTLS bool, port int) {
 	p("/leaps", lm.Mux)
 	p("/vote", interpreted(NewVote))
 	p("/breadchris", interpreted(breadchris.New))
-	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./eventcalendar.go", "./everout.go"}))
+	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./eventcalendar.go", "./everout.go", "./websocket.go", "./card.go"}))
 	p("/filecode", func() *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -258,8 +269,6 @@ func startServer(useTLS bool, port int) {
 	p("/nolanisslow", interpreted(NewNolan))
 	//p("/calendar", interpreted(calendar.NewCalendar))
 	p("/calendar", interpreted(NewCalendar))
-
-	SetupWebsockets()
 
 	go func() {
 		paths := []string{
@@ -382,8 +391,6 @@ func startServer(useTLS bool, port int) {
 			log.Fatalf("Failed to watch files: %v", err)
 		}
 	}()
-
-	z.SetupZineRoutes()
 
 	http.HandleFunc("/register", a.handleRegister)
 	http.HandleFunc("/account", a.accountHandler)
