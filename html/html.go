@@ -769,7 +769,7 @@ func Open(b bool) *Node {
 	return &Node{
 		transform: func(p *Node) {
 			if b {
-				p.Attrs["open"] = "open"
+				p.Attrs["open"] = ""
 			}
 		},
 	}

@@ -21,6 +21,12 @@ type Calendar struct {
 	Events      []CalendarEvent
 }
 
+type RSVP struct {
+	ID   string
+	Name string
+	Note string
+}
+
 type CalendarEvent struct {
 	ID          string
 	CalendarID  int
@@ -31,6 +37,7 @@ type CalendarEvent struct {
 	Date        time.Time
 	ImageURL    string
 	EventURL    string
+	RSVPs       []RSVP
 }
 
 func NewCalendar(d deps.Deps) *http.ServeMux {
@@ -64,7 +71,7 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 
 		switch r.Method {
 		case http.MethodGet:
-			render(w, r, RenderCalendar(c))
+			render(w, r, DefaultLayout(RenderCalendar(c)))
 		case http.MethodPost:
 			if err := r.ParseForm(); err != nil {
 				http.Error(w, "Error parsing form data", http.StatusBadRequest)
@@ -75,16 +82,28 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 			month, _ := strconv.Atoi(monthStr)
 			year, _ := strconv.Atoi(yearStr)
 
-			render(w, r, GenerateCalendar(
-				month, year,
-				c,
-			))
+			render(w, r, GenerateCalendar(month, year, c))
 		}
 	})
+	renderModal := func(c *Node) *Node {
+		return Dialog(
+			Class("modal"),
+			Open(true),
+			Div(
+				Class("modal-box"),
+				c,
+				Div(
+					Class("modal-action"),
+					Form(Method("dialog"), Button(Class("btn"), T("close"))),
+				),
+			),
+		)
+	}
 	m.HandleFunc("/{id}/event/modal", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
-		render(w, r, createModal("event-modal",
-			Div(
+		date := r.URL.Query().Get("date")
+		render(w, r,
+			renderModal(
 				Form(
 					HxPost(fmt.Sprintf("/%s/event/", id)),
 					Attr("hx-target", "#calendar-container"),
@@ -92,7 +111,7 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 					Class("space-y-4"),
 					Input(Type("text"), Name("name"), Placeholder("Event Name"), Class("w-full p-2 border border-gray-300 rounded")),
 					TextArea(Name("description"), Placeholder("Description"), Class("w-full p-2 border border-gray-300 rounded")),
-					Input(Type("date"), Name("date"), Class("w-full p-2 border border-gray-300 rounded")),
+					Input(Type("date"), Value(date), Name("date"), Class("w-full p-2 border border-gray-300 rounded")),
 					Div(
 						Button(Type("submit"), T("Create Event"), Class("bg-blue-500 text-white px-4 py-2 rounded")),
 						Button(
@@ -104,20 +123,18 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 					),
 				),
 			),
-		))
+		)
 	})
-	m.HandleFunc("/{id}/event/{eid...}", func(w http.ResponseWriter, r *http.Request) {
+	loadCalendarAndEvent := func(w http.ResponseWriter, r *http.Request) (Calendar, CalendarEvent, error) {
 		id := r.PathValue("id")
 		eid := r.PathValue("eid")
 
 		var c Calendar
 		if err := db.Get(id, &c); err != nil {
-			http.Error(w, "Calendar not found", http.StatusNotFound)
-			return
+			return Calendar{}, CalendarEvent{}, err
 		}
 
 		var evt CalendarEvent
-
 		if eid != "" {
 			for _, e := range c.Events {
 				if e.ID == eid {
@@ -126,14 +143,90 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 				}
 			}
 			if evt.ID == "" {
-				http.Error(w, "Event not found", http.StatusNotFound)
-				return
+				return Calendar{}, CalendarEvent{}, fmt.Errorf("event not found")
 			}
+		}
+		return c, evt, nil
+	}
+	m.HandleFunc("/{id}/event/{eid}/invite", func(w http.ResponseWriter, r *http.Request) {
+		c, evt, err := loadCalendarAndEvent(w, r)
+		if err != nil {
+			http.Error(w, "Calendar or Event not found", http.StatusNotFound)
+			return
 		}
 
 		switch r.Method {
 		case http.MethodGet:
-			render(w, r, createModal("event-modal",
+			render(w, r, DefaultLayout(
+				Div(
+					Class("max-w-md mx-auto p-4"),
+					P(Class("text-2xl font-bold mb-4"), T(evt.Name)),
+					Div(T(evt.Description)),
+					Form(
+						Method("POST"),
+						Action(fmt.Sprintf("/%s/event/%s/invite", c.ID, evt.ID)),
+						Class("space-y-4"),
+						Input(Type("text"), Name("name"), Placeholder("Name"), Class("w-full p-2 border border-gray-300 rounded")),
+						TextArea(Name("note"), Placeholder("Note"), Class("w-full p-2 border border-gray-300 rounded")),
+						Button(Type("submit"), T("RSVP"), Class("bg-blue-500 text-white px-4 py-2 rounded")),
+					),
+				),
+			))
+		case http.MethodPost:
+			if err := r.ParseForm(); err != nil {
+				http.Error(w, "Error parsing form data", http.StatusBadRequest)
+				return
+			}
+
+			rsvpID := r.PathValue("id")
+			if rsvpID == "" {
+				rsvp := RSVP{
+					ID:   uuid.NewString(),
+					Name: r.FormValue("name"),
+					Note: r.FormValue("note"),
+				}
+				evt.RSVPs = append(evt.RSVPs, rsvp)
+			} else {
+				for i, rsvp := range evt.RSVPs {
+					if rsvp.ID == rsvpID {
+						evt.RSVPs[i].Name = r.FormValue("name")
+						evt.RSVPs[i].Note = r.FormValue("note")
+						break
+					}
+				}
+			}
+			for i, e := range c.Events {
+				if e.ID == evt.ID {
+					c.Events[i] = evt
+					break
+				}
+			}
+			fmt.Printf("%+v\n", c)
+			if err := db.Set(c.ID, c); err != nil {
+				http.Error(w, "Error saving RSVP", http.StatusInternalServerError)
+				return
+			}
+			http.Redirect(w, r, fmt.Sprintf("/calendar/%s", c.ID), http.StatusSeeOther)
+		}
+	})
+	m.HandleFunc("/{id}/event/{eid...}", func(w http.ResponseWriter, r *http.Request) {
+		c, evt, err := loadCalendarAndEvent(w, r)
+		if err != nil {
+			http.Error(w, "Calendar or Event not found", http.StatusNotFound)
+			return
+		}
+
+		switch r.Method {
+		case http.MethodGet:
+			rsvps := []*Node{}
+			for _, rsvp := range evt.RSVPs {
+				rsvps = append(rsvps, Div(
+					Class("bg-blue-100 p-1 mt-1 rounded"),
+					H3(Class("text-xl font-semibold"), T(rsvp.Name)),
+					P(T(rsvp.Note)),
+				))
+			}
+			render(w, r, renderModal(
 				Div(
 					Img(
 						Src(evt.ImageURL),
@@ -141,7 +234,9 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 					H2(Class("text-2xl font-bold mb-4"), T(evt.Name)),
 					P(Class("mb-2"), T("Description: "+evt.Description)),
 					P(Class("mb-2"), T("Date: "+evt.Date.Format("2006-01-02"))),
-					A(Class("mb-2 no-underline hover:underline"), Href(evt.EventURL), T("Event Link")),
+					A(Class("btn mb-2 no-underline hover:underline"), Href(evt.EventURL), T("Event Link")),
+					A(Class("btn mb-2 no-underline hover:underline"), Href(fmt.Sprintf("/%s/event/%s/invite", c.ID, evt.ID)), T("Invite Attendees")),
+					Div(Ch(rsvps)),
 					Div(
 						Class("flex justify-end mt-4"),
 						Button(
@@ -152,25 +247,19 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 							HxTarget("#calendar-container"),
 							HxSwap("innerHTML"),
 						),
-						Button(
-							T("Close"),
-							Type("button"),
-							Class("modal-close bg-gray-500 text-white px-4 py-2 rounded"),
-							Attr("onclick", "document.getElementById('event-modal').innerHTML = '';"),
-						),
 					),
 				),
 			))
 		case http.MethodDelete:
 			var newEvents []CalendarEvent
 			for _, e := range c.Events {
-				if e.ID != eid {
+				if e.ID != e.ID {
 					newEvents = append(newEvents, e)
 				}
 			}
 
 			c.Events = newEvents
-			if err := db.Set(id, c); err != nil {
+			if err := db.Set(c.ID, c); err != nil {
 				http.Error(w, "Error deleting event", http.StatusInternalServerError)
 				return
 			}
@@ -201,7 +290,7 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 				Date:        date,
 			}
 			c.Events = append(c.Events, newEvent)
-			if err := db.Set(id, c); err != nil {
+			if err := db.Set(c.ID, c); err != nil {
 				http.Error(w, "Error creating event", http.StatusInternalServerError)
 				return
 			}
@@ -229,14 +318,20 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 			return
 		}
 
+		ds, err := time.Parse("2006-01-02", dateStr)
+		if err != nil {
+			http.Error(w, "Invalid date format", http.StatusBadRequest)
+			return
+		}
+
 		var eventsOnDate []CalendarEvent
 		for _, evt := range c.Events {
-			if evt.Date.Format("2006-01-02") == dateStr {
+			if evt.Date.Year() == ds.Year() && evt.Date.Month() == ds.Month() && evt.Date.Day() == ds.Day() {
 				eventsOnDate = append(eventsOnDate, evt)
 			}
 		}
 
-		modalContent := createModal("event-modal",
+		render(w, r, renderModal(
 			Div(
 				H2(Class("text-2xl font-bold mb-4"), T(fmt.Sprintf("Events on %s", dateStr))),
 				func() *Node {
@@ -259,7 +354,7 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 									T("View"),
 									Type("button"),
 									Class("bg-blue-500 text-white px-4 py-2 rounded mr-2"),
-									HxGet(fmt.Sprintf("/event/%s", evt.ID)),
+									HxGet(fmt.Sprintf("/%s/event/%s", c.ID, evt.ID)),
 									HxTarget("#event-modal"),
 									HxSwap("innerHTML"),
 								),
@@ -276,17 +371,22 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 					}
 					return Div(Chl(eventItems...))
 				}(),
-				Button(
-					T("Close"),
-					Type("button"),
-					Class("modal-close bg-gray-500 text-white px-4 py-2 rounded mt-4"),
-					Attr("onclick", "document.getElementById('event-modal').innerHTML = '';"),
-				),
+				CreateEventButton(c.ID, dateStr),
 			),
-		)
-		modalContent.RenderPage(w, r)
+		))
 	})
 	return m
+}
+
+func CreateEventButton(calID, date string) *Node {
+	return Button(
+		T("Create Event"),
+		Type("button"),
+		Class("border border-gray-300 rounded px-2 py-1"),
+		HxGet(fmt.Sprintf("/%s/event/modal?date=%s", calID, date)),
+		HxTarget("#event-modal"),
+		HxSwap("innerHTML"),
+	)
 }
 
 func RenderCalendar(c Calendar) *Node {
@@ -320,7 +420,7 @@ func RenderCalendar(c Calendar) *Node {
 	}
 
 	selectionForm := Form(
-		HxPost("/"),
+		HxPost(fmt.Sprintf("/%s", c.ID)),
 		Attr("hx-target", "#calendar-container"),
 		HxTrigger("change from:select"),
 		Attr("hx-swap", "innerHTML"),
@@ -336,74 +436,15 @@ func RenderCalendar(c Calendar) *Node {
 				Chl(yearOptions...),
 				Class("border border-gray-300 rounded px-2 py-1 mr-2"),
 			),
-			Button(
-				T("Go"),
-				Type("submit"),
-				Class("border border-gray-300 rounded px-2 py-1 mr-2"),
-			),
-			Button(
-				T("Create Event"),
-				Type("button"),
-				Class("border border-gray-300 rounded px-2 py-1"),
-				HxGet(fmt.Sprintf("%s/event/modal", c.ID)),
-				HxTarget("#event-modal"),
-				HxSwap("innerHTML"),
-			),
+			CreateEventButton(c.ID, ""),
 		),
 	)
-
-	calendarModal := Div(Id("calendar-modal"))
-
-	calendarNode := GenerateCalendar(month, year, c)
-
-	eventModal := Div(Id("event-modal"))
-
-	page := Html(
-		Head(
-			Title(T("Calendar Dashboard")),
-			HTMX,
-			TailwindCSS,
-			Style(T(`
-				.modal {
-				position: fixed;
-				top: 0;
-				left: 0;
-				width: 100%;
-				height: 100%;
-				background-color: rgba(0,0,0,0.5);
-				display: flex;
-				justify-content: center;
-				align-items: center;
-			}
-			.modal-content {
-				background-color: #fff;
-				padding: 20px;
-				border-radius: 8px;
-				width: 90%;
-				max-width: 500px;
-				max-height: 80vh;
-				overflow-y: auto;
-			}
-				.modal-close {
-					margin-top: 10px;
-					background-color: #f44336;
-					color: white;
-					border: none;
-					padding: 10px;
-					border-radius: 5px;
-					cursor: pointer;
-				}
-			`)),
-		),
-		Body(
-			selectionForm,
-			eventModal,
-			calendarModal,
-			calendarNode,
-		),
+	return Div(
+		selectionForm,
+		Div(Id("event-modal")),
+		Div(Id("calendar-modal")),
+		GenerateCalendar(month, year, c),
 	)
-
-	return page
 }
 
 func GenerateCalendar(month, year int, c Calendar) *Node {
@@ -458,7 +499,7 @@ func GenerateCalendar(month, year int, c Calendar) *Node {
 		}
 		cells = append(cells, Div(
 			Class("p-2 bg-white box-border h-full overflow-hidden"),
-			HxGet(fmt.Sprintf("/day_events?date=%s", dateStr)),
+			HxGet(fmt.Sprintf("/%s/day_events?date=%s", c.ID, dateStr)),
 			HxTarget("#event-modal"),
 			HxSwap("innerHTML"),
 			Attr("style", "cursor:pointer"),
@@ -488,17 +529,4 @@ func GenerateCalendar(month, year int, c Calendar) *Node {
 		),
 	)
 	return calendar
-}
-
-func createModal(containerID string, content *Node) *Node {
-	modalContent := Div(
-		Class("modal-content"),
-	)
-	modalContent.Children = append(modalContent.Children, content.Children...)
-
-	return Div(
-		Class("modal"),
-		Attr("onclick", fmt.Sprintf("if(event.target === this){ document.getElementById('%s').innerHTML = ''; }", containerID)),
-		modalContent,
-	)
 }
