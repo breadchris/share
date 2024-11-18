@@ -158,17 +158,29 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 		switch r.Method {
 		case http.MethodGet:
 			render(w, r, DefaultLayout(
-				Div(
-					Class("max-w-md mx-auto p-4"),
-					P(Class("text-2xl font-bold mb-4"), T(evt.Name)),
-					Div(T(evt.Description)),
-					Form(
-						Method("POST"),
-						Action(fmt.Sprintf("/%s/event/%s/invite", c.ID, evt.ID)),
-						Class("space-y-4"),
-						Input(Type("text"), Name("name"), Placeholder("Name"), Class("w-full p-2 border border-gray-300 rounded")),
-						TextArea(Name("note"), Placeholder("Note"), Class("w-full p-2 border border-gray-300 rounded")),
-						Button(Type("submit"), T("RSVP"), Class("bg-blue-500 text-white px-4 py-2 rounded")),
+				RenderOrigami(
+					Div(
+						Class("max-w-md mx-auto p-4"),
+						P(Class("text-2xl font-bold mb-4"), T(evt.Name)),
+						Div(T(evt.Description)),
+						Form(
+							Method("POST"),
+							Action(fmt.Sprintf("/%s/event/%s/invite", c.ID, evt.ID)),
+							Class("space-y-4"),
+							Input(Type("text"), Name("name"), Placeholder("Name"), Class("w-full p-2 border border-gray-300 rounded")),
+							TextArea(Name("note"), Placeholder("Note"), Class("w-full p-2 border border-gray-300 rounded")),
+							Button(Type("submit"), T("RSVP"), Class("bg-blue-500 text-white px-4 py-2 rounded")),
+						),
+						Iframe(Width("100%"), Height("315"), Src("https://www.youtube.com/embed/MAM4vbVy_Q8?si=3-ijyjJBBQ-rdY-R"), Title(T("YouTube video player")), Attrs(map[string]string{
+							"frameborder":        "0",
+							"allow":              "accelerometer",
+							"autoplay":           "clipboard-write",
+							"encrypted-media":    "gyroscope",
+							"picture-in-picture": "",
+							"web-share":          "",
+							"referrerpolicy":     "strict-origin-when-cross-origin",
+							"allowfullscreen":    "",
+						})),
 					),
 				),
 			))
@@ -529,4 +541,478 @@ func GenerateCalendar(month, year int, c Calendar) *Node {
 		),
 	)
 	return calendar
+}
+
+func RenderOrigami(c *Node) *Node {
+	return Div(
+		Class("wrapper"),
+		Style(Raw(`
+*{
+  box-sizing: border-box;
+  -webkit-font-smoothing: subpixel-antialiased;
+}
+
+a{
+  text-decoration: none;
+  color: #222222;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  transform: translate3d(0,0,0);
+}
+
+a:hover {
+  text-decoration: underline;
+  font-weight: bold;
+}
+
+
+body {
+  height: 100vh;
+  display: grid;
+  place-content: center;
+  font-family: 'Annie Use Your Telescope', cursive;
+  font-size: 1.2rem;
+  line-height: 1.5;
+  color: #222222;
+}
+
+.wrapper {
+  -o-transform: scale(0.8,0.8) rotate(-45deg);
+  -ms-transform: scale(0.8,0.8) rotate(-45deg);
+  -moz-transform: scale(0.8,0.8) rotate(-45deg);
+  -webkit-transform: scale(0.8,0.8) rotate(-45deg);
+  transform: scale(0.8,0.8) rotate(-45deg);
+  
+  -o-transition: all .4s ease-out;
+  -moz-transition: all .4s ease-out;
+  -webkit-transition: all .4s ease-out;
+  transition: all .4s ease-out;
+}
+
+.wrapper:hover {
+  -o-transform: scale(1.1,1.1) rotate(-3deg);
+  -ms-transform: scale(1.1,1.1) rotate(-3deg);
+  -moz-transform: scale(1.1,1.1) rotate(-3deg);
+  -webkit-transform: scale(1.1,1.1) rotate(-3deg);
+  transform: scale(1.1,1.1) rotate(-3deg);
+  
+  -o-transition: all .5s ease-in;
+  -moz-transition: all .5s ease-in;
+  -webkit-transition: all .5s ease-in;
+  transition: all .5s ease-in;
+}
+
+
+.bg {
+  width: 260px;
+  height: 260px;
+  background: url('https://ik.imagekit.io/webdigitalalien/paper-texture_rme04pvze.jpg?ik-sdk-version=javascript-1.4.3&updatedAt=1643796293371');
+  background-size: 350px;
+  box-shadow: 2px 2px 5px 0 rgba(0,0,0,0.3);
+  position: relative;
+  z-index: 1;
+  
+  -o-transform: perspective(2000px);
+  -ms-transform: perspective(2000px);
+  -moz-transform: perspective(2000px);
+  -webkit-transform: perspective(2000px);
+  transform: perspective(2000px);
+  
+  -o-transition: all .3s ease-in;
+  -moz-transition: all .3s ease-in;
+  -webkit-transition: all .3s ease-in;
+  transition: all .3s ease-in;
+}
+
+.wrapper:hover .bg {
+  box-shadow: 6px 6px 20px 15px rgba(0,0,0,0.3);
+}
+
+.bg::after {
+  content: '';
+  position:absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: #18A5C4;
+  mix-blend-mode: multiply;
+}
+
+.img-wrapper {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  bottom: 15px;
+  right: 15px;
+  z-index: 2;
+  --cornerCut: 10px;
+  -webkit-clip-path: polygon(
+      0% var(--cornerCut), 
+      var(--cornerCut) 0%, 
+      calc(100% - var(--cornerCut)) 0%, 
+      100% var(--cornerCut), 
+      100% calc(100% - var(--cornerCut)), 
+      calc(100% - var(--cornerCut)) 100%, 
+      var(--cornerCut) 100%, 
+      0% calc(100% - var(--cornerCut))
+    );
+  clip-path: polygon(
+      0% var(--cornerCut), 
+      var(--cornerCut) 0%, 
+      calc(100% - var(--cornerCut)) 0%, 
+      100% var(--cornerCut), 
+      100% calc(100% - var(--cornerCut)), 
+      calc(100% - var(--cornerCut)) 100%, 
+      var(--cornerCut) 100%, 
+      0% calc(100% - var(--cornerCut))
+    );
+  opacity: 0;
+  
+  -o-transition: opacity .6s ease;
+  -moz-transition: opacity .6s ease;
+  -webkit-transition: opacity .6s ease;
+  transition: opacity .6s ease;
+}
+
+.wrapper:hover .img-wrapper {
+  opacity: 1;
+}
+
+.img {
+  position: absolute;
+  top: 120px;
+  left: 120px;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  background: #f2f2f2;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  
+  -o-transform: translate(-50%, -50%);
+  -ms-transform: translate(-50%, -50%);
+  -moz-transform: translate(-50%, -50%);
+  -webkit-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+}
+
+
+h1 {
+  font-size: 1.5rem;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  transform: translate3d(0,0,0);
+  padding: 0 0 0 20px;
+  margin-bottom: -10px;
+}
+
+.img-border {
+  width: 101%;
+  height: 101%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 5;
+  background:transparent;
+  border: 8px solid white;
+  
+  -o-transform: translate(-50%,-50%);
+  -ms-transform: translate(-50%,-50%);
+  -moz-transform: translate(-50%,-50%);
+  -webkit-transform: translate(-50%,-50%);
+  transform: translate(-50%,-50%);
+}
+
+.corner-shadows {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.corner-shadows > div {
+  width: 50px;
+  --corner-size: 1.7em;
+  border-left: var(--corner-size) solid lighten(#000, 3%);
+  border-bottom: calc(var(--corner-size)) solid transparent;
+  border-top: calc(var(--corner-size)) solid transparent;
+  position: absolute;
+  box-shadow: -3px 0 2px -3px rgba(0,0,0,0.7);
+  z-index: 7;
+}
+
+.top-left {
+  transform: translate(-100%, -50%) rotate(225deg);
+}
+
+.top-right {
+  top: 0;
+  right: 0;
+  transform: translate(100%, -51%) rotate(-46deg);
+}
+
+.bottom-right {
+  right: 0;
+  bottom: 0;
+  transform: translate(102%, 51%) rotate(46deg);
+}
+  
+.bottom-left {
+  left: 0;
+  bottom: 0;
+  transform: translate(-102%, 51%) rotate(134deg);
+}
+  
+
+
+.square-small-bottom {
+  width: 160px;
+  height: 130px;
+  background: url('https://ik.imagekit.io/webdigitalalien/paper-texture_rme04pvze.jpg?ik-sdk-version=javascript-1.4.3&updatedAt=1643796293371');
+  background-size: 350px;
+  box-shadow: 0 -4px 10px 0 rgba(0,0,0,0.25);
+  display: inline-block;
+  position: absolute;
+  bottom: 1px;
+  right: 0;
+  z-index: 8;
+  
+  -o-transform-origin: bottom;
+  -ms-transform-origin: bottom;
+  -moz-transform-origin: bottom;
+  -webkit-transform-origin: bottom;
+  transform-origin: bottom;
+  
+  -moz-transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  transform-style: preserve-3d;
+  
+  -o-transform: perspective(2000px);
+  -ms-transform: perspective(2000px);
+  -moz-transform: perspective(2000px);
+  -webkit-transform: perspective(2000px);
+  transform: perspective(2000px);
+  
+  -o-transition: all .2s ease-in-out;
+  -moz-transition: all .2s ease-in-out;
+  -webkit-transition: all .2s ease-in-out;
+  transition: all .2s ease-in-out;
+}
+
+
+.wrapper:hover .square-small-bottom {
+  box-shadow: 5px -5px 10px 0 rgba(0,0,0,0.25);
+  
+  -o-transform: perspective(2000px) rotateX(-175deg);
+  -ms-transform: perspective(2000px) rotateX(-175deg);
+  -moz-transform: perspective(2000px) rotateX(-175deg);
+  -webkit-transform: perspective(2000px) rotateX(-175deg);
+  transform: perspective(2000px) rotateX(-175deg);
+  
+  -o-transition: all .5s .2s ease-in-out;
+  -moz-transition: all .5s .2s ease-in-out;
+  -webkit-transition: all .5s .2s ease-in-out;
+  transition: all .5s .2s ease-in-out;
+}
+
+
+
+.square-small-bottom::after {
+  content: '';
+  position:absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: #18A5C4;
+  mix-blend-mode: multiply;
+  border-bottom: 2px solid rgba(4,82,99,0);
+  
+  -o-transition: all .2s .3s ease;
+  -moz-transition: all .2s .3s ease;
+  -webkit-transition: all .2s .3s ease;
+  transition: all .2s .3s ease;
+}
+
+
+.wrapper:hover .square-small-bottom::after {
+  border-bottom: 2px solid rgba(4,82,99,0.1);
+}
+
+.square-small-top {
+  width: 130px;
+  height: 160px;
+  background: url('https://ik.imagekit.io/webdigitalalien/paper-texture_rme04pvze.jpg?ik-sdk-version=javascript-1.4.3&updatedAt=1643796293371');
+  background-size: 350px;
+  
+  box-shadow: 4px 4px 10px 0 rgba(0,0,0,0.25);
+  
+  display: inline-block;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: 9;
+  
+  -o-transform-origin: left;
+  -ms-transform-origin: left;
+  -moz-transform-origin: left;
+  -webkit-transform-origin: left;
+  transform-origin: left;
+  
+  -moz-transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  transform-style: preserve-3d;
+  
+  -o-transform: perspective(2000px);
+  -ms-transform: perspective(2000px);
+  -moz-transform: perspective(2000px);
+  -webkit-transform: perspective(2000px);
+  transform: perspective(2000px);
+  
+  -o-transition: all .2s .1s ease-in-out;
+  -moz-transition: all .2s .1s ease-in-out;
+  -webkit-transition: all .2s .1s ease-in-out;
+  transition: all .2s .1s ease-in-out;
+}
+
+
+.wrapper:hover .square-small-top {
+  
+  box-shadow: 4px 4px 10px 0 rgba(0,0,0,0);
+  
+  -o-transform: perspective(2000px) rotateY(-160deg);
+  -ms-transform: perspective(2000px) rotateY(-160deg);
+  -moz-transform: perspective(2000px) rotateY(-160deg);
+  -webkit-transform: perspective(2000px) rotateY(-160deg);
+  transform: perspective(2000px) rotateY(-160deg);
+  
+  -o-transition: all .5s .1s ease-in-out;
+  -moz-transition: all .5s .1s ease-in-out;
+  -webkit-transition: all .5s .1s ease-in-out;
+  transition: all .5s .1s ease-in-out;
+}
+
+
+
+.square-small-top::after {
+  content: '';
+  position:absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: #18ABCB;
+  mix-blend-mode: multiply;
+  border-left: 2px solid rgba(4,82,99,0);
+  
+  -o-transition: all .2s .3s ease;
+  -moz-transition: all .2s .3s ease;
+  -webkit-transition: all .2s .3s ease;
+  transition: all .2s .3s ease;
+}
+
+
+.wrapper:hover .square-small-top::after {
+  background-color: #18A5C4;
+  border-left: 2px solid rgba(4,82,99,0.1);
+}
+
+.square-large {
+  width: 100%;
+  height: 130px;
+  background: url('https://ik.imagekit.io/webdigitalalien/paper-texture_rme04pvze.jpg?ik-sdk-version=javascript-1.4.3&updatedAt=1643796293371');
+  background-size: 350px;
+  box-shadow: 0 4px 10px 0 rgba(0,0,0,0.25);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  
+  -o-transform-origin: top;
+  -ms-transform-origin: top;
+  -moz-transform-origin: top;
+  -webkit-transform-origin: top;
+  transform-origin: top;
+  
+  -moz-transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  transform-style: preserve-3d;
+  
+  -o-transform: perspective(2000px);
+  -ms-transform: perspective(2000px);
+  -moz-transform: perspective(2000px);
+  -webkit-transform: perspective(2000px);
+  transform: perspective(2000px);
+  
+  -o-transition: all .2s .2s ease-in-out;
+  -moz-transition: all .2s .2s ease-in-out;
+  -webkit-transition: all .2s .2s ease-in-out;
+  transition: all .2s .2s ease-in-out;
+}
+
+.wrapper:hover .square-large {
+  background-color: #18A5C4;
+  box-shadow: 0 4px 10px 0 rgba(0,0,0,0);
+  
+  -o-transform: perspective(2000px) rotateX(175deg);
+  -ms-transform: perspective(2000px) rotateX(175deg);
+  -moz-transform: perspective(2000px) rotateX(175deg);
+  -webkit-transform: perspective(2000px) rotateX(175deg);
+  transform: perspective(2000px) rotateX(175deg);
+  
+  -o-transition: all .5s ease-in-out;
+  -moz-transition: all .5s ease-in-out;
+  -webkit-transition: all .5s ease-in-out;
+  transition: all .5s ease-in-out;
+}
+
+
+.square-large::after {
+  content: '';
+  position:absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-color: #17AECF;
+  mix-blend-mode: multiply;
+  border-top: 2px solid rgba(4,82,99,0);
+  
+  
+  -o-transition: all .2s .3s ease;
+  -moz-transition: all .2s .3s ease;
+  -webkit-transition: all .2s .3s ease;
+  transition: all .2s .3s ease;
+}
+
+
+.wrapper:hover .square-large::after {
+  background-color: #18A5C4;
+  border-top: 2px solid rgba(4,82,99,0.1);
+}
+`)),
+		Div(
+			Class("bg"),
+			Div(
+				Class("img-wrapper"),
+				Div(Class("img")),
+				Div(
+					Class("img-border overflow-y-scroll"),
+					c,
+				),
+				Div(
+					Class("corner-shadows"),
+					Div(Class("top-left")),
+					Div(Class("top-right")),
+					Div(Class("bottom-right")),
+					Div(Class("bottom-left")),
+				),
+			),
+			Div(Class("square-large")),
+			Div(Class("square-small-top")),
+			Div(Class("square-small-bottom")),
+		),
+	)
 }
