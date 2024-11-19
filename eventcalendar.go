@@ -157,6 +157,14 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 
 		switch r.Method {
 		case http.MethodGet:
+			rsvps := []*Node{}
+			for _, rsvp := range evt.RSVPs {
+				rsvps = append(rsvps, Div(
+					Class("p-1 mt-1 rounded"),
+					H3(Class("text-xl font-semibold"), T(rsvp.Name)),
+					P(T(rsvp.Note)),
+				))
+			}
 			render(w, r, DefaultLayout(
 				RenderOrigami(
 					Div(
@@ -171,6 +179,8 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 							TextArea(Name("note"), Placeholder("Note"), Class("input text-white w-full p-2 border rounded")),
 							Button(Type("submit"), T("RSVP"), Class("bg-blue-500 text-white px-4 py-2 rounded")),
 						),
+						P(Class("text-2xl font-bold mb-4 mt-4"), T("Attendees")),
+						Ch(rsvps),
 						Iframe(Width("100%"), Height("315"), Src("https://www.youtube.com/embed/MAM4vbVy_Q8?si=3-ijyjJBBQ-rdY-R"), Attrs(map[string]string{
 							"frameborder":        "0",
 							"allow":              "accelerometer",
@@ -202,7 +212,6 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 					break
 				}
 			}
-			fmt.Printf("%+v\n", c)
 			if err := db.Set(c.ID, c); err != nil {
 				http.Error(w, "Error saving RSVP", http.StatusInternalServerError)
 				return
@@ -222,7 +231,7 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 			rsvps := []*Node{}
 			for _, rsvp := range evt.RSVPs {
 				rsvps = append(rsvps, Div(
-					Class("bg-blue-100 p-1 mt-1 rounded"),
+					Class("p-1 mt-1 rounded"),
 					H3(Class("text-xl font-semibold"), T(rsvp.Name)),
 					P(T(rsvp.Note)),
 				))
