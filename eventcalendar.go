@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/yuin/goldmark"
 	"net/http"
 	"strconv"
 	"time"
@@ -148,6 +150,36 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 		}
 		return c, evt, nil
 	}
+	m.HandleFunc("/{id}/event/{eid}/edit", func(w http.ResponseWriter, r *http.Request) {
+		c, evt, err := loadCalendarAndEvent(w, r)
+		if err != nil {
+			http.Error(w, "Calendar or Event not found", http.StatusNotFound)
+			return
+		}
+
+		render(w, r,
+			renderModal(
+				Form(
+					HxPost(fmt.Sprintf("/%s/event/%s", c.ID, evt.ID)),
+					Attr("hx-target", "#calendar-container"),
+					Attr("hx-swap", "outerHTML"),
+					Class("space-y-4"),
+					Input(Type("text"), Name("name"), Value(evt.Name), Placeholder("Event Name"), Class("w-full p-2 border border-gray-300 rounded")),
+					TextArea(Name("description"), Value(evt.Description), Placeholder("Description"), Class("w-full p-2 border border-gray-300 rounded")),
+					Input(Type("date"), Value(evt.Date.Format("2006-01-02")), Name("date"), Class("w-full p-2 border border-gray-300 rounded")),
+					Div(
+						Button(Type("submit"), T("Update Event"), Class("bg-blue-500 text-white px-4 py-2 rounded")),
+						Button(
+							T("Cancel"),
+							Type("button"),
+							Class("modal-close bg-gray-500 text-white px-4 py-2 rounded ml-2"),
+							Attr("onclick", "document.getElementById('event-modal').innerHTML = '';"),
+						),
+					),
+				),
+			),
+		)
+	})
 	m.HandleFunc("/{id}/event/{eid}/invite", func(w http.ResponseWriter, r *http.Request) {
 		c, evt, err := loadCalendarAndEvent(w, r)
 		if err != nil {
@@ -165,12 +197,18 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 					P(T(rsvp.Note)),
 				))
 			}
+			md := goldmark.New()
+			var buf bytes.Buffer
+			if err := md.Convert([]byte(evt.Description), &buf); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 			render(w, r, DefaultLayout(
 				RenderOrigami(
 					Div(
 						Class("max-w-md mx-auto p-4"),
 						P(Class("text-2xl font-bold mb-4"), T(evt.Name)),
-						Div(T(evt.Description)),
+						Div(Raw(buf.String())),
 						Form(
 							Method("POST"),
 							Action(fmt.Sprintf("/%s/event/%s/invite", c.ID, evt.ID)),
@@ -244,6 +282,13 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 					H2(Class("text-2xl font-bold mb-4"), T(evt.Name)),
 					P(Class("mb-2"), T("Description: "+evt.Description)),
 					P(Class("mb-2"), T("Date: "+evt.Date.Format("2006-01-02"))),
+					A(
+						Class("btn mb-2 no-underline hover:underline"),
+						HxGet(fmt.Sprintf("/%s/event/%s/edit", c.ID, evt.ID)),
+						HxTarget("#event-modal"),
+						HxSwap("innerHTML"),
+						T("Edit"),
+					),
 					A(Class("btn mb-2 no-underline hover:underline"), Href(evt.EventURL), T("Event Link")),
 					A(Class("btn mb-2 no-underline hover:underline"), Href(fmt.Sprintf("/%s/event/%s/invite", c.ID, evt.ID)), T("Invite Attendees")),
 					Div(Ch(rsvps)),
@@ -293,13 +338,26 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 				return
 			}
 
+			id := uuid.NewString()
+			if evt.ID != "" {
+				id = evt.ID
+			}
 			newEvent := CalendarEvent{
-				ID:          uuid.NewString(),
+				ID:          id,
 				Name:        name,
 				Description: description,
 				Date:        date,
 			}
-			c.Events = append(c.Events, newEvent)
+			if evt.ID == "" {
+				c.Events = append(c.Events, newEvent)
+			} else {
+				for i, e := range c.Events {
+					if e.ID == evt.ID {
+						c.Events[i] = newEvent
+						break
+					}
+				}
+			}
 			if err := db.Set(c.ID, c); err != nil {
 				http.Error(w, "Error creating event", http.StatusInternalServerError)
 				return
@@ -702,7 +760,6 @@ h1 {
   transform: translateZ(0);
   backface-visibility: hidden;
   transform: translate3d(0,0,0);
-  padding: 0 0 0 20px;
   margin-bottom: -10px;
 }
 
@@ -761,9 +818,6 @@ h1 {
   bottom: 0;
   transform: translate(-102%, 51%) rotate(134deg);
 }
-  
-
-
 .square-small-bottom {
   width: 160px;
   height: 130px;
@@ -797,8 +851,6 @@ h1 {
   -webkit-transition: all .2s ease-in-out;
   transition: all .2s ease-in-out;
 }
-
-
 .wrapper:hover .square-small-bottom {
   box-shadow: 5px -5px 10px 0 rgba(0,0,0,0.25);
   
@@ -813,9 +865,6 @@ h1 {
   -webkit-transition: all .5s .2s ease-in-out;
   transition: all .5s .2s ease-in-out;
 }
-
-
-
 .square-small-bottom::after {
   content: '';
   position:absolute;
