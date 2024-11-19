@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/breadchris/share/deps"
@@ -19,7 +20,7 @@ var websockerUpgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-type CommandFunc func(string) []string
+type CommandFunc func(string, string) []string
 
 type CommandRegistry struct {
 	handlers map[string]CommandFunc
@@ -117,7 +118,7 @@ func WebsocketUI(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
 }
 
 func setupHandlers(registry *CommandRegistry) {
-	registry.Register("1", func(message string) []string {
+	registry.Register("1", func(message string, pageId string) []string {
 		return []string{
 			Div(
 				Id("container-1"),
@@ -127,7 +128,7 @@ func setupHandlers(registry *CommandRegistry) {
 		}
 	})
 
-	registry.Register("2", func(message string) []string {
+	registry.Register("2", func(message string, pageId string) []string {
 		return []string{
 			Div(
 				Id("container-2"),
@@ -137,7 +138,7 @@ func setupHandlers(registry *CommandRegistry) {
 		}
 	})
 
-	registry.Register("ping", func(message string) []string {
+	registry.Register("ping", func(message string, pageId string) []string {
 		return []string{
 			Div(
 				Id("container-1"),
@@ -189,7 +190,6 @@ func (c *WebsocketClient) readPump(w http.ResponseWriter, r *http.Request) {
 			log.Println("ReadMessage error:", err)
 			break
 		}
-
 		var msgMap map[string]interface{}
 
 		err = json.Unmarshal(message, &msgMap)
@@ -197,6 +197,15 @@ func (c *WebsocketClient) readPump(w http.ResponseWriter, r *http.Request) {
 			log.Println("JSON Unmarshal error:", err)
 			return
 		}
+
+		pageId := ""
+		// get msgMap["HEADERS"].(map[string]interface{})["HX-Current-URL"].(string), "/card/")[1] if it exists
+		if headers, ok := msgMap["HEADERS"].(map[string]interface{}); ok {
+			if currentURL, ok := headers["HX-Current-URL"].(string); ok {
+				pageId = strings.Split(currentURL, "/card/")[1]
+			}
+		}
+		
 		for key, value := range msgMap {
 
 			// Get the command from the command field
@@ -210,7 +219,7 @@ func (c *WebsocketClient) readPump(w http.ResponseWriter, r *http.Request) {
 			handler, ok := c.registry.handlers[key]
 			c.registry.mu.RUnlock()
 			if ok {
-				cmdMsgs = handler(msg)
+				cmdMsgs = handler(msg, pageId)
 			} else {
 				cmdMsgs = []string{Div(
 					Id("container-1"),

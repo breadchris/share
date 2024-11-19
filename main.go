@@ -132,7 +132,7 @@ func startServer(useTLS bool, port int) {
 	setupHandlers(registry)
 
 	p("/card", interpreted(func(deps deps2.Deps) *http.ServeMux {
-		return Card(deps, registry)
+		return NewCard(deps, registry)
 	}))
 	p("/websocket", interpreted(func(deps deps2.Deps) *http.ServeMux {
 		return WebsocketUI(deps, registry)

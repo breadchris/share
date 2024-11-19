@@ -10,12 +10,25 @@ import (
 
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
+	"github.com/google/uuid"
 )
 
-func Card(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
-	registry.Register("edit", func(message string) []string {
+type Card struct {
+	ID      string
+	Message string
+	Image   string
+}
+
+func NewCard(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
+	db := d.Docs.WithCollection("card")
+
+	registry.Register("edit", func(message string, pageId string) []string {
 		return []string{
 			Div(
+				Script(Raw(`
+				// log the query string route
+				console.log(window.location.pathname);
+				`)),
 				Id("content"),
 				Attr("hx-swap-oob", "innerHTML"),
 				Form(
@@ -49,7 +62,16 @@ func Card(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
 		}
 	})
 
-	registry.Register(("save"), func(message string) []string {
+	registry.Register(("save"), func(message string, pageId string) []string {
+		fmt.Printf("%+q", pageId)
+		card := Card{}
+		if err := db.Get(pageId, &card); err != nil {
+			fmt.Println("Failed: ", err)
+		}
+		card.Message = message
+		if err := db.Set(pageId, card); err != nil {
+			fmt.Println(err)
+		}
 		return []string{
 			contentSection(message).Render(),
 			editCardForm(message).Render(),
@@ -60,13 +82,38 @@ func Card(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
 	})
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		isMobile := strings.Contains(r.Header.Get("User-Agent"), "Android") || strings.Contains(r.Header.Get("User-Agent"), "iPhone")
-
-		NewWebsocketPage(createCard(isMobile).Children).RenderPage(w, r)
+		id := r.PathValue("id")
+		if id == "" {
+			id = uuid.NewString()
+			card := Card{
+				ID:      id,
+				Message: "This is the text on the card!",
+				Image:   "/data/cards/images/default.png",
+			}
+			if err := db.Set(id, card); err != nil {
+				http.Error(w, "Could not create card", http.StatusInternalServerError)
+				return
+			}
+			http.Redirect(w, r, "/card/"+id, http.StatusSeeOther)
+			return
+		}
+		var card Card
+		fmt.Printf("%+q", id)
+		if err := db.Get(id, &card); err != nil {
+			http.Error(w, "Could not get card", http.StatusNotFound)
+			return
+		}
+		NewWebsocketPage(createCard(isMobile, card).Children).RenderPage(w, r)
 	})
 
 	mux.HandleFunc("/upload-image", func(w http.ResponseWriter, r *http.Request) {
+		pageId := ""
+		if currentURL, ok := r.Header["Hx-Current-Url"]; ok {
+			pageId = strings.Split(currentURL[0], "/card/")[1]
+		}
+
 		err := r.ParseMultipartForm(10 << 20) // Limit upload size to 10MB
 		if err != nil {
 			http.Error(w, "Could not parse multipart form", http.StatusBadRequest)
@@ -96,7 +143,22 @@ func Card(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
 			return
 		}
 		// Generate the updated image HTML
+		card := Card{}
 		imageSrc := "/data/cards/images/" + fileName
+		doc, err := db.List()
+		fmt.Println("db list:", doc)
+		if err := db.Get(pageId, &card); err != nil {
+			fmt.Println("Failed with: ", err)
+			http.Error(w, "Could not get card!", http.StatusInternalServerError)
+			return
+		}
+		card.Image = imageSrc
+		if err := db.Set(pageId, card); err != nil {
+			http.Error(w, "Could not save image", http.StatusInternalServerError)
+			return
+		} else {
+			fmt.Println("Saved image to:", imageSrc)
+		}
 		// Render the updated image div
 		w.Header().Set("Content-Type", "text/html")
 		w.Write([]byte(imageSection(imageSrc, true).Render()))
@@ -105,13 +167,13 @@ func Card(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
 	return mux
 }
 
-func createCard(isMobile bool) *Node {
+func createCard(isMobile bool, card Card) *Node {
 	cardStyle := Class("mx-auto my-10 rounded-lg shadow-lg md:w-[250px] md:h-[350px] md:aspect-auto")
 	if isMobile {
 		cardStyle = Class("mx-auto my-10 w-[90vw] aspect-[5/7] rounded-lg shadow-lg")
 	}
-	message := "This is the text on the card!"
-	imageSrc := "/data/cards/images/default.png" // Default image source
+	message := card.Message
+	imageSrc := card.Image
 
 	return Div(
 		Div(
