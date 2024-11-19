@@ -1,8 +1,12 @@
 package main
 
 import (
+	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
@@ -21,7 +25,7 @@ func Card(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
 						Class("mt-2"),
 						TextArea(
 							Class("w-full"),
-							Attr("rows", "5"),
+							Attr("rows", "4"),
 							Attr("autofocus", ""),
 							Name("save"),
 							T(message),
@@ -41,6 +45,7 @@ func Card(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
 				Attr("onclick", "document.getElementById('save-form-button').click()"),
 				T("Save"),
 			).Render(),
+			uploadImageForm().Render(),
 		}
 	})
 
@@ -48,6 +53,9 @@ func Card(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
 		return []string{
 			contentSection(message).Render(),
 			editCardForm(message).Render(),
+			Div(
+				Id("upload-image-form"),
+			).Render(),
 		}
 	})
 
@@ -57,6 +65,43 @@ func Card(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
 
 		NewWebsocketPage(createCard(isMobile).Children).RenderPage(w, r)
 	})
+
+	mux.HandleFunc("/upload-image", func(w http.ResponseWriter, r *http.Request) {
+		err := r.ParseMultipartForm(10 << 20) // Limit upload size to 10MB
+		if err != nil {
+			http.Error(w, "Could not parse multipart form", http.StatusBadRequest)
+			return
+		}
+		file, handler, err := r.FormFile("image")
+		if err != nil {
+			http.Error(w, "Could not get uploaded file", http.StatusBadRequest)
+			return
+		}
+		defer file.Close()
+		// Create the images directory if it doesn't exist
+		os.MkdirAll("data/cards/images/", os.ModePerm)
+		// Generate a unique filename
+		fileName := fmt.Sprintf("%d-%s", time.Now().UnixNano(), handler.Filename)
+		// Create the file
+		dst, err := os.Create("data/cards/images/" + fileName)
+		if err != nil {
+			http.Error(w, "Could not create file", http.StatusInternalServerError)
+			return
+		}
+		defer dst.Close()
+		// Copy the uploaded file to the destination file
+		_, err = io.Copy(dst, file)
+		if err != nil {
+			http.Error(w, "Could not save file", http.StatusInternalServerError)
+			return
+		}
+		// Generate the updated image HTML
+		imageSrc := "/data/cards/images/" + fileName
+		// Render the updated image div
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte(imageSection(imageSrc, true).Render()))
+	})
+
 	return mux
 }
 
@@ -66,19 +111,14 @@ func createCard(isMobile bool) *Node {
 		cardStyle = Class("mx-auto my-10 w-[90vw] aspect-[5/7] rounded-lg shadow-lg")
 	}
 	message := "This is the text on the card!"
+	imageSrc := "/data/cards/images/default.png" // Default image source
+
 	return Div(
 		Div(
 			ReloadNode("websocket.go"),
 			cardStyle,
 			// Image Section
-			Div(
-				Class("w-full h-[60%] bg-gray-200 rounded-t-lg overflow-hidden"),
-				Img(
-					Class("w-full h-full object-cover"),
-					Attr("src", "https://via.placeholder.com/250x210"),
-					Attr("alt", "Pokemon"),
-				),
-			),
+			imageSection(imageSrc, false),
 			// Content Section
 			contentSection(message),
 		),
@@ -86,6 +126,27 @@ func createCard(isMobile bool) *Node {
 		editCardForm(message),
 	)
 }
+
+func imageSection(imageSrc string, isEditing bool) *Node {
+	imageForm := Div(
+		Id("upload-image-form"),
+	)
+	if isEditing {
+		imageForm = uploadImageForm()
+	}
+	return Div(
+		Id("card-image"),
+		Class("w-full h-[60%] bg-gray-200 rounded-t-lg overflow-hidden relative"),
+		Img(
+			Class("w-full h-full object-cover"),
+			Attr("src", imageSrc),
+			Attr("alt", "Card Image"),
+		),
+		// Upload Image form
+		imageForm,
+	)
+}
+
 func contentSection(message string) *Node {
 	return Div(
 		Id("content"),
@@ -93,6 +154,35 @@ func contentSection(message string) *Node {
 		P(
 			Class("mt-2"),
 			T(message),
+		),
+	)
+}
+
+func uploadImageForm() *Node {
+	return Div(
+		Id("upload-image-form"),
+		Class("absolute top-2 right-0 m-2"),
+		Form(
+			Class("text-right"),
+			Attr("enctype", "multipart/form-data"),
+			Attr("method", "POST"),
+			Attr("hx-post", "/card/upload-image"),
+			Attr("hx-target", "#card-image"),
+			Attr("hx-swap", "outerHTML"),
+			Div(
+				Class("mt-2"),
+				Input(
+					Class("block w-full border shadow-sm rounded-lg text-sm focus:z-10 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none file:bg-gray-50 file:border-0 file:me-4 file:py-3 file:px-4"),
+					Type("file"),
+					Name("image"),
+					Attr("accept", "image/*"),
+				),
+			),
+			Input(
+				Class("mt-2 bg-green-500 hover:bg-green-700 text-white font-bold rounded"),
+				Type("submit"),
+				Value("Upload Image"),
+			),
 		),
 	)
 }
