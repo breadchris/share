@@ -165,7 +165,7 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 					Attr("hx-swap", "outerHTML"),
 					Class("space-y-4"),
 					Input(Type("text"), Name("name"), Value(evt.Name), Placeholder("Event Name"), Class("w-full p-2 border border-gray-300 rounded")),
-					TextArea(Name("description"), Value(evt.Description), Placeholder("Description"), Class("w-full p-2 border border-gray-300 rounded")),
+					TextArea(Name("description"), T(evt.Description), Placeholder("Description"), Class("w-full p-2 border border-gray-300 rounded")),
 					Input(Type("date"), Value(evt.Date.Format("2006-01-02")), Name("date"), Class("w-full p-2 border border-gray-300 rounded")),
 					Div(
 						Button(Type("submit"), T("Update Event"), Class("bg-blue-500 text-white px-4 py-2 rounded")),
@@ -274,14 +274,20 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 					P(T(rsvp.Note)),
 				))
 			}
+			md := goldmark.New()
+			var buf bytes.Buffer
+			if err := md.Convert([]byte(evt.Description), &buf); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 			render(w, r, renderModal(
 				Div(
 					Img(
 						Src(evt.ImageURL),
 					),
 					H2(Class("text-2xl font-bold mb-4"), T(evt.Name)),
-					P(Class("mb-2"), T("Description: "+evt.Description)),
 					P(Class("mb-2"), T("Date: "+evt.Date.Format("2006-01-02"))),
+					Div(Raw(buf.String())),
 					A(
 						Class("btn mb-2 no-underline hover:underline"),
 						HxGet(fmt.Sprintf("/%s/event/%s/edit", c.ID, evt.ID)),
@@ -753,7 +759,6 @@ body {
   -webkit-transform: translate(-50%, -50%);
   transform: translate(-50%, -50%);
 }
-
 
 h1 {
   font-size: 1.5rem;
