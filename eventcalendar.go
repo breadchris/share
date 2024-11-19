@@ -167,11 +167,11 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 							Method("POST"),
 							Action(fmt.Sprintf("/%s/event/%s/invite", c.ID, evt.ID)),
 							Class("space-y-4"),
-							Input(Type("text"), Name("name"), Placeholder("Name"), Class("w-full p-2 border border-gray-300 rounded")),
-							TextArea(Name("note"), Placeholder("Note"), Class("w-full p-2 border border-gray-300 rounded")),
+							Input(Type("text"), Name("name"), Placeholder("Name"), Class("input text-white w-full p-2 border rounded")),
+							TextArea(Name("note"), Placeholder("Note"), Class("input text-white w-full p-2 border rounded")),
 							Button(Type("submit"), T("RSVP"), Class("bg-blue-500 text-white px-4 py-2 rounded")),
 						),
-						Iframe(Width("100%"), Height("315"), Src("https://www.youtube.com/embed/MAM4vbVy_Q8?si=3-ijyjJBBQ-rdY-R"), Title(T("YouTube video player")), Attrs(map[string]string{
+						Iframe(Width("100%"), Height("315"), Src("https://www.youtube.com/embed/MAM4vbVy_Q8?si=3-ijyjJBBQ-rdY-R"), Attrs(map[string]string{
 							"frameborder":        "0",
 							"allow":              "accelerometer",
 							"autoplay":           "clipboard-write",
@@ -190,23 +190,12 @@ func NewCalendar(d deps.Deps) *http.ServeMux {
 				return
 			}
 
-			rsvpID := r.PathValue("id")
-			if rsvpID == "" {
-				rsvp := RSVP{
-					ID:   uuid.NewString(),
-					Name: r.FormValue("name"),
-					Note: r.FormValue("note"),
-				}
-				evt.RSVPs = append(evt.RSVPs, rsvp)
-			} else {
-				for i, rsvp := range evt.RSVPs {
-					if rsvp.ID == rsvpID {
-						evt.RSVPs[i].Name = r.FormValue("name")
-						evt.RSVPs[i].Note = r.FormValue("note")
-						break
-					}
-				}
+			rsvp := RSVP{
+				ID:   uuid.NewString(),
+				Name: r.FormValue("name"),
+				Note: r.FormValue("note"),
 			}
+			evt.RSVPs = append(evt.RSVPs, rsvp)
 			for i, e := range c.Events {
 				if e.ID == evt.ID {
 					c.Events[i] = evt
