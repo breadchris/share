@@ -20,7 +20,7 @@ var websockerUpgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-type CommandFunc func() string
+type CommandFunc func(string, string) []string
 
 type CommandRegistry struct {
 	handlers map[string]CommandFunc
@@ -44,7 +44,6 @@ type WebsocketClient struct {
 	send     chan []byte
 	registry *CommandRegistry
 }
-
 
 type Hub struct {
 	clients    map[*WebsocketClient]bool
@@ -118,48 +117,36 @@ func WebsocketUI(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
 	return mux
 }
 
-
 func setupHandlers(registry *CommandRegistry) {
-	registry.Register("1", func() string {
-		return Div(
-			Id("container-1"),
-			Attr("hx-swap-oob", "innerHTML"),
-			T("container 1"),
-		).Render()
+	registry.Register("1", func(message string, pageId string) []string {
+		return []string{
+			Div(
+				Id("container-1"),
+				Attr("hx-swap-oob", "innerHTML"),
+				T("container 1"),
+			).Render(),
+		}
 	})
 
-	registry.Register("2", func() string {
-		return Div(
-			Id("container-2"),
-			Attr("hx-swap-oob", "innerHTML"),
-			T("container 2"),
-		).Render()
+	registry.Register("2", func(message string, pageId string) []string {
+		return []string{
+			Div(
+				Id("container-2"),
+				Attr("hx-swap-oob", "innerHTML"),
+				T("container 2"),
+			).Render(),
+		}
 	})
 
-	registry.Register("ping", func() string {
-		return Div(
-			Id("container-1"),
-			Attr("hx-swap-oob", "innerHTML"),
-			T("Pong"),
-		).Render()
+	registry.Register("ping", func(message string, pageId string) []string {
+		return []string{
+			Div(
+				Id("container-1"),
+				Attr("hx-swap-oob", "innerHTML"),
+				T("Pong"),
+			).Render(),
+		}
 	})
-}
-
-
-func (cr *CommandRegistry) Run(command string) string {
-	cr.mu.RLock()
-	handler, ok := cr.handlers[command]
-	cr.mu.RUnlock()
-	if ok {
-		return handler()
-	} else {
-		log.Println("Unknown command:", command)
-		return Div(
-			Id("container-1"),
-			Attr("hx-swap-oob", "innerHTML"),
-			T("Unknown command"),
-		).Render()
-	}
 }
 
 func (h *Hub) run() {
@@ -203,35 +190,57 @@ func (c *WebsocketClient) readPump(w http.ResponseWriter, r *http.Request) {
 			log.Println("ReadMessage error:", err)
 			break
 		}
-		// Parse the incoming JSON message
 		var msgMap map[string]interface{}
+
 		err = json.Unmarshal(message, &msgMap)
 		if err != nil {
 			log.Println("JSON Unmarshal error:", err)
-			continue
+			return
 		}
-		// Extract the command field
-		data, ok := msgMap["command"]
-		if !ok {
-			log.Println("command field not found")
-			continue
+
+		pageId := ""
+		// get msgMap["HEADERS"].(map[string]interface{})["HX-Current-URL"].(string), "/card/")[1] if it exists
+		if headers, ok := msgMap["HEADERS"].(map[string]interface{}); ok {
+			if currentURL, ok := headers["HX-Current-URL"].(string); ok {
+				pageId = strings.Split(currentURL, "/card/")[1]
+			}
 		}
-		// Get the command from the command field
-		command, ok := data.(string)
-		if !ok {
-			log.Println("command is not a string")
-			continue
+
+		for key, value := range msgMap {
+
+			// Get the command from the command field
+			msg, ok := value.(string)
+			if !ok {
+				msg = ""
+			}
+			cmdMsgs := []string{}
+
+			c.registry.mu.RLock()
+			handler, ok := c.registry.handlers[key]
+			c.registry.mu.RUnlock()
+			if ok {
+				cmdMsgs = handler(msg, pageId)
+			} else {
+				cmdMsgs = []string{Div(
+					Id("container-1"),
+					Attr("hx-swap-oob", "innerHTML"),
+					T("Unknown command"),
+				).Render(),
+				}
+			}
+
+			for _, cmdMsg := range cmdMsgs {
+				hub.broadcast <- []byte(cmdMsg)
+				// c.send <- []byte(cmdMsg)
+			}
 		}
-		fmt.Println("Command:", command)
-		cmdMsg := c.registry.Run(command)
-		c.send <- []byte(cmdMsg)
 	}
 }
-
 
 func (c *WebsocketClient) writePump() {
 	defer c.conn.Close()
 	for message := range c.send {
+		fmt.Println("Sending message:", string(message))
 		err := c.conn.WriteMessage(websocket.TextMessage, message)
 		if err != nil {
 			log.Println("WriteMessage error:", err)
@@ -259,73 +268,4 @@ func websocketHandler2(registry *CommandRegistry) http.HandlerFunc {
 		go client.writePump()
 		client.readPump(w, r)
 	}
-}
-
-func Card(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
-	registry.Register("edit", func() string {
-		return Div(
-			Id("content"),
-			Attr("hx-swap-oob", "innerHTML"),
-			Input(
-				Type("text"),
-			),
-		).Render()
-	})
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		isMobile := strings.Contains(r.Header.Get("User-Agent"), "Android") || strings.Contains(r.Header.Get("User-Agent"), "iPhone")
-
-		NewWebsocketPage(createCard(isMobile).Children).RenderPage(w, r)
-	})
-	return mux
-}
-
-
-func createCard(isMobile bool) *Node {
-	cardStyle := Class("mx-auto my-10 rounded-lg shadow-lg md:w-[250px] md:h-[350px] md:aspect-auto")
-	if isMobile {
-		cardStyle = Class("mx-auto my-10 w-[90vw] aspect-[5/7] rounded-lg shadow-lg")
-	}
-	return Div(
-		Div(
-			cardStyle,
-			// Image Section
-			Div(
-				Class("w-full h-[60%] bg-gray-200 rounded-t-lg overflow-hidden"),
-				Img(
-					Class("w-full h-full object-cover"),
-					Attr("src", "https://via.placeholder.com/250x210"),
-					Attr("alt", "Pokemon"),
-				),
-			),
-			// Content Section
-			Div(
-				Id("content"),
-				Class("p-4"),
-				H2(
-					Class("text-xl font-bold"),
-					T("Pokemon Name"),
-				),
-				P(
-					Class("text-sm mt-2"),
-					T("This is a description of the Pokemon card."),
-				),
-			),
-			// Edit Button
-			Form(
-				Attr("ws-send", "submit"),
-				Input(
-					Type("hidden"),
-					Name("command"),
-					Value("edit"),
-				),
-				Input(
-					Class("mt-4 w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"),
-					Type("submit"),
-					Value("Edit Card"),
-				),
-			),
-		),
-	)
 }
