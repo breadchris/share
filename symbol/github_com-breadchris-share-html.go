@@ -31,6 +31,7 @@ func init() {
 		"BuildFormCtx":            reflect.ValueOf(html.BuildFormCtx),
 		"Button":                  reflect.ValueOf(html.Button),
 		"Ch":                      reflect.ValueOf(html.Ch),
+		"Cha":                     reflect.ValueOf(html.Cha),
 		"Charset":                 reflect.ValueOf(html.Charset),
 		"Checked":                 reflect.ValueOf(html.Checked),
 		"Chl":                     reflect.ValueOf(html.Chl),

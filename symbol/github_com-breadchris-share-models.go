@@ -13,6 +13,8 @@ func init() {
 		"Group":           reflect.ValueOf((*models.Group)(nil)),
 		"GroupMembership": reflect.ValueOf((*models.GroupMembership)(nil)),
 		"Identity":        reflect.ValueOf((*models.Identity)(nil)),
+		"Model":           reflect.ValueOf((*models.Model)(nil)),
 		"User":            reflect.ValueOf((*models.User)(nil)),
+		"UserSecret":      reflect.ValueOf((*models.UserSecret)(nil)),
 	}
 }

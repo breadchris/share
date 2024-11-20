@@ -19,6 +19,7 @@ var (
 	)
 	TailwindCSS = Script(Src("https://cdn.tailwindcss.com"))
 	HTMX        = Script(Src("https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js"))
+	Hyperscript = Script(Src("https://unpkg.com/hyperscript.org@0.9.13"))
 )
 
 func DefaultLayout(n *Node) *Node {
@@ -453,6 +454,19 @@ func Chl(c ...*Node) *Node {
 					continue
 				}
 				p.Children = append(p.Children, n)
+			}
+		},
+	}
+}
+
+func Cha(c []*Node) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			for _, n := range c {
+				if c == nil {
+					continue
+				}
+				p.Init(n)
 			}
 		},
 	}
