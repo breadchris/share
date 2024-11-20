@@ -63,14 +63,13 @@ func NewCard(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
 	})
 
 	registry.Register(("save"), func(message string, pageId string) []string {
-		fmt.Printf("%+q", pageId)
 		card := Card{}
 		if err := db.Get(pageId, &card); err != nil {
 			fmt.Println("Failed: ", err)
 		}
 		card.Message = message
 		if err := db.Set(pageId, card); err != nil {
-			fmt.Println(err)
+			fmt.Println("DB failed to set:", err)
 		}
 		return []string{
 			contentSection(message).Render(),
@@ -100,7 +99,6 @@ func NewCard(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
 			return
 		}
 		var card Card
-		fmt.Printf("%+q", id)
 		if err := db.Get(id, &card); err != nil {
 			http.Error(w, "Could not get card", http.StatusNotFound)
 			return
@@ -145,8 +143,7 @@ func NewCard(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
 		// Generate the updated image HTML
 		card := Card{}
 		imageSrc := "/data/cards/images/" + fileName
-		doc, err := db.List()
-		fmt.Println("db list:", doc)
+
 		if err := db.Get(pageId, &card); err != nil {
 			fmt.Println("Failed with: ", err)
 			http.Error(w, "Could not get card!", http.StatusInternalServerError)

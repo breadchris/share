@@ -205,7 +205,7 @@ func (c *WebsocketClient) readPump(w http.ResponseWriter, r *http.Request) {
 				pageId = strings.Split(currentURL, "/card/")[1]
 			}
 		}
-		
+
 		for key, value := range msgMap {
 
 			// Get the command from the command field
@@ -230,7 +230,8 @@ func (c *WebsocketClient) readPump(w http.ResponseWriter, r *http.Request) {
 			}
 
 			for _, cmdMsg := range cmdMsgs {
-				c.send <- []byte(cmdMsg)
+				hub.broadcast <- []byte(cmdMsg)
+				// c.send <- []byte(cmdMsg)
 			}
 		}
 	}
@@ -239,6 +240,7 @@ func (c *WebsocketClient) readPump(w http.ResponseWriter, r *http.Request) {
 func (c *WebsocketClient) writePump() {
 	defer c.conn.Close()
 	for message := range c.send {
+		fmt.Println("Sending message:", string(message))
 		err := c.conn.WriteMessage(websocket.TextMessage, message)
 		if err != nil {
 			log.Println("WriteMessage error:", err)
