@@ -4,14 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/eventcalendar.go" beforeDir="false" afterPath="$PROJECT_DIR$/eventcalendar.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/everout.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/html.go" beforeDir="false" afterPath="$PROJECT_DIR$/html/html.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-html.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-html.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-models.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-models.go" afterDir="false" />
-    </list>
+    <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -186,7 +179,7 @@
       <workItem from="1730866797883" duration="126000" />
       <workItem from="1730866961438" duration="10483000" />
       <workItem from="1730954775854" duration="79184000" />
-      <workItem from="1731815313498" duration="26739000" />
+      <workItem from="1731815313498" duration="27115000" />
     </task>
     <servers />
   </component>

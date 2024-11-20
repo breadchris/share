@@ -19,8 +19,9 @@ func Index() *Node {
 	}
 
 	urls := []link{
-		{"/github", "Github"},
+		{"/calendar", "Calendar"},
 		{"/notes/", "Notes"},
+		{"/zine", "Zine"},
 		{"/data/recipes/", "Recipes"},
 		{"/login", "Login"},
 		{"/register", "Register"},
@@ -29,9 +30,9 @@ func Index() *Node {
 		{"/chat", "Chat"},
 		{"/llm", "LLM"},
 		{"/spotify", "Spotify"},
-		{"/zine", "Zine"},
 		{"/code", "Code"},
 		{"/vote", "Vote"},
+		{"/github", "Github"},
 	}
 	toggleMenu := Attr("onclick", "document.getElementById('menu').classList.toggle('hidden')")
 	return Html(
