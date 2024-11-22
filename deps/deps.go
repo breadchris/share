@@ -5,15 +5,17 @@ import (
 	"github.com/breadchris/share/db"
 	"github.com/breadchris/share/editor/leaps"
 	"github.com/breadchris/share/session"
+	"github.com/breadchris/share/websocket"
 	"github.com/sashabaranov/go-openai"
 	"gorm.io/gorm"
 )
 
 type Deps struct {
-	DB      *gorm.DB
-	Docs    *db.DocumentStore
-	Session *session.SessionManager
-	Leaps   *leaps.Leaps
-	AI      *openai.Client
-	Config  config.AppConfig
+	DB                *gorm.DB
+	Docs              *db.DocumentStore
+	Session           *session.SessionManager
+	Leaps             *leaps.Leaps
+	AI                *openai.Client
+	Config            config.AppConfig
+	WebsocketRegistry *websocket.CommandRegistry
 }

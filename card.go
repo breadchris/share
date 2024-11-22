@@ -19,16 +19,13 @@ type Card struct {
 	Image   string
 }
 
-func NewCard(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
-	db := d.Docs.WithCollection("card")
+func RegisterCardWebsocketHandlers(d deps.Deps, collection string) {
+	db := d.Docs.WithCollection(collection)
 
-	registry.Register("edit", func(message string, pageId string) []string {
+	d.WebsocketRegistry.Register("edit", func(message string, pageId string) []string {
+		fmt.Println("Edit: ", message, pageId)
 		return []string{
 			Div(
-				Script(Raw(`
-				// log the query string route
-				console.log(window.location.pathname);
-				`)),
 				Id("content"),
 				Attr("hx-swap-oob", "innerHTML"),
 				Form(
@@ -45,6 +42,11 @@ func NewCard(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
 						),
 					),
 					Input(
+						Type("hidden"),
+						Name("id"),
+						Value(pageId),
+					),
+					Input(
 						Id("save-form-button"),
 						Attr("hidden", ""),
 						Class("mt-4 w-full bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"),
@@ -58,34 +60,41 @@ func NewCard(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
 				Attr("onclick", "document.getElementById('save-form-button').click()"),
 				T("Save"),
 			).Render(),
-			uploadImageForm().Render(),
+			uploadImageForm(pageId).Render(),
 		}
 	})
 
-	registry.Register(("save"), func(message string, pageId string) []string {
+	d.WebsocketRegistry.Register(("save"), func(message string, cardId string) []string {
 		card := Card{}
-		if err := db.Get(pageId, &card); err != nil {
-			fmt.Println("Failed: ", err)
+		if err := db.Get(cardId, &card); err != nil {
+
+			fmt.Println(fmt.Sprintf("Failed to get card with id %s: ", cardId), err)
 		}
 		card.Message = message
-		if err := db.Set(pageId, card); err != nil {
+		if err := db.Set(cardId, card); err != nil {
 			fmt.Println("DB failed to set:", err)
 		}
 		return []string{
 			contentSection(message).Render(),
-			editCardForm(message).Render(),
+			editCardForm(cardId, message).Render(),
 			Div(
 				Id("upload-image-form"),
 			).Render(),
 		}
 	})
+}
+
+func NewCard(d deps.Deps) *http.ServeMux {
+	db := d.Docs.WithCollection("card")
+
+	RegisterCardWebsocketHandlers(d, "card")
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		isMobile := strings.Contains(r.Header.Get("User-Agent"), "Android") || strings.Contains(r.Header.Get("User-Agent"), "iPhone")
 		id := r.PathValue("id")
 		if id == "" {
-			id = uuid.NewString()
+			id = NewCardId()
 			card := Card{
 				ID:      id,
 				Message: "This is the text on the card!",
@@ -103,13 +112,15 @@ func NewCard(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
 			http.Error(w, "Could not get card", http.StatusNotFound)
 			return
 		}
-		NewWebsocketPage(createCard(isMobile, card).Children).RenderPage(w, r)
+		NewWebsocketPage(CardEditor(isMobile, card).Children).RenderPage(w, r)
 	})
 
 	mux.HandleFunc("/upload-image", func(w http.ResponseWriter, r *http.Request) {
-		pageId := ""
-		if currentURL, ok := r.Header["Hx-Current-Url"]; ok {
-			pageId = strings.Split(currentURL[0], "/card/")[1]
+		pageId := r.FormValue("id")
+		if pageId == "" {
+			if currentURL, ok := r.Header["Hx-Current-Url"]; ok {
+				pageId = strings.Split(currentURL[0], "/card/")[1]
+			}
 		}
 
 		err := r.ParseMultipartForm(10 << 20) // Limit upload size to 10MB
@@ -158,10 +169,36 @@ func NewCard(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
 		}
 		// Render the updated image div
 		w.Header().Set("Content-Type", "text/html")
-		w.Write([]byte(imageSection(imageSrc, true).Render()))
+		w.Write([]byte(imageSection(imageSrc, true, card.ID).Render()))
 	})
 
 	return mux
+}
+func NewCardId() string {
+	return "c" + uuid.NewString()
+}
+func CreateCardData(id string, message string, image string) Card {
+	if id == "" {
+		id = NewCardId()
+	}
+	if message == "" {
+		message = "This is the text on the card!"
+	}
+	if image == "" {
+		image = "/data/cards/images/default.png"
+	}
+	return Card{
+		ID:      id,
+		Message: message,
+		Image:   image,
+	}
+}
+
+func CardEditor(isMobile bool, card Card) *Node {
+	return Div(
+		createCard(isMobile, card),
+		editCardForm(card.ID, card.Message),
+	)
 }
 
 func createCard(isMobile bool, card Card) *Node {
@@ -169,29 +206,21 @@ func createCard(isMobile bool, card Card) *Node {
 	if isMobile {
 		cardStyle = Class("mx-auto my-10 w-[90vw] aspect-[5/7] rounded-lg shadow-lg")
 	}
-	message := card.Message
-	imageSrc := card.Image
 
 	return Div(
-		Div(
-			ReloadNode("websocket.go"),
-			cardStyle,
-			// Image Section
-			imageSection(imageSrc, false),
-			// Content Section
-			contentSection(message),
-		),
-		// Edit Button
-		editCardForm(message),
+		Id(card.ID),
+		cardStyle,
+		imageSection(card.Image, false, card.ID),
+		contentSection(card.Message),
 	)
 }
 
-func imageSection(imageSrc string, isEditing bool) *Node {
+func imageSection(imageSrc string, isEditing bool, pageId string) *Node {
 	imageForm := Div(
 		Id("upload-image-form"),
 	)
 	if isEditing {
-		imageForm = uploadImageForm()
+		imageForm = uploadImageForm(pageId)
 	}
 	return Div(
 		Id("card-image"),
@@ -217,7 +246,7 @@ func contentSection(message string) *Node {
 	)
 }
 
-func uploadImageForm() *Node {
+func uploadImageForm(pageId string) *Node {
 	return Div(
 		Id("upload-image-form"),
 		Class("absolute top-2 right-0 m-2"),
@@ -230,6 +259,11 @@ func uploadImageForm() *Node {
 			Attr("hx-swap", "outerHTML"),
 			Div(
 				Class("mt-2"),
+				Input(
+					Type("hidden"),
+					Name("id"),
+					Value(pageId),
+				),
 				Input(
 					Class("block w-full border shadow-sm rounded-lg text-sm focus:z-10 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none file:bg-gray-50 file:border-0 file:me-4 file:py-3 file:px-4"),
 					Type("file"),
@@ -246,7 +280,7 @@ func uploadImageForm() *Node {
 	)
 }
 
-func editCardForm(message string) *Node {
+func editCardForm(id, message string) *Node {
 	return Div(
 		Id("edit-form"),
 		Div(Class("mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded md:w-[250px] mx-auto my-10"),
@@ -257,16 +291,134 @@ func editCardForm(message string) *Node {
 			Attr("ws-send", "submit"),
 			Input(
 				Type("hidden"),
+				Name("id"),
+				Value(id),
+			),
+			Input(
+				Type("hidden"),
 				Name("edit"),
 				Attr("readonly", ""),
 				Value(message),
 			),
 			Input(
 				Id("edit-form-button"),
-				Class("mt-4 w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"),
 				Attr("hidden", ""),
 				Type("submit"),
 				Value("Edit Card"),
 			),
 		))
+}
+
+type Zine2 struct {
+	ID    string
+	Cards []string
+}
+
+func NewZine(d deps.Deps) *http.ServeMux {
+
+	cardDb := d.Docs.WithCollection("card")
+	zineDb := d.Docs.WithCollection("zine")
+
+	RegisterCardWebsocketHandlers(d, "card")
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
+		isMobile := strings.Contains(r.Header.Get("User-Agent"), "Android") || strings.Contains(r.Header.Get("User-Agent"), "iPhone")
+
+		id := r.PathValue("id")
+		if id == "" {
+			id = NewCardId()
+
+			var cardIds []string
+			for i := 1; i <= 6; i++ {
+				cardData := CreateCardData("", fmt.Sprintf("%d", i), "")
+				cardIds = append(cardIds, cardData.ID)
+
+				//save the card
+				if err := cardDb.Set(cardData.ID, cardData); err != nil {
+					http.Error(w, "Could not create card", http.StatusInternalServerError)
+					return
+				}
+			}
+
+			zine := Zine2{
+				ID:    id,
+				Cards: cardIds,
+			}
+
+			if err := zineDb.Set(id, zine); err != nil {
+				http.Error(w, "Could not create zine", http.StatusInternalServerError)
+				return
+			}
+			http.Redirect(w, r, "/zine/"+id, http.StatusSeeOther)
+			return
+		}
+
+		var zine Zine2
+		if err := zineDb.Get(id, &zine); err != nil {
+			http.Error(w, "Could not get zine", http.StatusNotFound)
+			return
+		}
+
+		content := Div(Id("content-container"))
+		for _, cardId := range zine.Cards {
+			card := Card{}
+			if err := cardDb.Get(cardId, &card); err != nil {
+				http.Error(w, "Could not get card", http.StatusNotFound)
+				return
+			}
+			page := createCard(isMobile, card)
+			page.Attrs["hx-on:click"] = fmt.Sprintf("htmx.ajax('GET', '/zine/card/%s', '#content-container')", card.ID)
+			content.Children = append(content.Children, page)
+		}
+		body := Div(content)
+		NewWebsocketPage(body.Children).RenderPage(w, r)
+	})
+
+	mux.HandleFunc("/card/{id...}", func(w http.ResponseWriter, r *http.Request) {
+		isMobile := strings.Contains(r.Header.Get("User-Agent"), "Android") || strings.Contains(r.Header.Get("User-Agent"), "iPhone")
+		id := r.PathValue("id")
+		if id == "" {
+			http.Redirect(w, r, "/zine/", http.StatusSeeOther)
+			return
+		}
+		var card Card
+		if err := cardDb.Get(id, &card); err != nil {
+			http.Error(w, "Could not get card", http.StatusNotFound)
+			return
+		}
+		CardEditor(isMobile, card).RenderPage(w, r)
+	})
+	return mux
+}
+
+func zineNavBar(id string) *Node {
+	return Div(
+		Class("flex justify-between"),
+		A(
+			Class("text-blue-500 hover:text-blue-700"),
+			Attr("href", fmt.Sprintf("/zine/%s", id)),
+			T("Back"),
+		),
+	)
+}
+
+func NewWebsocketPage(children []*Node) *Node {
+	return Html(
+		Head(
+			Title(T("Websocket Test")),
+			Script(
+				Src("https://unpkg.com/htmx.org@1.9.12"),
+			),
+			Script(
+				Src("https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"),
+			),
+			TailwindCSS,
+		),
+		Body(Div(
+			Attr("hx-ext", "ws"),
+			Attr("ws-connect", "/websocket/ws"),
+			Ch(children),
+		)),
+	)
 }
