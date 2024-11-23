@@ -23,7 +23,6 @@ func RegisterCardWebsocketHandlers(d deps.Deps, collection string) {
 	db := d.Docs.WithCollection(collection)
 
 	d.WebsocketRegistry.Register("edit", func(message string, pageId string) []string {
-		fmt.Println("Edit: ", message, pageId)
 		return []string{
 			Div(
 				Id("content"),
@@ -315,6 +314,26 @@ type Zine2 struct {
 }
 
 func NewZine(d deps.Deps) *http.ServeMux {
+	d.WebsocketRegistry.Register("zine", func(message string, pageId string) []string {
+		zine := Zine2{}
+		if err := d.Docs.WithCollection("zine").Get(pageId, &zine); err != nil {
+			fmt.Println("Failed to get zine with id: ", pageId)
+			return []string{}
+		}
+		var cards []Card
+		for _, cardId := range zine.Cards {
+			var card Card
+			if err := d.Docs.WithCollection("card").Get(cardId, &card); err != nil {
+				fmt.Println("Failed to get card with id: ", cardId)
+				return []string{}
+			}
+			cards = append(cards, card)
+		}
+
+		return []string{
+			makeZine(pageId, cards, false).Render(),
+		}
+	})
 
 	cardDb := d.Docs.WithCollection("card")
 	zineDb := d.Docs.WithCollection("zine")
@@ -353,25 +372,24 @@ func NewZine(d deps.Deps) *http.ServeMux {
 			http.Redirect(w, r, "/zine/"+id, http.StatusSeeOther)
 			return
 		}
-
 		var zine Zine2
 		if err := zineDb.Get(id, &zine); err != nil {
 			http.Error(w, "Could not get zine", http.StatusNotFound)
 			return
 		}
 
-		content := Div(Id("content-container"))
+		var cards []Card
 		for _, cardId := range zine.Cards {
-			card := Card{}
+			var card Card
 			if err := cardDb.Get(cardId, &card); err != nil {
 				http.Error(w, "Could not get card", http.StatusNotFound)
 				return
 			}
-			page := createCard(isMobile, card)
-			page.Attrs["hx-on:click"] = fmt.Sprintf("htmx.ajax('GET', '/zine/card/%s', '#content-container')", card.ID)
-			content.Children = append(content.Children, page)
+			cards = append(cards, card)
 		}
-		body := Div(content)
+
+		content := makeZine(id, cards, isMobile)
+		body := Div(zineNavBar(id), content)
 		NewWebsocketPage(body.Children).RenderPage(w, r)
 	})
 
@@ -392,13 +410,39 @@ func NewZine(d deps.Deps) *http.ServeMux {
 	return mux
 }
 
+func makeZine(id string, cards []Card, isMobile bool) *Node {
+	content := Div(Id("content-container"))
+	for _, card := range cards {
+		page := createCard(isMobile, card)
+		page.Attrs["hx-on:click"] = fmt.Sprintf("htmx.ajax('GET', '/zine/card/%s', '#content-container')", card.ID)
+		content.Children = append(content.Children, page)
+	}
+	return content
+	// return Div(zineNavBar(id), content)
+}
+
 func zineNavBar(id string) *Node {
 	return Div(
+		Id("nav-bar"),
 		Class("flex justify-between"),
-		A(
-			Class("text-blue-500 hover:text-blue-700"),
-			Attr("href", fmt.Sprintf("/zine/%s", id)),
-			T("Back"),
+		Form(
+			Class("mx-auto my-10 rounded-lg shadow-lg md:w-[250px]"),
+			Attr("ws-send", "submit"),
+			Input(
+				Type("hidden"),
+				Name("id"),
+				Value(id),
+			),
+			Input(
+				Type("hidden"),
+				Name("zine"),
+				Attr("readonly", ""),
+			),
+			Input(
+				Id("back-button"),
+				Type("submit"),
+				Value("Back"),
+			),
 		),
 	)
 }
