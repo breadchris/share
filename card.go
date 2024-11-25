@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/breadchris/share/db"
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	"github.com/google/uuid"
@@ -90,28 +91,10 @@ func NewCard(d deps.Deps) *http.ServeMux {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
-		isMobile := strings.Contains(r.Header.Get("User-Agent"), "Android") || strings.Contains(r.Header.Get("User-Agent"), "iPhone")
-		id := r.PathValue("id")
-		if id == "" {
-			id = NewCardId()
-			card := Card{
-				ID:      id,
-				Message: "This is the text on the card!",
-				Image:   "/data/cards/images/default.png",
-			}
-			if err := db.Set(id, card); err != nil {
-				http.Error(w, "Could not create card", http.StatusInternalServerError)
-				return
-			}
-			http.Redirect(w, r, "/card/"+id, http.StatusSeeOther)
-			return
+		switch r.Method {
+		case http.MethodGet:
+			cardGet(db, w, r)
 		}
-		var card Card
-		if err := db.Get(id, &card); err != nil {
-			http.Error(w, "Could not get card", http.StatusNotFound)
-			return
-		}
-		NewWebsocketPage(CardEditor(isMobile, card).Children).RenderPage(w, r)
 	})
 
 	mux.HandleFunc("/upload-image", func(w http.ResponseWriter, r *http.Request) {
@@ -173,6 +156,32 @@ func NewCard(d deps.Deps) *http.ServeMux {
 
 	return mux
 }
+
+func cardGet(db *db.DocumentStore, w http.ResponseWriter, r *http.Request) {
+	isMobile := strings.Contains(r.Header.Get("User-Agent"), "Android") || strings.Contains(r.Header.Get("User-Agent"), "iPhone")
+	id := r.PathValue("id")
+	if id == "" {
+		id = NewCardId()
+		card := Card{
+			ID:      id,
+			Message: "This is the text on the card!",
+			Image:   "/data/cards/images/default.png",
+		}
+		if err := db.Set(id, card); err != nil {
+			http.Error(w, "Could not create card", http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, "/card/"+id, http.StatusSeeOther)
+		return
+	}
+	var card Card
+	if err := db.Get(id, &card); err != nil {
+		http.Error(w, "Could not get card", http.StatusNotFound)
+		return
+	}
+	NewWebsocketPage(CardEditor(isMobile, card).Children).RenderPage(w, r)
+}
+
 func NewCardId() string {
 	return "c" + uuid.NewString()
 }
@@ -201,10 +210,11 @@ func CardEditor(isMobile bool, card Card) *Node {
 }
 
 func createCard(isMobile bool, card Card) *Node {
-	cardStyle := Class("mx-auto my-10 rounded-lg shadow-lg md:w-[250px] md:h-[350px] md:aspect-auto")
-	if isMobile {
-		cardStyle = Class("mx-auto my-10 w-[90vw] aspect-[5/7] rounded-lg shadow-lg")
-	}
+	cardStyle := Class("rounded-lg shadow-lg w-[16.5rem] h-[25.5rem]")
+
+	// if isMobile {
+	// 	cardStyle = Class("w-[90vw] aspect-[5/7] rounded-lg shadow-lg max-w-sm py-32")
+	// }
 
 	return Div(
 		Id(card.ID),
@@ -335,6 +345,18 @@ func NewZine(d deps.Deps) *http.ServeMux {
 		}
 	})
 
+	d.WebsocketRegistry.Register("card", func(message string, pageId string) []string {
+		fmt.Println("card", message, pageId)
+		card := Card{}
+		if err := d.Docs.WithCollection("card").Get(pageId, &card); err != nil {
+			fmt.Println("Failed to get card with id: ", pageId)
+			return []string{}
+		}
+		return []string{
+			Div(Id("content-container"), Class("flex justify-center"), CardEditor(false, card)).Render(),
+			editCardForm(pageId, card.Message).Render(),
+		}
+	})
 	cardDb := d.Docs.WithCollection("card")
 	zineDb := d.Docs.WithCollection("zine")
 
@@ -349,7 +371,7 @@ func NewZine(d deps.Deps) *http.ServeMux {
 			id = NewCardId()
 
 			var cardIds []string
-			for i := 1; i <= 6; i++ {
+			for i := 1; i <= 8; i++ {
 				cardData := CreateCardData("", fmt.Sprintf("%d", i), "")
 				cardIds = append(cardIds, cardData.ID)
 
@@ -411,14 +433,41 @@ func NewZine(d deps.Deps) *http.ServeMux {
 }
 
 func makeZine(id string, cards []Card, isMobile bool) *Node {
-	content := Div(Id("content-container"))
+	content := Div(
+		Class("h-[51rem] w-[66rem] grid grid-cols-4"),
+		// Attr("style", " height: 794px; width: 1123px; margin: 20px auto; background-color: white; border: 1px solid black; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); box-sizing: border-box; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr);"),
+	)
 	for _, card := range cards {
 		page := createCard(isMobile, card)
-		page.Attrs["hx-on:click"] = fmt.Sprintf("htmx.ajax('GET', '/zine/card/%s', '#content-container')", card.ID)
+		page.Attrs["onclick"] = fmt.Sprintf("document.getElementById('button-%s').click()", card.ID)
+
+		cardButton := Form(
+			Attr("ws-send", "submit"),
+			Input(
+				Type("hidden"),
+				Name("id"),
+				Value(card.ID),
+			),
+			Input(
+				Type("hidden"),
+				Name("card"),
+			),
+			Input(
+				Id(fmt.Sprintf("button-%s", card.ID)),
+				Attr("hidden", ""),
+				Type("submit"),
+				Value("Edit Card"),
+				Name("card"),
+			),
+		)
+		page.Children = append(page.Children, cardButton)
 		content.Children = append(content.Children, page)
 	}
-	return content
-	// return Div(zineNavBar(id), content)
+	return Div(
+		Id("content-container"),
+		Class("flex justify-center"),
+		content,
+	)
 }
 
 func zineNavBar(id string) *Node {
@@ -426,7 +475,7 @@ func zineNavBar(id string) *Node {
 		Id("nav-bar"),
 		Class("flex justify-between"),
 		Form(
-			Class("mx-auto my-10 rounded-lg shadow-lg md:w-[250px]"),
+			Class("rounded-lg shadow-lg bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mx-auto my-10 mt-4"),
 			Attr("ws-send", "submit"),
 			Input(
 				Type("hidden"),

@@ -213,8 +213,6 @@ func (c *WebsocketClient) readPump(w http.ResponseWriter, r *http.Request) {
 		}
 
 		for key, value := range msgMap {
-			fmt.Println("Key:", key, "Value:", value)
-			fmt.Println("Registry:", c.registry.handlers)
 			// Get the command from the command field
 			msg, ok := value.(string)
 			if !ok {
