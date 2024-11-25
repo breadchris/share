@@ -4,7 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="" />
+    <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/breadchris.go" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/breadchris.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/eventcalendar.go" beforeDir="false" afterPath="$PROJECT_DIR$/eventcalendar.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension.go" beforeDir="false" afterPath="$PROJECT_DIR$/extension.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/form.go" beforeDir="false" afterPath="$PROJECT_DIR$/html/form.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/html.go" beforeDir="false" afterPath="$PROJECT_DIR$/html/html.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/patchpath.go" beforeDir="false" afterPath="$PROJECT_DIR$/html/patchpath.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/html/patchpath_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/html/patchpath_test.go" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -179,7 +188,7 @@
       <workItem from="1730866797883" duration="126000" />
       <workItem from="1730866961438" duration="10483000" />
       <workItem from="1730954775854" duration="79184000" />
-      <workItem from="1731815313498" duration="27115000" />
+      <workItem from="1731815313498" duration="37362000" />
     </task>
     <servers />
   </component>
@@ -188,5 +197,16 @@
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/html/patchpath_test.go</url>
+          <line>23</line>
+          <option name="timeStamp" value="22" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

@@ -269,7 +269,13 @@ func BuildFormCtx(ctx BuildCtx, data any) *Node {
 	case reflect.Struct:
 		// if type is time.Time, use a date picker
 		if fieldType.String() == "time.Time" {
-			input = Input(Type("date"), Id(currentFieldPath), Name(currentFieldPath), Class("border rounded w-full py-2 px-3"), Value(value.Interface().(time.Time).Format("2006-01-02")))
+			input = Input(
+				Type("date"),
+				Id(currentFieldPath),
+				Name(currentFieldPath),
+				Class("border rounded w-full py-2 px-3"),
+				Value(value.Interface().(time.Time).Format("2006-01-02")),
+			)
 		} else {
 			t := value.Type()
 			input = Div()

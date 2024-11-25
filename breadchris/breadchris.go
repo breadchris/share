@@ -121,7 +121,7 @@ function sendEvent(eventName, data) {
 				}
 			}
 
-			content, err := os.ReadFile("/Users/hacked/Documents/GitHub/notes/pages/Omnivore.md")
+			content, err := os.ReadFile("data/Omnivore.md")
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -136,17 +136,34 @@ function sendEvent(eventName, data) {
 					urls = append(urls, match[1])
 				}
 			}
+
 			url := urls[intID]
+			_ = Div(
+				Class("space-x-4"),
+				A(Href(url), T(url)),
+				If(intID > 0, A(Href(fmt.Sprintf("/breadchris/omnivore/%d", intID-1)), T("Previous")), Nil()),
+				If(intID < len(urls)-1, A(Href(fmt.Sprintf("/breadchris/omnivore/%d", intID+1)), T("Next")), Nil()),
+				Iframe(Src(url), Attrs(map[string]string{
+					"width":  "100%",
+					"height": "100%",
+				})),
+			)
+
+			f := Table(
+				Class("table"),
+			)
+			for _, u := range urls {
+				f.Children = append(
+					f.Children,
+					Tr(
+						Td(A(Href(u), T(u))),
+					),
+				)
+			}
+
 			DefaultLayout(
 				Div(
-					Class("space-x-4"),
-					A(Href(url), T(url)),
-					If(intID > 0, A(Href(fmt.Sprintf("/breadchris/omnivore/%d", intID-1)), T("Previous")), Nil()),
-					If(intID < len(urls)-1, A(Href(fmt.Sprintf("/breadchris/omnivore/%d", intID+1)), T("Next")), Nil()),
-					Iframe(Src(url), Attrs(map[string]string{
-						"width":  "100%",
-						"height": "100%",
-					})),
+					f,
 				)).RenderPage(w, r)
 		}, Ignore()),
 		NewRoute("/static/", func(w http.ResponseWriter, r *http.Request) {

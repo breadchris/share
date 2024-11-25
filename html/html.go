@@ -671,6 +671,22 @@ func A(o ...*Node) *Node {
 	return NewNode("a", o)
 }
 
+func Table(o ...*Node) *Node {
+	return NewNode("table", o)
+}
+
+func Tr(o ...*Node) *Node {
+	return NewNode("tr", o)
+}
+
+func Th(o ...*Node) *Node {
+	return NewNode("th", o)
+}
+
+func Td(o ...*Node) *Node {
+	return NewNode("td", o)
+}
+
 func H1(o ...*Node) *Node {
 	return NewNode("h1", o)
 }
