@@ -319,22 +319,28 @@ func editCardForm(id, message string) *Node {
 }
 
 type Zine2 struct {
-	ID    string
-	Cards []string
+	ID      string
+	Cards   map[int]string
+	CurPage int
 }
 
 func NewZine(d deps.Deps) *http.ServeMux {
 	d.WebsocketRegistry.Register("zine", func(message string, pageId string) []string {
 		zine := Zine2{}
 		if err := d.Docs.WithCollection("zine").Get(pageId, &zine); err != nil {
-			fmt.Println("Failed to get zine with id: ", pageId)
+			fmt.Println("Failed to get zine with id:", pageId)
 			return []string{}
 		}
 		var cards []Card
-		for _, cardId := range zine.Cards {
+		for pageNum := 1; pageNum <= 8; pageNum++ {
+			cardId, exists := zine.Cards[pageNum]
+			if !exists {
+				fmt.Println("No card for page", pageNum)
+				continue
+			}
 			var card Card
 			if err := d.Docs.WithCollection("card").Get(cardId, &card); err != nil {
-				fmt.Println("Failed to get card with id: ", cardId)
+				fmt.Println("Failed to get card with id:", cardId)
 				return []string{}
 			}
 			cards = append(cards, card)
@@ -342,11 +348,31 @@ func NewZine(d deps.Deps) *http.ServeMux {
 
 		return []string{
 			makeZine(pageId, cards, false).Render(),
+			zineNavBar(pageId).Render(),
 		}
 	})
 
 	d.WebsocketRegistry.Register("card", func(message string, pageId string) []string {
-		fmt.Println("card", message, pageId)
+		zine := Zine2{}
+		if err := d.Docs.WithCollection("zine").Get(message, &zine); err != nil {
+			fmt.Println("Failed to get zine with id:", message)
+			return []string{}
+		}
+
+		// for each card in the zine, get the card data
+		for pageNum := 1; pageNum <= 8; pageNum++ {
+			if cardId, exists := zine.Cards[pageNum]; exists {
+				if cardId == pageId {
+					zine.CurPage = pageNum
+					if err := d.Docs.WithCollection("zine").Set(message, zine); err != nil {
+						fmt.Println("Failed to update zine with id:", message)
+						return []string{}
+					}
+					break
+				}
+			}
+		}
+
 		card := Card{}
 		if err := d.Docs.WithCollection("card").Get(pageId, &card); err != nil {
 			fmt.Println("Failed to get card with id: ", pageId)
@@ -355,8 +381,71 @@ func NewZine(d deps.Deps) *http.ServeMux {
 		return []string{
 			Div(Id("content-container"), Class("flex justify-center"), CardEditor(false, card)).Render(),
 			editCardForm(pageId, card.Message).Render(),
+			Form(
+				Id("next-button"),
+				Class("rounded-lg shadow-lg bg-blue-500 hover:bg-blue-700 text-white font-bold m-1 py-2 px-4 rounded my-10 mt-4"),
+				Attr("ws-send", "submit"),
+				Input(
+					Type("submit"),
+					Name("next"),
+					Value("Next Page"),
+				),
+			).Render(),
+			Form(
+				Id("prev-button"),
+				Class("rounded-lg shadow-lg bg-blue-500 hover:bg-blue-700 text-white font-bold m-1 py-2 px-4 rounded my-10 mt-4"),
+				Attr("ws-send", "submit"),
+				Input(
+					Type("submit"),
+					Name("next"),
+					Value("Prev Page"),
+				),
+			).Render(),
 		}
 	})
+
+	d.WebsocketRegistry.Register("next", func(message string, zineId string) []string {
+		zine := Zine2{}
+		if err := d.Docs.WithCollection("zine").Get(zineId, &zine); err != nil {
+			fmt.Println("Failed to get zine with id:", zineId)
+			return []string{}
+		}
+
+		if message == "Next Page" {
+			zine.CurPage++
+			if zine.CurPage > len(zine.Cards) {
+				zine.CurPage = 1
+			}
+		} else if message == "Prev Page" {
+			zine.CurPage--
+			if zine.CurPage < 1 {
+				zine.CurPage = len(zine.Cards)
+			}
+		}
+
+		if err := d.Docs.WithCollection("zine").Set(zineId, zine); err != nil {
+			fmt.Println("Failed to update zine with id:", zineId)
+			return []string{}
+		}
+
+		// Get the new current card
+		cardId := zine.Cards[zine.CurPage]
+		var card Card
+		if err := d.Docs.WithCollection("card").Get(cardId, &card); err != nil {
+			fmt.Println("Failed to get card with id:", cardId)
+			return []string{}
+		}
+
+		// Render the new card view
+		return []string{
+			Div(
+				Id("content-container"),
+				Class("flex justify-center"),
+				CardEditor(false, card),
+			).Render(),
+		}
+	})
+
 	cardDb := d.Docs.WithCollection("card")
 	zineDb := d.Docs.WithCollection("zine")
 
@@ -370,12 +459,12 @@ func NewZine(d deps.Deps) *http.ServeMux {
 		if id == "" {
 			id = NewCardId()
 
-			var cardIds []string
-			for i := 1; i <= 8; i++ {
-				cardData := CreateCardData("", fmt.Sprintf("%d", i), "")
-				cardIds = append(cardIds, cardData.ID)
+			cardIds := make(map[int]string)
+			for pageNum := 1; pageNum <= 8; pageNum++ {
+				cardData := CreateCardData("", fmt.Sprintf("%d", pageNum), "")
+				cardIds[pageNum] = cardData.ID
 
-				//save the card
+				// Save the card
 				if err := cardDb.Set(cardData.ID, cardData); err != nil {
 					http.Error(w, "Could not create card", http.StatusInternalServerError)
 					return
@@ -383,8 +472,9 @@ func NewZine(d deps.Deps) *http.ServeMux {
 			}
 
 			zine := Zine2{
-				ID:    id,
-				Cards: cardIds,
+				ID:      id,
+				Cards:   cardIds,
+				CurPage: 1, // Initialize current page
 			}
 
 			if err := zineDb.Set(id, zine); err != nil {
@@ -394,6 +484,7 @@ func NewZine(d deps.Deps) *http.ServeMux {
 			http.Redirect(w, r, "/zine/"+id, http.StatusSeeOther)
 			return
 		}
+
 		var zine Zine2
 		if err := zineDb.Get(id, &zine); err != nil {
 			http.Error(w, "Could not get zine", http.StatusNotFound)
@@ -401,7 +492,12 @@ func NewZine(d deps.Deps) *http.ServeMux {
 		}
 
 		var cards []Card
-		for _, cardId := range zine.Cards {
+		for pageNum := 1; pageNum <= 8; pageNum++ {
+			cardId, exists := zine.Cards[pageNum]
+			if !exists {
+				http.Error(w, fmt.Sprintf("No card for page %d", pageNum), http.StatusNotFound)
+				return
+			}
 			var card Card
 			if err := cardDb.Get(cardId, &card); err != nil {
 				http.Error(w, "Could not get card", http.StatusNotFound)
@@ -435,7 +531,6 @@ func NewZine(d deps.Deps) *http.ServeMux {
 func makeZine(id string, cards []Card, isMobile bool) *Node {
 	content := Div(
 		Class("h-[51rem] w-[66rem] grid grid-cols-4"),
-		// Attr("style", " height: 794px; width: 1123px; margin: 20px auto; background-color: white; border: 1px solid black; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); box-sizing: border-box; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(2, 1fr);"),
 	)
 	for _, card := range cards {
 		page := createCard(isMobile, card)
@@ -451,13 +546,12 @@ func makeZine(id string, cards []Card, isMobile bool) *Node {
 			Input(
 				Type("hidden"),
 				Name("card"),
+				Value(id),
 			),
 			Input(
 				Id(fmt.Sprintf("button-%s", card.ID)),
 				Attr("hidden", ""),
 				Type("submit"),
-				Value("Edit Card"),
-				Name("card"),
 			),
 		)
 		page.Children = append(page.Children, cardButton)
@@ -473,9 +567,9 @@ func makeZine(id string, cards []Card, isMobile bool) *Node {
 func zineNavBar(id string) *Node {
 	return Div(
 		Id("nav-bar"),
-		Class("flex justify-between"),
+		Class("flex justify-center p-2"),
 		Form(
-			Class("rounded-lg shadow-lg bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mx-auto my-10 mt-4"),
+			Class("rounded-lg shadow-lg bg-blue-500 hover:bg-blue-700 text-white font-bold m-1 py-2 px-4 rounded my-10 mt-4"),
 			Attr("ws-send", "submit"),
 			Input(
 				Type("hidden"),
@@ -492,6 +586,12 @@ func zineNavBar(id string) *Node {
 				Type("submit"),
 				Value("Back"),
 			),
+		),
+		Form(
+			Id("prev-button"),
+		),
+		Form(
+			Id("next-button"),
 		),
 	)
 }
