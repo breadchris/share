@@ -1,4 +1,4 @@
-package main
+package websocket
 
 import (
 	"encoding/json"
@@ -8,7 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	"github.com/gorilla/websocket"
 )
@@ -80,9 +79,9 @@ func NewWebsocketPage(children []*Node) *Node {
 	)
 }
 
-func WebsocketUI(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
+func WebsocketUI(registry *CommandRegistry) *http.ServeMux {
 	go hub.run()
-	setupHandlers(registry)
+	SetupHandlers(registry)
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/ws", websocketHandler2(registry))
@@ -117,7 +116,7 @@ func WebsocketUI(d deps.Deps, registry *CommandRegistry) *http.ServeMux {
 	return mux
 }
 
-func setupHandlers(registry *CommandRegistry) {
+func SetupHandlers(registry *CommandRegistry) {
 	registry.Register("1", func(message string, pageId string) []string {
 		return []string{
 			Div(
@@ -202,12 +201,20 @@ func (c *WebsocketClient) readPump(w http.ResponseWriter, r *http.Request) {
 		// get msgMap["HEADERS"].(map[string]interface{})["HX-Current-URL"].(string), "/card/")[1] if it exists
 		if headers, ok := msgMap["HEADERS"].(map[string]interface{}); ok {
 			if currentURL, ok := headers["HX-Current-URL"].(string); ok {
-				pageId = strings.Split(currentURL, "/card/")[1]
+				splitUrl := strings.Split(currentURL, "/")
+				pageId = splitUrl[len(splitUrl)-1]
 			}
+			delete(msgMap, "HEADERS")
+		}
+
+		if ID, ok := msgMap["id"].(string); ok {
+			pageId = ID
+			delete(msgMap, "id")
 		}
 
 		for key, value := range msgMap {
-
+			fmt.Println("Key:", key, "Value:", value)
+			fmt.Println("Registry:", c.registry.handlers)
 			// Get the command from the command field
 			msg, ok := value.(string)
 			if !ok {
@@ -240,7 +247,6 @@ func (c *WebsocketClient) readPump(w http.ResponseWriter, r *http.Request) {
 func (c *WebsocketClient) writePump() {
 	defer c.conn.Close()
 	for message := range c.send {
-		fmt.Println("Sending message:", string(message))
 		err := c.conn.WriteMessage(websocket.TextMessage, message)
 		if err != nil {
 			log.Println("WriteMessage error:", err)

@@ -23,6 +23,7 @@ import (
 	"github.com/breadchris/share/paint"
 	"github.com/breadchris/share/test"
 	"github.com/breadchris/share/user"
+	socket "github.com/breadchris/share/websocket"
 	"github.com/breadchris/share/x"
 	"github.com/fsnotify/fsnotify"
 	"gorm.io/driver/sqlite"
@@ -103,6 +104,7 @@ func startServer(useTLS bool, port int) {
 
 	// TODO breadchris enable this
 	//go scheduleScraping()
+	registry := socket.NewCommandRegistry()
 
 	oai := openai.NewClient(appConfig.OpenAIKey)
 	lm := leaps.RegisterRoutes(leaps.NewLogger())
@@ -114,6 +116,7 @@ func startServer(useTLS bool, port int) {
 		Leaps:   lm,
 		AI:      oai,
 		Config:  appConfig,
+		WebsocketRegistry: registry,
 	}
 
 	interpreted := func(f func(d deps2.Deps) *http.ServeMux, files ...string) *http.ServeMux {
@@ -125,17 +128,16 @@ func startServer(useTLS bool, port int) {
 		return m
 	}
 
-	z := NewZineMaker(deps)
-	z.SetupZineRoutes()
+	// z := NewZineMaker(deps)
+	// z.SetupZineRoutes()
 
-	registry := NewCommandRegistry()
-	setupHandlers(registry)
 
-	p("/card", interpreted(func(deps deps2.Deps) *http.ServeMux {
-		return NewCard(deps, registry)
-	}))
+	socket.SetupHandlers(registry)
+
+	p("/zine", interpreted(NewZine))
+	p("/card", interpreted(NewCard))
 	p("/websocket", interpreted(func(deps deps2.Deps) *http.ServeMux {
-		return WebsocketUI(deps, registry)
+		return socket.WebsocketUI(registry)
 	}))
 	p("/test", interpreted(test.New))
 	p("/user", interpreted(user.New))
@@ -148,7 +150,7 @@ func startServer(useTLS bool, port int) {
 	p("/leaps", lm.Mux)
 	p("/vote", interpreted(NewVote))
 	p("/breadchris", interpreted(breadchris.New))
-	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./eventcalendar.go", "./websocket.go", "./card.go"}))
+	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./eventcalendar.go", "./websocket/websocket.go", "./card.go"}))
 	p("/filecode", func() *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
