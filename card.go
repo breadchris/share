@@ -5,13 +5,16 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/breadchris/share/db"
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	"github.com/google/uuid"
+	"github.com/sashabaranov/go-openai"
 )
 
 type Card struct {
@@ -60,7 +63,7 @@ func RegisterCardWebsocketHandlers(d deps.Deps, collection string) {
 				Attr("onclick", "document.getElementById('save-form-button').click()"),
 				T("Save"),
 			).Render(),
-			uploadImageForm(pageId).Render(),
+			newImageForm(pageId).Render(),
 		}
 	})
 
@@ -95,6 +98,64 @@ func NewCard(d deps.Deps) *http.ServeMux {
 		case http.MethodGet:
 			cardGet(db, w, r)
 		}
+	})
+
+	mux.HandleFunc("/generate-image", func(w http.ResponseWriter, r *http.Request) {
+		pageId := r.FormValue("id")
+		if pageId == "" {
+			if currentURL, ok := r.Header["Hx-Current-Url"]; ok {
+				pageId = strings.Split(currentURL[0], "/card/")[1]
+			}
+		}
+		prompt := r.FormValue("prompt")
+		if prompt == "" {
+			http.Error(w, "Prompt is required", http.StatusBadRequest)
+			return
+		}
+		req := openai.ImageRequest{
+			Model:          openai.CreateImageModelDallE3,
+			Prompt:         prompt,
+			N:              1,
+			Quality:        openai.CreateImageQualityHD,
+			Size:           openai.CreateImageSize1024x1792,
+			Style:          openai.CreateImageStyleVivid,
+			ResponseFormat: openai.CreateImageResponseFormatURL,
+		}
+
+		resp, err := d.AI.CreateImage(r.Context(), req)
+		if err != nil {
+			http.Error(w, "Failed to generate image", http.StatusInternalServerError)
+			return
+		}
+		imageURL := resp.Data[0].URL
+
+		now := strconv.Itoa(time.Now().Nanosecond())
+		imagePath, err := downloadImage(imageURL, fmt.Sprintf("generated_image%s.png", now))
+		if err != nil {
+			http.Error(w, "Failed to download image", http.StatusInternalServerError)
+			return
+		}
+		card := Card{}
+
+		_, i := utf8.DecodeRuneInString(imagePath)
+		imagePath = imagePath[i:]
+		
+		if err := db.Get(pageId, &card); err != nil {
+			fmt.Println("Failed with: ", err)
+			http.Error(w, "Could not get card!", http.StatusInternalServerError)
+			return
+		}
+		card.Image = imagePath
+		if err := db.Set(pageId, card); err != nil {
+			http.Error(w, "Could not save image", http.StatusInternalServerError)
+			return
+		} else {
+			fmt.Println("Saved image to:", imagePath)
+		}
+		// Render the updated image div
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte(imageSection(imagePath, true, card.ID).Render()))
+
 	})
 
 	mux.HandleFunc("/upload-image", func(w http.ResponseWriter, r *http.Request) {
@@ -240,10 +301,10 @@ func createCard(isMobile bool, card Card) *Node {
 
 func imageSection(imageSrc string, isEditing bool, pageId string) *Node {
 	imageForm := Div(
-		Id("upload-image-form"),
+		Id("toggle-image-form"),
 	)
 	if isEditing {
-		imageForm = uploadImageForm(pageId)
+		imageForm = generateImageForm(pageId)
 	}
 	return Div(
 		Id("card-image"),
@@ -265,6 +326,55 @@ func contentSection(message string) *Node {
 		P(
 			Class("mt-2"),
 			T(message),
+		),
+	)
+}
+
+func newImageForm(pageId string) *Node {
+	//toggle between generate and upload image form
+	return Div(
+		Id("toggle-image-form"),
+		Class("absolute top-2 right-0 m-2 grid justify-items-end"),
+		Input(
+			Type("checkbox"),
+			Class("toggle"),
+			OnClick(`document.getElementById('upload-image-form').classList.toggle('hidden'); 
+					 document.getElementById('generate-image-form').classList.toggle('hidden');`),
+		),
+		generateImageForm(pageId),
+		uploadImageForm(pageId),
+	)
+}
+
+func generateImageForm(pageId string) *Node {
+	return Div(
+		Id("generate-image-form"),
+		Class("hidden"),
+		Form(
+			Class("text-right"),
+			Attr("enctype", "multipart/form-data"),
+			Attr("method", "POST"),
+			Attr("hx-post", "/card/generate-image"),
+			Attr("hx-target", "#card-image"),
+			Attr("hx-swap", "outerHTML"),
+			Div(
+				Class("mt-2"),
+				Input(
+					Type("hidden"),
+					Name("id"),
+					Value(pageId),
+				),
+				TextArea(
+					Class("w-full"),
+					Attr("rows", "4"),
+					Name("prompt"),
+				),
+			),
+			Input(
+				Class("mt-2 bg-green-500 hover:bg-green-700 text-white font-bold rounded"),
+				Type("submit"),
+				Value("Generate Image"),
+			),
 		),
 	)
 }
@@ -334,6 +444,7 @@ func editCardForm(id, message string) *Node {
 
 func NewWebsocketPage(children []*Node) *Node {
 	return Html(
+		Attr("data-theme", "light"),
 		Head(
 			Title(T("Websocket Test")),
 			Script(
@@ -343,6 +454,7 @@ func NewWebsocketPage(children []*Node) *Node {
 				Src("https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"),
 			),
 			TailwindCSS,
+			DaisyUI,
 		),
 		Body(Div(
 			Attr("hx-ext", "ws"),
@@ -350,4 +462,27 @@ func NewWebsocketPage(children []*Node) *Node {
 			Ch(children),
 		)),
 	)
+}
+
+func downloadImage(imageURL, outputName string) (string, error) {
+	imageResp, err := http.Get(imageURL)
+	if err != nil {
+		return "", err
+	}
+	defer imageResp.Body.Close()
+
+	outputPath := fmt.Sprintf("./data/images/" + outputName)
+
+	file, err := os.Create(outputPath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	_, err = io.Copy(file, imageResp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return outputPath, nil
 }
