@@ -221,19 +221,19 @@ func cardGet(db *db.DocumentStore, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	renderCard(db, id, w, r)
+	NewWebsocketPage(makeCard(db, id, w, r).Children).RenderPage(w, r)
 }
 
-func renderCard(db *db.DocumentStore, id string, w http.ResponseWriter, r *http.Request) {
+func makeCard(db *db.DocumentStore, id string, w http.ResponseWriter, r *http.Request) *Node {
 	isMobile := strings.Contains(r.Header.Get("User-Agent"), "Android") || strings.Contains(r.Header.Get("User-Agent"), "iPhone")
 	var card Card
 	if err := db.Get(id, &card); err != nil {
 		http.Error(w, "Could not get card", http.StatusNotFound)
-		return
+		return nil
 	}
 
 	contentContainer := Div(
-		Id("content-container"),
+		Id("card-container"),
 		CardEditor(isMobile, card),
 	)
 
@@ -241,7 +241,8 @@ func renderCard(db *db.DocumentStore, id string, w http.ResponseWriter, r *http.
 		contentContainer.Attrs["Class"] = "origin-top scale-[3]"
 	}
 
-	body := Div(
+	return Div(Div(
+		Id("content-container"),
 		Div(
 			Class("grid justify-center mt-4"),
 			contentContainer,
@@ -249,6 +250,7 @@ func renderCard(db *db.DocumentStore, id string, w http.ResponseWriter, r *http.
 		Form(
 			Class("mx-auto my-10 rounded-lg shadow-lg md:w-[250px]"),
 			Attr("hx-post", "/card/generate-card"),
+			Attr("hx-target", "#content-container"),
 			TextArea(
 				Class("w-full"),
 				Attr("rows", "4"),
@@ -260,9 +262,7 @@ func renderCard(db *db.DocumentStore, id string, w http.ResponseWriter, r *http.
 				Value("Generate Card"),
 			),
 		),
-	)
-
-	NewWebsocketPage(body.Children).RenderPage(w, r)
+	))
 }
 
 func generateCard(d deps.Deps, db *db.DocumentStore, pageId string, prompt string, w http.ResponseWriter, r *http.Request) (Card, error) {
@@ -380,7 +380,8 @@ func CallGenerateNewCard(d deps.Deps, pageId string, prompt string, w http.Respo
 		}
 
 	}
-	renderCard(db, pageId, w, r)
+	card := makeCard(db, pageId, w, r)
+	card.RenderPage(w, r)
 }
 
 func NewCardId() string {
