@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -21,6 +22,11 @@ type Card struct {
 	ID      string
 	Message string
 	Image   string
+}
+
+type CreateCard struct {
+	MessagePrompt string `json:"messagePrompt"`
+	ImagePrompt   string `json:"imagePrompt"`
 }
 
 func RegisterCardWebsocketHandlers(d deps.Deps, collection string) {
@@ -112,49 +118,14 @@ func NewCard(d deps.Deps) *http.ServeMux {
 			http.Error(w, "Prompt is required", http.StatusBadRequest)
 			return
 		}
-		req := openai.ImageRequest{
-			Model:          openai.CreateImageModelDallE3,
-			Prompt:         prompt,
-			N:              1,
-			Quality:        openai.CreateImageQualityHD,
-			Size:           openai.CreateImageSize1024x1792,
-			Style:          openai.CreateImageStyleVivid,
-			ResponseFormat: openai.CreateImageResponseFormatURL,
-		}
-
-		resp, err := d.AI.CreateImage(r.Context(), req)
+		card, err := generateCard(d, db, pageId, prompt, w, r)
 		if err != nil {
-			http.Error(w, "Failed to generate image", http.StatusInternalServerError)
+			http.Error(w, "Failed to generate card", http.StatusInternalServerError)
 			return
-		}
-		imageURL := resp.Data[0].URL
-
-		now := strconv.Itoa(time.Now().Nanosecond())
-		imagePath, err := downloadImage(imageURL, fmt.Sprintf("generated_image%s.png", now))
-		if err != nil {
-			http.Error(w, "Failed to download image", http.StatusInternalServerError)
-			return
-		}
-		card := Card{}
-
-		_, i := utf8.DecodeRuneInString(imagePath)
-		imagePath = imagePath[i:]
-		
-		if err := db.Get(pageId, &card); err != nil {
-			fmt.Println("Failed with: ", err)
-			http.Error(w, "Could not get card!", http.StatusInternalServerError)
-			return
-		}
-		card.Image = imagePath
-		if err := db.Set(pageId, card); err != nil {
-			http.Error(w, "Could not save image", http.StatusInternalServerError)
-			return
-		} else {
-			fmt.Println("Saved image to:", imagePath)
 		}
 		// Render the updated image div
 		w.Header().Set("Content-Type", "text/html")
-		w.Write([]byte(imageSection(imagePath, true, card.ID).Render()))
+		w.Write([]byte(imageSection(card.Image, true, card.ID).Render()))
 
 	})
 
@@ -215,11 +186,25 @@ func NewCard(d deps.Deps) *http.ServeMux {
 		w.Write([]byte(imageSection(imageSrc, true, card.ID).Render()))
 	})
 
+	mux.HandleFunc("/generate-card", func(w http.ResponseWriter, r *http.Request) {
+		prompt := r.FormValue("prompt")
+		if prompt == "" {
+			http.Error(w, "Prompt is required", http.StatusBadRequest)
+			return
+		}
+		pageId := r.FormValue("id")
+		if pageId == "" {
+			if currentURL, ok := r.Header["Hx-Current-Url"]; ok {
+				pageId = strings.Split(currentURL[0], "/card/")[1]
+			}
+		}
+		CallGenerateNewCard(d, pageId, prompt, w, r)
+	})
+
 	return mux
 }
 
 func cardGet(db *db.DocumentStore, w http.ResponseWriter, r *http.Request) {
-	isMobile := strings.Contains(r.Header.Get("User-Agent"), "Android") || strings.Contains(r.Header.Get("User-Agent"), "iPhone")
 	id := r.PathValue("id")
 	if id == "" {
 		id = NewCardId()
@@ -236,6 +221,11 @@ func cardGet(db *db.DocumentStore, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	renderCard(db, id, w, r)
+}
+
+func renderCard(db *db.DocumentStore, id string, w http.ResponseWriter, r *http.Request) {
+	isMobile := strings.Contains(r.Header.Get("User-Agent"), "Android") || strings.Contains(r.Header.Get("User-Agent"), "iPhone")
 	var card Card
 	if err := db.Get(id, &card); err != nil {
 		http.Error(w, "Could not get card", http.StatusNotFound)
@@ -256,9 +246,141 @@ func cardGet(db *db.DocumentStore, w http.ResponseWriter, r *http.Request) {
 			Class("grid justify-center mt-4"),
 			contentContainer,
 		),
+		Form(
+			Class("mx-auto my-10 rounded-lg shadow-lg md:w-[250px]"),
+			Attr("hx-post", "/card/generate-card"),
+			TextArea(
+				Class("w-full"),
+				Attr("rows", "4"),
+				Name("prompt"),
+			),
+			Input(
+				Type("submit"),
+				Class("mt-2 bg-green-500 hover:bg-green-700 text-white font-bold rounded"),
+				Value("Generate Card"),
+			),
+		),
 	)
 
 	NewWebsocketPage(body.Children).RenderPage(w, r)
+}
+
+func generateCard(d deps.Deps, db *db.DocumentStore, pageId string, prompt string, w http.ResponseWriter, r *http.Request) (Card, error) {
+	card := Card{}
+	req := openai.ImageRequest{
+		Model:          openai.CreateImageModelDallE3,
+		Prompt:         prompt,
+		N:              1,
+		Quality:        openai.CreateImageQualityHD,
+		Size:           openai.CreateImageSize1024x1792,
+		Style:          openai.CreateImageStyleVivid,
+		ResponseFormat: openai.CreateImageResponseFormatURL,
+	}
+
+	resp, err := d.AI.CreateImage(r.Context(), req)
+	if err != nil {
+		http.Error(w, "Failed to generate image", http.StatusInternalServerError)
+		return card, err
+	}
+	imageURL := resp.Data[0].URL
+
+	now := strconv.Itoa(time.Now().Nanosecond())
+	imagePath, err := downloadImage(imageURL, fmt.Sprintf("generated_image%s.png", now))
+	if err != nil {
+		http.Error(w, "Failed to download image", http.StatusInternalServerError)
+		return card, err
+	}
+
+	_, i := utf8.DecodeRuneInString(imagePath)
+	imagePath = imagePath[i:]
+
+	if err := db.Get(pageId, &card); err != nil {
+		fmt.Println("Failed with: ", err)
+		http.Error(w, "Could not get card!", http.StatusInternalServerError)
+		return card, err
+	}
+	card.Image = imagePath
+	if err := db.Set(pageId, card); err != nil {
+		http.Error(w, "Could not save image", http.StatusInternalServerError)
+		return card, err
+	} else {
+		fmt.Println("Saved image to:", imagePath)
+	}
+	return card, nil
+}
+
+type Parameter struct {
+	Type                 string          `json:"type"`
+	Properties           map[string]Prop `json:"properties"`
+	Required             []string        `json:"required"`
+	AdditionalProperties bool            `json:"additionalProperties"`
+}
+
+type Prop struct {
+	Type        string `json:"type"`
+	Description string `json:"description"`
+}
+
+func CallGenerateNewCard(d deps.Deps, pageId string, prompt string, w http.ResponseWriter, r *http.Request) {
+	function := openai.FunctionDefinition{
+		Name:        "generateNewCard",
+		Description: "Generate a new card with a message and an image",
+		Parameters: Parameter{
+			Type: "object",
+			Properties: map[string]Prop{
+				"messagePrompt": {
+					Type:        "string",
+					Description: "A prompt to generate the text on the card",
+				},
+				"imagePrompt": {
+					Type:        "string",
+					Description: "A prompt to generate the image on the card",
+				},
+			},
+			Required:             []string{"messagePrompt", "imagePrompt"},
+			AdditionalProperties: false,
+		},
+	}
+
+	tool := openai.Tool{}
+	tool.Type = "function"
+	tool.Function = &function
+
+	fmt.Println("Calling generateNewCard")
+	resp, err := d.AI.CreateChatCompletion(r.Context(), openai.ChatCompletionRequest{
+		Model: openai.GPT4o20240513,
+		Messages: []openai.ChatCompletionMessage{
+			{Role: openai.ChatMessageRoleSystem, Content: "You will help me generate a new card."},
+			{Role: openai.ChatMessageRoleUser, Content: prompt},
+		},
+		Tools: []openai.Tool{tool},
+	})
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	db := d.Docs.WithCollection("card")
+	tool_calls := resp.Choices[0].Message.ToolCalls[0]
+	if ok := tool_calls.Function.Name == "generateNewCard"; ok {
+		createCard := CreateCard{}
+		err = json.Unmarshal([]byte(tool_calls.Function.Arguments), &createCard)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+		card, err := generateCard(d, db, pageId, prompt, w, r)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+		card.Message = createCard.MessagePrompt
+		if err := db.Set(pageId, card); err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+
+	}
+	renderCard(db, pageId, w, r)
 }
 
 func NewCardId() string {
