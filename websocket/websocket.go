@@ -19,7 +19,7 @@ var websockerUpgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
 
-type CommandFunc func(string, string) []string
+type CommandFunc func(string, string, bool) []string
 
 type CommandRegistry struct {
 	handlers map[string]CommandFunc
@@ -117,7 +117,7 @@ func WebsocketUI(registry *CommandRegistry) *http.ServeMux {
 }
 
 func SetupHandlers(registry *CommandRegistry) {
-	registry.Register("1", func(message string, pageId string) []string {
+	registry.Register("1", func(message string, pageId string, isMobile bool) []string {
 		return []string{
 			Div(
 				Id("container-1"),
@@ -127,7 +127,7 @@ func SetupHandlers(registry *CommandRegistry) {
 		}
 	})
 
-	registry.Register("2", func(message string, pageId string) []string {
+	registry.Register("2", func(message string, pageId string, isMobile bool) []string {
 		return []string{
 			Div(
 				Id("container-2"),
@@ -137,7 +137,7 @@ func SetupHandlers(registry *CommandRegistry) {
 		}
 	})
 
-	registry.Register("ping", func(message string, pageId string) []string {
+	registry.Register("ping", func(message string, pageId string, isMobile bool) []string {
 		return []string{
 			Div(
 				Id("container-1"),
@@ -178,6 +178,7 @@ func (h *Hub) run() {
 }
 
 func (c *WebsocketClient) readPump(w http.ResponseWriter, r *http.Request) {
+	isMobile := strings.Contains(r.Header.Get("User-Agent"), "Android") || strings.Contains(r.Header.Get("User-Agent"), "iPhone")
 	defer func() {
 		hub.unregister <- c
 		c.conn.Close()
@@ -224,7 +225,7 @@ func (c *WebsocketClient) readPump(w http.ResponseWriter, r *http.Request) {
 			handler, ok := c.registry.handlers[key]
 			c.registry.mu.RUnlock()
 			if ok {
-				cmdMsgs = handler(msg, pageId)
+				cmdMsgs = handler(msg, pageId, isMobile)
 			} else {
 				cmdMsgs = []string{Div(
 					Id("container-1"),

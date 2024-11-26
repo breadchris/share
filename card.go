@@ -23,7 +23,7 @@ type Card struct {
 func RegisterCardWebsocketHandlers(d deps.Deps, collection string) {
 	db := d.Docs.WithCollection(collection)
 
-	d.WebsocketRegistry.Register("edit", func(message string, pageId string) []string {
+	d.WebsocketRegistry.Register("edit", func(message string, pageId string, isMobile bool) []string {
 		return []string{
 			Div(
 				Id("content"),
@@ -64,7 +64,7 @@ func RegisterCardWebsocketHandlers(d deps.Deps, collection string) {
 		}
 	})
 
-	d.WebsocketRegistry.Register(("save"), func(message string, cardId string) []string {
+	d.WebsocketRegistry.Register(("save"), func(message string, cardId string, isMobile bool) []string {
 		card := Card{}
 		if err := db.Get(cardId, &card); err != nil {
 
@@ -212,10 +212,6 @@ func CardEditor(isMobile bool, card Card) *Node {
 func createCard(isMobile bool, card Card) *Node {
 	cardStyle := Class("rounded-lg shadow-lg w-[16.5rem] h-[25.5rem]")
 
-	// if isMobile {
-	// 	cardStyle = Class("w-[90vw] aspect-[5/7] rounded-lg shadow-lg max-w-sm py-32")
-	// }
-
 	return Div(
 		Id(card.ID),
 		cardStyle,
@@ -325,7 +321,7 @@ type Zine2 struct {
 }
 
 func NewZine(d deps.Deps) *http.ServeMux {
-	d.WebsocketRegistry.Register("zine", func(message string, pageId string) []string {
+	d.WebsocketRegistry.Register("zine", func(message string, pageId string, isMobile bool) []string {
 		zine := Zine2{}
 		if err := d.Docs.WithCollection("zine").Get(pageId, &zine); err != nil {
 			fmt.Println("Failed to get zine with id:", pageId)
@@ -347,12 +343,11 @@ func NewZine(d deps.Deps) *http.ServeMux {
 		}
 
 		return []string{
-			makeZine(pageId, cards, false).Render(),
-			zineNavBar(pageId).Render(),
+			Div(Id("content-container"), zineNavBar(pageId, false), makeZine(pageId, cards, false)).Render(),
 		}
 	})
 
-	d.WebsocketRegistry.Register("card", func(message string, pageId string) []string {
+	d.WebsocketRegistry.Register("card", func(message string, pageId string, isMobile bool) []string {
 		zine := Zine2{}
 		if err := d.Docs.WithCollection("zine").Get(message, &zine); err != nil {
 			fmt.Println("Failed to get zine with id:", message)
@@ -378,33 +373,17 @@ func NewZine(d deps.Deps) *http.ServeMux {
 			fmt.Println("Failed to get card with id: ", pageId)
 			return []string{}
 		}
+		cardConetainer := Div(Id("content-container"), zineNavBar(message, true), Div(Id("card-container"), Class("flex justify-center"), CardEditor(false, card)))
+		if isMobile {
+			cardConetainer.Attrs["Class"] = "origin-top scale-[3]"
+		}
 		return []string{
-			Div(Id("content-container"), Class("flex justify-center"), CardEditor(false, card)).Render(),
+			cardConetainer.Render(),
 			editCardForm(pageId, card.Message).Render(),
-			Form(
-				Id("next-button"),
-				Class("rounded-lg shadow-lg bg-blue-500 hover:bg-blue-700 text-white font-bold m-1 py-2 px-4 rounded my-10 mt-4"),
-				Attr("ws-send", "submit"),
-				Input(
-					Type("submit"),
-					Name("next"),
-					Value("Next Page"),
-				),
-			).Render(),
-			Form(
-				Id("prev-button"),
-				Class("rounded-lg shadow-lg bg-blue-500 hover:bg-blue-700 text-white font-bold m-1 py-2 px-4 rounded my-10 mt-4"),
-				Attr("ws-send", "submit"),
-				Input(
-					Type("submit"),
-					Name("next"),
-					Value("Prev Page"),
-				),
-			).Render(),
 		}
 	})
 
-	d.WebsocketRegistry.Register("next", func(message string, zineId string) []string {
+	d.WebsocketRegistry.Register("next", func(message string, zineId string, isMobile bool) []string {
 		zine := Zine2{}
 		if err := d.Docs.WithCollection("zine").Get(zineId, &zine); err != nil {
 			fmt.Println("Failed to get zine with id:", zineId)
@@ -439,7 +418,7 @@ func NewZine(d deps.Deps) *http.ServeMux {
 		// Render the new card view
 		return []string{
 			Div(
-				Id("content-container"),
+				Id("card-container"),
 				Class("flex justify-center"),
 				CardEditor(false, card),
 			).Render(),
@@ -505,9 +484,9 @@ func NewZine(d deps.Deps) *http.ServeMux {
 			}
 			cards = append(cards, card)
 		}
-
 		content := makeZine(id, cards, isMobile)
-		body := Div(zineNavBar(id), content)
+		mainDiv := Div(Class("grid justify-center"), Div(Id("content-container"), zineNavBar(id, false), content))
+		body := Div(mainDiv)
 		NewWebsocketPage(body.Children).RenderPage(w, r)
 	})
 
@@ -558,14 +537,35 @@ func makeZine(id string, cards []Card, isMobile bool) *Node {
 		content.Children = append(content.Children, page)
 	}
 	return Div(
-		Id("content-container"),
+		Id("card-container"),
 		Class("flex justify-center"),
 		content,
 	)
 }
 
-func zineNavBar(id string) *Node {
-	return Div(
+func zineNavBar(id string, hasNextButtons bool) *Node {
+	next := Form(
+		Id("next-button"),
+		Class("rounded-lg shadow-lg bg-blue-500 hover:bg-blue-700 text-white font-bold m-1 py-2 px-4 rounded my-10 mt-4"),
+		Attr("ws-send", "submit"),
+		Input(
+			Type("submit"),
+			Name("next"),
+			Value("Next Page"),
+		),
+	)
+	prev := Form(
+		Id("prev-button"),
+		Class("rounded-lg shadow-lg bg-blue-500 hover:bg-blue-700 text-white font-bold m-1 py-2 px-4 rounded my-10 mt-4"),
+		Attr("ws-send", "submit"),
+		Input(
+			Type("submit"),
+			Name("next"),
+			Value("Prev Page"),
+		),
+	)
+
+	nav := Div(
 		Id("nav-bar"),
 		Class("flex justify-center p-2"),
 		Form(
@@ -587,13 +587,12 @@ func zineNavBar(id string) *Node {
 				Value("Back"),
 			),
 		),
-		Form(
-			Id("prev-button"),
-		),
-		Form(
-			Id("next-button"),
-		),
 	)
+
+	if hasNextButtons {
+		nav.Children = append(nav.Children, prev, next)
+	}
+	return nav
 }
 
 func NewWebsocketPage(children []*Node) *Node {
