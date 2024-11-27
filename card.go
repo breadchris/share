@@ -241,28 +241,52 @@ func makeCard(db *db.DocumentStore, id string, w http.ResponseWriter, r *http.Re
 		contentContainer.Attrs["Class"] = "origin-top scale-[3]"
 	}
 
-	return Div(Div(
-		Id("content-container"),
+	return Div(
 		Div(
-			Class("grid justify-center mt-4"),
-			contentContainer,
-		),
-		Form(
-			Class("mx-auto my-10 rounded-lg shadow-lg md:w-[250px]"),
-			Attr("hx-post", "/card/generate-card"),
-			Attr("hx-target", "#content-container"),
-			TextArea(
-				Class("w-full"),
-				Attr("rows", "4"),
-				Name("prompt"),
+			Id("toggle-edit-form"),
+			Class("grid justify-center"),
+			Div(
+				Class("grid grid-cols-3 justify-center mt-4 w-[16.5rem]"),
+				Label(T("Edit Card")),
+				Input(
+					Type("checkbox"),
+					Class("toggle"),
+					OnClick(`document.getElementById('content-container').classList.toggle('hidden'); 
+					 document.getElementById('generate-card-form').classList.toggle('hidden');`),
+				),
+				Label(T("Generate Card")),
+			)),
+		Div(
+			Id("content-container"),
+			Div(
+				Class("grid justify-center mt-4"),
+				contentContainer,
 			),
-			Input(
-				Type("submit"),
-				Class("mt-2 bg-green-500 hover:bg-green-700 text-white font-bold rounded"),
-				Value("Generate Card"),
-			),
 		),
-	))
+		Div(
+			Id("generate-card-form"),
+			Class("hidden"),
+			Form(
+				Class("mx-auto my-10 rounded-lg shadow-lg md:w-[250px]"),
+				Attr("hx-post", "/card/generate-card"),
+				Attr("hx-target", "#content-container"),
+				Script(Raw(`
+			document.addEventListener('htmx:beforeRequest', function(evt) {
+				document.getElementById('card-image').innerHTML = '<div class="loading loading-spinner loading-lg"></div>';
+			});
+		`)),
+				TextArea(
+					Class("w-full"),
+					Attr("rows", "4"),
+					Name("prompt"),
+				),
+				Input(
+					Type("submit"),
+					Class("mt-2 bg-green-500 hover:bg-green-700 text-white font-bold rounded"),
+					Value("Generate Card"),
+				),
+			)),
+	)
 }
 
 func generateCard(d deps.Deps, db *db.DocumentStore, pageId string, prompt string, w http.ResponseWriter, r *http.Request) (Card, error) {
