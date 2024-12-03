@@ -7,7 +7,6 @@ import (
 	"go/token"
 	"html/template"
 	"net/http"
-	"runtime"
 	"strings"
 )
 
@@ -229,9 +228,9 @@ func (s *Node) RenderCtx(ctx context.Context) string {
 	}
 
 	attrs := map[string]string{}
-	//if s.locator != "" {
-	//	attrs["data-godom"] = s.locator
-	//}
+	if s.locator != "" {
+		attrs["data-godom"] = s.locator
+	}
 	for k, v := range s.DynamicAttrs {
 		attrs[k] = v(ctx)
 	}
@@ -495,13 +494,15 @@ func Iframe(o ...*Node) *Node {
 }
 
 func Class(s string) *Node {
-	_, file, line, ok := runtime.Caller(1)
+	// print out stack trace
+	//_, file, line, ok := runtime.Caller(1)
+	// https://github.com/breadchris/yaegi/pull/1348/files
 	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["class"] = s
-			if ok {
-				p.locator = fmt.Sprintf("%s:%d", file, line)
-			}
+			//if ok {
+			//	p.locator = fmt.Sprintf("%s:%d", file, line)
+			//}
 		},
 	}
 }
@@ -769,6 +770,10 @@ func Span(o ...*Node) *Node {
 
 func Svg(o ...*Node) *Node {
 	return NewNode("svg", o)
+}
+
+func Small(o ...*Node) *Node {
+	return NewNode("small", o)
 }
 
 func H4(o ...*Node) *Node {
@@ -1072,6 +1077,14 @@ func Value(s string) *Node {
 	return &Node{
 		transform: func(p *Node) {
 			p.Attrs["value"] = s
+		},
+	}
+}
+
+func HxVals(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["hx-vals"] = s
 		},
 	}
 }

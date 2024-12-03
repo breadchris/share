@@ -34,7 +34,6 @@ type State struct {
 func NewExtension(d deps.Deps) *http.ServeMux {
 	m := http.NewServeMux()
 
-	// Load the current state or initialize it
 	var state State
 	if err := d.Docs.Get("extension", &state); err != nil {
 		state = State{
@@ -103,7 +102,8 @@ func NewExtension(d deps.Deps) *http.ServeMux {
 	m.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 
-		if r.Method == http.MethodGet {
+		switch r.Method {
+		case http.MethodGet:
 			if id != "" {
 				var pi PageInfo
 				for _, pageInfo := range state.PageInfos {

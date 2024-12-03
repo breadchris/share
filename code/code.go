@@ -9,8 +9,9 @@ import (
 	. "github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/symbol"
-	"github.com/cogentcore/yaegi/interp"
-	"github.com/cogentcore/yaegi/stdlib"
+	"github.com/breadchris/share/yaegi"
+	"github.com/breadchris/yaegi/interp"
+	"github.com/breadchris/yaegi/stdlib"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -160,6 +161,13 @@ func DynamicHTTPMux(f func(d Deps) *http.ServeMux, files ...string) func(Deps) *
 
 	i.Use(stdlib.Symbols)
 	i.Use(symbol.Symbols)
+	customSymbols := map[string]map[string]reflect.Value{}
+	customSymbols["github.com/breadchris/share/yaegi/yaegi"] = map[string]reflect.Value{
+		"GetStack": reflect.ValueOf(yaegi.Debug{
+			Interp: i,
+		}.DoGetStack),
+	}
+	i.Use(customSymbols)
 
 	for _, fi := range files {
 		_, err := i.CompilePath(fi)

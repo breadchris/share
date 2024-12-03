@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/db"
 	. "github.com/breadchris/share/html"
 	"log"
 	"net/http"
@@ -13,7 +14,7 @@ import (
 const recipeIndex = "data/recipe.bleve"
 
 func setupRecipe() {
-	index, err := NewSearchIndex("data/recipe.bleve")
+	index, err := db.NewSearchIndex("data/recipe.bleve")
 	if err != nil {
 		log.Fatalf("Failed to load search index: %v", err)
 	}
@@ -27,7 +28,7 @@ func setupRecipe() {
 }
 
 type Handler struct {
-	index *SearchIndex
+	index *db.SearchIndex
 }
 
 func (s *Handler) searchHandler(w http.ResponseWriter, r *http.Request) {

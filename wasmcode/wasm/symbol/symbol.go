@@ -1,4 +1,4 @@
-//go:generate go install github.com/cogentcore/yaegi/cmd/yaegi
+//go:generate go install github.com/breadchris/yaegi/cmd/yaegi
 //go:generate yaegi extract github.com/breadchris/share/html
 //go:generate yaegi extract github.com/breadchris/share/config
 //go:generate yaegi extract github.com/snabb/sitemap

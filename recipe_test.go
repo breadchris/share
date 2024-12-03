@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/db"
 	"io"
 	"io/fs"
 	"os"
@@ -11,7 +12,7 @@ import (
 )
 
 func TestRecipeIndex(t *testing.T) {
-	index, err := NewSearchIndex(recipeIndex)
+	index, err := db.NewSearchIndex(recipeIndex)
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
@@ -24,7 +25,7 @@ func TestRecipeIndex(t *testing.T) {
 }
 
 func TestLoadAllRecipes(t *testing.T) {
-	index, err := NewSearchIndex(recipeIndex)
+	index, err := db.NewSearchIndex(recipeIndex)
 	if err != nil {
 		fmt.Println("Error:", err)
 	}

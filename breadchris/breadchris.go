@@ -165,7 +165,7 @@ function sendEvent(eventName, data) {
 				Div(
 					f,
 				)).RenderPage(w, r)
-		}, Ignore()),
+		}),
 		NewRoute("/static/", func(w http.ResponseWriter, r *http.Request) {
 			http.StripPrefix(
 				"/static/",

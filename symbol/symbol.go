@@ -1,4 +1,4 @@
-//go:generate go install github.com/cogentcore/yaegi/cmd/yaegi
+//go:generate go install github.com/breadchris/yaegi/cmd/yaegi
 //go:generate yaegi extract github.com/breadchris/share/html
 //go:generate yaegi extract github.com/breadchris/share/deps
 //go:generate yaegi extract github.com/breadchris/share/calendar
@@ -38,6 +38,7 @@
 //go:generate yaegi extract golang.org/x/oauth2
 //go:generate yaegi extract gorm.io/gorm
 //go:generate yaegi extract github.com/breadchris/share/models
+//go:generate yaegi extract github.com/pkg/errors
 
 package symbol
 

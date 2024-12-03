@@ -110,12 +110,12 @@ func startServer(useTLS bool, port int) {
 	lm := leaps.RegisterRoutes(leaps.NewLogger())
 	docs := NewSqliteDocumentStore("data/docs.db")
 	deps := deps2.Deps{
-		DB:      db,
-		Docs:    docs,
-		Session: s,
-		Leaps:   lm,
-		AI:      oai,
-		Config:  appConfig,
+		DB:                db,
+		Docs:              docs,
+		Session:           s,
+		Leaps:             lm,
+		AI:                oai,
+		Config:            appConfig,
 		WebsocketRegistry: registry,
 	}
 
@@ -131,9 +131,9 @@ func startServer(useTLS bool, port int) {
 	// z := NewZineMaker(deps)
 	// z.SetupZineRoutes()
 
-
 	socket.SetupHandlers(registry)
 
+	p("/articles", interpreted(NewArticle))
 	p("/zine", interpreted(NewZine))
 	p("/card", interpreted(NewCard))
 	p("/websocket", interpreted(func(deps deps2.Deps) *http.ServeMux {
@@ -324,6 +324,7 @@ func startServer(useTLS bool, port int) {
 		entrypoints := []string{
 			"./graph/graph.tsx",
 			"./code/monaco.tsx",
+			"./code/playground.ts",
 			"./music.tsx",
 			"./wasmcode/monaco.tsx",
 			"./wasmcode/analyzer/analyzer.worker.ts",

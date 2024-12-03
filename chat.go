@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/breadchris/share/deps"
-	"github.com/samber/lo"
 	"io"
 	"net/http"
 	"strings"
@@ -119,12 +118,12 @@ func (s *Chat) chatHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Chat) sendHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := s.s.GetUserID(r.Context())
-	if err != nil {
-		http.Error(w, "User not logged in", http.StatusForbidden)
-		return
-	}
-	u := users[id]
+	//id, err := s.s.GetUserID(r.Context())
+	//if err != nil {
+	//	http.Error(w, "User not logged in", http.StatusForbidden)
+	//	return
+	//}
+	//u := users[id]
 
 	var parentNodeID string
 	if r.Method == "POST" {
@@ -137,7 +136,7 @@ func (s *Chat) sendHandler(w http.ResponseWriter, r *http.Request) {
 
 		messageNode := MessageNode{
 			ID:      uuid.NewString(),
-			Author:  u.Email,
+			Author:  "TODO",
 			Content: content,
 			Type:    "chat",
 		}
@@ -312,6 +311,11 @@ func RenderChat(cs chatState) (string, error) {
 		Script(Src("https://unpkg.com/htmx-ext-sse@2.2.1/sse.js")),
 	)
 
+	var n []*Node
+	for _, node := range cs.NodesFrom {
+		n = append(n, A(Href("/chat?id="+node), T(node)))
+	}
+
 	return Html(
 		Attr("lang", "en"),
 		head,
@@ -331,9 +335,7 @@ func RenderChat(cs chatState) (string, error) {
 						Attr("hx-swap", "afterbegin"),
 					),
 					Div(
-						Ch(lo.Map(cs.NodesFrom, func(node string, i int) *Node {
-							return A(Href("/chat?id="+node), T(node))
-						})),
+						Ch(n),
 					),
 					RenderGraph(cs.Graph),
 				),
@@ -356,16 +358,13 @@ func RenderParentOptions(graph FlattenedGraph) []*Node {
 }
 
 func RenderGraph(graph FlattenedGraph) *Node {
+	var g []*Node
+	for _, node := range graph.Children {
+		g = append(g, RenderGraph(node))
+	}
 	return Div(Class("ml-2"),
 		RenderMsg(graph),
-		Ch(
-			lo.Map(
-				graph.Children,
-				func(node FlattenedGraph, i int) *Node {
-					return RenderGraph(node)
-				},
-			),
-		),
+		Ch(g),
 	)
 }
 

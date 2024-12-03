@@ -5,14 +5,36 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/article.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/code/playground.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/yaegi/yaegi.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/breadchris/breadchris.go" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/breadchris.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/eventcalendar.go" beforeDir="false" afterPath="$PROJECT_DIR$/eventcalendar.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/breadchris_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/breadchris_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/static/analyzer@v1.wasm" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/analyzer@v1.wasm" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/chat.go" beforeDir="false" afterPath="$PROJECT_DIR$/chat.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/code.go" beforeDir="false" afterPath="$PROJECT_DIR$/code/code.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/editor/server/handler_v2.go" beforeDir="false" afterPath="$PROJECT_DIR$/editor/server/handler_v2.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/extension.go" beforeDir="false" afterPath="$PROJECT_DIR$/extension.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/form.go" beforeDir="false" afterPath="$PROJECT_DIR$/html/form.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/graph/graph.go" beforeDir="false" afterPath="$PROJECT_DIR$/graph/graph.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/html/html.go" beforeDir="false" afterPath="$PROJECT_DIR$/html/html.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/patchpath.go" beforeDir="false" afterPath="$PROJECT_DIR$/html/patchpath.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/patchpath_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/html/patchpath_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/recipe.go" beforeDir="false" afterPath="$PROJECT_DIR$/recipe.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/recipe_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/recipe_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scratch.go" beforeDir="false" afterPath="$PROJECT_DIR$/scratch.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/search.go" beforeDir="false" afterPath="$PROJECT_DIR$/db/search.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/search_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/db/search_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-html.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-html.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/symbol.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/symbol.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/test.go" beforeDir="false" afterPath="$PROJECT_DIR$/test/test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wasmcode/code.go" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/code.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wasmcode/wasm/analyzer/webworker.go" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/wasm/analyzer/webworker.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wasmcode/wasm/symbol/symbol.go" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/wasm/symbol/symbol.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -49,18 +71,25 @@
     &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.go.modules.automatic.dependencies.download&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
     &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
     &quot;git-widget-placeholder&quot;: &quot;master&quot;,
     &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
     &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/hacked/Documents/GitHub/share/static&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/hacked/Documents/GitHub/share&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;,
     &quot;ts.external.directory.path&quot;: &quot;/Users/hacked/Documents/GitHub/share/screenshare/ui/node_modules/typescript/lib&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  },
+  &quot;keyToStringList&quot;: {
+    &quot;DatabaseDriversLRU&quot;: [
+      &quot;sqlite&quot;
+    ]
   }
 }</component>
   <component name="RecentsManager">
@@ -188,7 +217,12 @@
       <workItem from="1730866797883" duration="126000" />
       <workItem from="1730866961438" duration="10483000" />
       <workItem from="1730954775854" duration="79184000" />
-      <workItem from="1731815313498" duration="37362000" />
+      <workItem from="1731815313498" duration="42571000" />
+      <workItem from="1732677645552" duration="3266000" />
+      <workItem from="1732681677862" duration="11427000" />
+      <workItem from="1732949823376" duration="766000" />
+      <workItem from="1733086074478" duration="4805000" />
+      <workItem from="1733201757881" duration="4831000" />
     </task>
     <servers />
   </component>

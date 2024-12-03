@@ -23,6 +23,7 @@
     "dexie": "^4.0.8",
     "epubjs": "^0.3.93",
     "htmx.org": "^1.9.12",
+    "interactjs": "^1.10.27",
     "js-base64": "^3.7.7",
     "leaflet": "^1.9.4",
     "loro-crdt": "^1.0.7",
