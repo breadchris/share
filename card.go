@@ -1,16 +1,21 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
+	"github.com/breadchris/share/db"
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	"github.com/google/uuid"
+	"github.com/sashabaranov/go-openai"
 )
 
 type Card struct {
@@ -19,10 +24,15 @@ type Card struct {
 	Image   string
 }
 
+type CreateCard struct {
+	MessagePrompt string `json:"messagePrompt"`
+	ImagePrompt   string `json:"imagePrompt"`
+}
+
 func RegisterCardWebsocketHandlers(d deps.Deps, collection string) {
 	db := d.Docs.WithCollection(collection)
 
-	d.WebsocketRegistry.Register("edit", func(message string, pageId string) []string {
+	d.WebsocketRegistry.Register("edit", func(message string, pageId string, isMobile bool) []string {
 		return []string{
 			Div(
 				Id("content"),
@@ -59,11 +69,11 @@ func RegisterCardWebsocketHandlers(d deps.Deps, collection string) {
 				Attr("onclick", "document.getElementById('save-form-button').click()"),
 				T("Save"),
 			).Render(),
-			uploadImageForm(pageId).Render(),
+			newImageForm(pageId).Render(),
 		}
 	})
 
-	d.WebsocketRegistry.Register(("save"), func(message string, cardId string) []string {
+	d.WebsocketRegistry.Register(("save"), func(message string, cardId string, isMobile bool) []string {
 		card := Card{}
 		if err := db.Get(cardId, &card); err != nil {
 
@@ -90,28 +100,33 @@ func NewCard(d deps.Deps) *http.ServeMux {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
-		isMobile := strings.Contains(r.Header.Get("User-Agent"), "Android") || strings.Contains(r.Header.Get("User-Agent"), "iPhone")
-		id := r.PathValue("id")
-		if id == "" {
-			id = NewCardId()
-			card := Card{
-				ID:      id,
-				Message: "This is the text on the card!",
-				Image:   "/data/cards/images/default.png",
+		switch r.Method {
+		case http.MethodGet:
+			cardGet(db, w, r)
+		}
+	})
+
+	mux.HandleFunc("/generate-image", func(w http.ResponseWriter, r *http.Request) {
+		pageId := r.FormValue("id")
+		if pageId == "" {
+			if currentURL, ok := r.Header["Hx-Current-Url"]; ok {
+				pageId = strings.Split(currentURL[0], "/card/")[1]
 			}
-			if err := db.Set(id, card); err != nil {
-				http.Error(w, "Could not create card", http.StatusInternalServerError)
-				return
-			}
-			http.Redirect(w, r, "/card/"+id, http.StatusSeeOther)
+		}
+		prompt := r.FormValue("prompt")
+		if prompt == "" {
+			http.Error(w, "Prompt is required", http.StatusBadRequest)
 			return
 		}
-		var card Card
-		if err := db.Get(id, &card); err != nil {
-			http.Error(w, "Could not get card", http.StatusNotFound)
+		card, err := generateCard(d, db, pageId, prompt, w, r)
+		if err != nil {
+			http.Error(w, "Failed to generate card", http.StatusInternalServerError)
 			return
 		}
-		NewWebsocketPage(CardEditor(isMobile, card).Children).RenderPage(w, r)
+		// Render the updated image div
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte(imageSection(card.Image, true, card.ID).Render()))
+
 	})
 
 	mux.HandleFunc("/upload-image", func(w http.ResponseWriter, r *http.Request) {
@@ -171,8 +186,228 @@ func NewCard(d deps.Deps) *http.ServeMux {
 		w.Write([]byte(imageSection(imageSrc, true, card.ID).Render()))
 	})
 
+	mux.HandleFunc("/generate-card", func(w http.ResponseWriter, r *http.Request) {
+		prompt := r.FormValue("prompt")
+		if prompt == "" {
+			http.Error(w, "Prompt is required", http.StatusBadRequest)
+			return
+		}
+		pageId := r.FormValue("id")
+		if pageId == "" {
+			if currentURL, ok := r.Header["Hx-Current-Url"]; ok {
+				pageId = strings.Split(currentURL[0], "/card/")[1]
+			}
+		}
+		CallGenerateNewCard(d, pageId, prompt, w, r)
+	})
+
 	return mux
 }
+
+func cardGet(db *db.DocumentStore, w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if id == "" {
+		id = NewCardId()
+		card := Card{
+			ID:      id,
+			Message: "This is the text on the card!",
+			Image:   "/data/cards/images/default.png",
+		}
+		if err := db.Set(id, card); err != nil {
+			http.Error(w, "Could not create card", http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, "/card/"+id, http.StatusSeeOther)
+		return
+	}
+
+	NewWebsocketPage(makeCard(db, id, w, r).Children).RenderPage(w, r)
+}
+
+func makeCard(db *db.DocumentStore, id string, w http.ResponseWriter, r *http.Request) *Node {
+	isMobile := strings.Contains(r.Header.Get("User-Agent"), "Android") || strings.Contains(r.Header.Get("User-Agent"), "iPhone")
+	var card Card
+	if err := db.Get(id, &card); err != nil {
+		http.Error(w, "Could not get card", http.StatusNotFound)
+		return nil
+	}
+
+	contentContainer := Div(
+		Id("card-container"),
+		CardEditor(isMobile, card),
+	)
+
+	if isMobile {
+		contentContainer.Attrs["Class"] = "origin-top scale-[3]"
+	}
+
+	return Div(
+		Div(
+			Id("toggle-edit-form"),
+			Class("grid justify-center"),
+			Div(
+				Class("grid grid-cols-3 justify-center mt-4 w-[16.5rem]"),
+				Label(T("Edit Card")),
+				Input(
+					Type("checkbox"),
+					Class("toggle"),
+					OnClick(`document.getElementById('content-container').classList.toggle('hidden'); 
+					 document.getElementById('generate-card-form').classList.toggle('hidden');`),
+				),
+				Label(T("Generate Card")),
+			)),
+		Div(
+			Id("content-container"),
+			Div(
+				Class("grid justify-center mt-4"),
+				contentContainer,
+			),
+		),
+		Div(
+			Id("generate-card-form"),
+			Class("hidden"),
+			Form(
+				Class("mx-auto my-10 rounded-lg shadow-lg md:w-[250px]"),
+				Attr("hx-post", "/card/generate-card"),
+				Attr("hx-target", "#content-container"),
+				Script(Raw(`
+			document.addEventListener('htmx:beforeRequest', function(evt) {
+				document.getElementById('card-image').innerHTML = '<div class="loading loading-spinner loading-lg"></div>';
+			});
+		`)),
+				TextArea(
+					Class("w-full"),
+					Attr("rows", "4"),
+					Name("prompt"),
+				),
+				Input(
+					Type("submit"),
+					Class("mt-2 bg-green-500 hover:bg-green-700 text-white font-bold rounded"),
+					Value("Generate Card"),
+				),
+			)),
+	)
+}
+
+func generateCard(d deps.Deps, db *db.DocumentStore, pageId string, prompt string, w http.ResponseWriter, r *http.Request) (Card, error) {
+	card := Card{}
+	req := openai.ImageRequest{
+		Model:          openai.CreateImageModelDallE3,
+		Prompt:         prompt,
+		N:              1,
+		Quality:        openai.CreateImageQualityHD,
+		Size:           openai.CreateImageSize1024x1792,
+		Style:          openai.CreateImageStyleVivid,
+		ResponseFormat: openai.CreateImageResponseFormatURL,
+	}
+
+	resp, err := d.AI.CreateImage(r.Context(), req)
+	if err != nil {
+		http.Error(w, "Failed to generate image", http.StatusInternalServerError)
+		return card, err
+	}
+	imageURL := resp.Data[0].URL
+
+	now := strconv.Itoa(time.Now().Nanosecond())
+	imagePath, err := downloadImage(imageURL, fmt.Sprintf("generated_image%s.png", now))
+	if err != nil {
+		http.Error(w, "Failed to download image", http.StatusInternalServerError)
+		return card, err
+	}
+
+	_, i := utf8.DecodeRuneInString(imagePath)
+	imagePath = imagePath[i:]
+
+	if err := db.Get(pageId, &card); err != nil {
+		fmt.Println("Failed with: ", err)
+		http.Error(w, "Could not get card!", http.StatusInternalServerError)
+		return card, err
+	}
+	card.Image = imagePath
+	if err := db.Set(pageId, card); err != nil {
+		http.Error(w, "Could not save image", http.StatusInternalServerError)
+		return card, err
+	} else {
+		fmt.Println("Saved image to:", imagePath)
+	}
+	return card, nil
+}
+
+type Parameter struct {
+	Type                 string          `json:"type"`
+	Properties           map[string]Prop `json:"properties"`
+	Required             []string        `json:"required"`
+	AdditionalProperties bool            `json:"additionalProperties"`
+}
+
+type Prop struct {
+	Type        string `json:"type"`
+	Description string `json:"description"`
+}
+
+func CallGenerateNewCard(d deps.Deps, pageId string, prompt string, w http.ResponseWriter, r *http.Request) {
+	function := openai.FunctionDefinition{
+		Name:        "generateNewCard",
+		Description: "Generate a new card with a message and an image",
+		Parameters: Parameter{
+			Type: "object",
+			Properties: map[string]Prop{
+				"messagePrompt": {
+					Type:        "string",
+					Description: "A prompt to generate the text on the card",
+				},
+				"imagePrompt": {
+					Type:        "string",
+					Description: "A prompt to generate the image on the card",
+				},
+			},
+			Required:             []string{"messagePrompt", "imagePrompt"},
+			AdditionalProperties: false,
+		},
+	}
+
+	tool := openai.Tool{}
+	tool.Type = "function"
+	tool.Function = &function
+
+	fmt.Println("Calling generateNewCard")
+	resp, err := d.AI.CreateChatCompletion(r.Context(), openai.ChatCompletionRequest{
+		Model: openai.GPT4o20240513,
+		Messages: []openai.ChatCompletionMessage{
+			{Role: openai.ChatMessageRoleSystem, Content: "You will help me generate a new card."},
+			{Role: openai.ChatMessageRoleUser, Content: prompt},
+		},
+		Tools: []openai.Tool{tool},
+	})
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	db := d.Docs.WithCollection("card")
+	tool_calls := resp.Choices[0].Message.ToolCalls[0]
+	if ok := tool_calls.Function.Name == "generateNewCard"; ok {
+		createCard := CreateCard{}
+		err = json.Unmarshal([]byte(tool_calls.Function.Arguments), &createCard)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+		card, err := generateCard(d, db, pageId, prompt, w, r)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+		card.Message = createCard.MessagePrompt
+		if err := db.Set(pageId, card); err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+
+	}
+	card := makeCard(db, pageId, w, r)
+	card.RenderPage(w, r)
+}
+
 func NewCardId() string {
 	return "c" + uuid.NewString()
 }
@@ -201,10 +436,7 @@ func CardEditor(isMobile bool, card Card) *Node {
 }
 
 func createCard(isMobile bool, card Card) *Node {
-	cardStyle := Class("mx-auto my-10 rounded-lg shadow-lg md:w-[250px] md:h-[350px] md:aspect-auto")
-	if isMobile {
-		cardStyle = Class("mx-auto my-10 w-[90vw] aspect-[5/7] rounded-lg shadow-lg")
-	}
+	cardStyle := Class("rounded-lg shadow-lg w-[16.5rem] h-[25.5rem]")
 
 	return Div(
 		Id(card.ID),
@@ -216,10 +448,10 @@ func createCard(isMobile bool, card Card) *Node {
 
 func imageSection(imageSrc string, isEditing bool, pageId string) *Node {
 	imageForm := Div(
-		Id("upload-image-form"),
+		Id("toggle-image-form"),
 	)
 	if isEditing {
-		imageForm = uploadImageForm(pageId)
+		imageForm = generateImageForm(pageId)
 	}
 	return Div(
 		Id("card-image"),
@@ -241,6 +473,55 @@ func contentSection(message string) *Node {
 		P(
 			Class("mt-2"),
 			T(message),
+		),
+	)
+}
+
+func newImageForm(pageId string) *Node {
+	//toggle between generate and upload image form
+	return Div(
+		Id("toggle-image-form"),
+		Class("absolute top-2 right-0 m-2 grid justify-items-end"),
+		Input(
+			Type("checkbox"),
+			Class("toggle"),
+			OnClick(`document.getElementById('upload-image-form').classList.toggle('hidden'); 
+					 document.getElementById('generate-image-form').classList.toggle('hidden');`),
+		),
+		generateImageForm(pageId),
+		uploadImageForm(pageId),
+	)
+}
+
+func generateImageForm(pageId string) *Node {
+	return Div(
+		Id("generate-image-form"),
+		Class("hidden"),
+		Form(
+			Class("text-right"),
+			Attr("enctype", "multipart/form-data"),
+			Attr("method", "POST"),
+			Attr("hx-post", "/card/generate-image"),
+			Attr("hx-target", "#card-image"),
+			Attr("hx-swap", "outerHTML"),
+			Div(
+				Class("mt-2"),
+				Input(
+					Type("hidden"),
+					Name("id"),
+					Value(pageId),
+				),
+				TextArea(
+					Class("w-full"),
+					Attr("rows", "4"),
+					Name("prompt"),
+				),
+			),
+			Input(
+				Class("mt-2 bg-green-500 hover:bg-green-700 text-white font-bold rounded"),
+				Type("submit"),
+				Value("Generate Image"),
+			),
 		),
 	)
 }
@@ -308,147 +589,9 @@ func editCardForm(id, message string) *Node {
 		))
 }
 
-type Zine2 struct {
-	ID    string
-	Cards []string
-}
-
-func NewZine(d deps.Deps) *http.ServeMux {
-	d.WebsocketRegistry.Register("zine", func(message string, pageId string) []string {
-		zine := Zine2{}
-		if err := d.Docs.WithCollection("zine").Get(pageId, &zine); err != nil {
-			fmt.Println("Failed to get zine with id: ", pageId)
-			return []string{}
-		}
-		var cards []Card
-		for _, cardId := range zine.Cards {
-			var card Card
-			if err := d.Docs.WithCollection("card").Get(cardId, &card); err != nil {
-				fmt.Println("Failed to get card with id: ", cardId)
-				return []string{}
-			}
-			cards = append(cards, card)
-		}
-
-		return []string{
-			makeZine(pageId, cards, false).Render(),
-		}
-	})
-
-	cardDb := d.Docs.WithCollection("card")
-	zineDb := d.Docs.WithCollection("zine")
-
-	RegisterCardWebsocketHandlers(d, "card")
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
-		isMobile := strings.Contains(r.Header.Get("User-Agent"), "Android") || strings.Contains(r.Header.Get("User-Agent"), "iPhone")
-
-		id := r.PathValue("id")
-		if id == "" {
-			id = NewCardId()
-
-			var cardIds []string
-			for i := 1; i <= 6; i++ {
-				cardData := CreateCardData("", fmt.Sprintf("%d", i), "")
-				cardIds = append(cardIds, cardData.ID)
-
-				//save the card
-				if err := cardDb.Set(cardData.ID, cardData); err != nil {
-					http.Error(w, "Could not create card", http.StatusInternalServerError)
-					return
-				}
-			}
-
-			zine := Zine2{
-				ID:    id,
-				Cards: cardIds,
-			}
-
-			if err := zineDb.Set(id, zine); err != nil {
-				http.Error(w, "Could not create zine", http.StatusInternalServerError)
-				return
-			}
-			http.Redirect(w, r, "/zine/"+id, http.StatusSeeOther)
-			return
-		}
-		var zine Zine2
-		if err := zineDb.Get(id, &zine); err != nil {
-			http.Error(w, "Could not get zine", http.StatusNotFound)
-			return
-		}
-
-		var cards []Card
-		for _, cardId := range zine.Cards {
-			var card Card
-			if err := cardDb.Get(cardId, &card); err != nil {
-				http.Error(w, "Could not get card", http.StatusNotFound)
-				return
-			}
-			cards = append(cards, card)
-		}
-
-		content := makeZine(id, cards, isMobile)
-		body := Div(zineNavBar(id), content)
-		NewWebsocketPage(body.Children).RenderPage(w, r)
-	})
-
-	mux.HandleFunc("/card/{id...}", func(w http.ResponseWriter, r *http.Request) {
-		isMobile := strings.Contains(r.Header.Get("User-Agent"), "Android") || strings.Contains(r.Header.Get("User-Agent"), "iPhone")
-		id := r.PathValue("id")
-		if id == "" {
-			http.Redirect(w, r, "/zine/", http.StatusSeeOther)
-			return
-		}
-		var card Card
-		if err := cardDb.Get(id, &card); err != nil {
-			http.Error(w, "Could not get card", http.StatusNotFound)
-			return
-		}
-		CardEditor(isMobile, card).RenderPage(w, r)
-	})
-	return mux
-}
-
-func makeZine(id string, cards []Card, isMobile bool) *Node {
-	content := Div(Id("content-container"))
-	for _, card := range cards {
-		page := createCard(isMobile, card)
-		page.Attrs["hx-on:click"] = fmt.Sprintf("htmx.ajax('GET', '/zine/card/%s', '#content-container')", card.ID)
-		content.Children = append(content.Children, page)
-	}
-	return content
-	// return Div(zineNavBar(id), content)
-}
-
-func zineNavBar(id string) *Node {
-	return Div(
-		Id("nav-bar"),
-		Class("flex justify-between"),
-		Form(
-			Class("mx-auto my-10 rounded-lg shadow-lg md:w-[250px]"),
-			Attr("ws-send", "submit"),
-			Input(
-				Type("hidden"),
-				Name("id"),
-				Value(id),
-			),
-			Input(
-				Type("hidden"),
-				Name("zine"),
-				Attr("readonly", ""),
-			),
-			Input(
-				Id("back-button"),
-				Type("submit"),
-				Value("Back"),
-			),
-		),
-	)
-}
-
 func NewWebsocketPage(children []*Node) *Node {
 	return Html(
+		Attr("data-theme", "light"),
 		Head(
 			Title(T("Websocket Test")),
 			Script(
@@ -458,6 +601,7 @@ func NewWebsocketPage(children []*Node) *Node {
 				Src("https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"),
 			),
 			TailwindCSS,
+			DaisyUI,
 		),
 		Body(Div(
 			Attr("hx-ext", "ws"),
@@ -465,4 +609,27 @@ func NewWebsocketPage(children []*Node) *Node {
 			Ch(children),
 		)),
 	)
+}
+
+func downloadImage(imageURL, outputName string) (string, error) {
+	imageResp, err := http.Get(imageURL)
+	if err != nil {
+		return "", err
+	}
+	defer imageResp.Body.Close()
+
+	outputPath := fmt.Sprintf("./data/images/" + outputName)
+
+	file, err := os.Create(outputPath)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	_, err = io.Copy(file, imageResp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return outputPath, nil
 }

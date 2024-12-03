@@ -4,9 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/breadchris/share/deps"
-	"github.com/gorilla/websocket"
-	"github.com/samber/lo"
 	"io"
 	"log"
 	"net/http"
@@ -14,6 +11,10 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/breadchris/share/deps"
+	"github.com/gorilla/websocket"
+	"github.com/samber/lo"
 
 	. "github.com/breadchris/share/html"
 	"github.com/google/uuid"
@@ -254,7 +255,7 @@ func (s *OpenAIService) GenerateImage(ctx context.Context, prompt string) (strin
 		Prompt:         prompt,
 		N:              1,
 		Quality:        openai.CreateImageQualityHD,
-		Size:           openai.CreateImageSize1024x1792,
+		Size:           openai.CreateImageSize1024x1024, // CreateImageSize1024x1792
 		Style:          openai.CreateImageStyleVivid,
 		ResponseFormat: openai.CreateImageResponseFormatURL,
 	}
