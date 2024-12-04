@@ -67,6 +67,7 @@ func New(d Deps) *http.ServeMux {
 						Button(HxPost("/playground/edit/"+id), HxSwap("none"), HxVals("js:{html: getHTML()}"), Text("Save")),
 						Button(Id("add-text"), Text("Add Text")),
 						Button(Id("add-chat"), Text("Add Chat")),
+						A(Href("/playground/"+id), Text("View")),
 					),
 					Div(
 						Id("canvas"),
