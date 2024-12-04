@@ -76,7 +76,7 @@ func RegisterCardWebsocketHandlers(d deps.Deps, collection string) {
 		}
 	})
 
-	d.WebsocketRegistry.Register(("save"), func(message string, cardId string, isMobile bool) []string {
+	d.WebsocketRegistry.Register("save", func(message string, cardId string, isMobile bool) []string {
 		card := Card{}
 		if err := db.Get(cardId, &card); err != nil {
 
