@@ -106,7 +106,7 @@ func (s *Schema) RemoveField(id string) {
 
 // AddField registers the provided newField to the current schema.
 //
-// If field with `newField.Id` already exist, the existing field is
+// If field with `newField.ID` already exist, the existing field is
 // replaced with the new one.
 //
 // Otherwise the new field is appended to the other schema fields.

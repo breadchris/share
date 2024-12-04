@@ -104,7 +104,7 @@ func (ds *DocumentStore) Get(id string, val any) error {
 }
 
 type Document struct {
-	Id   string          `json:"id"`
+	ID   string          `json:"id"`
 	Data json.RawMessage `json:"data"`
 }
 
@@ -125,7 +125,7 @@ func (ds *DocumentStore) List() ([]Document, error) {
 		if err := rows.Scan(&id, &jsonValue); err != nil {
 			return nil, err
 		}
-		documents = append(documents, Document{Id: id, Data: jsonValue})
+		documents = append(documents, Document{ID: id, Data: jsonValue})
 	}
 	return documents, nil
 }

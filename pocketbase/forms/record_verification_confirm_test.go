@@ -90,7 +90,7 @@ func TestRecordVerificationConfirmValidateAndSubmit(t *testing.T) {
 		tokenRecordId := claims["id"]
 
 		if record.Id != tokenRecordId {
-			t.Errorf("(%d) Expected record.Id %q, got %q", i, tokenRecordId, record.Id)
+			t.Errorf("(%d) Expected record.ID %q, got %q", i, tokenRecordId, record.Id)
 		}
 
 		if !record.Verified() {

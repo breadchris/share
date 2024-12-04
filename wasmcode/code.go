@@ -24,6 +24,7 @@ type CodeRequest struct {
 }
 
 type CodeState struct {
+	ID   string `json:"id"`
 	HTML string `json:"html"`
 }
 
@@ -31,6 +32,7 @@ type CodeState struct {
 func New(d Deps) *http.ServeMux {
 	mux := http.NewServeMux()
 	ctx := context.WithValue(context.Background(), "baseURL", "/code")
+	playDocs := d.Docs.WithCollection("playground")
 	mux.HandleFunc("/playground/edit/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 		if id == "" {
@@ -39,15 +41,18 @@ func New(d Deps) *http.ServeMux {
 			return
 		}
 		var s CodeState
-		if err := d.Docs.Get(id, &s); err != nil {
+		if err := playDocs.Get(id, &s); err != nil {
 			println(err.Error())
 		}
 		switch r.Method {
 		case http.MethodPost:
 			r.ParseForm()
 			h := r.FormValue("html")
-			s := CodeState{HTML: h}
-			if err := d.Docs.Set(id, s); err != nil {
+			s := CodeState{
+				ID:   id,
+				HTML: h,
+			}
+			if err := playDocs.Set(id, s); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -65,7 +70,7 @@ func New(d Deps) *http.ServeMux {
 					),
 					Div(
 						Id("canvas"),
-						Class("dropzone"),
+						Class("dropzone h-screen w-full"),
 						Raw(s.HTML),
 					),
 				),
@@ -75,13 +80,34 @@ func New(d Deps) *http.ServeMux {
 	mux.HandleFunc("/playground/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 		if id == "" {
+			d, err := playDocs.List()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			var items []*Node
+			for _, u := range d {
+				var s CodeState
+				if err := json.Unmarshal(u.Data, &s); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				items = append(items, Li(
+					A(Href("/playground/edit/"+u.ID), Text(u.ID)),
+				))
+			}
+
 			DefaultLayout(
-				A(Class("btn"), Href("/playground/edit/"), Text("Create")),
+				Div(
+					Class("w-full max-w-2xl mx-auto"),
+					A(Class("btn"), Href("/playground/edit/"), Text("Create")),
+					Ul(Class("space-y-4"), Ch(items)),
+				),
 			).RenderPageCtx(ctx, w, r)
 			return
 		}
 		var s CodeState
-		if err := d.Docs.Get(id, &s); err != nil {
+		if err := playDocs.Get(id, &s); err != nil {
 			println(err.Error())
 		}
 		switch r.Method {

@@ -83,7 +83,7 @@ func init() {
 		"HxSwap":                  reflect.ValueOf(html.HxSwap),
 		"HxTarget":                reflect.ValueOf(html.HxTarget),
 		"HxTrigger":               reflect.ValueOf(html.HxTrigger),
-		"Id":                      reflect.ValueOf(html.Id),
+		"ID":                      reflect.ValueOf(html.Id),
 		"If":                      reflect.ValueOf(html.If),
 		"Iframe":                  reflect.ValueOf(html.Iframe),
 		"Img":                     reflect.ValueOf(html.Img),

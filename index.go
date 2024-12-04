@@ -22,6 +22,7 @@ func Index() *Node {
 		{"/calendar", "Calendar"},
 		{"/notes/", "Notes"},
 		{"/zine", "Zine"},
+		{"/code/playground/", "Playground"},
 		{"/data/recipes/", "Recipes"},
 		{"/login", "Login"},
 		{"/register", "Register"},

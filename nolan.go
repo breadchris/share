@@ -86,7 +86,7 @@ setTimeout(() => window.location.reload(), 5000)
 					println(err.Error())
 					continue
 				}
-				items = append(items, A(Attr("href", "/"+n.Id), T(ns.Name)))
+				items = append(items, A(Attr("href", "/"+n.ID), T(ns.Name)))
 			}
 
 			DefaultLayout(

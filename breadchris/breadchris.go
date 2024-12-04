@@ -542,7 +542,7 @@ func PageLayout(section *Node) *Node {
 			Footer(Class("footer"),
 				Span(T("© 2024 "), A(Href("/"), T("breadchris"))),
 			),
-			//A(Href("/#top"), AriaLabel("go to top"), Attr("title", "Go to Top (Alt + G)"), Class("top-link"), Id("top-link"), Attr("style", "visibility: hidden; opacity: 0;"),
+			//A(Href("/#top"), AriaLabel("go to top"), Attr("title", "Go to Top (Alt + G)"), Class("top-link"), ID("top-link"), Attr("style", "visibility: hidden; opacity: 0;"),
 			//	T("↑"),
 			//),
 		),

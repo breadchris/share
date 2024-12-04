@@ -4,7 +4,7 @@ let elementCounter = 1;
 
 function createDraggableText(content) {
     const div = document.createElement("div");
-    div.className = "drag-drop";
+    div.className = "drag-drop w-fit";
     div.setAttribute("data-id", elementCounter++);
     div.style.transform = "translate(0px, 0px)";
     div.textContent = content;
@@ -12,22 +12,6 @@ function createDraggableText(content) {
 
     document.getElementById("canvas").appendChild(div);
     enableDragDrop(div);
-}
-
-function enableDragDrop(target) {
-    interact(target).draggable({
-        inertia: true,
-        modifiers: [
-            interact.modifiers.restrictRect({
-                restriction: "parent",
-                endOnly: true,
-            }),
-        ],
-        autoScroll: true,
-        listeners: {
-            move: dragMoveListener,
-        },
-    });
 }
 
 function dragMoveListener(event) {
@@ -47,10 +31,8 @@ function getPotentialParent(element) {
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
 
-    // Get all elements at the center point
     const elements = document.elementsFromPoint(centerX, centerY);
 
-    // Filter out the dragged element and find the first valid parent
     return elements.find(
         (el) =>
             el !== element &&
@@ -86,15 +68,15 @@ interact(".drag-drop")
         const potentialParent = getPotentialParent(event.target);
 
         if (potentialParent) {
-            potentialParent.classList.remove("highlight");
+            // potentialParent.classList.remove("highlight");
+            //
+            // potentialParent.appendChild(event.target);
 
-            potentialParent.appendChild(event.target);
+            // potentialParent.classList.add("flex", "flex-row", "gap-2");
 
-            potentialParent.classList.add("flex", "flex-row", "gap-2");
-
-            event.target.style.transform = "translate(0px, 0px)";
-            event.target.setAttribute("data-x", 0);
-            event.target.setAttribute("data-y", 0);
+            // event.target.style.transform = "translate(0px, 0px)";
+            // event.target.setAttribute("data-x", 0);
+            // event.target.setAttribute("data-y", 0);
         } else {
             document
                 .querySelectorAll(".drag-drop.highlight")
@@ -124,6 +106,5 @@ document.getElementById("add-chat").addEventListener("click", () => {
         div.innerHTML = text
 
         document.getElementById("canvas").appendChild(div);
-        enableDragDrop(div);
     });
 });

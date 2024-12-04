@@ -13,7 +13,7 @@ import (
 //
 // Example:
 //
-//	validation.Field(&form.Id, validation.By(validators.UniqueId(form.dao, tableName)))
+//	validation.Field(&form.ID, validation.By(validators.UniqueId(form.dao, tableName)))
 func UniqueId(dao *daos.Dao, tableName string) validation.RuleFunc {
 	return func(value any) error {
 		v, _ := value.(string)
