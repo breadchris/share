@@ -1,110 +1,114 @@
-import interact from "interactjs";
+import PlainDraggable from "plain-draggable";
+// import LeaderLine from "leader-line";
 
-let elementCounter = 1;
+window.addEventListener("load", function () {
+    let elementCounter = 1;
+    let startElement = null; // Track the starting element for the leader line
+    let lines = []; // Array to store all created lines
 
-function createDraggableText(content) {
-    const div = document.createElement("div");
-    div.className = "drag-drop w-fit";
-    div.setAttribute("data-id", elementCounter++);
-    div.style.transform = "translate(0px, 0px)";
-    div.textContent = content;
-    div.contentEditable = "true";
+    // Function to store line objects and associated start and end elements
+    const lineData = [];
 
-    document.getElementById("canvas").appendChild(div);
-    enableDragDrop(div);
-}
+    function createDraggable(element) {
+        const draggable = new PlainDraggable(element, {
+            onMove: function () {
+                // Update any lines connected to this element
+                lineData.forEach((data) => {
+                    if (data.start === element || data.end === element) {
+                        data.line.position();
+                    }
+                });
+            }
+        });
 
-function dragMoveListener(event) {
-    const target = event.target;
+        // Add click listener to handle leaderline logic
+        element.addEventListener("click", (event) => {
+            event.stopPropagation(); // Prevent canvas click event from firing
+            if (!startElement) {
+                // If there's no start, set this as the start
+                startElement = element;
+                element.classList.add("ring-2", "ring-blue-500"); // Add TailwindCSS class for highlighting
+            } else if (startElement === element) {
+                // If clicking the same element, clear the start
+                startElement.classList.remove("ring-2", "ring-blue-500");
+                startElement = null;
+            } else {
+                // If there's already a start, set this as the end and create a line
+                const endElement = element;
+                const line = new LeaderLine(startElement, endElement);
+                line.setOptions({
+                    endPlug: "hand",
+                })
 
-    let x = (parseFloat(target.getAttribute("data-x")) || 0) + event.dx;
-    let y = (parseFloat(target.getAttribute("data-y")) || 0) + event.dy;
+                console.log(line)
 
-    target.style.transform = `translate(${x}px, ${y}px)`;
+                // Store the line and its connected elements
+                lineData.push({ start: startElement, end: endElement, line });
 
-    target.setAttribute("data-x", x);
-    target.setAttribute("data-y", y);
-}
+                // Add click listener for removing the line
+                line.middleLabel = LeaderLine.pathLabel("Click to remove");
+                line.pathLabel = { color: "black", fontSize: "12px" };
 
-function getPotentialParent(element) {
-    const rect = element.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
+                // line.container.addEventListener("click", () => {
+                //     line.remove();
+                //     const index = lineData.findIndex((data) => data.line === line);
+                //     if (index > -1) lineData.splice(index, 1); // Remove from lineData array
+                // });
 
-    const elements = document.elementsFromPoint(centerX, centerY);
+                // Clear the start and remove its TailwindCSS class
+                startElement.classList.remove("ring-2", "ring-blue-500");
+                startElement = null;
+            }
+        });
+    }
 
-    return elements.find(
-        (el) =>
-            el !== element &&
-            el.classList.contains("drag-drop") &&
-            el.id !== "canvas"
-    );
-}
+    function addDraggableElement(content, tag = "div", isImage = false) {
+        const element = document.createElement(tag);
+        element.className = "drag-drop w-fit";
+        element.setAttribute("data-id", elementCounter++);
+        element.style.position = "absolute"; // Ensures PlainDraggable works properly
 
-interact(".drag-drop")
-    .draggable({
-        inertia: true,
-        modifiers: [
-            interact.modifiers.restrictRect({
-                restriction: "parent",
-                endOnly: true,
-            }),
-        ],
-        autoScroll: true,
-        listeners: { move: dragMoveListener },
-    })
-    .on("dragmove", (event) => {
-        const potentialParent = getPotentialParent(event.target);
-
-        document
-            .querySelectorAll(".drag-drop.highlight")
-            .forEach((el) => el.classList.remove("highlight"));
-
-        if (potentialParent) {
-            potentialParent.classList.add("highlight");
-        }
-    })
-    .on("dragend", (event) => {
-        const potentialParent = getPotentialParent(event.target);
-
-        if (potentialParent) {
-            // potentialParent.classList.remove("highlight");
-            //
-            // potentialParent.appendChild(event.target);
-
-            // potentialParent.classList.add("flex", "flex-row", "gap-2");
-
-            // event.target.style.transform = "translate(0px, 0px)";
-            // event.target.setAttribute("data-x", 0);
-            // event.target.setAttribute("data-y", 0);
+        if (isImage) {
+            element.src = content;
         } else {
-            document
-                .querySelectorAll(".drag-drop.highlight")
-                .forEach((el) => el.classList.remove("highlight"));
+            element.textContent = content;
+        }
+
+        document.getElementById("canvas").appendChild(element);
+        createDraggable(element);
+    }
+
+    // Handle adding text
+    document.getElementById("add-text").addEventListener("click", () => {
+        addDraggableElement("write something");
+    });
+
+    // Handle adding images
+    document.getElementById("add-image").addEventListener("click", () => {
+        addDraggableElement("https://picsum.photos/200", "img", true);
+    });
+
+    // Add click listener to the canvas to reset the start element
+    document.getElementById("canvas").addEventListener("click", () => {
+        if (startElement) {
+            startElement.classList.remove("ring-2", "ring-blue-500");
+            startElement = null;
         }
     });
+});
 
 function getHTML() {
-    return document.getElementById("canvas").innerHTML;
+    const defs = document.getElementById("leader-line-defs");
+    const lines = document.getElementsByClassName("leader-line");
+    const canvas = document.getElementById("canvas");
+
+    // combine all the elements into a shadow div
+    const shadow = document.createElement("div");
+    shadow.appendChild(defs.cloneNode(true));
+    shadow.appendChild(canvas.cloneNode(true));
+    for (let i = 0; i < lines.length; i++) {
+        shadow.appendChild(lines[i].cloneNode(true));
+    }
+    return shadow.innerHTML;
 }
 window.getHTML = getHTML;
-
-document.getElementById("add-text").addEventListener("click", () => {
-    createDraggableText("New Text");
-});
-
-document.getElementById("add-chat").addEventListener("click", () => {
-    fetch("/chat", {
-        method: "GET",
-    })
-        .then((res) => res.text())
-        .then((text) => {
-        const div = document.createElement("div");
-        div.className = "drag-drop";
-        div.setAttribute("data-id", elementCounter++);
-        div.style.transform = "translate(0px, 0px)";
-        div.innerHTML = text
-
-        document.getElementById("canvas").appendChild(div);
-    });
-});

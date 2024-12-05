@@ -394,6 +394,51 @@ func startServer(useTLS bool, port int) {
 			log.Fatalf("Failed to watch files: %v", err)
 		}
 	}()
+	// non-module code
+	go func() {
+		entrypoints := []string{
+			"./code/playground.ts",
+		}
+		if err := WatchFilesAndFolders(entrypoints, func(s string) {
+			result := api.Build(api.BuildOptions{
+				EntryPoints: entrypoints,
+				Loader: map[string]api.Loader{
+					".js":    api.LoaderJS,
+					".jsx":   api.LoaderJSX,
+					".ts":    api.LoaderTS,
+					".tsx":   api.LoaderTSX,
+					".woff":  api.LoaderFile,
+					".woff2": api.LoaderFile,
+					".ttf":   api.LoaderFile,
+					".eot":   api.LoaderFile,
+					".css":   api.LoaderCSS,
+				},
+				Outdir:      "static/",
+				Bundle:      true,
+				Write:       true,
+				TreeShaking: api.TreeShakingTrue,
+				//MinifyWhitespace:  true,
+				//MinifyIdentifiers: true,
+				//MinifySyntax:      true,
+				Sourcemap: api.SourceMapInline,
+				LogLevel:  api.LogLevelInfo,
+			})
+
+			for _, warning := range result.Warnings {
+				fmt.Println(warning.Text)
+			}
+
+			for _, e := range result.Errors {
+				fmt.Println(e.Text)
+			}
+
+			for _, f := range result.OutputFiles {
+				fmt.Println(f.Path)
+			}
+		}); err != nil {
+			log.Fatalf("Failed to watch files: %v", err)
+		}
+	}()
 
 	http.HandleFunc("/register", a.handleRegister)
 	http.HandleFunc("/account", a.accountHandler)

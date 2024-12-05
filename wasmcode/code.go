@@ -24,8 +24,9 @@ type CodeRequest struct {
 }
 
 type CodeState struct {
-	ID   string `json:"id"`
-	HTML string `json:"html"`
+	ID    string `json:"id"`
+	HTML  string `json:"html"`
+	Title string `json:"title"`
 }
 
 // analyze code https://github.com/x1unix/go-playground/tree/9cc0c4d80f44fb3589fcb22df432563fa065feed/internal/analyzer
@@ -48,9 +49,11 @@ func New(d Deps) *http.ServeMux {
 		case http.MethodPost:
 			r.ParseForm()
 			h := r.FormValue("html")
+			title := r.FormValue("title")
 			s := CodeState{
-				ID:   id,
-				HTML: h,
+				ID:    id,
+				HTML:  h,
+				Title: title,
 			}
 			if err := playDocs.Set(id, s); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -60,14 +63,23 @@ func New(d Deps) *http.ServeMux {
 			DefaultLayout(
 				Div(
 					//Style(T(playgroundCSS)),
-					Script(Type("module"), Attr("src", "/static/code/playground.js")),
+					Script(Attr("src", "/static/code/playground.js")),
+					Script(Attr("src", "/static/leader-line.min.js")),
 					Div(
 						Id("toolbar"),
 						Class("flex space-x-4 p-4"),
-						Button(HxPost("/playground/edit/"+id), HxSwap("none"), HxVals("js:{html: getHTML()}"), Text("Save")),
-						Button(Id("add-text"), Text("Add Text")),
-						Button(Id("add-chat"), Text("Add Chat")),
-						A(Href("/playground/"+id), Text("View")),
+						Input(Type("text"), Id("title"), Class("input w-32"), Value(s.Title), Placeholder("Title")),
+						Button(
+							Class("btn"),
+							HxPost("/playground/edit/"+id),
+							HxSwap("none"),
+							HxVals("js:{html: getHTML(), title: document.getElementById('title').value}"),
+							Text("Save"),
+						),
+						Button(Class("btn"), Id("add-text"), Text("Text")),
+						Button(Class("btn"), Id("add-image"), Text("Image")),
+						//Button(Class("btn"), Id("add-chat"), Text("Add Chat")),
+						A(Class("btn"), Href("/playground/"+id), Text("View")),
 					),
 					Div(
 						Id("canvas"),
@@ -94,6 +106,7 @@ func New(d Deps) *http.ServeMux {
 					return
 				}
 				items = append(items, Li(
+					Class("p-4"),
 					A(Href("/playground/edit/"+u.ID), Text(u.ID)),
 				))
 			}
