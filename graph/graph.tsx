@@ -393,8 +393,37 @@ export default function GraphApp({ id }) {
         event.dataTransfer.dropEffect = 'move';
     }, []);
 
+    const getDraggedImageUrl = async (items: DataTransferItemList): Promise<string | null> => {
+        for (const item of items) {
+            if (item.kind === 'string' && item.type === 'text/uri-list') {
+                return new Promise((resolve) => {
+                    item.getAsString((url) => {
+                        resolve(url);
+                    });
+                });
+            }
+        }
+        return null;
+    };
+
     const onDrop = useCallback(
         (event) => {
+            const dataTransfer = event.dataTransfer;
+            const file = dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const imageUrl = URL.createObjectURL(file);
+                console.log('Image URL (from file):', imageUrl);
+                // displayImage(imageUrl);
+            } else {
+                const url = await getDraggedImageUrl(dataTransfer.items);
+                if (url) {
+                    console.log('Image URL (from browser):', url);
+                    // displayImage(url);
+                } else {
+                    alert('Please drop a valid image or an image URL.');
+                }
+            }
+
             event.preventDefault();
             const type = event.dataTransfer.getData('application/reactflow');
 
@@ -509,17 +538,23 @@ export default function GraphApp({ id }) {
                     {/*<div className={"overflow-auto h-full"} hx-get={`/code/sidebar`} hx-trigger="revealed"></div>*/}
                     {/*<iframe src={"/code/sidebar?file=vote.go"} className={"h-full w-full"}></iframe>*/}
                     <aside>
-                        <div className="dndnode input" onDragStart={(event) => onDragStart(event, 'input')} draggable>
-                            Input Node
-                        </div>
-                        <div className="dndnode" onDragStart={(event) => onDragStart(event, 'default')} draggable>
-                            Default Node
-                        </div>
-                        <div className="dndnode output" onDragStart={(event) => onDragStart(event, 'output')} draggable>
-                            Output Node
-                        </div>
                         <div className="dndnode output" onDragStart={(event) => onDragStart(event, 'ai')} draggable>
                             AI
+                        </div>
+                        <div className={"dndnode output"} onDragStart={(event) => onDragStart(event, 'textUpdater')} draggable>
+                            Text Updater
+                        </div>
+                        <div className={"dndnode output"} onDragStart={(event) => onDragStart(event, 'epub')} draggable>
+                            Epub
+                        </div>
+                        <div className={"dndnode output"} onDragStart={(event) => onDragStart(event, 'pdf')} draggable>
+                            PDF
+                        </div>
+                        <div className={"dndnode output"} onDragStart={(event) => onDragStart(event, 'youtube')} draggable>
+                            Youtube
+                        </div>
+                        <div className={"dndnode output"} onDragStart={(event) => onDragStart(event, 'url')} draggable>
+                            URL
                         </div>
                     </aside>
                     <ul>
@@ -547,8 +582,8 @@ export default function GraphApp({ id }) {
                         onDragOver={onDragOver}
                         nodeTypes={nodeTypes}
                     >
-                        <Controls />
-                        <MiniMap />
+                        {/*<Controls />*/}
+                        {/*<MiniMap />*/}
                         <Background variant="dots" gap={12} size={1} />
                     </ReactFlow>
                 </Panel>

@@ -17,6 +17,17 @@ func New(d deps.Deps) *http.ServeMux {
 	mux.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), "baseURL", "/user")
 
+		u, err := d.Session.GetUserID(r.Context())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		var user models.User
+		if err := db.First(&user, "id = ?", u).Error; err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		getGroupList := func() *Node {
 			var groups []models.Group
 			if err := db.Find(&groups).Error; err != nil {
@@ -44,7 +55,7 @@ func New(d deps.Deps) *http.ServeMux {
 			}
 			return Ul(
 				Id("group-list"),
-				Class("divide-y divide-gray-200"),
+				Class(""),
 				Ch(groupList),
 			)
 		}
@@ -66,10 +77,15 @@ func New(d deps.Deps) *http.ServeMux {
 			DefaultLayout(
 				Div(
 					Class("p-5 max-w-lg mx-auto"),
-					H1(Text("Groups")),
+					Div(Class("text-sm text-center m-10"), T("hello, "+user.Username)),
+					Div(Class("divider")),
+					Div(Class("text-lg"), Text("groups")),
 					Div(Id("error"), Class("alert alert-error hidden")),
 					getGroupList(),
+					Div(Class("divider")),
 					Form(
+						Class("flex flex-col space-y-4"),
+						Div(Text("new group")),
 						HxPost("/"+id),
 						HxTarget("#group-list"),
 						//BuildFormCtx(BuildCtx{

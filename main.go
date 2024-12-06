@@ -99,7 +99,7 @@ func startServer(useTLS bool, port int) {
 
 	setupWebauthn()
 	setupCursor()
-	setupRecipe()
+	//setupRecipe()
 	fileUpload()
 
 	// TODO breadchris enable this
@@ -324,7 +324,7 @@ func startServer(useTLS bool, port int) {
 		entrypoints := []string{
 			"./graph/graph.tsx",
 			"./code/monaco.tsx",
-			"./code/playground.ts",
+			//"./code/playground.ts",
 			"./music.tsx",
 			"./wasmcode/monaco.tsx",
 			"./wasmcode/analyzer/analyzer.worker.ts",

@@ -63,7 +63,7 @@ func New(d Deps) *http.ServeMux {
 			DefaultLayout(
 				Div(
 					//Style(T(playgroundCSS)),
-					Script(Attr("src", "/static/code/playground.js")),
+					Script(Attr("src", "/static/playground.js")),
 					Script(Attr("src", "/static/leader-line.min.js")),
 					Div(
 						Id("toolbar"),

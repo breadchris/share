@@ -36,15 +36,8 @@ func Index() *Node {
 		{"/github", "Github"},
 	}
 	toggleMenu := Attr("onclick", "document.getElementById('menu').classList.toggle('hidden')")
-	return Html(
-		Head(
-			Meta(Charset("UTF-8")),
-			Meta(Attr("name", "viewport"), Content("width=device-width, initial-scale=1.0")),
-			Title(T("justshare")),
-			Link(Href("https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"), Rel("stylesheet")),
-			Script(Src("https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js")),
-		),
-		Body(Class("bg-white"),
+	return DefaultLayout(
+		Body(Class(""),
 			Header(Class("absolute inset-x-0 top-0 z-50"),
 				Nav(Class("flex items-center justify-between p-6 lg:px-8"), Attr("aria-label", "Global"),
 					Div(Class("flex lg:flex-1"),
@@ -101,19 +94,21 @@ func Index() *Node {
 					),
 				),
 			),
-			Div(Class("relative isolate px-6 pt-14 lg:px-8"),
+			Div(Class("relative isolate px-6 lg:px-8"),
 				Div(Class("absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80"), Attr("aria-hidden", "true"),
 					Div(Class("relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-[#ff80b5] to-[#9089fc] opacity-30 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"), Attr("style", "clip-path: polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)")),
 				),
-				Div(Class("mx-auto max-w-2xl py-32 sm:py-48 lg:py-56"),
+				Div(Class("mx-auto max-w-2xl py-16 sm:py-48 lg:py-56"),
 					Div(Class("text-center"),
-						H1(Class("text-balance text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl"), T("Welcome to justshare")),
-						P(Class("mt-6 text-lg leading-8 text-gray-600"), T("it is a site i guess")),
-						Div(Class("mt-10 grid grid-cols-2 gap-4 m-1.5 p-7"),
-							Ch(forLink(urls, func(l link) *Node {
-								return A(Href(l.url), Class("bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded"), T(l.text))
-							})),
-						),
+						Input(Class("input w-1/2"), Type("text"), Placeholder("you know what to do..."), Name("share")),
+						Div(Class("w-full p-16 bg-gray-500"), T("a list of things from the groups you are in")),
+						//H1(Class("text-balance text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl"), T("Welcome to justshare")),
+						//P(Class("mt-6 text-lg leading-8 text-gray-600"), T("it is a site i guess")),
+						//Div(Class("mt-10 grid grid-cols-2 gap-4 m-1.5 p-7"),
+						//	Ch(forLink(urls, func(l link) *Node {
+						//		return A(Href(l.url), Class("bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded"), T(l.text))
+						//	})),
+						//),
 					),
 				),
 				Div(Class("absolute inset-x-0 top-[calc(100%-13rem)] -z-10 transform-gpu overflow-hidden blur-3xl sm:top-[calc(100%-30rem)]"), Attr("aria-hidden", "true"),
