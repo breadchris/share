@@ -66,7 +66,8 @@ window.addEventListener("load", function () {
         const element = document.createElement(tag);
         element.className = "drag-drop w-fit";
         element.setAttribute("data-id", elementCounter++);
-        element.style.position = "absolute"; // Ensures PlainDraggable works properly
+        element.style.position = "absolute";
+        element.contentEditable = "true";
 
         if (isImage) {
             element.src = content;
