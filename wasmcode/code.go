@@ -34,6 +34,7 @@ func New(d Deps) *http.ServeMux {
 	mux := http.NewServeMux()
 	ctx := context.WithValue(context.Background(), "baseURL", "/code")
 	playDocs := d.Docs.WithCollection("playground")
+
 	mux.HandleFunc("/playground/edit/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 		if id == "" {

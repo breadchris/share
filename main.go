@@ -451,7 +451,10 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/files", fileHandler)
 	http.HandleFunc("/modify", modifyHandler)
 
-	http.HandleFunc("/", fileServerHandler)
+	http.HandleFunc("/static/", serveFiles("static"))
+	http.HandleFunc("/data/", serveFiles("data"))
+
+	p("", interpreted(Index))
 
 	dir := "data/justshare.io-ssl-bundle"
 	interCertFile := path.Join(dir, "intermediate.cert.pem")
@@ -477,6 +480,12 @@ func startServer(useTLS bool, port int) {
 	} else {
 		log.Printf("Starting HTTP server on port: %d", port)
 		http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), h)
+	}
+}
+
+func serveFiles(dir string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		http.StripPrefix("/"+dir, http.FileServer(http.Dir(dir))).ServeHTTP(w, r)
 	}
 }
 
@@ -834,11 +843,6 @@ func fileServerHandler(w http.ResponseWriter, r *http.Request) {
 	host := r.Host
 
 	fmt.Printf("path: %s\n", r.URL.Path)
-
-	if r.URL.Path == "/" {
-		code.DynamicHTMLNode(Index)().RenderPage(w, r)
-		return
-	}
 
 	// the host is in the form: *.justshare.io, extract the subdomain
 

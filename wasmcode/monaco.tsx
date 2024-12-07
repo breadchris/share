@@ -546,6 +546,7 @@ monacoElements.forEach(element => {
     r.render(<CodeEditor props={props} />);
 });
 
+
 const s = document.getElementById('monaco-editor');
 if (s) {
     const r = createRoot(s);

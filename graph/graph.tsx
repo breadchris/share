@@ -408,22 +408,6 @@ export default function GraphApp({ id }) {
 
     const onDrop = useCallback(
         (event) => {
-            const dataTransfer = event.dataTransfer;
-            const file = dataTransfer.files[0];
-            if (file && file.type.startsWith('image/')) {
-                const imageUrl = URL.createObjectURL(file);
-                console.log('Image URL (from file):', imageUrl);
-                // displayImage(imageUrl);
-            } else {
-                const url = await getDraggedImageUrl(dataTransfer.items);
-                if (url) {
-                    console.log('Image URL (from browser):', url);
-                    // displayImage(url);
-                } else {
-                    alert('Please drop a valid image or an image URL.');
-                }
-            }
-
             event.preventDefault();
             const type = event.dataTransfer.getData('application/reactflow');
 

@@ -1,10 +1,31 @@
 package main
 
 import (
+	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
+	"net/http"
 )
 
-func Index() *Node {
+type HomeState struct {
+	UserID string
+}
+
+func Index(d deps.Deps) *http.ServeMux {
+	m := http.NewServeMux()
+	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		u, err := d.Session.GetUserID(r.Context())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		homePage(HomeState{
+			UserID: u,
+		}).RenderPage(w, r)
+	})
+	return m
+}
+
+func homePage(state HomeState) *Node {
 	type link struct {
 		url  string
 		text string
@@ -18,7 +39,18 @@ func Index() *Node {
 		return nodes
 	}
 
+	topUrls := []link{
+		{"/logout", "Logout"},
+	}
+	if state.UserID == "" {
+		topUrls = []link{
+			{"/register", "Register"},
+			{"/login", "Login"},
+		}
+	}
+
 	urls := []link{
+		{"/logout", "Logout"},
 		{"/calendar", "Calendar"},
 		{"/notes/", "Notes"},
 		{"/zine", "Zine"},
@@ -55,8 +87,8 @@ func Index() *Node {
 						),
 					),
 					Div(Class("hidden lg:flex lg:gap-x-12"),
-						Ch(forLink(urls, func(l link) *Node {
-							return A(Href(l.url), Class("text-sm font-semibold leading-6 text-gray-900"), T(l.text))
+						Ch(forLink(topUrls, func(l link) *Node {
+							return A(Href(l.url), Class("text-sm font-semibold leading-6"), T(l.text))
 						})),
 					),
 					Div(Class("hidden lg:flex lg:flex-1 lg:justify-end"),
@@ -100,10 +132,10 @@ func Index() *Node {
 				),
 				Div(Class("mx-auto max-w-2xl py-16 sm:py-48 lg:py-56"),
 					Div(Class("text-center"),
-						Input(Class("input w-1/2"), Type("text"), Placeholder("you know what to do..."), Name("share")),
-						Div(Class("w-full p-16 bg-gray-500"), T("a list of things from the groups you are in")),
-						//H1(Class("text-balance text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl"), T("Welcome to justshare")),
-						//P(Class("mt-6 text-lg leading-8 text-gray-600"), T("it is a site i guess")),
+						//Input(Class("input w-1/2"), Type("text"), Placeholder("you know what to do..."), Name("share")),
+						//Div(Class("w-full p-16 bg-gray-500"), T("a list of things from the groups you are in")),
+						H1(Class("text-balance text-4xl font-bold tracking-tight sm:text-6xl"), T("Welcome to justshare")),
+						P(Class("mt-6 text-lg leading-8"), T("it is a site i guess")),
 						//Div(Class("mt-10 grid grid-cols-2 gap-4 m-1.5 p-7"),
 						//	Ch(forLink(urls, func(l link) *Node {
 						//		return A(Href(l.url), Class("bg-blue-500 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded"), T(l.text))
