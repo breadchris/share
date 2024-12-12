@@ -21,11 +21,13 @@ var websockerUpgrader = websocket.Upgrader{
 }
 
 type CommandFunc func(string, string, bool) []string
+type CommandFunc2 func(string) []string
 type GenericCommandFunc func(interface{}, http.ResponseWriter, *http.Request) []string
 
 type CommandRegistry struct {
 	handlers  map[string]CommandFunc
 	handlers2 map[string]GenericCommandFunc
+	handlers3 map[string]CommandFunc2
 	Types     map[string]interface{}
 	mu        sync.RWMutex
 }
@@ -34,6 +36,7 @@ func NewCommandRegistry() *CommandRegistry {
 	return &CommandRegistry{
 		handlers:  make(map[string]CommandFunc),
 		handlers2: make(map[string]GenericCommandFunc),
+		handlers3: make(map[string]CommandFunc2),
 		Types:     make(map[string]interface{}),
 	}
 }
@@ -42,6 +45,12 @@ func (cr *CommandRegistry) Register(command string, handler CommandFunc) {
 	cr.mu.Lock()
 	defer cr.mu.Unlock()
 	cr.handlers[command] = handler
+}
+
+func (cr *CommandRegistry) Register2(command string, handler CommandFunc2) {
+	cr.mu.Lock()
+	defer cr.mu.Unlock()
+	cr.handlers3[command] = handler
 }
 
 func (cr *CommandRegistry) RegisterGeneric(input interface{}, handler GenericCommandFunc) {
@@ -207,6 +216,47 @@ func (h *Hub) run() {
 	}
 }
 
+func (c *WebsocketClient) readPump3(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		hub.unregister <- c
+		c.conn.Close()
+	}()
+
+	for {
+		_, message, err := c.conn.ReadMessage()
+		if err != nil {
+			log.Println("ReadMessage error:", err)
+			break
+		}
+		var msgMap map[string]interface{}
+
+		err = json.Unmarshal(message, &msgMap)
+		if err != nil {
+			log.Println("JSON Unmarshal error:", err)
+			return
+		}
+		delete(msgMap, "HEADERS")
+
+		cmdMsgs := []string{}
+
+		for key, value := range msgMap {
+			c.registry.mu.RLock()
+			handler, ok := c.registry.handlers3[key]
+			c.registry.mu.RUnlock()
+			if ok {
+				fmt.Println("value", value)
+				cmdMsgs = handler(value.(string))
+				fmt.Println("cmdMsgs", cmdMsgs)
+			}
+		}
+
+		for _, cmdMsg := range cmdMsgs {
+			hub.broadcast <- []byte(cmdMsg)
+			// c.send <- []byte(cmdMsg)
+		}
+	}
+}
+
 func (c *WebsocketClient) readPump2(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		hub.unregister <- c
@@ -272,9 +322,6 @@ func (c *WebsocketClient) readPump2(w http.ResponseWriter, r *http.Request) {
 		t = c.registry.Types[typeName]
 		t = SetFieldsWithTypeAndValue(t, fields)
 		c.registry.Types[typeName] = t
-
-		fmt.Println("T", t)
-		fmt.Println("msgMap", msgMap["Message"])
 
 		cmdMsgs := []string{}
 		c.registry.mu.RLock()
@@ -386,7 +433,8 @@ func websocketHandler2(registry *CommandRegistry) http.HandlerFunc {
 
 		go client.writePump()
 		// client.readPump(w, r)
-		client.readPump2(w, r)
+		// client.readPump2(w, r)
+		client.readPump3(w, r)
 	}
 }
 
