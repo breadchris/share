@@ -21,7 +21,7 @@ var websockerUpgrader = websocket.Upgrader{
 }
 
 type CommandFunc func(string, string, bool) []string
-type CommandFunc2 func(string) []string
+type CommandFunc2 func(string, *Hub)
 type GenericCommandFunc func(interface{}, http.ResponseWriter, *http.Request) []string
 
 type CommandRegistry struct {
@@ -81,7 +81,7 @@ type WebsocketClient struct {
 
 type Hub struct {
 	clients    map[*WebsocketClient]bool
-	broadcast  chan []byte
+	Broadcast  chan []byte
 	register   chan *WebsocketClient
 	unregister chan *WebsocketClient
 	mu         sync.Mutex
@@ -89,7 +89,7 @@ type Hub struct {
 
 var hub = Hub{
 	clients:    make(map[*WebsocketClient]bool),
-	broadcast:  make(chan []byte),
+	Broadcast:  make(chan []byte),
 	register:   make(chan *WebsocketClient),
 	unregister: make(chan *WebsocketClient),
 }
@@ -201,7 +201,7 @@ func (h *Hub) run() {
 				close(client.send)
 			}
 			h.mu.Unlock()
-		case message := <-h.broadcast:
+		case message := <-h.Broadcast:
 			h.mu.Lock()
 			for client := range h.clients {
 				select {
@@ -245,15 +245,15 @@ func (c *WebsocketClient) readPump3(w http.ResponseWriter, r *http.Request) {
 			c.registry.mu.RUnlock()
 			if ok {
 				fmt.Println("value", value)
-				cmdMsgs = handler(value.(string))
+				handler(value.(string), &hub)
 				fmt.Println("cmdMsgs", cmdMsgs)
 			}
 		}
 
-		for _, cmdMsg := range cmdMsgs {
-			hub.broadcast <- []byte(cmdMsg)
-			// c.send <- []byte(cmdMsg)
-		}
+		// for _, cmdMsg := range cmdMsgs {
+		// 	hub.Broadcast <- []byte(cmdMsg)
+		// 	// c.send <- []byte(cmdMsg)
+		// }
 	}
 }
 
@@ -332,7 +332,7 @@ func (c *WebsocketClient) readPump2(w http.ResponseWriter, r *http.Request) {
 		}
 
 		for _, cmdMsg := range cmdMsgs {
-			hub.broadcast <- []byte(cmdMsg)
+			hub.Broadcast <- []byte(cmdMsg)
 			// c.send <- []byte(cmdMsg)
 		}
 	}
@@ -397,7 +397,7 @@ func (c *WebsocketClient) readPump(w http.ResponseWriter, r *http.Request) {
 			}
 
 			for _, cmdMsg := range cmdMsgs {
-				hub.broadcast <- []byte(cmdMsg)
+				hub.Broadcast <- []byte(cmdMsg)
 				// c.send <- []byte(cmdMsg)
 			}
 		}

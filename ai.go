@@ -8,6 +8,7 @@ import (
 
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
+	"github.com/breadchris/share/websocket"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -36,7 +37,7 @@ func NewAI(d deps.Deps) *http.ServeMux {
 		}
 	})
 
-	d.WebsocketRegistry.Register2("chat", func(message string) []string {
+	d.WebsocketRegistry.Register2("chat", func(message string, hub *websocket.Hub) {
 
 		respMsg, display := AiComponentSwitch(d, message)
 		respBubble := ""
@@ -57,7 +58,7 @@ func NewAI(d deps.Deps) *http.ServeMux {
 			respBubble = ""
 		}
 
-		return []string{
+		cmdMsgs := []string{
 			display,
 			respBubble,
 			Div(
@@ -71,6 +72,10 @@ func NewAI(d deps.Deps) *http.ServeMux {
 					),
 				),
 			).Render(),
+		}
+
+		for _, cmdMsg := range cmdMsgs {
+			hub.Broadcast <- []byte(cmdMsg)
 		}
 	})
 	return mux
@@ -236,7 +241,7 @@ func displayOne(message string) *Node {
 	return centerComponent(Div(
 		Id("display"),
 		T("Display One"),
-		T(message),
+		// T(message),
 	))
 }
 
@@ -244,6 +249,6 @@ func displayTwo(message string) *Node {
 	return centerComponent(Div(
 		Id("display"),
 		T("Display Two"),
-		T(message),
+		// T(message),
 	))
 }
