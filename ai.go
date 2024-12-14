@@ -37,49 +37,29 @@ func NewAI(d deps.Deps) *http.ServeMux {
 	})
 
 	d.WebsocketRegistry.Register2("chat", func(message string) []string {
-		fmt.Println("Message: ", message)
 
-		tool := creaeTool("DisplayOne", "Display One", map[string]string{
-			"message": "The message to display",
-		})
+		respMsg, display := AiComponentSwitch(d, message)
+		respBubble := ""
 
-		var ctx context.Context = context.Background()
-
-		resp, err := d.AI.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
-			Model: openai.GPT4o20240513,
-			Messages: []openai.ChatCompletionMessage{
-				{Role: openai.ChatMessageRoleSystem, Content: "You are a helpful assistant."},
-				{Role: openai.ChatMessageRoleUser, Content: message},
-			},
-			Tools:     []openai.Tool{tool},
-			MaxTokens: 150,
-		})
-		if err != nil {
-			fmt.Println("Failed to create chat completion", err)
-		}
-		choice := resp.Choices[0]
-
-		respMsg := resp.Choices[0].Message.Content
-
-		functionCall := choice.Message.ToolCalls[0].Function
-		fmt.Println("Function Call: ", functionCall)
-		display := ""
-		if ok := functionCall.Name == "DisplayOne"; ok {
-			args := DisplayFunctionParams{}
-			err = json.Unmarshal([]byte(functionCall.Arguments), &args)
-			if err != nil {
-				fmt.Println("Failed to unmarshal arguments", err)
-			}
-			display = displayOne(args.Message).Render()
-			fmt.Printf("functionCall.Arguments:", functionCall.Arguments)
+		if respMsg != "" {
+			respBubble = Div(
+				Id("chat"),
+				Attr("hx-swap-oob", "beforeend"),
+				Div(
+					Class("chat chat-end"),
+					Div(
+						Class("chat-bubble"),
+						T(respMsg),
+					),
+				),
+			).Render()
 		} else {
-			fmt.Println("Tool call not found")
+			respBubble = ""
 		}
-
-		fmt.Println("Response: ", respMsg)
 
 		return []string{
 			display,
+			respBubble,
 			Div(
 				Id("chat"),
 				Attr("hx-swap-oob", "beforeend"),
@@ -91,30 +71,18 @@ func NewAI(d deps.Deps) *http.ServeMux {
 					),
 				),
 			).Render(),
-			Div(
-				Id("chat"),
-				Attr("hx-swap-oob", "beforeend"),
-				Div(
-					Class("chat chat-end"),
-					Div(
-						Class("chat-bubble"),
-						T(respMsg),
-					),
-				),
-			).Render(),
 		}
 	})
 	return mux
 }
 
 func get(d deps.Deps, w http.ResponseWriter, r *http.Request) {
-
 	body := Div(
 		Div(
 			Id("display"),
 		),
 		centerComponent(
-			Div(
+			Div(Div(
 				Div(
 					Attr("hx-swap-oob", "beforeend"),
 					Id("messages"),
@@ -136,16 +104,14 @@ func get(d deps.Deps, w http.ResponseWriter, r *http.Request) {
 							Value("Submit"),
 							Class("btn btn-primary"),
 						))),
-				))))
+				)))))
 
 	NewWebsocketPage2(body.Children).RenderPage(w, r)
 }
 
 func centerComponent(node *Node) *Node {
-	return Div(
-		Class("flex items-center justify-center pt-20"),
-		node,
-	)
+	node.Attrs["Class"] = "flex items-center justify-center pt-20"
+	return node
 }
 
 func NewWebsocketPage2(children []*Node) *Node {
@@ -174,7 +140,7 @@ func ptr(s string) *string {
 	return &s
 }
 
-func creaeTool(funcName string, funcDesc string, properties map[string]string) openai.Tool {
+func creaeTool(function Func, funcName string, funcDesc string, properties map[string]string) Tool {
 	props := map[string]AIProp{}
 	required := []string{}
 
@@ -199,76 +165,85 @@ func creaeTool(funcName string, funcDesc string, properties map[string]string) o
 		Description: funcDesc,
 		Parameters:  parameters,
 	}
-	return tool
+
+	return Tool{
+		Name:    funcName,
+		Functon: function,
+		Tool:    tool,
+	}
+}
+
+type Func func(string) *Node
+type Tool struct {
+	Name    string
+	Functon Func
+	Tool    openai.Tool
+}
+
+func AiComponentSwitch(d deps.Deps, message string) (string, string) {
+	tools := []Tool{
+		creaeTool(displayOne, "DisplayOne", "Display One", map[string]string{
+			"message": "The message to display",
+		}),
+		creaeTool(displayTwo, "DisplayTwo", "Display Two", map[string]string{
+			"message": "The message to display",
+		}),
+	}
+
+	openaiTools := []openai.Tool{}
+	for _, tool := range tools {
+		openaiTools = append(openaiTools, tool.Tool)
+	}
+
+	var ctx context.Context = context.Background()
+
+	resp, err := d.AI.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
+		Model: openai.GPT4o20240513,
+		Messages: []openai.ChatCompletionMessage{
+			{Role: openai.ChatMessageRoleSystem, Content: "You are a helpful assistant."},
+			{Role: openai.ChatMessageRoleUser, Content: message},
+		},
+		Tools:     openaiTools,
+		MaxTokens: 150,
+	})
+	if err != nil {
+		fmt.Println("Failed to create chat completion", err)
+	}
+	choice := resp.Choices[0]
+
+	respMsg := resp.Choices[0].Message.Content
+	display := ""
+
+	if respMsg == "" {
+		functionCall := choice.Message.ToolCalls[0].Function
+
+		for _, tool := range tools {
+			if tool.Name == functionCall.Name {
+				args := DisplayFunctionParams{}
+				err = json.Unmarshal([]byte(functionCall.Arguments), &args)
+				if err != nil {
+					fmt.Println("Failed to unmarshal arguments", err)
+				}
+				display = tool.Functon(args.Message).Render()
+			}
+		}
+	}
+
+	return respMsg, display
 }
 
 func displayOne(message string) *Node {
-	return Div(
+	return centerComponent(Div(
 		Id("display"),
-		H1(T("Display One")),
+		T("Display One"),
 		T(message),
-	)
+	))
 }
 
 func displayTwo(message string) *Node {
-	return centerComponent(
-		Div(
-			Id("display"),
-			H1(T("Display Two")),
-			T(message),
-		))
+	return centerComponent(Div(
+		Id("display"),
+		T("Display Two"),
+		T(message),
+	))
 }
-
-// assistant, err = setupAssistant(d)
-// if err != nil {
-// 	http.Error(w, "Failed to setup assistant", http.StatusInternalServerError)
-// 	return
-// }
-
-// thread, err = setupThread(d, w, r)
-// if err != nil {
-// 	http.Error(w, "Failed to setup thread", http.StatusInternalServerError)
-// 	return
-// }
-
-// d.AI.client.thread
-
-// }
-// resp, err = d.AI.CreateThreadAndRun(r.Context(), req)
-// if err != nil {
-// 	http.Error(w, "Failed to create thread and run", http.StatusInternalServerError)
-// 	return
-// }
-
-// type Msg struct {
-// 	Message string
-// }
-
-// var assistant openai.Assistant
-// var thread openai.Thread1
-
-// func setupAssistant(d deps.Deps) (openai.Assistant, error) {
-// 	// var tools = []openai.AssistantTool{tool}
-// 	assistantRequest := openai.AssistantRequest{
-// 		Model:        "gpt-40",
-// 		Name:         ptr("Ship Computer"),
-// 		Instructions: ptr("You are the ship computer. You are responsible for the ship's systems. You must keep the ship running and the crew alive."),
-// 		// Tools:        tools,
-// 	}
-// 	assistant, err := d.AI.CreateAssistant(r.Context(), assistantRequest)
-// 	if err != nil {
-// 		fmt.Println("Failed to create assistant")
-// 		return openai.Assistant{}, err
-// 	}
-// 	return assistant, nil
-// }
-
-// func setupThread(d deps.Deps, w http.ResponseWriter, r *http.Request) (openai.Thread, error) {
-// 	threadRequest := openai.ThreadRequest{}
-// 	thread, err := d.AI.CreateThread(r.Context(), threadRequest)
-// 	if err != nil {
-// 		fmt.Println("Failed to create thread")
-// 		return openai.Thread{}, err
-// 	}
-// 	return thread, nil
-// }

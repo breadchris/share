@@ -37,7 +37,6 @@ import (
 	"github.com/breadchris/share/editor/config"
 	"github.com/breadchris/share/editor/leaps"
 	"github.com/breadchris/share/editor/playground"
-	"github.com/breadchris/share/escapecentauri"
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/llm"
 	"github.com/breadchris/share/session"
@@ -138,7 +137,6 @@ func startServer(useTLS bool, port int) {
 	p("/zine", interpreted(NewZine))
 	p("/card", interpreted(NewCard))
 	p("/ai", interpreted(NewAI))
-	p("/game", interpreted(escapecentauri.NewGame))
 	p("/websocket", interpreted(func(deps deps2.Deps) *http.ServeMux {
 		return socket.WebsocketUI(registry)
 	}))
@@ -153,7 +151,7 @@ func startServer(useTLS bool, port int) {
 	p("/leaps", lm.Mux)
 	p("/vote", interpreted(NewVote))
 	p("/breadchris", interpreted(breadchris.New))
-	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./eventcalendar.go", "./websocket/websocket.go", "./card.go", "./escapecentauri/game.go", "./ai.go"}))
+	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./eventcalendar.go", "./websocket/websocket.go", "./card.go", "./ai.go"}))
 	p("/filecode", func() *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
