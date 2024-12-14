@@ -237,8 +237,6 @@ func (c *WebsocketClient) readPump3(w http.ResponseWriter, r *http.Request) {
 		}
 		delete(msgMap, "HEADERS")
 
-		cmdMsgs := []string{}
-
 		for key, value := range msgMap {
 			c.registry.mu.RLock()
 			handler, ok := c.registry.handlers3[key]
@@ -246,7 +244,6 @@ func (c *WebsocketClient) readPump3(w http.ResponseWriter, r *http.Request) {
 			if ok {
 				fmt.Println("value", value)
 				handler(value.(string), &hub)
-				fmt.Println("cmdMsgs", cmdMsgs)
 			}
 		}
 

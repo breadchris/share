@@ -9,6 +9,7 @@ import (
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/websocket"
+	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -40,6 +41,8 @@ func NewAI(d deps.Deps) *http.ServeMux {
 	d.WebsocketRegistry.Register2("chat", func(message string, hub *websocket.Hub) {
 
 		respMsg, display := AiComponentSwitch(d, message)
+		fmt.Println("Response message", respMsg)
+		fmt.Println("Display", display)
 		respBubble := ""
 
 		if respMsg != "" {
@@ -185,13 +188,28 @@ type Tool struct {
 	Tool    openai.Tool
 }
 
+func createCal(message string) *Node {
+	id := uuid.NewString()
+	c := Calendar{
+		ID: id,
+	}
+	fmt.Println("Creating calendar with id", id)
+	return Div(
+		Id("display"),
+		GenerateCalendar(12, 2021, c))
+}
+
 func AiComponentSwitch(d deps.Deps, message string) (string, string) {
+
 	tools := []Tool{
 		creaeTool(displayOne, "DisplayOne", "Display One", map[string]string{
 			"message": "The message to display",
 		}),
 		creaeTool(displayTwo, "DisplayTwo", "Display Two", map[string]string{
 			"message": "The message to display",
+		}),
+		creaeTool(createCal, "Calendar", "Calendar", map[string]string{
+			"calendar": "Display a calendar",
 		}),
 	}
 
