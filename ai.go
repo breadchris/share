@@ -25,8 +25,17 @@ type AIProp struct {
 	Description string `json:"description"`
 }
 
-type DisplayFunctionParams struct {
-	Message string `json:"message"`
+type ToolProp struct {
+	Arguement   string
+	Description string
+}
+
+type Tool struct {
+	Function Func
+	Name     string
+	Desc     string
+	Props    []ToolProp
+	Tool     openai.Tool
 }
 
 func NewAI(d deps.Deps) *http.ServeMux {
@@ -40,9 +49,8 @@ func NewAI(d deps.Deps) *http.ServeMux {
 
 	d.WebsocketRegistry.Register2("chat", func(message string, hub *websocket.Hub) {
 
-		respMsg, display := AiComponentSwitch(d, message)
+		respMsg := AiComponentSwitch(d, message, hub)
 		fmt.Println("Response message", respMsg)
-		fmt.Println("Display", display)
 		respBubble := ""
 
 		if respMsg != "" {
@@ -62,7 +70,6 @@ func NewAI(d deps.Deps) *http.ServeMux {
 		}
 
 		cmdMsgs := []string{
-			display,
 			respBubble,
 			Div(
 				Id("chat"),
@@ -148,7 +155,12 @@ func ptr(s string) *string {
 	return &s
 }
 
-func creaeTool(function Func, funcName string, funcDesc string, properties map[string]string) Tool {
+func createTool(createTool Tool) Tool {
+	properties := map[string]string{}
+	for _, prop := range createTool.Props {
+		properties[prop.Arguement] = prop.Description
+	}
+
 	props := map[string]AIProp{}
 	required := []string{}
 
@@ -169,48 +181,143 @@ func creaeTool(function Func, funcName string, funcDesc string, properties map[s
 	tool := openai.Tool{}
 	tool.Type = "function"
 	tool.Function = &openai.FunctionDefinition{
-		Name:        funcName,
-		Description: funcDesc,
+		Name:        createTool.Name,
+		Description: createTool.Desc,
 		Parameters:  parameters,
 	}
-
-	return Tool{
-		Name:    funcName,
-		Functon: function,
-		Tool:    tool,
-	}
+	createTool.Tool = tool
+	return createTool
 }
 
-type Func func(string) *Node
-type Tool struct {
-	Name    string
-	Functon Func
-	Tool    openai.Tool
-}
+type Func func(deps.Deps, string, *websocket.Hub) string
 
-func createCal(message string) *Node {
+func createCal(d deps.Deps, message string, hub *websocket.Hub) string {
 	id := uuid.NewString()
 	c := Calendar{
 		ID: id,
 	}
-	fmt.Println("Creating calendar with id", id)
-	return Div(
-		Id("display"),
-		GenerateCalendar(12, 2021, c))
+
+	hub.Broadcast <- []byte(
+		Div(
+			Id("display"),
+			GenerateCalendar(12, 2021, c),
+		).Render(),
+	)
+	return ""
 }
 
-func AiComponentSwitch(d deps.Deps, message string) (string, string) {
+func createDate(d deps.Deps, message string, hub *websocket.Hub) string {
+	return message
+}
 
+func scraperMenu(d deps.Deps, message string, hub *websocket.Hub) string {
+	scraper := Div(
+		Id("display"),
+		ScraperUiForm(d),
+	)
+
+	hub.Broadcast <- []byte(
+		scraper.Render(),
+	)
+	return message
+}
+
+func showEvents(d deps.Deps, message string, hub *websocket.Hub) string {
+	eventsDB := d.Docs.WithCollection("events")
+	topEventsDB := d.Docs.WithCollection("topEvents")
+
+	var events []EverOutEvent
+
+	docs, err := eventsDB.List()
+	if err != nil {
+		fmt.Println("Failed to list events", err)
+	}
+	for _, doc := range docs {
+		var event EverOutEvent
+		json.Unmarshal(doc.Data, &event)
+		events = append(events, event)
+	}
+
+	docs, err = topEventsDB.List()
+	if err != nil {
+		fmt.Println("Failed to list top events", err)
+	}
+	for _, doc := range docs {
+		var event EverOutEvent
+		json.Unmarshal(doc.Data, &event)
+		events = append(events, event)
+	}
+
+	eventsByDate := make(map[string][]EverOutEvent)
+	for _, e := range events {
+		eventsByDate[e.Date] = append(eventsByDate[e.Date], e)
+	}
+
+	eventView := Div(
+		Id("display"),
+		RenderEverout(eventsByDate),
+	).Render()
+
+	hub.Broadcast <- []byte(
+		eventView,
+	)
+	return ""
+}
+
+func AiComponentSwitch(d deps.Deps, message string, hub *websocket.Hub) string {
 	tools := []Tool{
-		creaeTool(displayOne, "DisplayOne", "Display One", map[string]string{
-			"message": "The message to display",
-		}),
-		creaeTool(displayTwo, "DisplayTwo", "Display Two", map[string]string{
-			"message": "The message to display",
-		}),
-		creaeTool(createCal, "Calendar", "Calendar", map[string]string{
-			"calendar": "Display a calendar",
-		}),
+		createTool(
+			Tool{
+				Function: createCal,
+				Name:     "Calendar",
+				Desc:     "Display a calendar",
+				Props: []ToolProp{
+					{
+						Arguement:   "message",
+						Description: "Display a calendar",
+					},
+				},
+			},
+		),
+		createTool(
+			Tool{
+				Function: scraperMenu,
+				Name:     "ScraperMenu",
+				Desc:     "Show the scraper menu.",
+				Props: []ToolProp{
+					{
+						Arguement:   "quote",
+						Description: "Create a fake quote about web scraping from a historical figure.",
+					},
+				},
+			},
+		),
+		createTool(
+			Tool{
+				Function: createDate,
+				Name:     "Date",
+				Desc:     "Create a date in YYYY-MM-DD format",
+				Props: []ToolProp{
+					{
+						Arguement:   "date",
+						Description: "The date",
+					},
+				},
+			},
+		),
+		createTool(
+			Tool{
+				Function: showEvents,
+				Name:     "ShowEvents",
+				Desc:     "Show events",
+				Props: []ToolProp{
+					{
+						Arguement:   "events",
+						Description: "Show events",
+					},
+				},
+			},
+		),
 	}
 
 	openaiTools := []openai.Tool{}
@@ -235,38 +342,20 @@ func AiComponentSwitch(d deps.Deps, message string) (string, string) {
 	choice := resp.Choices[0]
 
 	respMsg := resp.Choices[0].Message.Content
-	display := ""
 
 	if respMsg == "" {
 		functionCall := choice.Message.ToolCalls[0].Function
-
 		for _, tool := range tools {
 			if tool.Name == functionCall.Name {
-				args := DisplayFunctionParams{}
-				err = json.Unmarshal([]byte(functionCall.Arguments), &args)
-				if err != nil {
-					fmt.Println("Failed to unmarshal arguments", err)
-				}
-				display = tool.Functon(args.Message).Render()
+				var jsonMap map[string]interface{}
+				json.Unmarshal([]byte(functionCall.Arguments), &jsonMap)
+				prop := tool.Props[0].Arguement
+				arg := jsonMap[prop].(string)
+
+				respMsg = tool.Function(d, arg, hub)
 			}
 		}
 	}
 
-	return respMsg, display
-}
-
-func displayOne(message string) *Node {
-	return centerComponent(Div(
-		Id("display"),
-		T("Display One"),
-		// T(message),
-	))
-}
-
-func displayTwo(message string) *Node {
-	return centerComponent(Div(
-		Id("display"),
-		T("Display Two"),
-		// T(message),
-	))
+	return respMsg
 }
