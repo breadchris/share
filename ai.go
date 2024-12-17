@@ -1,10 +1,11 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
+	"strings"
 
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
@@ -38,6 +39,8 @@ type Tool struct {
 	Tool     openai.Tool
 }
 
+type Func func(deps.Deps, string, *websocket.Hub) string
+
 func NewAI(d deps.Deps) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
@@ -48,10 +51,14 @@ func NewAI(d deps.Deps) *http.ServeMux {
 	})
 
 	d.WebsocketRegistry.Register2("chat", func(message string, hub *websocket.Hub) {
-
-		respMsg := AiComponentSwitch(d, message, hub)
-		fmt.Println("Response message", respMsg)
+		tools := getTools(d, hub)
+		respMsg := AiSwitch(d, message, hub, tools)
 		respBubble := ""
+		msgs := strings.Split(respMsg, "\n")
+		msgNodes := []*Node{}
+		for _, msg := range msgs {
+			msgNodes = append(msgNodes, Div(T(msg)))
+		}
 
 		if respMsg != "" {
 			respBubble = Div(
@@ -61,12 +68,10 @@ func NewAI(d deps.Deps) *http.ServeMux {
 					Class("chat chat-end"),
 					Div(
 						Class("chat-bubble"),
-						T(respMsg),
+						Ch(msgNodes),
 					),
 				),
 			).Render()
-		} else {
-			respBubble = ""
 		}
 
 		cmdMsgs := []string{
@@ -189,8 +194,6 @@ func createTool(createTool Tool) Tool {
 	return createTool
 }
 
-type Func func(deps.Deps, string, *websocket.Hub) string
-
 func createCal(d deps.Deps, message string, hub *websocket.Hub) string {
 	id := uuid.NewString()
 	c := Calendar{
@@ -264,8 +267,76 @@ func showEvents(d deps.Deps, message string, hub *websocket.Hub) string {
 	return ""
 }
 
-func AiComponentSwitch(d deps.Deps, message string, hub *websocket.Hub) string {
-	tools := []Tool{
+func listCategories(d deps.Deps, message string, hub *websocket.Hub) string {
+	eventsDB := d.Docs.WithCollection("events")
+	catagories := []string{}
+	events, err := eventsDB.List()
+	if err != nil {
+		fmt.Println("Failed to list events", err)
+	}
+	for _, event := range events {
+		var e EverOutEvent
+		json.Unmarshal(event.Data, &e)
+
+		if !slices.Contains(catagories, e.Category) {
+			catagories = append(catagories, e.Category)
+		}
+
+	}
+	strResp := ""
+	for _, cat := range catagories {
+		strResp += cat + "\n"
+	}
+	fmt.Println(strResp)
+	return strResp
+}
+
+func listCategoriesTool() Tool {
+	return createTool(
+		Tool{
+			Function: listCategories,
+			Name:     "ListCatagories",
+			Desc:     "List Catagories",
+			Props: []ToolProp{
+				{
+					Arguement:   "catagory",
+					Description: "List catagories",
+				},
+			},
+		},
+	)
+}
+
+func getCategory(d deps.Deps, message string, hub *websocket.Hub) string {
+	eventsDB := d.Docs.WithCollection("events")
+	events, err := eventsDB.List()
+	if err != nil {
+		fmt.Println("Failed to list events", err)
+	}
+
+	catEvents := []EverOutEvent{}
+	for _, event := range events {
+		var e EverOutEvent
+		json.Unmarshal(event.Data, &e)
+		if e.Category == message {
+			catEvents = append(catEvents, e)
+		}
+	}
+	eventsByDate := make(map[string][]EverOutEvent)
+	for _, e := range catEvents {
+		eventsByDate[e.Date] = append(eventsByDate[e.Date], e)
+	}
+	hub.Broadcast <- []byte(
+		Div(
+			Id("display"),
+			RenderEverout(eventsByDate),
+		).Render(),
+	)
+	return ""
+}
+
+func getTools(d deps.Deps, hub *websocket.Hub) []Tool {
+	return []Tool{
 		createTool(
 			Tool{
 				Function: createCal,
@@ -318,44 +389,19 @@ func AiComponentSwitch(d deps.Deps, message string, hub *websocket.Hub) string {
 				},
 			},
 		),
+		listCategoriesTool(),
+		createTool(
+			Tool{
+				Function: getCategory,
+				Name:     "GetCategory",
+				Desc:     "Get category",
+				Props: []ToolProp{
+					{
+						Arguement:   "category",
+						Description: "Select a category from this list: " + listCategories(d, "", hub),
+					},
+				},
+			},
+		),
 	}
-
-	openaiTools := []openai.Tool{}
-	for _, tool := range tools {
-		openaiTools = append(openaiTools, tool.Tool)
-	}
-
-	var ctx context.Context = context.Background()
-
-	resp, err := d.AI.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
-		Model: openai.GPT4o20240513,
-		Messages: []openai.ChatCompletionMessage{
-			{Role: openai.ChatMessageRoleSystem, Content: "You are a helpful assistant."},
-			{Role: openai.ChatMessageRoleUser, Content: message},
-		},
-		Tools:     openaiTools,
-		MaxTokens: 150,
-	})
-	if err != nil {
-		fmt.Println("Failed to create chat completion", err)
-	}
-	choice := resp.Choices[0]
-
-	respMsg := resp.Choices[0].Message.Content
-
-	if respMsg == "" {
-		functionCall := choice.Message.ToolCalls[0].Function
-		for _, tool := range tools {
-			if tool.Name == functionCall.Name {
-				var jsonMap map[string]interface{}
-				json.Unmarshal([]byte(functionCall.Arguments), &jsonMap)
-				prop := tool.Props[0].Arguement
-				arg := jsonMap[prop].(string)
-
-				respMsg = tool.Function(d, arg, hub)
-			}
-		}
-	}
-
-	return respMsg
 }

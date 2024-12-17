@@ -170,3 +170,21 @@ func isValidKey(key string) bool {
 	validKeyPattern := regexp.MustCompile(`^[a-zA-Z0-9_]+$`)
 	return validKeyPattern.MatchString(key)
 }
+
+func (ds *DocumentStore) Delete(id string) error {
+	query := `DELETE FROM document WHERE id = $1 AND collection = $2`
+	_, err := ds.db.ExecContext(context.Background(), query, id, ds.collection)
+	if err != nil {
+		return fmt.Errorf("failed to delete document: %v", err)
+	}
+	return nil
+}
+
+func (ds *DocumentStore) DeleteAll() error {
+	query := `DELETE FROM document WHERE collection = $1`
+	_, err := ds.db.ExecContext(context.Background(), query, ds.collection)
+	if err != nil {
+		return fmt.Errorf("failed to delete all documents: %v", err)
+	}
+	return nil
+}

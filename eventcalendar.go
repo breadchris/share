@@ -684,15 +684,16 @@ func RenderOrigami(c *Node) *Node {
 }
 
 type EverOutEvent struct {
-	Title    string
-	Category string
-	Date     string
-	Time     string
-	Location string
-	Region   string
-	Price    string
-	ImageURL string
-	EventURL string
+	Title       string
+	Category    string
+	Date        string
+	EveroutDate string
+	Time        string
+	Location    string
+	Region      string
+	Price       string
+	ImageURL    string
+	EventURL    string
 }
 
 func init() {
@@ -700,7 +701,6 @@ func init() {
 }
 
 func ScraperUiForm(d deps.Deps) *Node {
-
 	eventsDB := d.Docs.WithCollection("events")
 	topEventsDB := d.Docs.WithCollection("topEvents")
 
@@ -812,11 +812,9 @@ func NewEverout(d deps.Deps) *http.ServeMux {
 				}
 				events = ScrapeTopEventsByDate(date)
 			}
-			fmt.Println("Saving events:", events)
 			for _, e := range events {
 				eventsDB.Set(e.Title, e)
 			}
-			fmt.Println("Saving top events:", topEvents)
 			for _, e := range topEvents {
 				topEventsDB.Set(e.Title, e)
 			}
@@ -863,9 +861,6 @@ func NewEverout(d deps.Deps) *http.ServeMux {
 	for _, e := range topEvents {
 		topEventsByDate[e.Date] = append(topEventsByDate[e.Date], e)
 	}
-
-	fmt.Println("Top events by date:", topEventsByDate)
-	fmt.Println("Events by date:", eventsByDate)
 
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		DefaultLayout(
@@ -1019,7 +1014,7 @@ func ScrapeEverOut(startPage, endPage int) ([]EverOutEvent, []EverOutEvent) {
 			topUrl = fmt.Sprintf("https://everout.com/seattle/events/?page=%d&staff-pick=true", page)
 		}
 		fmt.Printf("Scraping page %d: %s\n", page, url)
-		evt, err := ScrapeEvents(url)
+		evt, err := ScrapeEvents(url, "")
 		if err != nil {
 			fmt.Println("Error scraping page", page, ":", err)
 			continue
@@ -1031,7 +1026,7 @@ func ScrapeEverOut(startPage, endPage int) ([]EverOutEvent, []EverOutEvent) {
 
 		events = append(events, evt...)
 
-		topEvts, err := ScrapeEvents(topUrl)
+		topEvts, err := ScrapeEvents(topUrl, "")
 		if err != nil {
 			fmt.Println("Error scraping top events for page", page, ":", err)
 			continue
@@ -1110,7 +1105,7 @@ func ScrapeEventsByDate(date time.Time) ([]EverOutEvent, error) {
 
 		url := fmt.Sprintf("https://everout.com/seattle/events/?page=%d&start-date=%s", page, date.Format("2006-01-02"))
 		fmt.Printf("Scraping date %s, page %d of %d: %s\n", date.Format("2006-01-02"), page, totalPages, url)
-		events, totalPagesFromPage, err := ScrapeEventsWithPagination(url)
+		events, totalPagesFromPage, err := ScrapeEventsWithPagination(url,  date.Format("2006-01-02"))
 		if err != nil {
 			return allEvents, err
 		}
@@ -1129,7 +1124,7 @@ func ScrapeEventsByDate(date time.Time) ([]EverOutEvent, error) {
 	return allEvents, nil
 }
 
-func ScrapeEventsWithPagination(url string) ([]EverOutEvent, int, error) {
+func ScrapeEventsWithPagination(url string, date string) ([]EverOutEvent, int, error) {
 	var events []EverOutEvent
 	totalPages := 1
 	fmt.Println("Scraping events with pagination", url)
@@ -1160,7 +1155,7 @@ func ScrapeEventsWithPagination(url string) ([]EverOutEvent, int, error) {
 		return events, totalPages, err
 	}
 	fmt.Println("HTML parsed successfully")
-	events = ParseDoc(doc)
+	events = ParseDoc(doc, date)
 
 	fmt.Println("Events found", len(events))
 	paginationText := doc.Find("div.pagination-description").Text()
@@ -1203,7 +1198,7 @@ func ScrapeTopEventsForDate(date time.Time) ([]EverOutEvent, error) {
 
 		url := fmt.Sprintf("https://everout.com/seattle/events/?page=%d&start-date=%s&staff-pick=true", page, date.Format("2006-01-02"))
 		fmt.Printf("Scraping top events for date %s, page %d: %s\n", date.Format("2006-01-02"), page, url)
-		events, err := ScrapeEvents(url)
+		events, err := ScrapeEvents(url, date.Format("2006-01-02"))
 
 		if err != nil {
 			return allEvents, err
@@ -1222,7 +1217,7 @@ func ScrapeTopEventsForDate(date time.Time) ([]EverOutEvent, error) {
 	return allEvents, nil
 }
 
-func ParseDoc(doc *goquery.Document) []EverOutEvent {
+func ParseDoc(doc *goquery.Document, data string) []EverOutEvent {
 	events := []EverOutEvent{}
 	doc.Find("div.event.list-item").Each(func(i int, s *goquery.Selection) {
 		var event EverOutEvent
@@ -1235,9 +1230,9 @@ func ParseDoc(doc *goquery.Document) []EverOutEvent {
 		category = strings.Replace(category, "\u0026", "and", -1)
 		event.Category = category
 
-		date := stripChars(s.Find("div.event-date").Text(), "\n")
-		date = stripChars(date, " ")
-		event.Date = date
+		everoutDate := stripChars(s.Find("div.event-date").Text(), "\n")
+		everoutDate = stripChars(everoutDate, " ")
+		event.EveroutDate = everoutDate
 
 		timeStr := stripChars(s.Find("div.event-time").Text(), "\n")
 		timeStr = stripChars(timeStr, " ")
@@ -1266,7 +1261,7 @@ func ParseDoc(doc *goquery.Document) []EverOutEvent {
 	return events
 }
 
-func ScrapeEvents(url string) ([]EverOutEvent, error) {
+func ScrapeEvents(url string, date string) ([]EverOutEvent, error) {
 	var events []EverOutEvent
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -1299,7 +1294,7 @@ func ScrapeEvents(url string) ([]EverOutEvent, error) {
 		return events, err
 	}
 
-	newEvents := ParseDoc(doc)
+	newEvents := ParseDoc(doc, date)
 	events = append(events, newEvents...)
 
 	return events, nil
