@@ -19,9 +19,12 @@ import (
 )
 
 type Card struct {
-	ID      string
-	Message string
-	Image   string
+	ID           string
+	Message      string
+	Image        string
+	ImagePrompt  string
+	Style        string
+	TemplateFunc string
 }
 
 type CreateCard struct {
@@ -73,7 +76,7 @@ func RegisterCardWebsocketHandlers(d deps.Deps, collection string) {
 		}
 	})
 
-	d.WebsocketRegistry.Register(("save"), func(message string, cardId string, isMobile bool) []string {
+	d.WebsocketRegistry.Register("save", func(message string, cardId string, isMobile bool) []string {
 		card := Card{}
 		if err := db.Get(cardId, &card); err != nil {
 
@@ -198,7 +201,7 @@ func NewCard(d deps.Deps) *http.ServeMux {
 				pageId = strings.Split(currentURL[0], "/card/")[1]
 			}
 		}
-		CallGenerateNewCard(d, pageId, prompt, w, r)
+		CallGenerateCard(d, pageId, prompt, w, r)
 	})
 
 	return mux
@@ -206,12 +209,17 @@ func NewCard(d deps.Deps) *http.ServeMux {
 
 func cardGet(db *db.DocumentStore, w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	message := "This is the text on the card!"
+	imageUrl := "/data/cards/images/default.png"
+	cardStyle := "rounded-lg shadow-lg w-[16.5rem] h-[25.5rem]"
 	if id == "" {
 		id = NewCardId()
 		card := Card{
-			ID:      id,
-			Message: "This is the text on the card!",
-			Image:   "/data/cards/images/default.png",
+			ID:           id,
+			Message:      message,
+			Image:        imageUrl,
+			Style:        cardStyle,
+			TemplateFunc: "cardTextImageTemplate",
 		}
 		if err := db.Set(id, card); err != nil {
 			http.Error(w, "Could not create card", http.StatusInternalServerError)
@@ -345,9 +353,9 @@ type Prop struct {
 	Description string `json:"description"`
 }
 
-func CallGenerateNewCard(d deps.Deps, pageId string, prompt string, w http.ResponseWriter, r *http.Request) {
+func CallGenerateCard(d deps.Deps, pageId string, prompt string, w http.ResponseWriter, r *http.Request) {
 	function := openai.FunctionDefinition{
-		Name:        "generateNewCard",
+		Name:        "generateCard",
 		Description: "Generate a new card with a message and an image",
 		Parameters: Parameter{
 			Type: "object",
@@ -366,7 +374,10 @@ func CallGenerateNewCard(d deps.Deps, pageId string, prompt string, w http.Respo
 		},
 	}
 
-	fmt.Println("Calling generateNewCard")
+	tool := openai.Tool{}
+	tool.Type = "function"
+	tool.Function = &function
+
 	resp, err := d.AI.CreateChatCompletion(r.Context(), openai.ChatCompletionRequest{
 		Model: openai.GPT4o20240513,
 		Messages: []openai.ChatCompletionMessage{
@@ -386,7 +397,7 @@ func CallGenerateNewCard(d deps.Deps, pageId string, prompt string, w http.Respo
 	}
 	db := d.Docs.WithCollection("card")
 	tool_calls := resp.Choices[0].Message.ToolCalls[0]
-	if ok := tool_calls.Function.Name == "generateNewCard"; ok {
+	if ok := tool_calls.Function.Name == "generateCard"; ok {
 		createCard := CreateCard{}
 		err = json.Unmarshal([]byte(tool_calls.Function.Arguments), &createCard)
 		if err != nil {
@@ -399,6 +410,7 @@ func CallGenerateNewCard(d deps.Deps, pageId string, prompt string, w http.Respo
 			return
 		}
 		card.Message = createCard.MessagePrompt
+		card.ImagePrompt = createCard.ImagePrompt
 		if err := db.Set(pageId, card); err != nil {
 			fmt.Println("Error:", err)
 			return
@@ -430,8 +442,17 @@ func CreateCardData(id string, message string, image string) Card {
 }
 
 func CardEditor(isMobile bool, card Card) *Node {
+	var cardNode *Node
+	if card.TemplateFunc == "cardTextImageTemplate" {
+		cardNode = cardTextImageTemplate(card.ID, card.Style, card.Image, card.Message)
+	} else if card.TemplateFunc == "cardTextTemplate" {
+		cardNode = cardTextTemplate(card.ID, card.Style, card.Message)
+	} else if card.TemplateFunc == "cardImageTemplate" {
+		cardNode = cardImageTemplate(card.ID, card.Style, card.Image)
+	}
+
 	return Div(
-		createCard(isMobile, card),
+		cardNode,
 		editCardForm(card.ID, card.Message),
 	)
 }
@@ -444,6 +465,32 @@ func createCard(isMobile bool, card Card) *Node {
 		cardStyle,
 		imageSection(card.Image, false, card.ID),
 		contentSection(card.Message),
+	)
+}
+
+// todo select which template to use when creating a card
+func cardTextTemplate(id, style, message string) *Node {
+	return Div(
+		Id(id),
+		Class(style),
+		contentSection(message),
+	)
+}
+
+func cardImageTemplate(id, style, imageSrc string) *Node {
+	return Div(
+		Id(id),
+		Class(style),
+		imageSection(imageSrc, false, id),
+	)
+}
+
+func cardTextImageTemplate(id, style, imageSrc, message string) *Node {
+	return Div(
+		Id(id),
+		Class(style),
+		imageSection(imageSrc, false, id),
+		contentSection(message),
 	)
 }
 
