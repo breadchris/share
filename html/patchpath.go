@@ -5,6 +5,10 @@ import (
 	"strings"
 )
 
+type Model struct {
+	ID string `json:"uuid"`
+}
+
 func lookupPatchPath(structPtr interface{}, fieldPtr interface{}) string {
 	structValue := validateStructPtr(structPtr)
 	fieldValue := reflect.ValueOf(fieldPtr)
@@ -38,15 +42,15 @@ func findFieldPath(value reflect.Value, fieldAddr uintptr, prefix string) (strin
 		fieldName := resolveFieldName(field)
 		combined := combinePaths(prefix, fieldName)
 
-		if fieldValue.CanAddr() && fieldValue.Addr().Pointer() == fieldAddr {
-			return combined, true
-		}
-
 		if isNestedStruct(fieldValue) {
 			subPath, found := findFieldPath(fieldValue, fieldAddr, combined)
 			if found {
 				return subPath, true
 			}
+		}
+
+		if fieldValue.CanAddr() && fieldValue.Addr().Pointer() == fieldAddr {
+			return combined, true
 		}
 	}
 

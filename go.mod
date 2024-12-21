@@ -31,7 +31,7 @@ require (
 	github.com/cosmos72/gomacro v0.0.0-20240506194242-2ff796e3da10
 	github.com/disintegration/imaging v1.6.2
 	github.com/domodwyer/mailyak/v3 v3.6.2
-	github.com/dop251/goja v0.0.0-20241009100908-5f46f2705ca3
+	github.com/dop251/goja v0.0.0-20241024094426-79f3a7efcdbd
 	github.com/dop251/goja_nodejs v0.0.0-20240728170619-29b559befffc
 	github.com/evanphx/json-patch/v5 v5.9.0
 	github.com/evanw/esbuild v0.23.0
@@ -71,6 +71,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 	github.com/kelseyhightower/envconfig v1.4.0
+	github.com/kkdai/youtube/v2 v2.10.1
 	github.com/labstack/echo/v5 v5.0.0-20230722203903-ec5b858dab61
 	github.com/lib/pq v1.10.9
 	github.com/libp2p/go-libp2p v0.36.2
@@ -95,8 +96,8 @@ require (
 	github.com/samber/lo v1.46.0
 	github.com/sashabaranov/go-openai v1.32.2
 	github.com/snabb/sitemap v1.0.4
-	github.com/spf13/cast v1.5.0
-	github.com/spf13/cobra v1.7.0
+	github.com/spf13/cast v1.6.0
+	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0
 	github.com/stripe/stripe-go/v80 v80.2.0
@@ -116,9 +117,9 @@ require (
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0
 	golang.org/x/net v0.30.0
 	golang.org/x/oauth2 v0.23.0
-	golang.org/x/sync v0.9.0
+	golang.org/x/sync v0.10.0
 	golang.org/x/term v0.25.0
-	golang.org/x/text v0.20.0
+	golang.org/x/text v0.21.0
 	golang.org/x/time v0.6.0
 	gopkg.in/alexcesaro/statsd.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -167,6 +168,7 @@ require (
 	github.com/bahlo/generic-list-go v0.2.0 // indirect
 	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/bitly/go-simplejson v0.5.1 // indirect
 	github.com/bits-and-blooms/bitset v1.13.0 // indirect
 	github.com/blevesearch/go-porterstemmer v1.0.3 // indirect
 	github.com/blevesearch/mmap-go v1.0.4 // indirect
@@ -185,7 +187,7 @@ require (
 	github.com/containerd/cgroups v1.1.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/couchbase/vellum v1.0.2 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.3 // indirect
 	github.com/crackcomm/go-gitignore v0.0.0-20231225121904-e25f5bc08668 // indirect
 	github.com/cskr/pubsub v1.0.2 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
@@ -225,7 +227,7 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/go-tpm v0.9.0 // indirect
 	github.com/google/gopacket v1.1.19 // indirect
-	github.com/google/pprof v0.0.0-20240727154555-813a5fbdbec8 // indirect
+	github.com/google/pprof v0.0.0-20241210010833-40e02aabc2ad // indirect
 	github.com/google/wire v0.6.0 // indirect
 	github.com/googleapis/gax-go/v2 v2.13.0 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
@@ -341,7 +343,6 @@ require (
 	github.com/raulk/go-watchdog v1.3.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/skeema/knownhosts v1.2.2 // indirect
 	github.com/snabb/diagio v1.0.4 // indirect

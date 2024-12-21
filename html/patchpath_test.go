@@ -5,12 +5,21 @@ import (
 )
 
 type Ab struct {
-	B string `json:"b"`
-	C Ac     `json:"c"`
+	B string   `json:"b"`
+	C Ac       `json:"c"`
+	D []string `json:"d"`
+	E []Ad     `json:"e"`
+}
+
+type Ad struct {
+	Model
+	D string `json:"d"`
 }
 
 type Ac struct {
+	Model
 	D string `json:"d"`
+	E string `json:"e"`
 }
 
 func TestPatchPath(t *testing.T) {
@@ -21,7 +30,7 @@ func TestPatchPath(t *testing.T) {
 	}
 
 	// TODO breadchris recursive
-	p = lookupPatchPath(a, &(a.C.D))
+	p = lookupPatchPath(a, &a.C.D)
 	if p != "/c/d" {
 		t.Fatalf("Expected /c/d, got %s", p)
 	}

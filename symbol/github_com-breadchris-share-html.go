@@ -181,6 +181,7 @@ func init() {
 		"BuildCtx":  reflect.ValueOf((*html.BuildCtx)(nil)),
 		"Directory": reflect.ValueOf((*html.Directory)(nil)),
 		"File":      reflect.ValueOf((*html.File)(nil)),
+		"Model":     reflect.ValueOf((*html.Model)(nil)),
 		"NilNode":   reflect.ValueOf((*html.NilNode)(nil)),
 		"Node":      reflect.ValueOf((*html.Node)(nil)),
 		"Tab":       reflect.ValueOf((*html.Tab)(nil)),

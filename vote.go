@@ -23,7 +23,7 @@ type UserVote struct {
 	RecipeID string `json:"recipe_id"`
 }
 
-type Recipe struct {
+type VoteRecipe struct {
 	RecipeID    string   `json:"recipe_id"`
 	Name        string   `json:"name"`
 	Ingredients []string `json:"ingredients"`
@@ -31,10 +31,10 @@ type Recipe struct {
 }
 
 type Poll struct {
-	ID        string     `json:"id"`
-	Name      string     `json:"name"`
-	UserVotes []UserVote `json:"user_votes"`
-	Recipes   []Recipe   `json:"recipes"`
+	ID        string       `json:"id"`
+	Name      string       `json:"name"`
+	UserVotes []UserVote   `json:"user_votes"`
+	Recipes   []VoteRecipe `json:"recipes"`
 }
 
 type FormState struct {
@@ -89,7 +89,7 @@ func NewVote(d deps.Deps) *http.ServeMux {
 
 	r.HandleFunc("/new/ai", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
-			var recipe Recipe
+			var recipe VoteRecipe
 			schema, err := jsonschema.GenerateSchemaForType(recipe)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)

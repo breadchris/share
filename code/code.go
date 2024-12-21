@@ -42,11 +42,11 @@ func New(d Deps) *http.ServeMux {
 		}
 		_ = r.URL.Query().Get("function")
 
-		funcs, err := GetFunctions(file)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		//funcs, err := GetFunctions(file)
+		//if err != nil {
+		//	http.Error(w, err.Error(), http.StatusInternalServerError)
+		//	return
+		//}
 		w.Write([]byte(
 			RenderTabs([]Tab{
 				{
@@ -55,14 +55,14 @@ func New(d Deps) *http.ServeMux {
 				},
 				{
 					Title: "functions",
-					Content: Ul(Class("menu bg-base-200 rounded-box w-56"),
-						Li(
-							Ul(
-								Ch(Map(funcs, func(f string, i int) *Node {
-									return Li(A(Href(fmt.Sprintf("/code?file=%s&function=%s", file, f)), T(f)))
-								})),
-							),
-						)),
+					//Content: Ul(Class("menu bg-base-200 rounded-box w-56"),
+					//	Li(
+					//		Ul(
+					//			Ch(Map(funcs, func(f string, i int) *Node {
+					//				return Li(A(Href(fmt.Sprintf("/code?file=%s&function=%s", file, f)), T(f)))
+					//			})),
+					//		),
+					//	)),
 					Active: true,
 				},
 			}).Render(),

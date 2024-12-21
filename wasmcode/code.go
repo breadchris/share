@@ -63,7 +63,7 @@ func New(d Deps) *http.ServeMux {
 		case http.MethodGet:
 			DefaultLayout(
 				Div(
-					//Style(T(playgroundCSS)),
+					Style(T(playgroundCSS)),
 					Script(Attr("src", "/static/playground.js")),
 					Script(Attr("src", "/static/leader-line.min.js")),
 					Div(
@@ -78,6 +78,7 @@ func New(d Deps) *http.ServeMux {
 							Text("Save"),
 						),
 						Button(Class("btn"), Id("add-text"), Text("Text")),
+						Button(Class("btn"), Id("add-container"), Text("Container")),
 						Button(Class("btn"), Id("add-image"), Text("Image")),
 						//Button(Class("btn"), Id("add-chat"), Text("Add Chat")),
 						A(Class("btn"), Href("/playground/"+id), Text("View")),
@@ -343,6 +344,26 @@ function sendEvent(eventName, data) {
 }
 
 const playgroundCSS = `
+
+.rotation-handle {
+  padding: 3px 4px;
+  display: table;
+  position: absolute;
+  left: 50%;
+  right: 50%;
+  bottom: -35px;
+  background-color: #ff1661;
+  border-radius: 10rem;
+  line-height: 1;
+  text-align: center;
+  font-weight: bold;
+  color: #fff;
+  cursor: move;
+}
+`
+
+/*
+
 #toolbar {
   background: #f4f4f4;
   padding: 10px;
@@ -385,4 +406,4 @@ const playgroundCSS = `
 .drag-drop.highlight {
     outline: 2px dashed #00f;
 }
-`
+*/

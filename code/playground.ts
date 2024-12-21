@@ -1,103 +1,57 @@
-import PlainDraggable from "plain-draggable";
-// import LeaderLine from "leader-line";
+import interact from "interactjs";
+import DomInspector from "./src/index"
 
 window.addEventListener("load", function () {
-    let elementCounter = 1;
-    let startElement = null; // Track the starting element for the leader line
-    let lines = []; // Array to store all created lines
+    // const inspector = new DomInspector();
+    // inspector.enable();
 
-    // Function to store line objects and associated start and end elements
-    const lineData = [];
+    interact('.rotation-handle')
+        .draggable({
+            onstart: function(event) {
+                var box = event.target.parentElement;
+                var rect = box.getBoundingClientRect();
 
-    function createDraggable(element) {
-        const draggable = new PlainDraggable(element, {
-            onMove: function () {
-                // Update any lines connected to this element
-                // lineData.forEach((data) => {
-                //     if (data.start === element || data.end === element) {
-                //         data.line.position();
-                //     }
-                // });
-            }
-        });
+                // store the center as the element has css `transform-origin: center center`
+                box.setAttribute('data-center-x', rect.left + rect.width / 2);
+                box.setAttribute('data-center-y', rect.top + rect.height / 2);
+                // get the angle of the element when the drag starts
+                box.setAttribute('data-angle', getDragAngle(event));
+            },
+            onmove: function(event) {
+                var box = event.target.parentElement;
 
-        // Add click listener to handle leaderline logic
-        element.addEventListener("click", (event) => {
-            // event.stopPropagation(); // Prevent canvas click event from firing
-            // if (!startElement) {
-            //     // If there's no start, set this as the start
-            //     startElement = element;
-            //     element.classList.add("ring-2", "ring-blue-500"); // Add TailwindCSS class for highlighting
-            // } else if (startElement === element) {
-            //     // If clicking the same element, clear the start
-            //     startElement.classList.remove("ring-2", "ring-blue-500");
-            //     startElement = null;
-            // } else {
-            //     // If there's already a start, set this as the end and create a line
-            //     const endElement = element;
-            //     const line = new LeaderLine(startElement, endElement);
-            //     line.setOptions({
-            //         endPlug: "hand",
-            //     })
-            //
-            //     console.log(line)
-            //
-            //     // Store the line and its connected elements
-            //     lineData.push({ start: startElement, end: endElement, line });
-            //
-            //     // Add click listener for removing the line
-            //     line.middleLabel = LeaderLine.pathLabel("Click to remove");
-            //     line.pathLabel = { color: "black", fontSize: "12px" };
-            //
-            //     // line.container.addEventListener("click", () => {
-            //     //     line.remove();
-            //     //     const index = lineData.findIndex((data) => data.line === line);
-            //     //     if (index > -1) lineData.splice(index, 1); // Remove from lineData array
-            //     // });
-            //
-            //     // Clear the start and remove its TailwindCSS class
-            //     startElement.classList.remove("ring-2", "ring-blue-500");
-            //     startElement = null;
-            // }
-        });
+                var pos = {
+                    x: parseFloat(box.getAttribute('data-x')) || 0,
+                    y: parseFloat(box.getAttribute('data-y')) || 0
+                };
+
+                var angle = getDragAngle(event);
+
+                // update transform style on dragmove
+                box.style.transform = 'translate(' + pos.x + 'px, ' + pos.y + 'px) rotate(' + angle + 'rad' + ')';
+            },
+            onend: function(event) {
+                var box = event.target.parentElement;
+
+                // save the angle on dragend
+                box.setAttribute('data-angle', getDragAngle(event));
+            },
+        })
+
+    function getDragAngle(event) {
+        var box = event.target.parentElement;
+        var startAngle = parseFloat(box.getAttribute('data-angle')) || 0;
+        var center = {
+            x: parseFloat(box.getAttribute('data-center-x')) || 0,
+            y: parseFloat(box.getAttribute('data-center-y')) || 0
+        };
+        var angle = Math.atan2(center.y - event.clientY,
+            center.x - event.clientX);
+
+        return angle - startAngle;
     }
 
-    function addDraggableElement(content, tag = "div", isImage = false) {
-        const element = document.createElement(tag);
-        element.className = "drag-drop w-fit";
-        element.setAttribute("data-id", elementCounter++);
-        element.style.position = "absolute";
-        element.contentEditable = "true";
-
-        if (isImage) {
-            element.src = content;
-        } else {
-            element.textContent = content;
-        }
-
-        document.getElementById("canvas").appendChild(element);
-        createDraggable(element);
-    }
-
-    // Handle adding text
-    document.getElementById("add-text").addEventListener("click", () => {
-        addDraggableElement("write something");
-    });
-
-    // Handle adding images
-    document.getElementById("add-image").addEventListener("click", () => {
-        addDraggableElement("https://picsum.photos/200", "img", true);
-    });
-
-    // Add click listener to the canvas to reset the start element
     const canvas = document.getElementById("canvas");
-    canvas.addEventListener("click", () => {
-        if (startElement) {
-            startElement.classList.remove("ring-2", "ring-blue-500");
-            startElement = null;
-        }
-    });
-
     const container = canvas;
     container.addEventListener('paste', (event) => {
         const clipboardData = event.clipboardData;
@@ -106,16 +60,13 @@ window.addEventListener("load", function () {
         let contentAdded = false;
 
         for (const item of clipboardData.items) {
-            if (item.kind === 'string' && item.type === 'text/html') {
-                item.getAsString((html) => {
-                    console.log(html)
-                    const htmlDiv = document.createElement('div');
-                    htmlDiv.innerHTML = html;
-                    htmlDiv.style.border = '1px dashed blue';
-                    container.appendChild(htmlDiv);
-                    contentAdded = true;
-                });
-            }
+            // if (item.kind === 'string' && item.type === 'text/html') {
+            //     item.getAsString((html) => {
+            //         console.log(html)
+            //         addDraggableElement(html);
+            //         contentAdded = true;
+            //     });
+            // }
             // if (item.kind === 'file' && item.type.startsWith('image/')) {
             //     const file = item.getAsFile();
             //     if (file) {
@@ -135,12 +86,7 @@ window.addEventListener("load", function () {
         if (!contentAdded) {
             const text = clipboardData.getData('text/plain');
             if (text) {
-                const textDiv = document.createElement('div');
-                textDiv.textContent = text;
-                textDiv.style.border = '1px solid black';
-                textDiv.style.padding = '5px';
-                textDiv.style.backgroundColor = '#f9f9f9';
-                container.appendChild(textDiv);
+                addDraggableElement(text, "div", "", true);
                 contentAdded = true;
             }
         }
@@ -148,10 +94,7 @@ window.addEventListener("load", function () {
         if (!contentAdded) {
             const html = clipboardData.getData('text/html');
             if (html) {
-                const htmlDiv = document.createElement('div');
-                htmlDiv.innerHTML = html;
-                htmlDiv.style.border = '1px dashed blue';
-                container.appendChild(htmlDiv);
+                addDraggableElement(html, "div", "", true);
                 contentAdded = true;
             }
         }
@@ -161,39 +104,39 @@ window.addEventListener("load", function () {
         }
     });
 
-    const dropZone = canvas;
-    dropZone.addEventListener('dragover', (event) => {
-        event.preventDefault();
-        dropZone.style.borderColor = 'blue';
-    });
-
-    dropZone.addEventListener('dragleave', () => {
-        dropZone.style.borderColor = 'gray';
-    });
-
-    dropZone.addEventListener('drop', async (event) => {
-        event.preventDefault();
-        dropZone.style.borderColor = 'gray';
-
-        const dataTransfer = event.dataTransfer;
-        if (!dataTransfer) return;
-
-        const file = dataTransfer.files[0];
-        if (file && file.type.startsWith('image/')) {
-            const imageUrl = URL.createObjectURL(file);
-            console.log('Image URL (from file):', imageUrl);
-
-            displayImage(imageUrl);
-        } else {
-            const url = await getDraggedImageUrl(dataTransfer.items);
-            if (url) {
-                console.log('Image URL (from browser):', url);
-                displayImage(url);
-            } else {
-                alert('Please drop a valid image or an image URL.');
-            }
-        }
-    });
+    // const dropZone = canvas;
+    // dropZone.addEventListener('dragover', (event) => {
+    //     event.preventDefault();
+    //     dropZone.style.borderColor = 'blue';
+    // });
+    //
+    // dropZone.addEventListener('dragleave', () => {
+    //     dropZone.style.borderColor = 'gray';
+    // });
+    //
+    // dropZone.addEventListener('drop', async (event) => {
+    //     event.preventDefault();
+    //     dropZone.style.borderColor = 'gray';
+    //
+    //     const dataTransfer = event.dataTransfer;
+    //     if (!dataTransfer) return;
+    //
+    //     const file = dataTransfer.files[0];
+    //     if (file && file.type.startsWith('image/')) {
+    //         const imageUrl = URL.createObjectURL(file);
+    //         console.log('Image URL (from file):', imageUrl);
+    //
+    //         displayImage(imageUrl);
+    //     } else {
+    //         const url = await getDraggedImageUrl(dataTransfer.items);
+    //         if (url) {
+    //             console.log('Image URL (from browser):', url);
+    //             displayImage(url);
+    //         } else {
+    //             alert('Please drop a valid image or an image URL.');
+    //         }
+    //     }
+    // });
 
     const getDraggedImageUrl = async (items: DataTransferItemList): Promise<string | null> => {
         for (const item of items) {
@@ -217,21 +160,218 @@ window.addEventListener("load", function () {
         dropZone.textContent = '';
         dropZone.appendChild(img);
     };
+
+    let overlappingParents: Set<HTMLElement> = new Set();
+    let contextMenu: HTMLElement | null = null;
+    let elementCounter: number = 0;
+
+    function createDraggable(element: HTMLElement) {
+        // <div class="rotation-handle">&circlearrowright;</div>
+        const rotationHandle = document.createElement("div");
+        rotationHandle.className = "rotation-handle";
+        rotationHandle.textContent = "🔄";
+        element.appendChild(rotationHandle);
+        interact(element)
+            .resizable({
+                // resize from all edges and corners
+                edges: { left: true, right: true, bottom: true, top: true },
+
+                listeners: {
+                    move (event) {
+                        var target = event.target
+                        var x = (parseFloat(target.getAttribute('data-x')) || 0)
+                        var y = (parseFloat(target.getAttribute('data-y')) || 0)
+
+                        target.style.width = event.rect.width + 'px'
+                        target.style.height = event.rect.height + 'px'
+
+                        x += event.deltaRect.left
+                        y += event.deltaRect.top
+
+                        target.style.transform = 'translate(' + x + 'px,' + y + 'px)'
+
+                        target.setAttribute('data-x', x)
+                        target.setAttribute('data-y', y)
+                        // target.textContent = Math.round(event.rect.width) + '\u00D7' + Math.round(event.rect.height)
+                    }
+                },
+                modifiers: [
+                    interact.modifiers.restrictEdges({
+                        outer: 'parent'
+                    }),
+
+                    interact.modifiers.restrictSize({
+                        min: { width: 100, height: 50 }
+                    })
+                ],
+
+                inertia: true
+            })
+            .draggable({
+                modifiers: [
+                    interact.modifiers.restrictRect({
+                        restriction: 'parent',
+                        endOnly: true
+                    })
+                ],
+            listeners: {
+                move(event) {
+                    const target = event.target as HTMLElement;
+                    const dx = (parseFloat(target.getAttribute("data-x") || "0") || 0) + event.dx;
+                    const dy = (parseFloat(target.getAttribute("data-y") || "0") || 0) + event.dy;
+
+                    target.style.transform = `translate(${dx}px, ${dy}px)`;
+                    target.setAttribute("data-x", dx.toString());
+                    target.setAttribute("data-y", dy.toString());
+                },
+                end(event) {
+                    const target = event.target as HTMLElement;
+
+                    if (overlappingParents.size > 1) {
+                        showContextMenu(event.clientX, event.clientY, target);
+                    } else if (overlappingParents.size === 1) {
+                        const container = Array.from(overlappingParents)[0];
+                        handlePlacement(container, target);
+                    }
+
+                    clearHighlights();
+                },
+            },
+        });
+    }
+
+    function addDraggableElement(content: string, tag: string = "div", className: string = "", isImage: boolean = false): void {
+        const element = document.createElement(tag);
+        element.className = className + " draggable w-fit";
+        element.setAttribute("data-id", (elementCounter++).toString());
+        element.style.position = "absolute";
+        element.contentEditable = !isImage ? "true" : "false";
+
+        if (isImage) {
+            (element as HTMLImageElement).src = content;
+        } else {
+            element.textContent = content;
+        }
+
+        document.getElementById("canvas")?.appendChild(element);
+        createDraggable(element);
+    }
+
+    document.getElementById("add-container")?.addEventListener("click", () => {
+        addDraggableElement("a container!", "div", "container border-2 border-gray-300 p-4 rounded-md my-4");
+    });
+
+    document.getElementById("add-text")?.addEventListener("click", () => {
+        addDraggableElement("Write something");
+    });
+
+    document.getElementById("add-image")?.addEventListener("click", () => {
+        addDraggableElement("https://picsum.photos/200", "img", "", true);
+    });
+
+    interact(".container").dropzone({
+        ondragenter(event) {
+            const target = event.target as HTMLElement;
+            overlappingParents.add(target);
+            target.classList.add("highlight");
+        },
+        ondragleave(event) {
+            const target = event.target as HTMLElement;
+            overlappingParents.delete(target);
+            target.classList.remove("highlight");
+        },
+        ondropmove(event) {
+            // const container = event.target as HTMLElement;
+            // const draggedElement = event.relatedTarget as HTMLElement;
+            // suggestPlacement(container, draggedElement);
+        },
+    });
+
+    function suggestPlacement(container: HTMLElement, draggedElement: HTMLElement) {
+        clearPlacementMarkers(container);
+
+        const centerY = draggedElement.getBoundingClientRect().top + draggedElement.offsetHeight / 2;
+        const children = Array.from(container.children);
+
+        for (let i = 0; i < children.length; i++) {
+            const child = children[i] as HTMLElement;
+            const childRect = child.getBoundingClientRect();
+            const childCenterY = childRect.top + childRect.height / 2;
+
+            if (centerY < childCenterY) {
+                addPlacementMarker(container, child);
+                return;
+            }
+        }
+        addPlacementMarker(container, null);
+    }
+
+    function addPlacementMarker(container: HTMLElement, referenceNode: Element | null) {
+        const marker = document.createElement("div");
+        marker.className = "placement-marker";
+
+        if (referenceNode) {
+            container.insertBefore(marker, referenceNode);
+        } else {
+            container.appendChild(marker);
+        }
+    }
+
+    function handlePlacement(container: HTMLElement, draggedElement: HTMLElement) {
+        const marker = container.querySelector(".placement-marker");
+        console.log(marker)
+        if (marker) {
+            const referenceNode = marker.nextSibling;
+
+            draggedElement.style.transform = "none";
+
+            container.insertBefore(draggedElement, referenceNode);
+            clearPlacementMarkers(container);
+        }
+    }
+
+    function showContextMenu(x: number, y: number, draggedElement: HTMLElement) {
+        clearContextMenu();
+
+        contextMenu = document.createElement("div");
+        contextMenu.className = "context-menu";
+        contextMenu.style.top = `${y}px`;
+        contextMenu.style.left = `${x}px`;
+
+        overlappingParents.forEach((parent) => {
+            const button = document.createElement("button");
+            button.textContent = `Insert into ${parent.id}`;
+            button.addEventListener("click", () => {
+                handlePlacement(parent, draggedElement);
+                clearContextMenu();
+            });
+            contextMenu!.appendChild(button);
+        });
+
+        document.body.appendChild(contextMenu);
+    }
+
+    function clearHighlights() {
+        overlappingParents.forEach((parent) => parent.classList.remove("highlight"));
+        overlappingParents.clear();
+    }
+
+    function clearContextMenu() {
+        if (contextMenu) {
+            contextMenu.remove();
+            contextMenu = null;
+        }
+    }
+
+// Clear placement markers
+    function clearPlacementMarkers(container: HTMLElement) {
+        const markers = container.querySelectorAll(".placement-marker");
+        markers.forEach((marker) => marker.remove());
+    }
+
 });
-
 function getHTML() {
-    // const defs = document.getElementById("leader-line-defs");
-    // const lines = document.getElementsByClassName("leader-line");
     const canvas = document.getElementById("canvas");
-
-    // combine all the elements into a shadow div
-    // const shadow = document.createElement("div");
-    // shadow.appendChild(defs.cloneNode(true));
-    // shadow.appendChild(canvas.cloneNode(true));
-    // for (let i = 0; i < lines.length; i++) {
-    //     shadow.appendChild(lines[i].cloneNode(true));
-    // }
-    // return shadow.innerHTML;
     return canvas.innerHTML;
 }
 window.getHTML = getHTML;

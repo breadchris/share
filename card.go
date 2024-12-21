@@ -366,10 +366,6 @@ func CallGenerateNewCard(d deps.Deps, pageId string, prompt string, w http.Respo
 		},
 	}
 
-	tool := openai.Tool{}
-	tool.Type = "function"
-	tool.Function = &function
-
 	fmt.Println("Calling generateNewCard")
 	resp, err := d.AI.CreateChatCompletion(r.Context(), openai.ChatCompletionRequest{
 		Model: openai.GPT4o20240513,
@@ -377,7 +373,12 @@ func CallGenerateNewCard(d deps.Deps, pageId string, prompt string, w http.Respo
 			{Role: openai.ChatMessageRoleSystem, Content: "You will help me generate a new card."},
 			{Role: openai.ChatMessageRoleUser, Content: prompt},
 		},
-		Tools: []openai.Tool{tool},
+		Tools: []openai.Tool{
+			{
+				Type:     "function",
+				Function: &function,
+			},
+		},
 	})
 	if err != nil {
 		fmt.Println("Error:", err)

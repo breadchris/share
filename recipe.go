@@ -1,75 +1,722 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"encoding/xml"
+	"errors"
 	"fmt"
-	"github.com/breadchris/share/db"
+	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
-	"log"
+	"github.com/kkdai/youtube/v2"
+	"github.com/sashabaranov/go-openai"
+	"github.com/sashabaranov/go-openai/jsonschema"
+	"golang.org/x/net/html"
+	"io"
 	"net/http"
-	"os"
-	"path"
+	"net/url"
+	"strconv"
 )
 
 const recipeIndex = "data/recipe.bleve"
 
-func setupRecipe() {
-	index, err := db.NewSearchIndex("data/recipe.bleve")
-	if err != nil {
-		log.Fatalf("Failed to load search index: %v", err)
-	}
-
-	h := &Handler{
-		index: index,
-	}
-
-	http.HandleFunc("/recipe", recipeHandler)
-	http.HandleFunc("/recipe/search", h.searchHandler)
+type Direction struct {
+	Text      string `json:"text" description:"The direction text."`
+	StartTime int    `json:"start_time" description:"The time in seconds when direction starts in the transcript."`
+	EndTime   int    `json:"end_time" description:"The time in seconds when direction ends in the transcript."`
 }
 
-type Handler struct {
-	index *db.SearchIndex
+type Ingredient struct {
+	Name    string `json:"name" description:"The name of the ingredient."`
+	Amount  string `json:"amount" description:"The amount of the ingredient."`
+	Unit    string `json:"unit" description:"The unit of the ingredient."`
+	Comment string `json:"comment" description:"The comment of the ingredient."`
 }
 
-func (s *Handler) searchHandler(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query().Get("q")
-	if query == "" {
-		http.Error(w, "Query parameter 'q' is required", http.StatusBadRequest)
-		return
+type Recipe struct {
+	Name        string       `json:"name"`
+	Ingredients []Ingredient `json:"ingredients"`
+	Directions  []Direction  `json:"directions"`
+	Equipment   []string     `json:"equipment" description:"The equipment used while making the recipe."`
+}
+
+type RecipeState struct {
+	Recipe     Recipe                  `json:"recipe"`
+	Transcript youtube.VideoTranscript `json:"transcript"`
+}
+
+func transcriptToRecipe(ctx context.Context, d deps.Deps, ts youtube.VideoTranscript) (Recipe, error) {
+	var rec Recipe
+
+	var prompt string
+	for _, t := range ts {
+		prompt += fmt.Sprintf("[%d - %d] %s\n", t.StartMs/1000, (t.StartMs+t.Duration)/1000, t.Text)
 	}
 
-	res, err := s.index.Search(query)
+	schema, err := jsonschema.GenerateSchemaForType(rec)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return rec, err
 	}
 
-	var results []*Node
-	for _, h := range res.Hits {
-		f, err := os.ReadFile(path.Join("data/recipes", h.ID))
+	resp, err := d.AI.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
+		Model: openai.GPT4o20240513,
+		Messages: []openai.ChatCompletionMessage{
+			{
+				Role: openai.ChatMessageRoleSystem,
+				Content: `
+You will take a transcript and generate a recipe from it.
+Use the following transcript to extract the recipe into the described format.
+Replace casual dialogue and narrative with clear and direct recipe language.
+Include inferred ingredients and ensure proper structuring of directions with precise timestamps.
+The transcript contains timestamps and text in the form: "[start - end] text", timestamps are in seconds.
+
+Here is an example transcript and the resulting timestamps and directions:
+Transcript:
+[0 - 0] - I'm Frank Proto,
+[0 - 2] professional chef and culinary instructor,
+[2 - 3] and today I'm gonna show you
+[3 - 5] how to make the best
+fettuccine Alfredo at home.
+[5 - 9] We're talking silky, creamy,
+classic fettuccine Alfredo.
+[9 - 11] This is Fettuccine Alfredo 101.
+[13 - 15] Fettuccine Alfredo is a classic dish
+[15 - 17] that you normally don't see
+in restaurants in Italy.
+[17 - 20] It's basically pasta
+with butter and Parmesan,
+[20 - 23] pasta al burro or pasta
+con parmigiano e burro.
+[23 - 26] The American version of
+fettuccine Alfredo uses cream.
+[26 - 27] This is more the original version
+[27 - 29] that came from Italy to America.
+[29 - 32] Real fettuccine Alfredo, it
+only has three ingredients:
+[32 - 36] butter, Parmesan cheese, and pasta.
+[36 - 38] It's all about the technique,
+and once you get that down,
+[38 - 40] you're gonna make it
+perfectly every time at home.
+[43 - 45] One thing I talk about all
+the time is mise en place.
+[45 - 47] This dish comes together really quickly,
+[47 - 49] so you have to have everything close by.
+[49 - 51] One of the main ingredients
+in our fettuccine Alfredo
+[51 - 53] is Parmigiano Reggiano cheese.
+[53 - 55] It is really, really important
+[55 - 58] that you use real Parmigiano
+Reggiano from Italy.
+[58 - 59] You can tell that it's real
+[59 - 61] because it's gonna be stamped
+[61 - 62] Parmigiano Reggiano on the outside.
+[62 - 64] You're gonna see that rind.
+[64 - 66] The Parmigiano Reggiano and the butter,
+[66 - 67] when you mix it together,
+[67 - 69] emulsifies the sauce and makes it creamy.
+[69 - 71] One of the key factors of this dish
+[71 - 72] is getting good ingredients.
+[72 - 74] Because there are so few ingredients,
+[74 - 77] getting the best you can afford
+is really, really important.
+[77 - 79] So I'm gonna start grating my cheese.
+[79 - 81] It's really important
+that your Parmesan cheese
+[81 - 82] be finely grated.
+[82 - 83] I'm using a Microplane.
+[83 - 86] If you don't have a Microplane,
+you can grate it on a grater
+[86 - 88] and then sift it or strain it
+[88 - 89] just to get the big chunks out.
+[89 - 91] But I want this cheese to be nice and fine
+[91 - 93] so that it melts once it gets hot.
+[93 - 96] So you can see that this
+Microplane does that really well.
+[96 - 98] Part of the reason I don't
+use pre-grated cheese
+[98 - 101] is that I can't tell if it's real, right?
+[101 - 103] Someone could be selling
+me Parmesan cheese
+[103 - 105] and I don't see the rind,
+so I don't really trust it.
+[105 - 108] Second of all, it's usually
+not ground fine enough,
+[108 - 110] and a lot of times when
+you buy pre-grated cheese,
+[110 - 112] there are things in the cheese
+[112 - 113] that will stop it from clumping,
+[113 - 116] like they'll use anti-caking ingredients,
+[116 - 117] and that does not do well for us
+[117 - 119] when it comes to making the finished dish.
+[119 - 122] Sometimes also in pre-grated
+cheese, it's very moist,
+[122 - 124] and this cheese is usually super dry,
+[124 - 126] and that makes our product
+a little stringy in the end.
+[126 - 128] So grate your own cheese, it's worth it.
+[128 - 130] So it does look like a lot of cheese,
+[130 - 132] and I'm basically gonna use
+like three quarters of a pound
+[132 - 134] or a pound of cheese to a pound of pasta.
+[134 - 137] It's indulgent. This is a luxurious dish.
+[137 - 141] It is cheesy, it is rich.
+Don't skimp on the cheese here.
+[141 - 142] The cheese is grated.
+[142 - 143] And what's funny about this dish
+[143 - 145] is this is really the only action
+[145 - 147] or the only mise en place you have to do.
+[149 - 150] Have a pot of boiling water,
+[150 - 152] and usually chefs tell people
+[152 - 154] to use a large pot of boiling water.
+[154 - 157] In this case, I want a smaller
+pot. I want less water.
+[157 - 160] When pasta cooks, it gives off starch.
+[160 - 161] I want this water to be extra starchy,
+[161 - 164] so when we add it to our pasta,
+[164 - 166] that starch will help
+bring the sauce together.
+[166 - 167] Generally, for pasta dishes,
+[167 - 170] I would use a larger pot
+with a lot more salt,
+[170 - 173] but because we're using
+Parmesan, it's super salty,
+[173 - 175] and I don't want this
+dish to be over-salted.
+[175 - 178] So I'm just gonna use a little
+bit of salt in my water.
+[178 - 178] I'm not gonna go crazy.
+[178 - 180] I just want some seasoning
+to get in the pasta.
+[180 - 183] I chose to use dry pasta in the box.
+[183 - 184] Now, a lot of people say,
+[184 - 187] "Well, in Italy, they all eat
+fresh pasta all the time,"
+[187 - 188] but that's not really true.
+[188 - 190] A lot of people use dry pasta in Italy.
+[190 - 193] You could use fresh if
+you want. It's up to you.
+[193 - 194] But I like to use dry.
+[194 - 196] It has a little more starch to it,
+[196 - 198] and I like the way it comes
+out a little bit better.
+[198 - 201] You wanna try and find the
+best pasta that you can afford
+[201 - 203] because it's gonna make the dish better.
+[203 - 205] Because this dish has so few ingredients,
+[205 - 206] every ingredient matters.
+[206 - 207] A lot of times chefs will say
+[207 - 209] they want their pasta al dente.
+[209 - 210] Al dente means to the tooth,
+[210 - 212] which means there's a little bit of bite.
+[212 - 214] You bite into your pasta,
+there's no white center,
+[214 - 216] but it has some chew to it.
+[216 - 218] I'm going just past al dente here.
+[218 - 221] So you can see as I stir the
+pasta, the water gets cloudy,
+[221 - 222] and that's what I want.
+[222 - 225] That cloudiness is the starch
+washing off of the pasta.
+[225 - 227] I'm using a butter with high butter fat.
+[227 - 228] It's a little creamier.
+[228 - 231] There's less liquid or solids in this.
+[231 - 234] I've used this Plugra or
+Kerrygold unsalted butter.
+[234 - 236] So I would try and find a European butter.
+[236 - 238] This will really help the emulsification
+[238 - 240] to help the dish come together.
+[240 - 241] This pasta comes together really quick.
+[241 - 243] Have your plates ready to go.
+[243 - 245] Have all of your other
+mise en place ready to go
+[245 - 249] and serve the pasta to
+your guest immediately.
+[249 - 251] The best way to check
+if your pasta is done
+[251 - 252] is to actually taste the piece.
+[252 - 254] People will say, "Oh,
+throw it against the wall."
+[254 - 256] No, it just says our pasta is starchy.
+[256 - 257] It's good.
+[257 - 259] I think it needs another half a minute,
+[259 - 260] and we're good to go.
+[260 - 263] Once this pasta is cooked,
+we need to go quickly.
+[263 - 266] It is not something you can
+kind of wait around and chat.
+[266 - 267] You wanna have everything ready to go.
+[267 - 270] Basically, I'm using the
+pound, pound, pound rule.
+[270 - 272] I got a pound of pasta, a pound of butter,
+[272 - 273] and a pound of cheese.
+[273 - 274] And it seems like a lot,
+[274 - 276] but again, this dish is super luxurious
+[276 - 278] and meant to be eaten
+in smaller quantities,
+[278 - 280] so we're not gonna skimp on anything.
+[280 - 282] We got lots of cheese,
+we got lots of butter,
+[282 - 284] and we got beautiful starchy pasta.
+[284 - 286] Deep cleansing breath. Let's start.
+[286 - 289] The pasta is ready to go, so
+I'm gonna shut my water off.
+[289 - 291] Notice I don't have a colander or a spider
+[291 - 292] or anything, strainer.
+[292 - 294] What I'm gonna do is take my pasta
+[294 - 296] directly out of the water,
+[296 - 298] let it drain for like a second,
+[298 - 300] and then drop it right into my butter.
+[300 - 302] Some of that pasta water
+is clinging to my pasta,
+[302 - 304] and that's what I want.
+[304 - 306] I'm not gonna throw this
+pasta water away yet
+[306 - 309] because I might need some
+to adjust the final dish.
+[309 - 312] And this is where we start to mix, right?
+[312 - 314] I'm gonna start to melt my butter,
+[314 - 316] and this is where the
+key of the technique is.
+[316 - 318] We're gonna continuously keep it moving.
+[318 - 319] We want the butter
+[319 - 323] to emulsify with that
+pasta water and the pasta,
+[323 - 324] and I'm gonna start adding cheese.
+[324 - 327] You don't wanna be shy with
+this cheese. Go a little crazy.
+[327 - 329] I have a little extra
+cheese in case I need it,
+[329 - 331] but we're gonna mix, mix, mix.
+[331 - 333] And because that I use
+the Microplane on this,
+[333 - 336] you'll see that my cheese
+kind of melts right away.
+[336 - 339] We gotta keep it moving, keep
+it moving, keep it moving,
+[339 - 341] and that's what's the most
+important thing is here.
+[341 - 343] I'm gonna add a little more cheese.
+[343 - 344] You could measure this out perfectly,
+[344 - 345] but I'm gonna do it by eye
+[345 - 348] because I want this to look a certain way.
+[348 - 351] I want it to look creamy and delicious.
+[351 - 354] The main component here is the
+technique, stir, stir, stir.
+[354 - 356] We want to continue to stir
+[356 - 358] until the sauce starts to look creamy.
+[358 - 360] So you can see that my
+sauce is kind of tight.
+[360 - 362] I can add pasta water,
+[362 - 363] but look, once I add that water,
+[363 - 366] you'll see that it starts to
+look creamier and creamier.
+[366 - 368] I use a glass bowl for this
+[368 - 370] because a metal bowl
+will disperse the heat,
+[370 - 373] whereas a glass bowl
+holds that heat together.
+[373 - 375] Nice, creamy sauce.
+[375 - 378] It starts to look like we
+added heavy cream to this,
+[378 - 380] and we didn't add any heavy cream.
+[380 - 381] It's all about the technique.
+[381 - 384] That pasta and that cheese is emulsified,
+[384 - 385] and that's what we want.
+[385 - 387] It's all about the stirring
+[387 - 390] and getting our pasta super creamy.
+[390 - 392] You might be tempted to do this
+in a pan over a heat source.
+[392 - 394] And the reason I chose a bowl
+[394 - 397] is because if you overheat
+this sauce, it breaks.
+[397 - 399] So you're gonna have an oily mess
+[399 - 400] with the cheeses in clumps,
+[400 - 402] and the butter breaks and gets greasy.
+[402 - 403] When the butter breaks,
+[403 - 405] that means that the fat
+and the solids separate,
+[405 - 408] so you're gonna get greasy fatty stuff
+[408 - 410] and chunks of butter solids and cheese.
+[410 - 412] One of the most important
+things with fettuccine Alfredo
+[412 - 413] is to get it on a plate
+[413 - 416] and get it in your mouth
+as fast as possible.
+[416 - 417] Let's plate this up.
+[417 - 420] So we can go on the plate. You
+can see this is super creamy.
+[420 - 422] Now, if you have guests,
+[422 - 423] you don't really have to
+put this on a platter,
+[423 - 426] you can go directly onto their plates,
+[426 - 428] but this is the presentation here.
+[428 - 430] Look at how creamy that sauce is.
+[430 - 433] And you can see why when this
+dish came over to America,
+[433 - 435] people thought there was cream in it
+[435 - 437] because it does actually look
+[437 - 438] like there might be some cream in here,
+[438 - 443] but it is just butter, pasta
+water, and Parmesan cheese.
+[443 - 443] Look at that.
+[443 - 445] If that doesn't make you smile,
+[446 - 448] you got no joy in your life, people.
+[448 - 451] So I do have a little bowl
+of cheese here on the side
+[451 - 454] in case you or your guests
+want to add more cheese,
+[454 - 457] but I would suggest tasting
+it first the way it is.
+[457 - 459] And if you need more
+cheese, add more cheese.
+[459 - 460] To be honest with you,
+[460 - 461] there is so much cheese
+in this dish already,
+[461 - 463] they probably won't need it,
+[463 - 466] but it's always good to
+give your guests the option.
+[466 - 468] Let me go onto my plate.
+[468 - 469] That is gorgeous.
+[469 - 472] I'm gonna bring it close so I
+don't slop it all over myself.
+[472 - 474] I'm not a spoon guy here.
+[474 - 476] I just twist it around my fork, right?
+[478 - 481] Hmm. It's creamy, it's buttery.
+[481 - 484] It's got some really nice
+bite from the Parmesan cheese.
+[484 - 486] You don't need a big bowl of
+this. Give small portions.
+[486 - 487] Absolutely delicious.
+[487 - 490] Like, who could you serve
+this to that would hate this?
+[490 - 493] Remember, this is a
+super, super simple dish.
+[493 - 494] It's all about the technique.
+[494 - 497] You get that technique right
+and it's gonna be beautiful.
+[497 - 500] So you might have to practice,
+but it's well worth it.
+
+Directions:
+45 Prepare all ingredients and have them close by. The dish comes together quickly.
+77 Grate the Parmesan cheese finely using a Microplane.
+149 Prepare a pot of boiling water with just a little salt.
+180 Use 1 pound of dry fettuccine pasta.
+218 Cook the pasta just past al dente.
+249 Taste a piece of pasta to check if it’s done.
+286 Turn off the water once pasta is cooked.
+289 Transfer the cooked pasta directly into a bowl containing the butter.
+304 Reserve the pasta water for later use.
+306 Start melting the butter and mixing continuously.
+318 Emulsify the butter with the pasta water and add cheese gradually.
+339 Add more cheese as needed to achieve a creamy consistency.
+356 Continue stirring until the sauce looks creamy.
+373 Add pasta water if the sauce is too tight until it looks like a cream-based sauce.
+385 Keep stirring to get the pasta creamy.
+390 Avoid using heat source like a pan to prevent breaking the sauce; use a glass bowl.
+413 Plate the dish immediately while it's hot.
+451 Serve with extra grated Parmesan cheese on the side, if desired.
+`,
+			},
+			{
+				Role:    openai.ChatMessageRoleUser,
+				Content: prompt,
+			},
+		},
+		Tools: []openai.Tool{
+			{
+				Type: "function",
+				Function: &openai.FunctionDefinition{
+					Name:        "createRecipe",
+					Description: "",
+					Parameters:  schema,
+				},
+			},
+		},
+	})
+	if err != nil {
+		return rec, err
+	}
+
+	for _, tc := range resp.Choices[0].Message.ToolCalls {
+		if ok := tc.Function.Name == "createRecipe"; ok {
+			err = json.Unmarshal([]byte(tc.Function.Arguments), &rec)
+			if err != nil {
+				return rec, err
+			}
+			return rec, nil
+		}
+	}
+	return rec, errors.New("failed to generate recipe")
+}
+
+func NewRecipe(d deps.Deps) *http.ServeMux {
+	recipes := d.Docs.WithCollection("recipes")
+	m := http.NewServeMux()
+	ctx := context.WithValue(context.Background(), "baseURL", "/recipe")
+	m.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		switch r.Method {
+		case http.MethodPost:
+			u := r.FormValue("url")
+			if u == "" {
+				http.Error(w, "missing url", http.StatusBadRequest)
+				return
+			}
+
+			pu, err := url.Parse(u)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			if pu.Host != "www.youtube.com" {
+				http.Error(w, "invalid host", http.StatusBadRequest)
+				return
+			}
+
+			vid := pu.Query().Get("v")
+			if vid == "" {
+				http.Error(w, "missing video id", http.StatusBadRequest)
+				return
+			}
+
+			http.Redirect(w, r, "/recipe/"+vid, http.StatusSeeOther)
+		case http.MethodGet:
+			if id == "" {
+				DefaultLayout(
+					Div(
+						Class("mt-16 text-center mx-auto"),
+						P(Class("text-lg"), T("make a recipe")),
+						Form(
+							Method("POST"),
+							Action("/"),
+							Input(Class("input"), Name("url"), Type("text"), Placeholder("Enter YouTube video")),
+							Button(Class("btn"), T("Generate")),
+						),
+					),
+				).RenderPageCtx(ctx, w, r)
+				return
+			}
+
+			var rs RecipeState
+			regenerate := r.URL.Query().Get("regenerate") == "true"
+			if err := recipes.Get(id, &rs); regenerate || err != nil {
+				ts, err := getYTTranscript(ctx, id)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				rs.Transcript = ts
+				nr, err := transcriptToRecipe(ctx, d, ts)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				rs.Recipe = nr
+				if err = recipes.Set(id, rs); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+
+			var items []*Node
+			for _, t := range rs.Transcript {
+				items = append(items, Div(
+					Class("flex items-center"),
+					OnClick("seekToTime("+strconv.Itoa(t.StartMs/1000)+")"),
+					Span(Class("text-gray-500"), T(strconv.Itoa(t.StartMs))),
+					Span(Class("ml-2"), T(t.Text)),
+				))
+			}
+
+			var equipment []*Node
+			for _, e := range rs.Recipe.Equipment {
+				equipment = append(equipment, Li(T(e)))
+			}
+
+			var ingredients []*Node
+			for _, i := range rs.Recipe.Ingredients {
+				ingredients = append(ingredients, Li(T(fmt.Sprintf("%s %s %s %s", i.Amount, i.Unit, i.Name, i.Comment))))
+			}
+
+			var directions []*Node
+			for _, d := range rs.Recipe.Directions {
+				directions = append(directions, Li(
+					OnClick("seekToTime("+strconv.Itoa(d.StartTime)+")"),
+					T(fmt.Sprintf("%s", d.Text))),
+				)
+			}
+
+			DefaultLayout(
+				Div(
+					ytScript(id),
+					A(Class("btn"), Href(fmt.Sprintf("/%s?regenerate=true", id)), T("Regenerate")),
+					Class("container mx-auto"),
+					P(Class("text-2xl font-semibold"), T("Recipe")),
+					Ul(Class("list-disc"), Ch(ingredients)),
+					P(Class("text-2xl font-semibold"), T("Equipment")),
+					Ul(Class("list-disc"), Ch(equipment)),
+					P(Class("text-2xl font-semibold"), T("Directions")),
+					Ul(Class("list-decimal"), Ch(directions)),
+					Div(Id("player"), Class("w-full")),
+					//Ch(items),
+				),
+			).RenderPageCtx(ctx, w, r)
+		}
+	})
+	return m
+}
+
+func ytScript(id string) *Node {
+	return Script(Raw(`
+        let player;
+
+        const tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        window.onYouTubeIframeAPIReady = function() {
+            player = new YT.Player('player', {
+                height: '390',
+                width: '640',
+                videoId: '` + id + `',
+                events: {
+                    onReady: onPlayerReady
+                }
+            });
+        };
+
+        // When the player is ready
+        function onPlayerReady(event) {
+            console.log('Player is ready');
+        }
+
+        // Function to seek to a specific time in seconds
+        function seekToTime(seconds) {
+            if (player && player.seekTo) {
+                player.seekTo(seconds, true);
+            }
+        }
+`))
+}
+
+type Transcript struct {
+	XMLName xml.Name      `xml:"transcript"`
+	Texts   []CaptionText `xml:"text"`
+}
+
+type CaptionText struct {
+	Start string `xml:"start,attr"`
+	Dur   string `xml:"dur,attr"`
+	Body  string `xml:",chardata"`
+}
+
+func parseXML(input string) (youtube.VideoTranscript, error) {
+	var transcript Transcript
+	err := xml.Unmarshal([]byte(input), &transcript)
+	if err != nil {
+		return nil, err
+	}
+
+	var videoTranscript youtube.VideoTranscript
+	for _, text := range transcript.Texts {
+		startSeconds, err := strconv.ParseFloat(text.Start, 64)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			return nil, fmt.Errorf("invalid start value: %v", err)
+		}
+		durationSeconds, err := strconv.ParseFloat(text.Dur, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid duration value: %v", err)
 		}
 
-		var data map[string]any
-		err = json.Unmarshal(f, &data)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		results = append(results,
-			Div(Class("border p-4 mb-4 bg-white rounded shadow"),
-				H1(Class("text-xl font-semibold"), T(data["name"].(string))),
-				P(T(data["source"].(string))),
-				A(Class("text-blue-500"), Href(fmt.Sprintf("/data/recipes/%s", h.ID)), T("Read more")),
-			))
+		startMs := int(startSeconds * 1000)
+		durationMs := int(durationSeconds * 1000)
+		offsetText := fmt.Sprintf("%d:%02d", startMs/60000, (startMs/1000)%60)
+
+		videoTranscript = append(videoTranscript, youtube.TranscriptSegment{
+			Text:       html.UnescapeString(text.Body),
+			StartMs:    startMs,
+			OffsetText: offsetText,
+			Duration:   durationMs,
+		})
 	}
 
-	w.Header().Set("Content-Type", "text/html")
-	if len(results) == 0 {
-		P(T("No results found")).RenderPage(w, r)
-		return
-	}
-	Div(Ch(results)).RenderPage(w, r)
+	return videoTranscript, nil
 }
+
+func getYTTranscript(ctx context.Context, id string) (youtube.VideoTranscript, error) {
+	client := youtube.Client{}
+
+	video, err := client.GetVideoContext(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, f := range video.CaptionTracks {
+		if f.LanguageCode == "en-US" {
+			r, err := http.Get("https://www.youtube.com" + f.BaseURL)
+			if err != nil {
+				return nil, err
+			}
+			defer r.Body.Close()
+			a, err := io.ReadAll(r.Body)
+			if err != nil {
+				return nil, err
+			}
+			return parseXML(string(a))
+		}
+	}
+
+	return client.GetTranscriptCtx(ctx, video, "en")
+}
+
+//
+//type Handler struct {
+//	index *db.SearchIndex
+//}
+//
+//func (s *Handler) searchHandler(w http.ResponseWriter, r *http.Request) {
+//	query := r.URL.Query().Get("q")
+//	if query == "" {
+//		http.Error(w, "Query parameter 'q' is required", http.StatusBadRequest)
+//		return
+//	}
+//
+//	res, err := s.index.Search(query)
+//	if err != nil {
+//		http.Error(w, err.Error(), http.StatusInternalServerError)
+//		return
+//	}
+//
+//	var results []*Node
+//	for _, h := range res.Hits {
+//		f, err := os.ReadFile(path.Join("data/recipes", h.ID))
+//		if err != nil {
+//			http.Error(w, err.Error(), http.StatusInternalServerError)
+//			return
+//		}
+//
+//		var data map[string]any
+//		err = json.Unmarshal(f, &data)
+//		if err != nil {
+//			http.Error(w, err.Error(), http.StatusInternalServerError)
+//			return
+//		}
+//		results = append(results,
+//			Div(Class("border p-4 mb-4 bg-white rounded shadow"),
+//				H1(Class("text-xl font-semibold"), T(data["name"].(string))),
+//				P(T(data["source"].(string))),
+//				A(Class("text-blue-500"), Href(fmt.Sprintf("/data/recipes/%s", h.ID)), T("Read more")),
+//			))
+//	}
+//
+//	w.Header().Set("Content-Type", "text/html")
+//	if len(results) == 0 {
+//		P(T("No results found")).RenderPage(w, r)
+//		return
+//	}
+//	Div(Ch(results)).RenderPage(w, r)
+//}

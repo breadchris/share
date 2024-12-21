@@ -5,6 +5,8 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/x"
+	"github.com/evanw/esbuild/pkg/api"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -24,7 +26,6 @@ import (
 	"github.com/breadchris/share/test"
 	"github.com/breadchris/share/user"
 	socket "github.com/breadchris/share/websocket"
-	"github.com/breadchris/share/x"
 	"github.com/fsnotify/fsnotify"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -41,7 +42,6 @@ import (
 	"github.com/breadchris/share/llm"
 	"github.com/breadchris/share/session"
 	"github.com/breadchris/share/wasmcode"
-	"github.com/evanw/esbuild/pkg/api"
 	"github.com/gomarkdown/markdown"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -133,6 +133,7 @@ func startServer(useTLS bool, port int) {
 
 	socket.SetupHandlers(registry)
 
+	p("/recipe", interpreted(NewRecipe))
 	p("/articles", interpreted(NewArticle))
 	p("/zine", interpreted(NewZine))
 	p("/card", interpreted(NewCard))
@@ -151,6 +152,19 @@ func startServer(useTLS bool, port int) {
 	p("/vote", interpreted(NewVote))
 	p("/breadchris", interpreted(breadchris.New))
 	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./eventcalendar.go", "./websocket/websocket.go", "./card.go"}))
+	p("/code", interpreted(wasmcode.New))
+	p("/extension", interpreted(NewExtension))
+	p("/git", interpreted(NewGit))
+	p("/music", interpreted(NewMusic))
+	p("/stripe", interpreted(NewStripe))
+	p("/everout", interpreted(NewEverout))
+	p("/graph", interpreted(graph.New))
+	p("/pipeport", interpreted(NewPipePort))
+	p("/nolanisslow", interpreted(NewNolan))
+	//p("/calendar", interpreted(calendar.NewCalendar))
+	p("/calendar", interpreted(NewCalendar))
+	g := NewGithub(deps)
+	p("/github", interpreted(g.Routes))
 	p("/filecode", func() *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -163,8 +177,6 @@ func startServer(useTLS bool, port int) {
 		return m
 	}())
 
-	g := NewGithub(deps)
-
 	p("/repl", interpreted(func(d deps2.Deps) *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -174,103 +186,22 @@ func startServer(useTLS bool, port int) {
 		})
 		return m
 	}))
-	//http.HandleFunc("/gopls", func(w http.ResponseWriter, r *http.Request) {
-	//	println("gopls")
-	//	c, err := upgrader.Upgrade(w, r, nil)
-	//	if err != nil {
-	//		log.Println(err)
-	//		return
-	//	}
-	//	defer c.Close()
-	//
-	//	cmd := exec.Command("gopls", "-rpc.trace", "-v")
-	//	stdin, err := cmd.StdinPipe()
-	//	if err != nil {
-	//		log.Println("Failed to get stdin pipe:", err)
-	//		return
-	//	}
-	//	stdout, err := cmd.StdoutPipe()
-	//	if err != nil {
-	//		log.Println("Failed to get stdout pipe:", err)
-	//		return
-	//	}
-	//	cmd.Stderr = os.Stderr
-	//
-	//	if err := cmd.Start(); err != nil {
-	//		log.Println("Failed to start gopls:", err)
-	//		return
-	//	}
-	//	scanner := bufio.NewScanner(stdout)
-	//	go func() {
-	//		var buffer bytes.Buffer
-	//		for scanner.Scan() {
-	//			line := scanner.Text()
-	//			if strings.TrimSpace(line) == "" {
-	//				break
-	//			}
-	//			buffer.WriteString(line + "\n")
-	//		}
-	//		if err := scanner.Err(); err != nil {
-	//			fmt.Fprintf(os.Stderr, "Error reading from stdout: %v\n", err)
-	//			return
-	//		}
-	//		fmt.Printf("Response Header:\n%s\n", buffer.String())
-	//
-	//		responseBody := bufio.NewReader(stdout)
-	//		response, err := responseBody.ReadString('}')
-	//		if err != nil && err != io.EOF {
-	//			fmt.Fprintf(os.Stderr, "Error reading response body: %v\n", err)
-	//			return
-	//		}
-	//
-	//		fmt.Printf("Response Body:\n%s\n", response)
-	//		buf := make([]byte, 2048)
-	//		for {
-	//			n, err := stdout.Read(buf)
-	//			println(n)
-	//			if err != nil {
-	//				if err == io.EOF {
-	//					continue
-	//				}
-	//				log.Println("Failed to read from gopls:", err)
-	//				break
-	//			}
-	//			if n > 0 {
-	//				c.WriteMessage(websocket.TextMessage, buf[:n])
-	//			}
-	//		}
-	//	}()
-	//
-	//	for {
-	//		_, message, err := c.ReadMessage()
-	//		if err != nil {
-	//			log.Println("WebSocket read error:", err)
-	//			break
-	//		}
-	//
-	//		content := fmt.Sprintf("Content-Length: %d\r\n\r\n%s", len(message), message)
-	//		if _, err := io.WriteString(stdin, content); err != nil {
-	//			fmt.Fprintf(os.Stderr, "Failed to write to stdin: %v\n", err)
-	//			return
-	//		}
-	//	}
-	//
-	//	if err := cmd.Wait(); err != nil {
-	//		log.Println("gopls process ended with error:", err)
-	//	}
-	//})
-	p("/code", interpreted(wasmcode.New))
-	p("/github", interpreted(g.Routes))
-	p("/extension", interpreted(NewExtension))
-	p("/git", interpreted(NewGit))
-	p("/music", interpreted(NewMusic))
-	p("/stripe", interpreted(NewStripe))
-	p("/everout", interpreted(NewEverout))
-	p("/graph", interpreted(graph.New))
-	p("/pipeport", interpreted(NewPipePort))
-	p("/nolanisslow", interpreted(NewNolan))
-	//p("/calendar", interpreted(calendar.NewCalendar))
-	p("/calendar", interpreted(NewCalendar))
+
+	http.HandleFunc("/register", a.handleRegister)
+	http.HandleFunc("/account", a.accountHandler)
+	http.HandleFunc("/login", a.handleLogin)
+	http.HandleFunc("/invite", a.handleInvite)
+	http.HandleFunc("/auth/google", a.startGoogleAuth)
+	http.HandleFunc("/auth/google/callback", a.handleGoogleCallback)
+	http.HandleFunc("/blog/react", a.reactHandler)
+	http.HandleFunc("/blog/{id...}", a.blogHandler)
+	http.HandleFunc("/files", fileHandler)
+	http.HandleFunc("/modify", modifyHandler)
+
+	http.HandleFunc("/static/", serveFiles("static"))
+	http.HandleFunc("/data/", serveFiles("data"))
+
+	p("", interpreted(Index))
 
 	go func() {
 		paths := []string{
@@ -439,22 +370,6 @@ func startServer(useTLS bool, port int) {
 			log.Fatalf("Failed to watch files: %v", err)
 		}
 	}()
-
-	http.HandleFunc("/register", a.handleRegister)
-	http.HandleFunc("/account", a.accountHandler)
-	http.HandleFunc("/login", a.handleLogin)
-	http.HandleFunc("/invite", a.handleInvite)
-	http.HandleFunc("/auth/google", a.startGoogleAuth)
-	http.HandleFunc("/auth/google/callback", a.handleGoogleCallback)
-	http.HandleFunc("/blog/react", a.reactHandler)
-	http.HandleFunc("/blog/{id...}", a.blogHandler)
-	http.HandleFunc("/files", fileHandler)
-	http.HandleFunc("/modify", modifyHandler)
-
-	http.HandleFunc("/static/", serveFiles("static"))
-	http.HandleFunc("/data/", serveFiles("data"))
-
-	p("", interpreted(Index))
 
 	dir := "data/justshare.io-ssl-bundle"
 	interCertFile := path.Join(dir, "intermediate.cert.pem")
@@ -906,15 +821,6 @@ func fileUpload() {
 	http.HandleFunc("/upload", uploadHandler)
 }
 
-func recipeHandler(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFiles("data/recipes/index.html")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	tmpl.Execute(w, nil)
-}
-
 type DirFile struct {
 	Name  string
 	IsDir bool
@@ -1054,3 +960,89 @@ func WatchFilesAndFolders(paths []string, callback func(string)) error {
 	<-done
 	return nil
 }
+
+//http.HandleFunc("/gopls", func(w http.ResponseWriter, r *http.Request) {
+//	println("gopls")
+//	c, err := upgrader.Upgrade(w, r, nil)
+//	if err != nil {
+//		log.Println(err)
+//		return
+//	}
+//	defer c.Close()
+//
+//	cmd := exec.Command("gopls", "-rpc.trace", "-v")
+//	stdin, err := cmd.StdinPipe()
+//	if err != nil {
+//		log.Println("Failed to get stdin pipe:", err)
+//		return
+//	}
+//	stdout, err := cmd.StdoutPipe()
+//	if err != nil {
+//		log.Println("Failed to get stdout pipe:", err)
+//		return
+//	}
+//	cmd.Stderr = os.Stderr
+//
+//	if err := cmd.Start(); err != nil {
+//		log.Println("Failed to start gopls:", err)
+//		return
+//	}
+//	scanner := bufio.NewScanner(stdout)
+//	go func() {
+//		var buffer bytes.Buffer
+//		for scanner.Scan() {
+//			line := scanner.Text()
+//			if strings.TrimSpace(line) == "" {
+//				break
+//			}
+//			buffer.WriteString(line + "\n")
+//		}
+//		if err := scanner.Err(); err != nil {
+//			fmt.Fprintf(os.Stderr, "Error reading from stdout: %v\n", err)
+//			return
+//		}
+//		fmt.Printf("Response Header:\n%s\n", buffer.String())
+//
+//		responseBody := bufio.NewReader(stdout)
+//		response, err := responseBody.ReadString('}')
+//		if err != nil && err != io.EOF {
+//			fmt.Fprintf(os.Stderr, "Error reading response body: %v\n", err)
+//			return
+//		}
+//
+//		fmt.Printf("Response Body:\n%s\n", response)
+//		buf := make([]byte, 2048)
+//		for {
+//			n, err := stdout.Read(buf)
+//			println(n)
+//			if err != nil {
+//				if err == io.EOF {
+//					continue
+//				}
+//				log.Println("Failed to read from gopls:", err)
+//				break
+//			}
+//			if n > 0 {
+//				c.WriteMessage(websocket.TextMessage, buf[:n])
+//			}
+//		}
+//	}()
+//
+//	for {
+//		_, message, err := c.ReadMessage()
+//		if err != nil {
+//			log.Println("WebSocket read error:", err)
+//			break
+//		}
+//
+//		content := fmt.Sprintf("Content-Length: %d\r\n\r\n%s", len(message), message)
+//		if _, err := io.WriteString(stdin, content); err != nil {
+//			fmt.Fprintf(os.Stderr, "Failed to write to stdin: %v\n", err)
+//			return
+//		}
+//	}
+//
+//	if err := cmd.Wait(); err != nil {
+//		log.Println("gopls process ended with error:", err)
+//	}
+//})
