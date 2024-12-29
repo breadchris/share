@@ -115,6 +115,8 @@ func init() {
 		"ParseHTMLString":         reflect.ValueOf(html.ParseHTMLString),
 		"Path":                    reflect.ValueOf(html.Path),
 		"Placeholder":             reflect.ValueOf(html.Placeholder),
+		"Points":                  reflect.ValueOf(html.Points),
+		"Polygon":                 reflect.ValueOf(html.Polygon),
 		"Pre":                     reflect.ValueOf(html.Pre),
 		"Progress":                reflect.ValueOf(html.Progress),
 		"Property":                reflect.ValueOf(html.Property),

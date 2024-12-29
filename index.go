@@ -134,7 +134,7 @@ func homePage(state HomeState) *Node {
 					Div(Class("text-center"),
 						//Input(Class("input w-1/2"), Type("text"), Placeholder("you know what to do..."), Name("share")),
 						//Div(Class("w-full p-16 bg-gray-500"), T("a list of things from the groups you are in")),
-						H1(Class("text-balance text-4xl font-bold tracking-tight sm:text-6xl"), T("Welcome to justshare")),
+						H1(Class("text-balance text-4xl font-bold tracking-tight sm:text-6xl"), T("welcome to justshare")),
 						P(Class("mt-6 text-lg leading-8"), T("it is a site i guess")),
 						//Div(Class("mt-10 grid grid-cols-2 gap-4 m-1.5 p-7"),
 						//	Ch(forLink(urls, func(l link) *Node {

@@ -8,13 +8,17 @@ import (
 	"fmt"
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
+	"github.com/breadchris/share/models"
 	"github.com/kkdai/youtube/v2"
 	"github.com/sashabaranov/go-openai"
 	"github.com/sashabaranov/go-openai/jsonschema"
 	"golang.org/x/net/html"
+	"gorm.io/datatypes"
+	"gorm.io/gorm"
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 )
 
@@ -64,11 +68,12 @@ func transcriptToRecipe(ctx context.Context, d deps.Deps, ts youtube.VideoTransc
 			{
 				Role: openai.ChatMessageRoleSystem,
 				Content: `
-You will take a transcript and generate a recipe from it.
+You will take a transcript and generate a recipe from it by calling the generateRecipe function. The generateRecipe function will take the transcript as input and return a recipe object. The recipe object will have the following structure:
 Use the following transcript to extract the recipe into the described format.
 Replace casual dialogue and narrative with clear and direct recipe language.
 Include inferred ingredients and ensure proper structuring of directions with precise timestamps.
 The transcript contains timestamps and text in the form: "[start - end] text", timestamps are in seconds.
+Each direction should only contain one action. For example, "Whisk egg whites" is one action. "Place a heaping teaspoon of the meat mixture in the center of a dumpling wrapper. Wet the perimeter with water, close it like a taco, pinching it in the middle at the top and pleat both sides three to four times." contains multiple actions.
 
 Here is an example transcript and the resulting timestamps and directions:
 Transcript:
@@ -448,13 +453,153 @@ Directions:
 			return rec, nil
 		}
 	}
+	println(resp.Choices[0].Message.Content)
 	return rec, errors.New("failed to generate recipe")
+}
+
+type Nutrients struct {
+	Protein float64 `json:"protein"`
+	Fat     float64 `json:"fat"`
+	Carbs   float64 `json:"carbs"`
 }
 
 func NewRecipe(d deps.Deps) *http.ServeMux {
 	recipes := d.Docs.WithCollection("recipes")
 	m := http.NewServeMux()
 	ctx := context.WithValue(context.Background(), "baseURL", "/recipe")
+	m.HandleFunc("/food/{id...}", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+
+		renderResults := func(f []models.Food) []*Node {
+			var foodItems []*Node
+			for _, item := range f {
+				var food SRLegacyFood
+				if err := json.Unmarshal(item.Raw, &food); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return nil
+				}
+				var n Nutrients
+				for _, ntr := range food.FoodNutrients {
+					switch ntr.Nutrient.ID {
+					case 1003:
+						n.Protein = ntr.Amount
+					case 1004:
+						n.Fat = ntr.Amount
+					case 1005:
+						n.Carbs = ntr.Amount
+					}
+				}
+				foodItems = append(foodItems, A(
+					Class("flex items"),
+					Href(fmt.Sprintf("/food/%d", item.FDCID)),
+					Div(Class("flex-1"), T(fmt.Sprintf("%f | %f | %f", n.Protein, n.Fat, n.Carbs))),
+					Div(Class("flex-1"), T(item.Description)),
+				))
+			}
+			return foodItems
+		}
+		switch r.Method {
+		case http.MethodPost:
+			s := r.FormValue("search")
+			b := r.FormValue("branded") == "on"
+			l := r.FormValue("legacy") == "on"
+
+			var f []models.Food
+			res := d.DB.
+				Where("description LIKE ?", "%"+s+"%")
+			if b {
+				res = res.Where(datatypes.JSONQuery("raw").Equals("Branded", "foodClass"))
+			}
+			if l {
+				res = res.Where(datatypes.JSONQuery("raw").Equals("FinalFood", "foodClass"))
+			}
+			res = res.Order("description ASC").
+				Limit(20).Find(&f)
+
+			if res.Error != nil {
+				http.Error(w, res.Error.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			Div(Ch(renderResults(f))).RenderPageCtx(ctx, w, r)
+		case http.MethodGet:
+			if id != "" {
+				var f models.Food
+				res := d.DB.First(&f, id)
+				if res.Error != nil {
+					http.Error(w, res.Error.Error(), http.StatusInternalServerError)
+					return
+				}
+				var fdc SRLegacyFood
+				if err := json.Unmarshal(f.Raw, &fdc); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				DefaultLayout(
+					Div(
+						Class("container mx-auto p-8"),
+						H1(Class("text-2xl font-semibold"), T(f.Description)),
+						Div(Class("bg-gray-100"),
+							Div(Id("json-viewer"), Attr("data-value", string(f.Raw))),
+						),
+						//Div(
+						//	Class("grid grid-cols-3 gap-4"),
+						//),
+						Script(Attr("src", "/static/recipe.js")),
+					),
+				).RenderPageCtx(ctx, w, r)
+				return
+			}
+
+			var f []models.Food
+			res := d.DB.Limit(50).Find(&f)
+			if res.Error != nil {
+				http.Error(w, res.Error.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			DefaultLayout(
+				Div(
+					Class("container mx-auto p-8 flex flex-col"),
+					H1(Class("text-2xl font-semibold"), T("Food Search")),
+					Form(
+						Class("flex flex-row space-x-3"),
+						HxPost("/food/"),
+						HxTarget("#results"),
+						Id("search-form"),
+						Input(
+							Class("input"),
+							Type("text"),
+							Name("search"),
+							Placeholder("Search"),
+							HxTrigger("search-form, keyup delay:200ms changed"),
+						),
+						Div(
+							Class("form-control"),
+							Label(
+								Class("label cursor-pointer"),
+								Span(Class("label-text"), Text("branded")),
+								Input(Type("checkbox"), Name("branded"), Checked(true), Class("checkbox checkbox-primary")),
+							),
+						),
+						Div(
+							Class("form-control"),
+							Label(
+								Class("label cursor-pointer"),
+								Span(Class("label-text"), Text("legacy")),
+								Input(Type("checkbox"), Name("legacy"), Checked(true), Class("checkbox checkbox-primary")),
+							),
+						),
+					),
+					Div(
+						Id("results"),
+						Ch(renderResults(f)),
+					),
+				),
+			).RenderPageCtx(ctx, w, r)
+		}
+	})
 	m.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 		switch r.Method {
@@ -503,7 +648,15 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 			var rs RecipeState
 			regenerate := r.URL.Query().Get("regenerate") == "true"
 			if err := recipes.Get(id, &rs); regenerate || err != nil {
-				ts, err := getYTTranscript(ctx, id)
+				client := youtube.Client{}
+
+				video, err := client.GetVideoContext(ctx, id)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				ts, err := getYTTranscript(ctx, client, video)
 				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
@@ -514,6 +667,7 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
+				nr.Name = video.Title
 				rs.Recipe = nr
 				if err = recipes.Set(id, rs); err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -533,7 +687,7 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 
 			var equipment []*Node
 			for _, e := range rs.Recipe.Equipment {
-				equipment = append(equipment, Li(T(e)))
+				equipment = append(equipment, Div(Class("p-2 bg-gray-500 text-white"), T(e)))
 			}
 
 			var ingredients []*Node
@@ -543,30 +697,180 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 
 			var directions []*Node
 			for _, d := range rs.Recipe.Directions {
-				directions = append(directions, Li(
+				directions = append(directions, Div(
+					Class("py-2 flex"),
 					OnClick("seekToTime("+strconv.Itoa(d.StartTime)+")"),
-					T(fmt.Sprintf("%s", d.Text))),
-				)
+					Div(
+						Class("flex flex-row space-x-2"),
+						Div(
+							RenderPlay(),
+						),
+						Div(
+							T(fmt.Sprintf("%s", d.Text)),
+						),
+					),
+				))
 			}
 
 			DefaultLayout(
 				Div(
+					Class("w-3/4 md:w-1/2 mx-auto p-8 space-y-4"),
 					ytScript(id),
-					A(Class("btn"), Href(fmt.Sprintf("/%s?regenerate=true", id)), T("Regenerate")),
-					Class("container mx-auto"),
-					P(Class("text-2xl font-semibold"), T("Recipe")),
-					Ul(Class("list-disc"), Ch(ingredients)),
-					P(Class("text-2xl font-semibold"), T("Equipment")),
-					Ul(Class("list-disc"), Ch(equipment)),
-					P(Class("text-2xl font-semibold"), T("Directions")),
-					Ul(Class("list-decimal"), Ch(directions)),
+					P(Class("text-4xl font-semibold mb-4"), T(rs.Recipe.Name)),
+					Div(
+						P(Class("text-2xl font-semibold mb-4"), T("Ingredients")),
+						Ul(Class("space-y-4"), Ch(ingredients)),
+					),
+					Div(Class("divider")),
+					Div(
+						Class(""),
+						P(Class("text-2xl font-semibold mb-4"), T("Equipment")),
+						Div(Class("grid grid-cols-4 gap-4 text-center my-4"), Ch(equipment)),
+					),
+					Div(Class("divider")),
 					Div(Id("player"), Class("w-full")),
+					Div(
+						P(Class("text-2xl font-semibold mb-4"), T("Directions")),
+						Div(Class(""), Ch(directions)),
+					),
+					A(Class("btn"), Href(fmt.Sprintf("/%s?regenerate=true", id)), T("Regenerate")),
 					//Ch(items),
 				),
 			).RenderPageCtx(ctx, w, r)
 		}
 	})
 	return m
+}
+
+func RenderPlay() *Node {
+	return Svg(
+		ViewBox("0 0 24 24"),
+		StrokeWidth("2"),
+		Xmlns("http://www.w3.org/2000/svg"),
+		Width("24"),
+		Height("24"),
+		StrokeLinejoin("round"),
+		Class("lucide lucide-circle-play"),
+		Fill("none"),
+		Stroke("currentColor"),
+		StrokeLinecap("round"),
+		Circle(Cx("12"), Cy("12"), R("10")),
+		Polygon(Points("10 8 16 12 10 16 10 8")),
+	)
+}
+
+func RenderTimeline() *Node {
+	return Ul(
+		Class("timeline timeline-vertical"),
+		Li(
+			Div(Class("timeline-start"), Text("1984")),
+			Div(
+				Class("timeline-middle"),
+				Svg(
+					Class("w-5 h-5"),
+					Xmlns("http://www.w3.org/2000/svg"),
+					ViewBox("0 0 20 20"),
+					Fill("currentColor"),
+					Path(
+						FillRule("evenodd"),
+						D(
+							"M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z",
+						),
+						ClipRule("evenodd"),
+					),
+				),
+			),
+			Div(Class("timeline-end timeline-box"), Text("First Macintosh computer")),
+			Hr(),
+		),
+		Li(
+			Hr(),
+			Div(Class("timeline-start"), Text("1998")),
+			Div(
+				Class("timeline-middle"),
+				Svg(
+					ViewBox("0 0 20 20"),
+					Fill("currentColor"),
+					Class("w-5 h-5"),
+					Xmlns("http://www.w3.org/2000/svg"),
+					Path(
+						ClipRule("evenodd"),
+						FillRule("evenodd"),
+						D(
+							"M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z",
+						),
+					),
+				),
+			),
+			Div(Class("timeline-end timeline-box"), Text("iMac")),
+			Hr(),
+		),
+		Li(
+			Hr(),
+			Div(Class("timeline-start"), Text("2001")),
+			Div(
+				Class("timeline-middle"),
+				Svg(
+					Fill("currentColor"),
+					Class("w-5 h-5"),
+					Xmlns("http://www.w3.org/2000/svg"),
+					ViewBox("0 0 20 20"),
+					Path(
+						FillRule("evenodd"),
+						D(
+							"M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z",
+						),
+						ClipRule("evenodd"),
+					),
+				),
+			),
+			Div(Class("timeline-end timeline-box"), Text("iPod")),
+			Hr(),
+		),
+		Li(
+			Hr(),
+			Div(Class("timeline-start"), Text("2007")),
+			Div(
+				Class("timeline-middle"),
+				Svg(
+					Fill("currentColor"),
+					Class("w-5 h-5"),
+					Xmlns("http://www.w3.org/2000/svg"),
+					ViewBox("0 0 20 20"),
+					Path(
+						FillRule("evenodd"),
+						D(
+							"M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z",
+						),
+						ClipRule("evenodd"),
+					),
+				),
+			),
+			Div(Class("timeline-end timeline-box"), Text("iPhone")),
+			Hr(),
+		),
+		Li(
+			Hr(),
+			Div(Class("timeline-start"), Text("2015")),
+			Div(
+				Class("timeline-middle"),
+				Svg(
+					Xmlns("http://www.w3.org/2000/svg"),
+					ViewBox("0 0 20 20"),
+					Fill("currentColor"),
+					Class("w-5 h-5"),
+					Path(
+						D(
+							"M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z",
+						),
+						ClipRule("evenodd"),
+						FillRule("evenodd"),
+					),
+				),
+			),
+			Div(Class("timeline-end timeline-box"), Text("Apple Watch")),
+		),
+	)
 }
 
 func ytScript(id string) *Node {
@@ -647,14 +951,7 @@ func parseXML(input string) (youtube.VideoTranscript, error) {
 	return videoTranscript, nil
 }
 
-func getYTTranscript(ctx context.Context, id string) (youtube.VideoTranscript, error) {
-	client := youtube.Client{}
-
-	video, err := client.GetVideoContext(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-
+func getYTTranscript(ctx context.Context, client youtube.Client, video *youtube.Video) (youtube.VideoTranscript, error) {
 	for _, f := range video.CaptionTracks {
 		if f.LanguageCode == "en-US" {
 			r, err := http.Get("https://www.youtube.com" + f.BaseURL)
@@ -671,6 +968,269 @@ func getYTTranscript(ctx context.Context, id string) (youtube.VideoTranscript, e
 	}
 
 	return client.GetTranscriptCtx(ctx, video, "en")
+}
+
+func loadFoundationFoodData() (*FoundationFoods, error) {
+	f, err := os.Open("data/foundationDownload.json")
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	var foundationFood FoundationFoods
+	if err = json.NewDecoder(f).Decode(&foundationFood); err != nil {
+		return nil, err
+	}
+	return &foundationFood, nil
+}
+
+func loadBrandedFoodData() (*BrandedFoods, error) {
+	f, err := os.Open("data/brandedDownload.json")
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	var brandedFood BrandedFoods
+	if err = json.NewDecoder(f).Decode(&brandedFood); err != nil {
+		return nil, err
+	}
+	return &brandedFood, nil
+}
+
+func loadSRData() (*SRLegacyFoods, error) {
+	f, err := os.Open("data/FoodData_Central_sr_legacy_food_json_2021-10-28.json")
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	var sr SRLegacyFoods
+	if err = json.NewDecoder(f).Decode(&sr); err != nil {
+		return nil, err
+	}
+	return &sr, nil
+}
+
+func saveFoods(d *gorm.DB, f *BrandedFoods) error {
+	for _, item := range f.BrandedFoods {
+		s, err := json.Marshal(item)
+		if err != nil {
+			return err
+		}
+		r := d.FirstOrCreate(&models.Food{
+			FDCID:       item.FDCID,
+			Description: item.Description,
+			Raw:         s,
+		})
+		if r.Error != nil {
+			return r.Error
+		}
+		println(item.Description)
+	}
+	return nil
+}
+
+func saveSRFoods(d *gorm.DB, f *SRLegacyFoods) error {
+	for _, item := range f.SRLegacyFood {
+		s, err := json.Marshal(item)
+		if err != nil {
+			return err
+		}
+		r := d.FirstOrCreate(&models.Food{
+			FDCID:       item.FDCID,
+			Description: item.Description,
+			Raw:         s,
+		})
+		if r.Error != nil {
+			return r.Error
+		}
+		println(item.Description)
+	}
+	return nil
+}
+
+type FoundationFoods struct {
+	FoundationFood []FoundationFood `json:"FoundationFoods"`
+}
+
+type FoundationFood struct {
+	FoodClass                 string                     `json:"foodClass"`
+	Description               string                     `json:"description"`
+	FoodNutrients             []FoodNutrientElement      `json:"foodNutrients"`
+	FoodAttributes            []interface{}              `json:"foodAttributes"`
+	NutrientConversionFactors []NutrientConversionFactor `json:"nutrientConversionFactors"`
+	IsHistoricalReference     bool                       `json:"isHistoricalReference"`
+	NdbNumber                 int64                      `json:"ndbNumber"`
+	DataType                  string                     `json:"dataType"`
+	FoodCategory              FoodCategory               `json:"foodCategory"`
+	FDCID                     int64                      `json:"fdcId"`
+	FoodPortions              []FoodPortion              `json:"foodPortions"`
+	PublicationDate           string                     `json:"publicationDate"`
+	InputFoods                []InputFoodElement         `json:"inputFoods"`
+}
+
+type FoodCategory struct {
+	Description string `json:"description"`
+}
+
+type FoodNutrientElement struct {
+	Type                   string                 `json:"type"`
+	ID                     int64                  `json:"id"`
+	Nutrient               Nutrient               `json:"nutrient"`
+	DataPoints             *int64                 `json:"dataPoints,omitempty"`
+	FoodNutrientDerivation FoodNutrientDerivation `json:"foodNutrientDerivation"`
+	Median                 *float64               `json:"median,omitempty"`
+	Amount                 float64                `json:"amount"`
+	Max                    *float64               `json:"max,omitempty"`
+	Min                    *float64               `json:"min,omitempty"`
+}
+
+type FoodNutrientDerivation struct {
+	Code               string `json:"code"`
+	Description        string `json:"description"`
+	FoodNutrientSource Food   `json:"foodNutrientSource"`
+}
+
+type Food struct {
+	ID          int64  `json:"id"`
+	Code        string `json:"code"`
+	Description string `json:"description"`
+}
+
+type Nutrient struct {
+	ID       int64  `json:"id"`
+	Number   string `json:"number"`
+	Name     string `json:"name"`
+	Rank     int64  `json:"rank"`
+	UnitName string `json:"unitName"`
+}
+
+type FoodPortion struct {
+	ID              int64       `json:"id"`
+	Value           float64     `json:"value"`
+	MeasureUnit     MeasureUnit `json:"measureUnit"`
+	Modifier        string      `json:"modifier"`
+	GramWeight      float64     `json:"gramWeight"`
+	SequenceNumber  int64       `json:"sequenceNumber"`
+	Amount          float64     `json:"amount"`
+	MinYearAcquired int64       `json:"minYearAcquired"`
+}
+
+type MeasureUnit struct {
+	ID           int64  `json:"id"`
+	Name         string `json:"name"`
+	Abbreviation string `json:"abbreviation"`
+}
+
+type InputFoodElement struct {
+	ID              int64              `json:"id"`
+	FoodDescription string             `json:"foodDescription"`
+	InputFood       InputFoodInputFood `json:"inputFood"`
+}
+
+type InputFoodInputFood struct {
+	FoodClass       string `json:"foodClass"`
+	Description     string `json:"description"`
+	DataType        string `json:"dataType"`
+	FoodCategory    Food   `json:"foodCategory"`
+	FDCID           int64  `json:"fdcId"`
+	PublicationDate string `json:"publicationDate"`
+}
+
+type NutrientConversionFactor struct {
+	Type              string   `json:"type"`
+	ProteinValue      *float64 `json:"proteinValue,omitempty"`
+	FatValue          *float64 `json:"fatValue,omitempty"`
+	CarbohydrateValue *float64 `json:"carbohydrateValue,omitempty"`
+	Value             *float64 `json:"value,omitempty"`
+}
+
+type BrandedFoods struct {
+	BrandedFoods []BrandedFood `json:"BrandedFoods"`
+}
+
+type BrandedFood struct {
+	FoodClass                string                   `json:"foodClass"`
+	Description              string                   `json:"description"`
+	FoodNutrients            []FoodNutrientElement    `json:"foodNutrients"`
+	FoodAttributes           []WelcomeFoodAttribute   `json:"foodAttributes"`
+	ModifiedDate             string                   `json:"modifiedDate"`
+	AvailableDate            string                   `json:"availableDate"`
+	MarketCountry            string                   `json:"marketCountry"`
+	BrandOwner               string                   `json:"brandOwner"`
+	GtinUpc                  string                   `json:"gtinUpc"`
+	DataSource               string                   `json:"dataSource"`
+	Ingredients              string                   `json:"ingredients"`
+	ServingSize              float64                  `json:"servingSize"`
+	ServingSizeUnit          string                   `json:"servingSizeUnit"`
+	HouseholdServingFullText string                   `json:"householdServingFullText"`
+	LabelNutrients           map[string]LabelNutrient `json:"labelNutrients"`
+	TradeChannels            []string                 `json:"tradeChannels"`
+	Microbes                 []interface{}            `json:"microbes"`
+	BrandedFoodCategory      string                   `json:"brandedFoodCategory"`
+	FDCID                    int64                    `json:"fdcId"`
+	DataType                 string                   `json:"dataType"`
+	PublicationDate          string                   `json:"publicationDate"`
+	FoodUpdateLog            []FoodUpdateLog          `json:"foodUpdateLog"`
+}
+
+type WelcomeFoodAttribute struct {
+	ID                int64                   `json:"id"`
+	Name              string                  `json:"name"`
+	Value             string                  `json:"value"`
+	FoodAttributeType PurpleFoodAttributeType `json:"foodAttributeType"`
+}
+
+type PurpleFoodAttributeType struct {
+	ID          int64  `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+type FoodUpdateLog struct {
+	FoodClass       string                       `json:"foodClass"`
+	Description     string                       `json:"description"`
+	FoodAttributes  []FoodUpdateLogFoodAttribute `json:"foodAttributes"`
+	FDCID           int64                        `json:"fdcId"`
+	DataType        string                       `json:"dataType"`
+	PublicationDate string                       `json:"publicationDate"`
+}
+
+type FoodUpdateLogFoodAttribute struct {
+	ID                int64                   `json:"id"`
+	Name              string                  `json:"name"`
+	Value             string                  `json:"value"`
+	FoodAttributeType FluffyFoodAttributeType `json:"foodAttributeType"`
+}
+
+type FluffyFoodAttributeType struct {
+	ID int64 `json:"id"`
+}
+
+type LabelNutrient struct {
+	Value float64 `json:"value"`
+}
+
+type SRLegacyFoods struct {
+	SRLegacyFood []SRLegacyFood `json:"SRLegacyFoods"`
+}
+
+type SRLegacyFood struct {
+	FoodClass                 string                     `json:"foodClass"`
+	Description               string                     `json:"description"`
+	FoodNutrients             []FoodNutrientElement      `json:"foodNutrients"`
+	ScientificName            string                     `json:"scientificName"`
+	FoodAttributes            []interface{}              `json:"foodAttributes"`
+	NutrientConversionFactors []NutrientConversionFactor `json:"nutrientConversionFactors"`
+	IsHistoricalReference     bool                       `json:"isHistoricalReference"`
+	NdbNumber                 int64                      `json:"ndbNumber"`
+	FoodCategory              FoodCategory               `json:"foodCategory"`
+	FDCID                     int64                      `json:"fdcId"`
+	DataType                  string                     `json:"dataType"`
+	InputFoods                []interface{}              `json:"inputFoods"`
+	PublicationDate           string                     `json:"publicationDate"`
+	FoodPortions              []FoodPortion              `json:"foodPortions"`
 }
 
 //

@@ -380,6 +380,8 @@ require (
 	google.golang.org/grpc v1.65.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
+	gorm.io/datatypes v1.2.5 // indirect
+	gorm.io/driver/mysql v1.5.7 // indirect
 	lukechampine.com/blake3 v1.3.0 // indirect
 	modernc.org/gc/v3 v3.0.0-20240107210532-573471604cb6 // indirect
 	modernc.org/libc v1.61.0 // indirect

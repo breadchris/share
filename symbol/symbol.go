@@ -40,6 +40,8 @@
 //go:generate yaegi extract github.com/breadchris/share/models
 //go:generate yaegi extract github.com/pkg/errors
 //go:generate yaegi extract github.com/kkdai/youtube/v2
+//go:generate yaegi extract golang.org/x/net/http/httpproxy
+//go:generate yaegi extract gorm.io/datatypes
 
 package symbol
 

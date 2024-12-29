@@ -1209,6 +1209,14 @@ func Circle(o ...*Node) *Node {
 	return NewNode("circle", o)
 }
 
+func Polygon(o ...*Node) *Node {
+	return NewNode("polygon", o)
+}
+
+func Points(s string) *Node {
+	return NewAttrNode("points", s)
+}
+
 func Cx(s string) *Node {
 	return NewAttrNode("cx", s)
 }

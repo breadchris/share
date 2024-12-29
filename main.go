@@ -58,6 +58,24 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+func loadDB() *gorm.DB {
+	db, err := gorm.Open(sqlite.Open("data/db.sqlite"), &gorm.Config{})
+	if err != nil {
+		log.Fatalf("Failed to create db: %v", err)
+	}
+
+	if err := db.AutoMigrate(
+		&models.User{},
+		&models.Identity{},
+		&models.Group{},
+		&models.GroupMembership{},
+		&models.Food{},
+	); err != nil {
+		log.Fatalf("Failed to migrate db: %v", err)
+	}
+	return db
+}
+
 func startServer(useTLS bool, port int) {
 	appConfig := config2.New()
 
@@ -72,24 +90,11 @@ func startServer(useTLS bool, port int) {
 	entries = newEntries
 	saveJSON(dataFile, entries)
 
-	db, err := gorm.Open(sqlite.Open("data/db.sqlite"), &gorm.Config{})
-	if err != nil {
-		log.Fatalf("Failed to create db: %v", err)
-	}
-
-	if err := db.AutoMigrate(
-		&models.User{},
-		&models.Identity{},
-		&models.Group{},
-		&models.GroupMembership{},
-	); err != nil {
-		log.Fatalf("Failed to migrate db: %v", err)
-	}
-
 	s, err := session.New()
 	if err != nil {
 		log.Fatalf("Failed to create session store: %v", err)
 	}
+	db := loadDB()
 	e := NewSMTPEmail(&appConfig)
 	a := NewAuth(s, e, appConfig, db)
 
@@ -330,6 +335,7 @@ func startServer(useTLS bool, port int) {
 	go func() {
 		entrypoints := []string{
 			"./code/playground.ts",
+			"./recipe.tsx",
 		}
 		if err := WatchFilesAndFolders(entrypoints, func(s string) {
 			result := api.Build(api.BuildOptions{
@@ -434,6 +440,31 @@ func main() {
 				},
 				Action: func(c *cli.Context) error {
 					startServer(c.Bool("tls"), c.Int("port"))
+					return nil
+				},
+			},
+			{
+				Name: "food",
+				Action: func(c *cli.Context) error {
+					db := loadDB()
+
+					println("loading food data")
+					//f, err := loadBrandedFoodData()
+					//if err != nil {
+					//	return err
+					//}
+					f, err := loadSRData()
+					if err != nil {
+						return err
+					}
+
+					println("saving food data")
+					//if err := saveFoods(db, f); err != nil {
+					//	return err
+					//}
+					if err := saveSRFoods(db, f); err != nil {
+						return err
+					}
 					return nil
 				},
 			},

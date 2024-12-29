@@ -1,6 +1,7 @@
 package models
 
 import (
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"time"
 )
@@ -51,4 +52,11 @@ type GroupMembership struct {
 	Role      string
 	User      *User  `gorm:"foreignKey:UserID"`
 	Group     *Group `gorm:"foreignKey:GroupID"`
+}
+
+type Food struct {
+	FDCID       int64 `gorm:"primaryKey"`
+	CreatedAt   time.Time
+	Description string
+	Raw         datatypes.JSON
 }

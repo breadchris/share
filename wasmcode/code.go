@@ -35,6 +35,26 @@ func New(d Deps) *http.ServeMux {
 	ctx := context.WithValue(context.Background(), "baseURL", "/code")
 	playDocs := d.Docs.WithCollection("playground")
 
+	mux.HandleFunc("/builder", func(w http.ResponseWriter, r *http.Request) {
+		DefaultLayout(
+			Div(
+				Class("w-full max-w-2xl mx-auto"),
+				Div(
+					Class("flex flex-row bg-base-200 p-4"),
+					Div(
+						Class("bg-base-100 p-4 w-1/2"),
+						Id("type-list"),
+						Div(Class("p-2"), Input(Placeholder("string"))),
+						Div(Class("p-2"), Input(Placeholder("number"))),
+						Div(Class("p-2"), Input(Placeholder("group"))),
+					),
+					Div(Class("bg-base-100 p-4 w-1/2"), Id("struct-list")),
+				),
+				Script(Attr("src", "/static/recipe.js")),
+			),
+		).RenderPageCtx(ctx, w, r)
+	})
+
 	mux.HandleFunc("/playground/edit/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 		if id == "" {

@@ -25,6 +25,7 @@ type PostState struct {
 	Address       string
 	UserReactions []UserReaction
 	References    []Reference
+	UserID        string
 }
 
 type UserReaction struct {
@@ -42,7 +43,15 @@ type Reference struct {
 func NewNotes(d deps.Deps) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), "baseURL", "/notes")
+
 		id := r.PathValue("id")
+
+		userID, err := d.Session.GetUserID(r.Context())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		var notesState NotesState
 		if err := d.Docs.Get("notes", &notesState); err != nil {
@@ -52,10 +61,28 @@ func NewNotes(d deps.Deps) *http.ServeMux {
 				return
 			}
 		}
-
-		if r.Method == http.MethodDelete {
+		switch r.Method {
+		case http.MethodGet:
+			if id != "" {
+				for _, post := range notesState.Posts {
+					if post.ID == id {
+						DefaultLayout(Post(&post)).RenderPageCtx(ctx, w, r)
+						return
+					}
+				}
+				http.Error(w, "not found", http.StatusNotFound)
+				return
+			}
+			DefaultLayout(
+				MemoInterface(notesState),
+			).RenderPageCtx(ctx, w, r)
+		case http.MethodDelete:
 			var newPosts []PostState
 			for _, post := range notesState.Posts {
+				if post.ID == id && post.UserID != userID {
+					http.Error(w, "unauthorized", http.StatusUnauthorized)
+					return
+				}
 				if post.ID != id {
 					newPosts = append(newPosts, post)
 				}
@@ -66,10 +93,7 @@ func NewNotes(d deps.Deps) *http.ServeMux {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			return
-		}
-
-		if r.Method == http.MethodPost {
+		case http.MethodPost:
 			if err := r.ParseForm(); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -87,6 +111,7 @@ func NewNotes(d deps.Deps) *http.ServeMux {
 				Content:       string(b),
 				Date:          time.Now().Format("2006-01-02T15:04:05.000Z"),
 				UserReactions: []UserReaction{},
+				UserID:        userID,
 			}
 			notesState.Posts = append([]PostState{p}, notesState.Posts...)
 
@@ -94,14 +119,8 @@ func NewNotes(d deps.Deps) *http.ServeMux {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			ctx := context.WithValue(r.Context(), "baseURL", "/notes")
 			Post(&p).RenderPageCtx(ctx, w, r)
-			return
 		}
-		ctx := context.WithValue(r.Context(), "baseURL", "/notes")
-		DefaultLayout(
-			MemoInterface(notesState),
-		).RenderPageCtx(ctx, w, r)
 	})
 	return mux
 }
@@ -341,6 +360,22 @@ func Post(state *PostState) *Node {
 						Role("button"),
 						AriaHaspopup("menu"),
 						AriaExpanded("false"),
+						A(
+							Class("h-7 w-7 flex justify-center items-center rounded-full border dark:border-zinc-700 hover:opacity-70 border-none w-auto h-auto"),
+							Href("/"+state.ID),
+							RenderShare(),
+						),
+					),
+				),
+				Div(
+					Class("w-auto invisible group-hover:visible flex flex-row justify-between items-center gap-2"),
+					Div(
+						AriaControls(":rq:"),
+						Tabindex("0"),
+						Class("MuiMenuButton-root MuiMenuButton-variantOutlined MuiMenuButton-colorNeutral MuiMenuButton-sizeMd"),
+						Role("button"),
+						AriaHaspopup("menu"),
+						AriaExpanded("false"),
 						Span(
 							Class("h-7 w-7 flex justify-center items-center rounded-full border dark:border-zinc-700 hover:opacity-70 border-none w-auto h-auto"),
 							Svg(
@@ -447,6 +482,26 @@ func RenderPencilSvg() *Node {
 			),
 		),
 		Path(D("m15 5 4 4")),
+	)
+}
+
+func RenderShare() *Node {
+	return Svg(
+		Width("24"),
+		Height("24"),
+		ViewBox("0 0 24 24"),
+		StrokeLinecap("round"),
+		Class("lucide lucide-share-2"),
+		Xmlns("http://www.w3.org/2000/svg"),
+		Fill("none"),
+		Stroke("currentColor"),
+		StrokeWidth("2"),
+		StrokeLinejoin("round"),
+		Circle(Cx("18"), Cy("5"), R("3")),
+		Circle(R("3"), Cx("6"), Cy("12")),
+		Circle(Cx("18"), Cy("19"), R("3")),
+		Line(X1("8.59"), X2("15.42"), Y1("13.51"), Y2("17.49")),
+		Line(Y2("10.49"), X1("15.41"), X2("8.59"), Y1("6.51")),
 	)
 }
 
