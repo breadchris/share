@@ -5,7 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/recipe.go" beforeDir="false" afterPath="$PROJECT_DIR$/recipe.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/auth.go" beforeDir="false" afterPath="$PROJECT_DIR$/auth.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -76,7 +78,7 @@
       <recent name="$PROJECT_DIR$/user" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Test.TestSearch in github.com/breadchris/share/cdk">
+  <component name="RunManager" selected="Go Build.share">
     <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
       <module name="share" />
       <working_directory value="$PROJECT_DIR$" />
@@ -201,7 +203,7 @@
       <workItem from="1733201757881" duration="19392000" />
       <workItem from="1733469566503" duration="15468000" />
       <workItem from="1733810624238" duration="1553000" />
-      <workItem from="1734634779652" duration="49703000" />
+      <workItem from="1734634779652" duration="51830000" />
     </task>
     <servers />
   </component>

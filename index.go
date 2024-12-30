@@ -15,8 +15,7 @@ func Index(d deps.Deps) *http.ServeMux {
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		u, err := d.Session.GetUserID(r.Context())
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			u = ""
 		}
 		homePage(HomeState{
 			UserID: u,
@@ -55,7 +54,7 @@ func homePage(state HomeState) *Node {
 		{"/notes/", "Notes"},
 		{"/zine", "Zine"},
 		{"/code/playground/", "Playground"},
-		{"/data/recipes/", "Recipes"},
+		{"/recipe/", "Recipes"},
 		{"/login", "Login"},
 		{"/register", "Register"},
 		{"/blog", "Blog"},
@@ -92,7 +91,7 @@ func homePage(state HomeState) *Node {
 						})),
 					),
 					Div(Class("hidden lg:flex lg:flex-1 lg:justify-end"),
-						A(Href("#"), Class("text-sm font-semibold leading-6 text-gray-900"), T("Log in "), Span(Attr("aria-hidden", "true"), T("→"))),
+						A(Href("/login"), Class("text-sm font-semibold leading-6 text-gray-900"), T("Login"), Span(Attr("aria-hidden", "true"), T("→"))),
 					),
 				),
 				// Mobile navigation menu, will show when menu is opened
@@ -119,7 +118,7 @@ func homePage(state HomeState) *Node {
 									})),
 								),
 								Div(Class("py-6"),
-									A(Href("#"), Class("-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"), T("Log in")),
+									A(Href("/login"), Class("-mx-3 block rounded-lg px-3 py-2.5 text-base font-semibold leading-7 text-gray-900 hover:bg-gray-50"), T("Login")),
 								),
 							),
 						),

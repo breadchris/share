@@ -132,6 +132,11 @@ type AuthState struct {
 	Msg string
 }
 
+func (s *Auth) handleLogout(w http.ResponseWriter, r *http.Request) {
+	s.s.ClearUserID(r.Context())
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
 func (s *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:

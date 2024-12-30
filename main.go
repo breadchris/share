@@ -196,6 +196,7 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/register", a.handleRegister)
 	http.HandleFunc("/account", a.accountHandler)
 	http.HandleFunc("/login", a.handleLogin)
+	http.HandleFunc("/logout", a.handleLogout)
 	http.HandleFunc("/invite", a.handleInvite)
 	http.HandleFunc("/auth/google", a.startGoogleAuth)
 	http.HandleFunc("/auth/google/callback", a.handleGoogleCallback)
