@@ -38,6 +38,7 @@ type Ingredient struct {
 }
 
 type Recipe struct {
+	ID          string       `json:"id"`
 	Name        string       `json:"name"`
 	Ingredients []Ingredient `json:"ingredients"`
 	Directions  []Direction  `json:"directions"`
@@ -47,6 +48,18 @@ type Recipe struct {
 type RecipeState struct {
 	Recipe     Recipe                  `json:"recipe"`
 	Transcript youtube.VideoTranscript `json:"transcript"`
+}
+
+type Playlist struct {
+	ID     string   `json:"id"`
+	Name   string   `json:"name"`
+	Videos []string `json:"videos"`
+}
+
+type Channel struct {
+	ID        string     `json:"id"`
+	Name      string     `json:"name"`
+	Playlists []Playlist `json:"playlists"`
 }
 
 func transcriptToRecipe(ctx context.Context, d deps.Deps, ts youtube.VideoTranscript) (Recipe, error) {
@@ -446,6 +459,7 @@ Directions:
 
 	for _, tc := range resp.Choices[0].Message.ToolCalls {
 		if ok := tc.Function.Name == "createRecipe"; ok {
+			println("found function")
 			err = json.Unmarshal([]byte(tc.Function.Arguments), &rec)
 			if err != nil {
 				return rec, err
@@ -467,6 +481,51 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 	recipes := d.Docs.WithCollection("recipes")
 	m := http.NewServeMux()
 	ctx := context.WithValue(context.Background(), "baseURL", "/recipe")
+
+	routes := struct {
+		Recipe   string
+		Playlist string
+	}{
+		Recipe:   "/",
+		Playlist: "/playlist",
+	}
+
+	m.HandleFunc(routes.Playlist, func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			ur := r.FormValue("url")
+			if ur == "" {
+				http.Error(w, "missing url", http.StatusBadRequest)
+				return
+			}
+
+			client := youtube.Client{}
+			playlist, err := client.GetPlaylistContext(ctx, ur)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			var pl []*Node
+			for _, v := range playlist.Videos {
+				pl = append(pl, Div(
+					Class("flex items-center space-x-4"),
+					Img(Class("w-16 h-16"), Src(v.Thumbnails[0].URL)),
+					A(Class("flex-1"), Href(fmt.Sprintf("/%s", v.ID)), T(v.Title)),
+				))
+			}
+			Div(Class("space-y-4"), Ch(pl)).RenderPageCtx(ctx, w, r)
+		case http.MethodGet:
+			DefaultLayout(
+				Form(
+					Class("container mx-auto p-8"),
+					Input(Class("input"), Type("text"), Name("url"), Placeholder("Playlist URL")),
+					Button(Class("btn"), T("Submit"), HxPost(routes.Playlist), HxTarget("#results")),
+					Div(Id("results")),
+				),
+			).RenderPageCtx(ctx, w, r)
+		}
+	})
 	m.HandleFunc("/food/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 
@@ -601,8 +660,131 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 		}
 	})
 	m.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
+		getRecipe := func(rs RecipeState) {
+			client := youtube.Client{}
+
+			video, err := client.GetVideoContext(ctx, rs.Recipe.ID)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			println("loading transcript")
+			ts, err := getYTTranscript(ctx, client, video)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			rs.Transcript = ts
+
+			println("generating recipe")
+			nr, err := transcriptToRecipe(ctx, d, ts)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			nr.Name = video.Title
+			// TODO breadchris ID gets overridden by AI call
+			id := rs.Recipe.ID
+			rs.Recipe = nr
+			rs.Recipe.ID = id
+			println("saving recipe", rs.Recipe.ID)
+			if err = recipes.Set(rs.Recipe.ID, rs); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		renderRecipe := func(rs RecipeState, w http.ResponseWriter, r *http.Request) {
+			var items []*Node
+			for _, t := range rs.Transcript {
+				items = append(items, Div(
+					Class("flex items-center"),
+					OnClick("seekToTime("+strconv.Itoa(t.StartMs/1000)+")"),
+					Span(Class("text-gray-500"), T(strconv.Itoa(t.StartMs))),
+					Span(Class("ml-2"), T(t.Text)),
+				))
+			}
+
+			var equipment []*Node
+			for _, e := range rs.Recipe.Equipment {
+				equipment = append(equipment, Div(Class("p-2 bg-gray-500 text-white"), T(e)))
+			}
+
+			var ingredients []*Node
+			for _, i := range rs.Recipe.Ingredients {
+				ingredients = append(ingredients, Div(
+					Class("flex flex-col"),
+					Div(T(fmt.Sprintf("%s %s %s %s", i.Amount, i.Unit, i.Name, i.Comment))),
+					Span(Class("text-gray-500"), T(i.Name)),
+				))
+			}
+
+			var directions []*Node
+			for _, d := range rs.Recipe.Directions {
+				directions = append(directions, Div(
+					Class("py-2 flex"),
+					OnClick("seekToTime("+strconv.Itoa(d.StartTime)+")"),
+					Div(
+						Class("flex flex-row space-x-2"),
+						Div(
+							RenderPlay(),
+						),
+						Div(
+							T(fmt.Sprintf("%s", d.Text)),
+						),
+					),
+				))
+			}
+
+			id := rs.Recipe.ID
+			DefaultLayout(
+				Div(
+					Class("w-3/4 md:w-1/2 mx-auto p-8 space-y-4"),
+					ytScript(id),
+					P(Class("text-4xl font-semibold mb-4"), T(rs.Recipe.Name)),
+					Div(
+						P(Class("text-2xl font-semibold mb-4"), T("Ingredients")),
+						Ul(Class("space-y-4"), Ch(ingredients)),
+					),
+					Div(Class("divider")),
+					Div(
+						Class(""),
+						P(Class("text-2xl font-semibold mb-4"), T("Equipment")),
+						Div(Class("grid grid-cols-4 gap-4 text-center my-4"), Ch(equipment)),
+					),
+					Div(Class("divider")),
+					Div(Id("player"), Class("w-full")),
+					Div(
+						P(Class("text-2xl font-semibold mb-4"), T("Directions")),
+						Div(Class(""), Ch(directions)),
+					),
+					Div(Class("space-x-2"),
+						A(Class("btn"), HxTarget("body"), HxPut(fmt.Sprintf("/%s", id)), T("Regenerate")),
+						A(Class("btn"), HxTarget("body"), HxDelete(fmt.Sprintf("/%s", id)), T("Delete")),
+					),
+					//Ch(items),
+				),
+			).RenderPageCtx(ctx, w, r)
+		}
+
 		id := r.PathValue("id")
 		switch r.Method {
+		case http.MethodPut:
+			rs := RecipeState{
+				Recipe: Recipe{
+					ID: id,
+				},
+			}
+			getRecipe(rs)
+			renderRecipe(rs, w, r)
+		case http.MethodDelete:
+			if err := recipes.Delete(id); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			Div(T("deleted")).RenderPageCtx(ctx, w, r)
 		case http.MethodPost:
 			u := r.FormValue("url")
 			if u == "" {
@@ -626,13 +808,32 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 				http.Error(w, "missing video id", http.StatusBadRequest)
 				return
 			}
-
-			http.Redirect(w, r, "/recipe/"+vid, http.StatusSeeOther)
 		case http.MethodGet:
 			if id == "" {
+				docs, err := recipes.List()
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				var recp []*Node
+				for _, v := range docs {
+					var rs RecipeState
+					if err := json.Unmarshal(v.Data, &rs); err != nil {
+						continue
+					}
+					recp = append(recp, Div(
+						Class("flex items-center text-left p-4 space-x-4 border-b border-gray-200"),
+						Img(Class("max-w-32"), Src(fmt.Sprintf("https://img.youtube.com/vi/%s/sddefault.jpg", v.ID))),
+						A(
+							Href(fmt.Sprintf("/%s", v.ID)),
+							T(rs.Recipe.Name),
+						),
+					))
+				}
 				DefaultLayout(
 					Div(
 						Class("mt-16 text-center mx-auto"),
+						A(Href(routes.Playlist), T("playlist")),
 						P(Class("text-lg"), T("make a recipe")),
 						Form(
 							Method("POST"),
@@ -640,103 +841,21 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 							Input(Class("input"), Name("url"), Type("text"), Placeholder("Enter YouTube video")),
 							Button(Class("btn"), T("Generate")),
 						),
+						Div(Class("mt-8 container mx-auto"), Ch(recp)),
 					),
 				).RenderPageCtx(ctx, w, r)
 				return
 			}
 
-			var rs RecipeState
-			regenerate := r.URL.Query().Get("regenerate") == "true"
-			if err := recipes.Get(id, &rs); regenerate || err != nil {
-				client := youtube.Client{}
-
-				video, err := client.GetVideoContext(ctx, id)
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
-
-				ts, err := getYTTranscript(ctx, client, video)
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
-				rs.Transcript = ts
-				nr, err := transcriptToRecipe(ctx, d, ts)
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
-				nr.Name = video.Title
-				rs.Recipe = nr
-				if err = recipes.Set(id, rs); err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
+			rs := RecipeState{
+				Recipe: Recipe{
+					ID: id,
+				},
 			}
-
-			var items []*Node
-			for _, t := range rs.Transcript {
-				items = append(items, Div(
-					Class("flex items-center"),
-					OnClick("seekToTime("+strconv.Itoa(t.StartMs/1000)+")"),
-					Span(Class("text-gray-500"), T(strconv.Itoa(t.StartMs))),
-					Span(Class("ml-2"), T(t.Text)),
-				))
+			if err := recipes.Get(id, &rs); err != nil {
+				getRecipe(rs)
 			}
-
-			var equipment []*Node
-			for _, e := range rs.Recipe.Equipment {
-				equipment = append(equipment, Div(Class("p-2 bg-gray-500 text-white"), T(e)))
-			}
-
-			var ingredients []*Node
-			for _, i := range rs.Recipe.Ingredients {
-				ingredients = append(ingredients, Li(T(fmt.Sprintf("%s %s %s %s", i.Amount, i.Unit, i.Name, i.Comment))))
-			}
-
-			var directions []*Node
-			for _, d := range rs.Recipe.Directions {
-				directions = append(directions, Div(
-					Class("py-2 flex"),
-					OnClick("seekToTime("+strconv.Itoa(d.StartTime)+")"),
-					Div(
-						Class("flex flex-row space-x-2"),
-						Div(
-							RenderPlay(),
-						),
-						Div(
-							T(fmt.Sprintf("%s", d.Text)),
-						),
-					),
-				))
-			}
-
-			DefaultLayout(
-				Div(
-					Class("w-3/4 md:w-1/2 mx-auto p-8 space-y-4"),
-					ytScript(id),
-					P(Class("text-4xl font-semibold mb-4"), T(rs.Recipe.Name)),
-					Div(
-						P(Class("text-2xl font-semibold mb-4"), T("Ingredients")),
-						Ul(Class("space-y-4"), Ch(ingredients)),
-					),
-					Div(Class("divider")),
-					Div(
-						Class(""),
-						P(Class("text-2xl font-semibold mb-4"), T("Equipment")),
-						Div(Class("grid grid-cols-4 gap-4 text-center my-4"), Ch(equipment)),
-					),
-					Div(Class("divider")),
-					Div(Id("player"), Class("w-full")),
-					Div(
-						P(Class("text-2xl font-semibold mb-4"), T("Directions")),
-						Div(Class(""), Ch(directions)),
-					),
-					A(Class("btn"), Href(fmt.Sprintf("/%s?regenerate=true", id)), T("Regenerate")),
-					//Ch(items),
-				),
-			).RenderPageCtx(ctx, w, r)
+			renderRecipe(rs, w, r)
 		}
 	})
 	return m

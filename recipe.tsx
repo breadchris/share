@@ -3,22 +3,22 @@ import React from "react";
 import { createRoot } from 'react-dom/client';
 import Sortable from 'sortablejs';
 
-const st = new Sortable(document.getElementById('type-list'), {
-    group: {
-        name: 'shared',
-        pull: 'clone',
-        put: false
-    },
-    animation: 150,
-    sort: false
-});
-console.log(st);
-
-const sc = new Sortable(document.getElementById('struct-list'), {
-    group: 'shared',
-    animation: 150
-});
-console.log(sc);
+// const st = new Sortable(document.getElementById('type-list'), {
+//     group: {
+//         name: 'shared',
+//         pull: 'clone',
+//         put: false
+//     },
+//     animation: 150,
+//     sort: false
+// });
+// console.log(st);
+//
+// const sc = new Sortable(document.getElementById('struct-list'), {
+//     group: 'shared',
+//     animation: 150
+// });
+// console.log(sc);
 
 const avatar = 'https://i.imgur.com/MK3eW3As.jpg';
 const longArray = new Array(1000).fill(1);

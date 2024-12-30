@@ -10,6 +10,7 @@ import (
 
 func New(d deps.Deps) *http.ServeMux {
 	mux := http.NewServeMux()
+	Something()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		s, err := yaegi.GetStack()
 		if err != nil {

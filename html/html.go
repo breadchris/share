@@ -864,6 +864,10 @@ func Src_(s string) *Node {
 	}
 }
 
+func Fmt(s string, args ...interface{}) string {
+	return fmt.Sprintf(s, args...)
+}
+
 func Href(s string) *Node {
 	return &Node{
 		transform: func(p *Node) {
