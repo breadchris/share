@@ -514,8 +514,7 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 			for _, doc := range docs {
 				var r RecipeState
 				if err := json.Unmarshal(doc.Data, &r); err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
+					continue
 				}
 				rs.States = append(rs.States, r)
 			}
@@ -528,8 +527,12 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 
 			req := &http.Request{
 				Method: http.MethodPut,
-				URL:    &url.URL{Path: "/recipe"},
-				Body:   io.NopCloser(bytes.NewReader(body)),
+				URL: &url.URL{
+					Scheme: "https",
+					Host:   "justshare.io",
+					Path:   "/recipe/upload",
+				},
+				Body: io.NopCloser(bytes.NewReader(body)),
 			}
 
 			println("uploading")
