@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"encoding/xml"
@@ -489,6 +490,64 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 		Recipe:   "/",
 		Playlist: "/playlist",
 	}
+
+	type RecipeStateUpload struct {
+		States []RecipeState `json:"states"`
+	}
+
+	m.HandleFunc("/upload", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			DefaultLayout(
+				Div(
+					A(HxPost("/upload"), Class("btn"), T("Upload")),
+				),
+			).RenderPageCtx(ctx, w, r)
+		case http.MethodPost:
+			docs, err := recipes.List()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			var rs RecipeStateUpload
+			for _, doc := range docs {
+				var r RecipeState
+				if err := json.Unmarshal(doc.Data, &r); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				rs.States = append(rs.States, r)
+			}
+
+			var body []byte
+			if body, err = json.Marshal(rs); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			rsp, err := http.DefaultClient.Post("https://justshare.io/recipe/upload", "application/json", bytes.NewReader(body))
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			io.Copy(w, rsp.Body)
+		case http.MethodPut:
+			var rsu RecipeStateUpload
+			if err := json.NewDecoder(r.Body).Decode(&rsu); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			for _, rs := range rsu.States {
+				if err := recipes.Set(rs.Recipe.ID, rs); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+		}
+	})
 
 	m.HandleFunc(routes.Playlist, func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
