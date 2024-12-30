@@ -526,7 +526,13 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 				return
 			}
 
-			rsp, err := http.DefaultClient.Post("https://justshare.io/recipe/upload", "application/json", bytes.NewReader(body))
+			req := &http.Request{
+				Method: http.MethodPut,
+				URL:    &url.URL{Path: "/recipe"},
+				Body:   io.NopCloser(bytes.NewReader(body)),
+			}
+
+			rsp, err := http.DefaultClient.Do(req)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -867,6 +873,13 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 				http.Error(w, "missing video id", http.StatusBadRequest)
 				return
 			}
+			rs := RecipeState{
+				Recipe: Recipe{
+					ID: vid,
+				},
+			}
+			getRecipe(rs)
+			http.Redirect(w, r, fmt.Sprintf("/recipe/%s", vid), http.StatusSeeOther)
 		case http.MethodGet:
 			if id == "" {
 				docs, err := recipes.List()
