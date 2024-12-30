@@ -532,6 +532,7 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 				Body:   io.NopCloser(bytes.NewReader(body)),
 			}
 
+			println("uploading")
 			rsp, err := http.DefaultClient.Do(req)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -541,6 +542,8 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 			io.Copy(w, rsp.Body)
 		case http.MethodPut:
 			var rsu RecipeStateUpload
+
+			println("handling upload")
 			if err := json.NewDecoder(r.Body).Decode(&rsu); err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
@@ -548,8 +551,7 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 
 			for _, rs := range rsu.States {
 				if err := recipes.Set(rs.Recipe.ID, rs); err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
+					println("failed to set", rs.Recipe.ID, err.Error())
 				}
 			}
 		}
