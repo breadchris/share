@@ -58,6 +58,7 @@ func init() {
 		"FileRule":                reflect.ValueOf(html.FileRule),
 		"Fill":                    reflect.ValueOf(html.Fill),
 		"FillRule":                reflect.ValueOf(html.FillRule),
+		"Fmt":                     reflect.ValueOf(html.Fmt),
 		"Focusable":               reflect.ValueOf(html.Focusable),
 		"Footer":                  reflect.ValueOf(html.Footer),
 		"For":                     reflect.ValueOf(html.For),

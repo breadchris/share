@@ -21,6 +21,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 )
 
 const recipeIndex = "data/recipe.bleve"
@@ -486,9 +487,11 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 	routes := struct {
 		Recipe   string
 		Playlist string
+		Food     string
 	}{
 		Recipe:   "/",
-		Playlist: "/playlist",
+		Playlist: "/playlist/",
+		Food:     "/food/",
 	}
 
 	type RecipeStateUpload struct {
@@ -599,7 +602,23 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 	m.HandleFunc("/food/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 
-		renderResults := func(f []models.Food) []*Node {
+		q := r.URL.Query()
+		s := q.Get("search")
+		// TODO breadchris lol wat
+		searching := q.Get("searching") == "yes"
+		b := q.Get("branded") == "on" || q.Get("branded") == "true"
+		l := q.Get("legacy") == "on" || q.Get("legacy") == "true"
+		off := q.Get("offset")
+		if off == "" {
+			off = "0"
+		}
+		offs, err := strconv.Atoi(off)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		renderResults := func(f []models.Food, offset int) *Node {
 			var foodItems []*Node
 			for _, item := range f {
 				var food SRLegacyFood
@@ -625,32 +644,59 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 					Div(Class("flex-1"), T(item.Description)),
 				))
 			}
-			return foodItems
+			return Div(
+				Class("items-center"),
+				Div(
+					Class("flex flex-row space-x-4"),
+					// TODO breadchris lol wat
+					Div(T(strconv.Itoa(offset))),
+					Div(Class("btn"), T("prev"), HxTarget("#results"), HxGet(fmt.Sprintf("/food/?searching=yes&search=%s&branded=%t&legacy=%t&offset=%d", s, b, l, offset-20))),
+					Div(Class("btn"), T("next"), HxTarget("#results"), HxGet(fmt.Sprintf("/food/?searching=yes&search=%s&branded=%t&legacy=%t&offset=%d", s, b, l, offset+20))),
+				),
+				Ch(foodItems),
+			)
 		}
+
+		renderAliases := func(aliases []models.FoodName) *Node {
+			var aliasItems []*Node
+			for _, alias := range aliases {
+				aliasItems = append(aliasItems, Div(Class("p-2 bg-gray-500 text-white"), T(alias.Name)))
+			}
+			return Div(Class("flex flex-col"), Ch(aliasItems))
+		}
+
 		switch r.Method {
-		case http.MethodPost:
-			s := r.FormValue("search")
-			b := r.FormValue("branded") == "on"
-			l := r.FormValue("legacy") == "on"
-
-			var f []models.Food
-			res := d.DB.
-				Where("description LIKE ?", "%"+s+"%")
-			if b {
-				res = res.Where(datatypes.JSONQuery("raw").Equals("Branded", "foodClass"))
+		case http.MethodPut:
+			a := r.FormValue("alias")
+			if a == "" {
+				http.Error(w, "missing alias", http.StatusBadRequest)
+				return
 			}
-			if l {
-				res = res.Where(datatypes.JSONQuery("raw").Equals("FinalFood", "foodClass"))
-			}
-			res = res.Order("description ASC").
-				Limit(20).Find(&f)
 
+			var f models.Food
+			res := d.DB.First(&f, id)
 			if res.Error != nil {
 				http.Error(w, res.Error.Error(), http.StatusInternalServerError)
 				return
 			}
 
-			Div(Ch(renderResults(f))).RenderPageCtx(ctx, w, r)
+			var aliases []models.FoodName
+			res = d.DB.Find(&aliases).Where("fdc_id = ?", f.FDCID)
+			if res.Error != nil {
+				http.Error(w, res.Error.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			aliases = append(aliases, models.FoodName{
+				FDCID: f.FDCID,
+				Name:  a,
+			})
+
+			res = d.DB.Save(aliases)
+			if res.Error != nil {
+				http.Error(w, res.Error.Error(), http.StatusInternalServerError)
+				return
+			}
 		case http.MethodGet:
 			if id != "" {
 				var f models.Food
@@ -659,6 +705,14 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 					http.Error(w, res.Error.Error(), http.StatusInternalServerError)
 					return
 				}
+
+				var aliases []models.FoodName
+				res = d.DB.Find(&aliases).Where("fdc_id = ?", f.FDCID)
+				if res.Error != nil {
+					http.Error(w, res.Error.Error(), http.StatusInternalServerError)
+					return
+				}
+
 				var fdc SRLegacyFood
 				if err := json.Unmarshal(f.Raw, &fdc); err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -669,6 +723,14 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 					Div(
 						Class("container mx-auto p-8"),
 						H1(Class("text-2xl font-semibold"), T(f.Description)),
+						Form(
+							Input(Type("text"), Placeholder("alias"), Name("alias")),
+							Button(Class("btn"), T("Add Alias"), HxPut(Fmt("/food/%d", f.FDCID)), HxTarget("#aliases")),
+							Div(Class("flex flex-col"),
+								Id("aliases"),
+								renderAliases(aliases),
+							),
+						),
 						Div(Class("bg-gray-100"),
 							Div(Id("json-viewer"), Attr("data-value", string(f.Raw))),
 						),
@@ -682,9 +744,32 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 			}
 
 			var f []models.Food
-			res := d.DB.Limit(50).Find(&f)
+			res := d.DB.
+				Where("description LIKE ?", "%"+s+"%")
+			if b && !l {
+				res = res.Where(datatypes.JSONQuery("raw").Equals("Branded", "foodClass"))
+			}
+			if l && !b {
+				res = res.Where(datatypes.JSONQuery("raw").Equals("FinalFood", "foodClass"))
+			}
+			if b && l {
+				res = res.Where(
+					d.DB.Where(
+						datatypes.JSONQuery("raw").Equals("Branded", "foodClass")).
+						Or(datatypes.JSONQuery("raw").Equals("FinalFood", "foodClass")),
+				)
+			}
+
+			limit := 20
+			res = res.Order("description ASC").
+				Limit(limit).Offset(offs).Find(&f)
 			if res.Error != nil {
 				http.Error(w, res.Error.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			if searching {
+				renderResults(f, offs).RenderPageCtx(ctx, w, r)
 				return
 			}
 
@@ -694,9 +779,10 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 					H1(Class("text-2xl font-semibold"), T("Food Search")),
 					Form(
 						Class("flex flex-row space-x-3"),
-						HxPost("/food/"),
+						HxGet("/food/"),
 						HxTarget("#results"),
 						Id("search-form"),
+						Input(Type("hidden"), Name("searching"), Value("yes")),
 						Input(
 							Class("input"),
 							Type("text"),
@@ -723,7 +809,8 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 					),
 					Div(
 						Id("results"),
-						Ch(renderResults(f)),
+						T("protein | fat | carbs"),
+						renderResults(f, 0),
 					),
 				),
 			).RenderPageCtx(ctx, w, r)
@@ -784,10 +871,20 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 
 			var ingredients []*Node
 			for _, i := range rs.Recipe.Ingredients {
+				var food []models.FoodName
+				if err := d.DB.Where("name = ?", strings.ToLower(i.Name)).Find(&food).Error; err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				var foodItems []*Node
+				for _, f := range food {
+					foodItems = append(foodItems, Div(Class("p-2 bg-gray-500 text-white"), T(f.Name)))
+				}
 				ingredients = append(ingredients, Div(
 					Class("flex flex-col"),
 					Div(T(fmt.Sprintf("%s %s %s %s", i.Amount, i.Unit, i.Name, i.Comment))),
-					Span(Class("text-gray-500"), T(i.Name)),
+					//Span(Class("text-gray-500"), T(i.Name)),
+					Ch(foodItems),
 				))
 			}
 
@@ -811,7 +908,7 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 			id := rs.Recipe.ID
 			DefaultLayout(
 				Div(
-					Class("w-3/4 md:w-1/2 mx-auto p-8 space-y-4"),
+					Class("md:w-1/2 mx-auto p-8 space-y-4"),
 					ytScript(id),
 					P(Class("text-4xl font-semibold mb-4"), T(rs.Recipe.Name)),
 					Div(
@@ -909,8 +1006,12 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 				}
 				DefaultLayout(
 					Div(
-						Class("mt-16 text-center mx-auto"),
-						A(Href(routes.Playlist), T("playlist")),
+						Class("mt-8 text-center mx-auto flex flex-col items-center"),
+						Div(
+							Class("flex flex-row space-x-4 mb-8 text-gray-500"),
+							A(Href(routes.Playlist), T("playlist")),
+							A(Href(routes.Food), T("food")),
+						),
 						P(Class("text-lg"), T("make a recipe")),
 						Form(
 							Method("POST"),

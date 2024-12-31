@@ -11,6 +11,7 @@ func init() {
 	Symbols["github.com/breadchris/share/models/models"] = map[string]reflect.Value{
 		// type definitions
 		"Food":            reflect.ValueOf((*models.Food)(nil)),
+		"FoodName":        reflect.ValueOf((*models.FoodName)(nil)),
 		"Group":           reflect.ValueOf((*models.Group)(nil)),
 		"GroupMembership": reflect.ValueOf((*models.GroupMembership)(nil)),
 		"Identity":        reflect.ValueOf((*models.Identity)(nil)),

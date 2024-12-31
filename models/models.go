@@ -57,6 +57,12 @@ type GroupMembership struct {
 type Food struct {
 	FDCID       int64 `gorm:"primaryKey"`
 	CreatedAt   time.Time
-	Description string
-	Raw         datatypes.JSON
+	Description string         `gorm:"index"`
+	Raw         datatypes.JSON `gorm:"type:jsonb"`
+}
+
+type FoodName struct {
+	FDCID int64
+	Food  *Food `gorm:"foreignKey:FDCID"`
+	Name  string
 }

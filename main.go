@@ -70,6 +70,7 @@ func loadDB() *gorm.DB {
 		&models.Group{},
 		&models.GroupMembership{},
 		&models.Food{},
+		&models.FoodName{},
 	); err != nil {
 		log.Fatalf("Failed to migrate db: %v", err)
 	}
