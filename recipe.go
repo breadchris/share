@@ -22,6 +22,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const recipeIndex = "data/recipe.bleve"
@@ -479,6 +480,19 @@ type Nutrients struct {
 	Carbs   float64 `json:"carbs"`
 }
 
+func CreateProxyFunction(proxyURL, username, password string) (func(*http.Request) (*url.URL, error), error) {
+	parsedURL, err := url.Parse(proxyURL)
+	if err != nil {
+		return nil, errors.New("invalid proxy URL")
+	}
+	parsedURL.User = url.UserPassword(username, password)
+
+	proxyFunc := func(req *http.Request) (*url.URL, error) {
+		return parsedURL, nil
+	}
+	return proxyFunc, nil
+}
+
 func NewRecipe(d deps.Deps) *http.ServeMux {
 	recipes := d.Docs.WithCollection("recipes")
 	m := http.NewServeMux()
@@ -496,6 +510,44 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 
 	type RecipeStateUpload struct {
 		States []RecipeState `json:"states"`
+	}
+
+	proxyFunc, err := CreateProxyFunction(d.Config.Proxy.URL, d.Config.Proxy.Username, d.Config.Proxy.Password)
+	if err != nil {
+		panic(err)
+	}
+
+	httpTransport := &http.Transport{
+		Proxy:                 proxyFunc,
+		IdleConnTimeout:       60 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		ForceAttemptHTTP2:     true,
+	}
+
+	client := youtube.Client{
+		HTTPClient: &http.Client{
+			Transport: httpTransport,
+		},
+	}
+
+	usdaFoodToNutrients := func(item models.Food) (Nutrients, error) {
+		var food SRLegacyFood
+		if err := json.Unmarshal(item.Raw, &food); err != nil {
+			return Nutrients{}, err
+		}
+		var n Nutrients
+		for _, ntr := range food.FoodNutrients {
+			switch ntr.Nutrient.ID {
+			case 1003:
+				n.Protein = ntr.Amount
+			case 1004:
+				n.Fat = ntr.Amount
+			case 1005:
+				n.Carbs = ntr.Amount
+			}
+		}
+		return n, nil
 	}
 
 	m.HandleFunc("/upload", func(w http.ResponseWriter, r *http.Request) {
@@ -572,7 +624,6 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 				return
 			}
 
-			client := youtube.Client{}
 			playlist, err := client.GetPlaylistContext(ctx, ur)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -621,21 +672,11 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 		renderResults := func(f []models.Food, offset int) *Node {
 			var foodItems []*Node
 			for _, item := range f {
-				var food SRLegacyFood
-				if err := json.Unmarshal(item.Raw, &food); err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return nil
-				}
-				var n Nutrients
-				for _, ntr := range food.FoodNutrients {
-					switch ntr.Nutrient.ID {
-					case 1003:
-						n.Protein = ntr.Amount
-					case 1004:
-						n.Fat = ntr.Amount
-					case 1005:
-						n.Carbs = ntr.Amount
-					}
+				n, err := usdaFoodToNutrients(item)
+				if err != nil {
+					// TODO breadchris how do you report an error here?
+					// maybe you return the error and then check if it's nil in the parent function?
+					return Div(Class("text-red-500"), T(err.Error()))
 				}
 				foodItems = append(foodItems, A(
 					Class("flex items"),
@@ -707,7 +748,7 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 				}
 
 				var aliases []models.FoodName
-				res = d.DB.Find(&aliases).Where("fdc_id = ?", f.FDCID)
+				res = d.DB.Where("fdc_id = ?", f.FDCID).Find(&aliases)
 				if res.Error != nil {
 					http.Error(w, res.Error.Error(), http.StatusInternalServerError)
 					return
@@ -818,8 +859,6 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 	})
 	m.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		getRecipe := func(rs RecipeState) {
-			client := youtube.Client{}
-
 			video, err := client.GetVideoContext(ctx, rs.Recipe.ID)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -869,10 +908,15 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 				equipment = append(equipment, Div(Class("p-2 bg-gray-500 text-white"), T(e)))
 			}
 
-			var ingredients []*Node
+			var (
+				ingredients []*Node
+				protein     float64
+				fat         float64
+				carbs       float64
+			)
 			for _, i := range rs.Recipe.Ingredients {
 				var food []models.FoodName
-				if err := d.DB.Where("name = ?", strings.ToLower(i.Name)).Find(&food).Error; err != nil {
+				if err := d.DB.Preload("Food").Where("name = ?", strings.ToLower(i.Name)).Find(&food).Error; err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
@@ -880,11 +924,46 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 				for _, f := range food {
 					foodItems = append(foodItems, Div(Class("p-2 bg-gray-500 text-white"), T(f.Name)))
 				}
+
+				var nuts *Node
+
+				a, err := strconv.Atoi(i.Amount)
+				if err == nil {
+					var grams float64
+					switch i.Unit {
+					case "pound":
+						grams = float64(a) * 453.592
+					}
+
+					if len(food) > 0 {
+						n, err := usdaFoodToNutrients(*food[0].Food)
+						if err != nil {
+							http.Error(w, err.Error(), http.StatusInternalServerError)
+							return
+						}
+						pg := grams * (n.Protein / 100)
+						fg := grams * (n.Fat / 100)
+						cg := grams * (n.Carbs / 100)
+
+						protein += pg
+						fat += fg
+						carbs += cg
+
+						nuts = Div(
+							Class("flex flex-row space-x-2 text-gray-500"),
+							Div(T(Fmt("%.2fg protein", pg))),
+							Div(T(Fmt("%.2fg fat", fg))),
+							Div(T(Fmt("%.2fg carbs", cg))),
+						)
+					}
+				}
+
 				ingredients = append(ingredients, Div(
 					Class("flex flex-col"),
 					Div(T(fmt.Sprintf("%s %s %s %s", i.Amount, i.Unit, i.Name, i.Comment))),
 					//Span(Class("text-gray-500"), T(i.Name)),
-					Ch(foodItems),
+					nuts,
+					//Ch(foodItems),
 				))
 			}
 
@@ -905,6 +984,8 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 				))
 			}
 
+			servings := 4.0
+
 			id := rs.Recipe.ID
 			DefaultLayout(
 				Div(
@@ -914,6 +995,17 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 					Div(
 						P(Class("text-2xl font-semibold mb-4"), T("Ingredients")),
 						Ul(Class("space-y-4"), Ch(ingredients)),
+					),
+					Div(
+						Class("flex flex-row space-x-2 text-gray-500"),
+						Div(T(Fmt("servings: %.1f", servings))),
+					),
+					Div(
+						Class("flex flex-row space-x-2 text-gray-500"),
+						Div(T(Fmt("per serving: "))),
+						Div(T(Fmt("%.2fg protein", protein/servings))),
+						Div(T(Fmt("%.2fg fat", fat/servings))),
+						Div(T(Fmt("%.2fg carbs", carbs/servings))),
 					),
 					Div(Class("divider")),
 					Div(

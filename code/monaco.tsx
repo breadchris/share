@@ -57,7 +57,8 @@ const makeid = (length) => {
     return result;
 };
 
-const CodeEditor = ({ fileName, darkMode, func, vimModeEnabled, isServerEnvironment, code: initialCode }) => {
+const CodeEditor = ({ props }) => {
+    const {fileName, darkMode, func, vimModeEnabled, isServerEnvironment, code: initialCode} = props;
     const [code, setCode] = useState(initialCode);
     const [data, setData] = useState(localStorage.getItem('data') || '{}');
     const [result, setResult] = useState('');
@@ -74,13 +75,15 @@ const CodeEditor = ({ fileName, darkMode, func, vimModeEnabled, isServerEnvironm
     );
     const client = useRef();
 
+    console.log(initialCode, fileName)
+
     useEffect(() => {
         disposables.current = registerGoLanguageProviders();
 
         return () => {
             disposables.current.forEach((d) => d.dispose());
             analyzer.current?.dispose();
-            vimAdapter.current?.dispose();
+            // vimAdapter.current?.dispose();
             if (editorInstance.current) {
                 monacoInstance.current?.editor.removeAllMarkers(editorInstance.current.getId());
                 monacoInstance.current?.editor.getModels().forEach((m) => m.dispose());
@@ -113,23 +116,23 @@ const CodeEditor = ({ fileName, darkMode, func, vimModeEnabled, isServerEnvironm
     };
 
     const dataEditorDidMount = (editor, monaco) => {
-        editor.onKeyDown((e) => {
-            if (vimModeEnabled) {
-                return;
-            }
-            vimCommandAdapter.current?.handleKeyDownEvent(e, '');
-        });
+        // editor.onKeyDown((e) => {
+        //     if (vimModeEnabled) {
+        //         return;
+        //     }
+        //     vimCommandAdapter.current?.handleKeyDownEvent(e, '');
+        // });
         editor.onDidChangeCursorPosition((e) => {
             const { position } = e;
             console.log(`Cursor position: ${position.lineNumber}:${position.column}`);
         });
 
-        const [vimAdapterInstance, statusAdapter] = createVimModeAdapter(editor);
-        vimAdapter.current = vimAdapterInstance;
-        vimCommandAdapter.current = statusAdapter;
+        // const [vimAdapterInstance, statusAdapter] = createVimModeAdapter(editor);
+        // vimAdapter.current = vimAdapterInstance;
+        // vimCommandAdapter.current = statusAdapter;
 
-        console.log('Vim mode enabled');
-        vimAdapterInstance.attach();
+        // console.log('Vim mode enabled');
+        // vimAdapterInstance.attach();
 
         const actions = [
             {
@@ -159,12 +162,12 @@ const CodeEditor = ({ fileName, darkMode, func, vimModeEnabled, isServerEnvironm
 
         const leapClient = new leap_client();
 
-        editor.onKeyDown((e) => {
-            if (vimModeEnabled) {
-                return;
-            }
-            vimCommandAdapter.current?.handleKeyDownEvent(e, '');
-        });
+        // editor.onKeyDown((e) => {
+        //     if (vimModeEnabled) {
+        //         return;
+        //     }
+        //     vimCommandAdapter.current?.handleKeyDownEvent(e, '');
+        // });
         editor.onDidChangeCursorPosition((e) => {
             const { position } = e;
             console.log(`Cursor position: ${position.lineNumber}:${position.column}`);
@@ -180,9 +183,9 @@ const CodeEditor = ({ fileName, darkMode, func, vimModeEnabled, isServerEnvironm
             });
         });
 
-        const [vimAdapterInstance, statusAdapter] = createVimModeAdapter(editor);
-        vimAdapter.current = vimAdapterInstance;
-        vimCommandAdapter.current = statusAdapter;
+        // const [vimAdapterInstance, statusAdapter] = createVimModeAdapter(editor);
+        // vimAdapter.current = vimAdapterInstance;
+        // vimCommandAdapter.current = statusAdapter;
 
         leapClient.on('error', (body) => console.error(body));
         leapClient.on('disconnect', () => console.log('we are disconnected and stuff'));
@@ -214,10 +217,10 @@ const CodeEditor = ({ fileName, darkMode, func, vimModeEnabled, isServerEnvironm
 
         client.current = leapClient;
 
-        if (vimModeEnabled) {
-            console.log('Vim mode enabled');
-            vimAdapterInstance.attach();
-        }
+        // if (vimModeEnabled) {
+        //     console.log('Vim mode enabled');
+        //     vimAdapterInstance.attach();
+        // }
 
         const actions = [
             {
@@ -266,7 +269,7 @@ const CodeEditor = ({ fileName, darkMode, func, vimModeEnabled, isServerEnvironm
         attachCustomCommands(editor);
         editor.focus();
 
-        debouncedAnalyzeFunc.current(fileName, code);
+        // debouncedAnalyzeFunc.current(fileName, code);
     };
 
     const runCode = async (d?: string) => {
@@ -285,30 +288,30 @@ const CodeEditor = ({ fileName, darkMode, func, vimModeEnabled, isServerEnvironm
     };
 
     useEffect(() => {
-        debouncedAnalyzeFunc.current(fileName, code);
+        // debouncedAnalyzeFunc.current(fileName, code);
     }, [fileName, isServerEnvironment]);
 
-    useEffect(() => {
-        if (vimModeEnabled) {
-            console.log('Vim mode enabled');
-            vimAdapter.current?.attach();
-        } else {
-            console.log('Vim mode disabled');
-            vimAdapter.current?.dispose();
-        }
-    }, [vimModeEnabled]);
-
+    // useEffect(() => {
+    //     if (vimModeEnabled) {
+    //         console.log('Vim mode enabled');
+    //         vimAdapter.current?.attach();
+    //     } else {
+    //         console.log('Vim mode disabled');
+    //         vimAdapter.current?.dispose();
+    //     }
+    // }, [vimModeEnabled]);
 
     const onChange = (newVal, e) => {
         setCode(newVal);
-        runCode();
+        document.getElementById("competition-graph").value = newVal;
+        // runCode();
     }
 
     const onDataChange = (newVal, e) => {
         setData(newVal);
         // save to local storage
         localStorage.setItem('data', newVal);
-        runCode(newVal);
+        // runCode(newVal);
     }
 
     const modalRef = useRef(null);
@@ -336,25 +339,25 @@ const CodeEditor = ({ fileName, darkMode, func, vimModeEnabled, isServerEnvironm
 
     return (
         <>
-            <dialog id="my_modal_1" className="modal" ref={modalRef}>
-                <div className="modal-box">
-                    <iframe src={"https://daisyui.com/components/"} className={"w-full h-96"}></iframe>
-                    <form method="dialog" className="modal-backdrop">
-                        <button>close</button>
-                    </form>
-                </div>
-            </dialog>
+            {/*<dialog id="my_modal_1" className="modal" ref={modalRef}>*/}
+            {/*    <div className="modal-box">*/}
+            {/*        <iframe src={"https://daisyui.com/components/"} className={"w-full h-96"}></iframe>*/}
+            {/*        <form method="dialog" className="modal-backdrop">*/}
+            {/*            <button>close</button>*/}
+            {/*        </form>*/}
+            {/*    </div>*/}
+            {/*</dialog>*/}
 
             <PanelGroup direction="horizontal">
-                <Panel defaultSize={20}>
-                    <div className={"overflow-auto h-full"} hx-get={`/code/sidebar?file=${fileName}`} hx-trigger="load"></div>
-                </Panel>
-                <PanelResizeHandle className="w-2 bg-gray-300"/>
+                {/*<Panel defaultSize={20}>*/}
+                {/*    <div className={"overflow-auto h-full"} hx-get={`/code/sidebar?file=${fileName}`} hx-trigger="load"></div>*/}
+                {/*</Panel>*/}
+                {/*<PanelResizeHandle className="w-2 bg-gray-300"/>*/}
                 <Panel>
                     <PanelGroup direction="vertical">
                         <Panel>
                             <MonacoEditor
-                                language={LANGUAGE_GOLANG}
+                                language={"json"}
                                 theme={darkMode ? 'vs-dark' : 'vs-light'}
                                 value={code}
                                 defaultValue={code}
@@ -371,27 +374,27 @@ const CodeEditor = ({ fileName, darkMode, func, vimModeEnabled, isServerEnvironm
                         </Panel>
                     </PanelGroup>
                 </Panel>
-                <PanelResizeHandle className="w-2 bg-gray-300"/>
-                <Panel>
-                    <PanelGroup direction="vertical">
-                        <Panel>
-                            <div className={"overflow-auto h-full"} dangerouslySetInnerHTML={{__html: result}}/>
-                        </Panel>
-                        <PanelResizeHandle className="h-2 bg-gray-300"/>
-                        <Panel defaultSize={20}>
-                            <MonacoEditor
-                                language={LANGUAGE_GOLANG}
-                                theme={darkMode ? 'vs-dark' : 'vs-light'}
-                                value={data}
-                                defaultValue={data}
-                                options={{}}
-                                onChange={onDataChange}
-                                onMount={(e, m) => dataEditorDidMount(e, m)}
-                                loading={<span className={'loading loading-spinner'}>Loading...</span>}
-                            />
-                        </Panel>
-                    </PanelGroup>
-                </Panel>
+                {/*<PanelResizeHandle className="w-2 bg-gray-300"/>*/}
+                {/*<Panel>*/}
+                {/*    <PanelGroup direction="vertical">*/}
+                {/*        <Panel>*/}
+                {/*            <div className={"overflow-auto h-full"} dangerouslySetInnerHTML={{__html: result}}/>*/}
+                {/*        </Panel>*/}
+                {/*        <PanelResizeHandle className="h-2 bg-gray-300"/>*/}
+                {/*        <Panel defaultSize={20}>*/}
+                {/*            <MonacoEditor*/}
+                {/*                language={"json"}*/}
+                {/*                theme={darkMode ? 'vs-dark' : 'vs-light'}*/}
+                {/*                value={data}*/}
+                {/*                defaultValue={data}*/}
+                {/*                options={{}}*/}
+                {/*                onChange={onDataChange}*/}
+                {/*                onMount={(e, m) => dataEditorDidMount(e, m)}*/}
+                {/*                loading={<span className={'loading loading-spinner'}>Loading...</span>}*/}
+                {/*            />*/}
+                {/*        </Panel>*/}
+                {/*    </PanelGroup>*/}
+                {/*</Panel>*/}
             </PanelGroup>
         </>
     );
@@ -400,8 +403,13 @@ const CodeEditor = ({ fileName, darkMode, func, vimModeEnabled, isServerEnvironm
 const s = document.getElementById('monaco-editor');
 if (s) {
     const r = createRoot(s);
-    // get filename from data-filename attribute
-    const fileName = s.getAttribute('data-filename');
-    const func = s.getAttribute('data-function');
-    r.render(<CodeEditor darkMode={false} fileName={fileName} func={func} vimModeEnabled={true} isServerEnvironment={false}/>);
+    const aprops = s.getAttribute('data-props');
+    const pprops = JSON.parse(aprops);
+    const props = {
+        darkMode: true,
+        vimModeEnabled: false,
+        isServerEnvironment: true,
+        ...pprops,
+    }
+    r.render(<CodeEditor props={pprops}/>);
 }

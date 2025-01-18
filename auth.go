@@ -129,7 +129,8 @@ func (s *Auth) handleInvite(w http.ResponseWriter, r *http.Request) {
 }
 
 type AuthState struct {
-	Msg string
+	Next string
+	Msg  string
 }
 
 func (s *Auth) handleLogout(w http.ResponseWriter, r *http.Request) {
@@ -138,11 +139,14 @@ func (s *Auth) handleLogout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
+	next := r.URL.Query().Get("next")
 	switch r.Method {
 	case http.MethodGet:
 		sec := r.URL.Query().Get("sec")
 		if sec == "" {
-			LoginPage(AuthState{}).RenderPage(w, r)
+			LoginPage(AuthState{
+				Next: next,
+			}).RenderPage(w, r)
 			return
 		}
 		var user models.User

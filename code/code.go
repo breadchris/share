@@ -78,6 +78,17 @@ func New(d Deps) *http.ServeMux {
 
 		switch r.Method {
 		case http.MethodGet:
+			props := map[string]string{
+				"fileName":  file,
+				"function":  function,
+				"code":      "",
+				"serverURL": fmt.Sprintf("%s/code/ws", d.Config.ExternalURL),
+			}
+			mp, err := json.Marshal(props)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 			w.Write([]byte(Html(
 				Head(
 					Title(T("Code")),
@@ -91,7 +102,7 @@ func New(d Deps) *http.ServeMux {
 							Script(Src("/static/leapclient.js")),
 							Script(Src("/static/leap-bind-textarea.js")),
 							Link(Rel("stylesheet"), Href("/static/code/monaco.css")),
-							Div(Class("w-full h-full"), Id("monaco-editor"), Attr("data-filename", file), Attr("data-function", function)),
+							Div(Class("w-full h-full"), Id("monaco-editor"), Attr("data-props", string(mp))),
 							Script(Attr("src", "/static/code/monaco.js"), Attr("type", "module")),
 						),
 					),

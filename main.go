@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/breadchris/share/x"
+	"github.com/breadchris/share/xctf"
 	"github.com/evanw/esbuild/pkg/api"
 	"html/template"
 	"io"
@@ -42,6 +43,7 @@ import (
 	"github.com/breadchris/share/llm"
 	"github.com/breadchris/share/session"
 	"github.com/breadchris/share/wasmcode"
+	xmodels "github.com/breadchris/share/xctf/models"
 	"github.com/gomarkdown/markdown"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -71,6 +73,9 @@ func loadDB() *gorm.DB {
 		&models.GroupMembership{},
 		&models.Food{},
 		&models.FoodName{},
+
+		// xctf models
+		&xmodels.Competition{},
 	); err != nil {
 		log.Fatalf("Failed to migrate db: %v", err)
 	}
@@ -139,6 +144,7 @@ func startServer(useTLS bool, port int) {
 
 	socket.SetupHandlers(registry)
 
+	p("/xctf", interpreted(xctf.New))
 	p("/recipe", interpreted(NewRecipe))
 	p("/articles", interpreted(NewArticle))
 	p("/zine", interpreted(NewZine))

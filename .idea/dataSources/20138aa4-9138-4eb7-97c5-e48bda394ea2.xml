@@ -446,8 +446,8 @@
     </routine>
     <schema id="177" parent="1" name="main">
       <Current>1</Current>
-      <IntrospectionTimestamp>2024-12-21.17:51:30.766</IntrospectionTimestamp>
-      <LocalIntrospectionTimestamp>2024-12-21.22:51:30</LocalIntrospectionTimestamp>
+      <IntrospectionTimestamp>2025-01-08.23:51:09.718</IntrospectionTimestamp>
+      <LocalIntrospectionTimestamp>2025-01-09.04:51:09</LocalIntrospectionTimestamp>
     </schema>
     <argument id="178" parent="16">
       <ArgumentDirection>R</ArgumentDirection>
@@ -1469,357 +1469,416 @@
     <argument id="517" parent="176">
       <Position>1</Position>
     </argument>
-    <table id="518" parent="177" name="foods"/>
-    <table id="519" parent="177" name="group"/>
-    <table id="520" parent="177" name="group_membership"/>
-    <table id="521" parent="177" name="group_memberships"/>
-    <table id="522" parent="177" name="groups"/>
-    <table id="523" parent="177" name="identities"/>
-    <table id="524" parent="177" name="identity"/>
-    <table id="525" parent="177" name="sqlite_master">
+    <table id="518" parent="177" name="competitions"/>
+    <table id="519" parent="177" name="food_names"/>
+    <table id="520" parent="177" name="foods"/>
+    <table id="521" parent="177" name="group"/>
+    <table id="522" parent="177" name="group_membership"/>
+    <table id="523" parent="177" name="group_memberships"/>
+    <table id="524" parent="177" name="groups"/>
+    <table id="525" parent="177" name="identities"/>
+    <table id="526" parent="177" name="identity"/>
+    <table id="527" parent="177" name="sqlite_master">
       <System>1</System>
     </table>
-    <table id="526" parent="177" name="sqlite_sequence">
+    <table id="528" parent="177" name="sqlite_sequence">
       <System>1</System>
     </table>
-    <table id="527" parent="177" name="user"/>
-    <table id="528" parent="177" name="users"/>
-    <column id="529" parent="518" name="fdc_id">
+    <table id="529" parent="177" name="user"/>
+    <table id="530" parent="177" name="users"/>
+    <column id="531" parent="518" name="id">
+      <DasType>text|0s</DasType>
+      <Position>1</Position>
+    </column>
+    <column id="532" parent="518" name="created_at">
+      <DasType>datetime|0s</DasType>
+      <Position>2</Position>
+    </column>
+    <column id="533" parent="518" name="updated_at">
+      <DasType>datetime|0s</DasType>
+      <Position>3</Position>
+    </column>
+    <column id="534" parent="518" name="deleted_at">
+      <DasType>datetime|0s</DasType>
+      <Position>4</Position>
+    </column>
+    <column id="535" parent="518" name="name">
+      <DasType>text|0s</DasType>
+      <Position>5</Position>
+    </column>
+    <column id="536" parent="518" name="graph">
+      <DasType>text|0s</DasType>
+      <Position>6</Position>
+    </column>
+    <column id="537" parent="518" name="active">
+      <DasType>numeric|0s</DasType>
+      <Position>7</Position>
+    </column>
+    <index id="538" parent="518" name="sqlite_autoindex_competitions_1">
+      <ColNames>id</ColNames>
+      <NameSurrogate>1</NameSurrogate>
+      <Unique>1</Unique>
+    </index>
+    <index id="539" parent="518" name="idx_competitions_deleted_at">
+      <ColNames>deleted_at</ColNames>
+    </index>
+    <key id="540" parent="518">
+      <ColNames>id</ColNames>
+      <Primary>1</Primary>
+      <UnderlyingIndexName>sqlite_autoindex_competitions_1</UnderlyingIndexName>
+    </key>
+    <column id="541" parent="519" name="fdc_id">
+      <DasType>integer|0s</DasType>
+      <Position>1</Position>
+    </column>
+    <column id="542" parent="519" name="name">
+      <DasType>text|0s</DasType>
+      <Position>2</Position>
+    </column>
+    <foreign-key id="543" parent="519" name="fk_food_names_food">
+      <ColNames>fdc_id</ColNames>
+      <RefColNames>fdc_id</RefColNames>
+      <RefTableName>foods</RefTableName>
+    </foreign-key>
+    <column id="544" parent="520" name="fdc_id">
       <AutoIncrement>1</AutoIncrement>
       <DasType>integer|0s</DasType>
       <Position>1</Position>
     </column>
-    <column id="530" parent="518" name="created_at">
+    <column id="545" parent="520" name="created_at">
       <DasType>datetime|0s</DasType>
       <Position>2</Position>
     </column>
-    <column id="531" parent="518" name="description">
+    <column id="546" parent="520" name="description">
       <DasType>text|0s</DasType>
       <Position>3</Position>
     </column>
-    <column id="532" parent="518" name="raw">
+    <column id="547" parent="520" name="raw">
       <DasType>JSON|0s</DasType>
       <Position>4</Position>
     </column>
-    <key id="533" parent="518">
+    <index id="548" parent="520" name="idx_foods_description">
+      <ColNames>description</ColNames>
+    </index>
+    <key id="549" parent="520">
       <ColNames>fdc_id</ColNames>
       <Primary>1</Primary>
     </key>
-    <column id="534" parent="519" name="id">
+    <column id="550" parent="521" name="id">
       <DasType>text|0s</DasType>
       <Position>1</Position>
     </column>
-    <column id="535" parent="519" name="name">
+    <column id="551" parent="521" name="name">
       <DasType>text|0s</DasType>
       <NotNull>1</NotNull>
       <Position>2</Position>
     </column>
-    <column id="536" parent="519" name="description">
+    <column id="552" parent="521" name="description">
       <DasType>text|0s</DasType>
       <Position>3</Position>
     </column>
-    <column id="537" parent="519" name="created_at">
+    <column id="553" parent="521" name="created_at">
       <DasType>datetime|0s</DasType>
       <Position>4</Position>
     </column>
-    <index id="538" parent="519" name="sqlite_autoindex_group_1">
+    <index id="554" parent="521" name="sqlite_autoindex_group_1">
       <ColNames>id</ColNames>
       <NameSurrogate>1</NameSurrogate>
       <Unique>1</Unique>
     </index>
-    <index id="539" parent="519" name="sqlite_autoindex_group_2">
+    <index id="555" parent="521" name="sqlite_autoindex_group_2">
       <ColNames>name</ColNames>
       <NameSurrogate>1</NameSurrogate>
       <Unique>1</Unique>
     </index>
-    <key id="540" parent="519">
+    <key id="556" parent="521">
       <ColNames>id</ColNames>
       <Primary>1</Primary>
       <UnderlyingIndexName>sqlite_autoindex_group_1</UnderlyingIndexName>
     </key>
-    <key id="541" parent="519" name="uni_group_name">
+    <key id="557" parent="521" name="uni_group_name">
       <ColNames>name</ColNames>
       <UnderlyingIndexName>sqlite_autoindex_group_2</UnderlyingIndexName>
     </key>
-    <column id="542" parent="520" name="id">
+    <column id="558" parent="522" name="id">
       <DasType>text|0s</DasType>
       <Position>1</Position>
     </column>
-    <column id="543" parent="520" name="user_id">
+    <column id="559" parent="522" name="user_id">
       <DasType>text|0s</DasType>
       <Position>2</Position>
     </column>
-    <column id="544" parent="520" name="group_id">
+    <column id="560" parent="522" name="group_id">
       <DasType>text|0s</DasType>
       <Position>3</Position>
     </column>
-    <column id="545" parent="520" name="role">
+    <column id="561" parent="522" name="role">
       <DasType>text|0s</DasType>
       <Position>4</Position>
     </column>
-    <column id="546" parent="520" name="joined_at">
+    <column id="562" parent="522" name="joined_at">
       <DasType>datetime|0s</DasType>
       <Position>5</Position>
     </column>
-    <foreign-key id="547" parent="520" name="fk_user_group_memberships">
+    <foreign-key id="563" parent="522" name="fk_user_group_memberships">
       <ColNames>user_id</ColNames>
       <RefColNames>id</RefColNames>
       <RefTableName>user</RefTableName>
     </foreign-key>
-    <foreign-key id="548" parent="520" name="fk_group_membership_group">
+    <foreign-key id="564" parent="522" name="fk_group_membership_group">
       <ColNames>group_id</ColNames>
       <RefColNames>id</RefColNames>
       <RefTableName>group</RefTableName>
     </foreign-key>
-    <index id="549" parent="520" name="sqlite_autoindex_group_membership_1">
+    <index id="565" parent="522" name="sqlite_autoindex_group_membership_1">
       <ColNames>id</ColNames>
       <NameSurrogate>1</NameSurrogate>
       <Unique>1</Unique>
     </index>
-    <index id="550" parent="520" name="idx_group_membership_user_id">
+    <index id="566" parent="522" name="idx_group_membership_user_id">
       <ColNames>user_id</ColNames>
     </index>
-    <index id="551" parent="520" name="idx_group_membership_group_id">
+    <index id="567" parent="522" name="idx_group_membership_group_id">
       <ColNames>group_id</ColNames>
     </index>
-    <key id="552" parent="520">
+    <key id="568" parent="522">
       <ColNames>id</ColNames>
       <Primary>1</Primary>
       <UnderlyingIndexName>sqlite_autoindex_group_membership_1</UnderlyingIndexName>
     </key>
-    <column id="553" parent="521" name="id">
+    <column id="569" parent="523" name="id">
       <DasType>text|0s</DasType>
       <Position>1</Position>
     </column>
-    <column id="554" parent="521" name="user_id">
+    <column id="570" parent="523" name="user_id">
       <DasType>text|0s</DasType>
       <Position>2</Position>
     </column>
-    <column id="555" parent="521" name="group_id">
+    <column id="571" parent="523" name="group_id">
       <DasType>text|0s</DasType>
       <Position>3</Position>
     </column>
-    <column id="556" parent="521" name="role">
+    <column id="572" parent="523" name="role">
       <DasType>text|0s</DasType>
       <Position>4</Position>
     </column>
-    <column id="557" parent="521" name="joined_at">
+    <column id="573" parent="523" name="joined_at">
       <DasType>datetime|0s</DasType>
       <Position>5</Position>
     </column>
-    <column id="558" parent="521" name="created_at">
+    <column id="574" parent="523" name="created_at">
       <DasType>datetime|0s</DasType>
       <Position>6</Position>
     </column>
-    <foreign-key id="559" parent="521" name="fk_users_group_memberships">
+    <foreign-key id="575" parent="523" name="fk_users_group_memberships">
       <ColNames>user_id</ColNames>
       <RefColNames>id</RefColNames>
       <RefTableName>users</RefTableName>
     </foreign-key>
-    <foreign-key id="560" parent="521" name="fk_group_memberships_group">
+    <foreign-key id="576" parent="523" name="fk_group_memberships_group">
       <ColNames>group_id</ColNames>
       <RefColNames>id</RefColNames>
       <RefTableName>groups</RefTableName>
     </foreign-key>
-    <index id="561" parent="521" name="sqlite_autoindex_group_memberships_1">
+    <index id="577" parent="523" name="sqlite_autoindex_group_memberships_1">
       <ColNames>id</ColNames>
       <NameSurrogate>1</NameSurrogate>
       <Unique>1</Unique>
     </index>
-    <index id="562" parent="521" name="idx_group_memberships_user_id">
+    <index id="578" parent="523" name="idx_group_memberships_user_id">
       <ColNames>user_id</ColNames>
     </index>
-    <index id="563" parent="521" name="idx_group_memberships_group_id">
+    <index id="579" parent="523" name="idx_group_memberships_group_id">
       <ColNames>group_id</ColNames>
     </index>
-    <key id="564" parent="521">
+    <key id="580" parent="523">
       <ColNames>id</ColNames>
       <Primary>1</Primary>
       <UnderlyingIndexName>sqlite_autoindex_group_memberships_1</UnderlyingIndexName>
     </key>
-    <column id="565" parent="522" name="id">
+    <column id="581" parent="524" name="id">
       <DasType>text|0s</DasType>
       <Position>1</Position>
     </column>
-    <column id="566" parent="522" name="name">
+    <column id="582" parent="524" name="name">
       <DasType>text|0s</DasType>
       <NotNull>1</NotNull>
       <Position>2</Position>
     </column>
-    <column id="567" parent="522" name="description">
+    <column id="583" parent="524" name="description">
       <DasType>text|0s</DasType>
       <Position>3</Position>
     </column>
-    <column id="568" parent="522" name="created_at">
+    <column id="584" parent="524" name="created_at">
       <DasType>datetime|0s</DasType>
       <Position>4</Position>
     </column>
-    <index id="569" parent="522" name="sqlite_autoindex_groups_1">
+    <index id="585" parent="524" name="sqlite_autoindex_groups_1">
       <ColNames>id</ColNames>
       <NameSurrogate>1</NameSurrogate>
       <Unique>1</Unique>
     </index>
-    <index id="570" parent="522" name="sqlite_autoindex_groups_2">
+    <index id="586" parent="524" name="sqlite_autoindex_groups_2">
       <ColNames>name</ColNames>
       <NameSurrogate>1</NameSurrogate>
       <Unique>1</Unique>
     </index>
-    <key id="571" parent="522">
+    <key id="587" parent="524">
       <ColNames>id</ColNames>
       <Primary>1</Primary>
       <UnderlyingIndexName>sqlite_autoindex_groups_1</UnderlyingIndexName>
     </key>
-    <key id="572" parent="522" name="uni_groups_name">
+    <key id="588" parent="524" name="uni_groups_name">
       <ColNames>name</ColNames>
       <UnderlyingIndexName>sqlite_autoindex_groups_2</UnderlyingIndexName>
     </key>
-    <column id="573" parent="523" name="id">
+    <column id="589" parent="525" name="id">
       <DasType>text|0s</DasType>
       <Position>1</Position>
     </column>
-    <column id="574" parent="523" name="provider">
+    <column id="590" parent="525" name="provider">
       <DasType>text|0s</DasType>
       <Position>2</Position>
     </column>
-    <column id="575" parent="523" name="created_at">
+    <column id="591" parent="525" name="created_at">
       <DasType>datetime|0s</DasType>
       <Position>3</Position>
     </column>
-    <column id="576" parent="523" name="user_id">
+    <column id="592" parent="525" name="user_id">
       <DasType>text|0s</DasType>
       <Position>4</Position>
     </column>
-    <foreign-key id="577" parent="523" name="fk_users_identities">
+    <foreign-key id="593" parent="525" name="fk_users_identities">
       <ColNames>user_id</ColNames>
       <RefColNames>id</RefColNames>
       <RefTableName>users</RefTableName>
     </foreign-key>
-    <index id="578" parent="523" name="sqlite_autoindex_identities_1">
+    <index id="594" parent="525" name="sqlite_autoindex_identities_1">
       <ColNames>id</ColNames>
       <NameSurrogate>1</NameSurrogate>
       <Unique>1</Unique>
     </index>
-    <key id="579" parent="523">
+    <key id="595" parent="525">
       <ColNames>id</ColNames>
       <Primary>1</Primary>
       <UnderlyingIndexName>sqlite_autoindex_identities_1</UnderlyingIndexName>
     </key>
-    <column id="580" parent="524" name="id">
+    <column id="596" parent="526" name="id">
       <DasType>text|0s</DasType>
       <Position>1</Position>
     </column>
-    <column id="581" parent="524" name="provider">
+    <column id="597" parent="526" name="provider">
       <DasType>text|0s</DasType>
       <Position>2</Position>
     </column>
-    <column id="582" parent="524" name="created_at">
+    <column id="598" parent="526" name="created_at">
       <DasType>datetime|0s</DasType>
       <Position>3</Position>
     </column>
-    <column id="583" parent="524" name="user_id">
+    <column id="599" parent="526" name="user_id">
       <DasType>text|0s</DasType>
       <Position>4</Position>
     </column>
-    <foreign-key id="584" parent="524" name="fk_user_identities">
+    <foreign-key id="600" parent="526" name="fk_user_identities">
       <ColNames>user_id</ColNames>
       <RefColNames>id</RefColNames>
       <RefTableName>user</RefTableName>
     </foreign-key>
-    <index id="585" parent="524" name="sqlite_autoindex_identity_1">
+    <index id="601" parent="526" name="sqlite_autoindex_identity_1">
       <ColNames>id</ColNames>
       <NameSurrogate>1</NameSurrogate>
       <Unique>1</Unique>
     </index>
-    <key id="586" parent="524">
+    <key id="602" parent="526">
       <ColNames>id</ColNames>
       <Primary>1</Primary>
       <UnderlyingIndexName>sqlite_autoindex_identity_1</UnderlyingIndexName>
     </key>
-    <column id="587" parent="525" name="type">
+    <column id="603" parent="527" name="type">
       <DasType>TEXT|0s</DasType>
       <Position>1</Position>
     </column>
-    <column id="588" parent="525" name="name">
+    <column id="604" parent="527" name="name">
       <DasType>TEXT|0s</DasType>
       <Position>2</Position>
     </column>
-    <column id="589" parent="525" name="tbl_name">
+    <column id="605" parent="527" name="tbl_name">
       <DasType>TEXT|0s</DasType>
       <Position>3</Position>
     </column>
-    <column id="590" parent="525" name="rootpage">
+    <column id="606" parent="527" name="rootpage">
       <DasType>INT|0s</DasType>
       <Position>4</Position>
     </column>
-    <column id="591" parent="525" name="sql">
+    <column id="607" parent="527" name="sql">
       <DasType>TEXT|0s</DasType>
       <Position>5</Position>
     </column>
-    <column id="592" parent="526" name="name">
+    <column id="608" parent="528" name="name">
       <Position>1</Position>
     </column>
-    <column id="593" parent="526" name="seq">
+    <column id="609" parent="528" name="seq">
       <Position>2</Position>
     </column>
-    <column id="594" parent="527" name="id">
+    <column id="610" parent="529" name="id">
       <DasType>text|0s</DasType>
       <Position>1</Position>
     </column>
-    <column id="595" parent="527" name="username">
+    <column id="611" parent="529" name="username">
       <DasType>text|0s</DasType>
       <Position>2</Position>
     </column>
-    <column id="596" parent="527" name="created_at">
+    <column id="612" parent="529" name="created_at">
       <DasType>datetime|0s</DasType>
       <Position>3</Position>
     </column>
-    <index id="597" parent="527" name="sqlite_autoindex_user_1">
+    <index id="613" parent="529" name="sqlite_autoindex_user_1">
       <ColNames>id</ColNames>
       <NameSurrogate>1</NameSurrogate>
       <Unique>1</Unique>
     </index>
-    <index id="598" parent="527" name="sqlite_autoindex_user_2">
+    <index id="614" parent="529" name="sqlite_autoindex_user_2">
       <ColNames>username</ColNames>
       <NameSurrogate>1</NameSurrogate>
       <Unique>1</Unique>
     </index>
-    <key id="599" parent="527">
+    <key id="615" parent="529">
       <ColNames>id</ColNames>
       <Primary>1</Primary>
       <UnderlyingIndexName>sqlite_autoindex_user_1</UnderlyingIndexName>
     </key>
-    <key id="600" parent="527" name="uni_user_username">
+    <key id="616" parent="529" name="uni_user_username">
       <ColNames>username</ColNames>
       <UnderlyingIndexName>sqlite_autoindex_user_2</UnderlyingIndexName>
     </key>
-    <column id="601" parent="528" name="id">
+    <column id="617" parent="530" name="id">
       <DasType>text|0s</DasType>
       <Position>1</Position>
     </column>
-    <column id="602" parent="528" name="username">
+    <column id="618" parent="530" name="username">
       <DasType>text|0s</DasType>
       <Position>2</Position>
     </column>
-    <column id="603" parent="528" name="created_at">
+    <column id="619" parent="530" name="created_at">
       <DasType>datetime|0s</DasType>
       <Position>3</Position>
     </column>
-    <index id="604" parent="528" name="sqlite_autoindex_users_1">
+    <index id="620" parent="530" name="sqlite_autoindex_users_1">
       <ColNames>id</ColNames>
       <NameSurrogate>1</NameSurrogate>
       <Unique>1</Unique>
     </index>
-    <index id="605" parent="528" name="sqlite_autoindex_users_2">
+    <index id="621" parent="530" name="sqlite_autoindex_users_2">
       <ColNames>username</ColNames>
       <NameSurrogate>1</NameSurrogate>
       <Unique>1</Unique>
     </index>
-    <key id="606" parent="528">
+    <key id="622" parent="530">
       <ColNames>id</ColNames>
       <Primary>1</Primary>
       <UnderlyingIndexName>sqlite_autoindex_users_1</UnderlyingIndexName>
     </key>
-    <key id="607" parent="528" name="uni_users_username">
+    <key id="623" parent="530" name="uni_users_username">
       <ColNames>username</ColNames>
       <UnderlyingIndexName>sqlite_autoindex_users_2</UnderlyingIndexName>
     </key>

@@ -42,6 +42,12 @@
 //go:generate yaegi extract github.com/kkdai/youtube/v2
 //go:generate yaegi extract golang.org/x/net/http/httpproxy
 //go:generate yaegi extract gorm.io/datatypes
+//go:generate yaegi extract github.com/breadchris/share/xctf/models
+//go:generate yaegi extract github.com/google/gopacket
+//go:generate yaegi extract github.com/google/gopacket/pcapgo
+//go:generate yaegi extract github.com/google/gopacket/layers
+//go:generate yaegi extract github.com/breadchris/share/xctf/chalgen
+//go:generate yaegi extract github.com/yeka/zip
 
 package symbol
 

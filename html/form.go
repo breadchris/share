@@ -55,12 +55,11 @@ func BuildForm(fieldPath string, data any) *Node {
 			}
 			h = fmt.Sprintf("/?op=replace&path=%s&value=[%s]", currentFieldPath, sliceJSONType)
 		}
-		add := A(Class("btn btn-neutral"), Href(h), T("Add"))
 		ds := Div(
 			Class("p-4"),
 			Div(Class("divider"), T(currentFieldPath)),
 			d,
-			add,
+			A(Class("btn btn-neutral"), Href(h), T("Add")),
 		)
 		form.Children = append(form.Children, ds)
 

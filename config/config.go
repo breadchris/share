@@ -32,6 +32,12 @@ type GithubConfig struct {
 	ClientSecret string `json:"client_secret"`
 }
 
+type ProxyConfig struct {
+	URL      string `json:"url"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 type AppConfig struct {
 	OpenAIKey          string        `json:"openai_key"`
 	SMTP               SMTPConfig    `json:"smtp"`
@@ -44,6 +50,7 @@ type AppConfig struct {
 	Stripe             Stripe        `json:"stripe"`
 	Figma              string        `json:"figma"`
 	Github             GithubConfig  `json:"github"`
+	Proxy              ProxyConfig   `json:"proxy"`
 }
 
 func New() AppConfig {
