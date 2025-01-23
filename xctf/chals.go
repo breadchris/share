@@ -349,37 +349,37 @@ func Handle(d deps.Deps) http.HandlerFunc {
 		for _, n := range graph.Nodes {
 			if n.ID == chalId {
 				switch u := n.Challenge.Value.(type) {
-				case *chalgen.CMS:
-					DefaultLayout(
-						Div(
-							Class("overflow-x-auto"),
-							Table(
-								Class("table"),
-								Thead(Tr(Th(), Th(Text("Name")), Th(Text("Job")), Th(Text("Favorite Color")))),
-								Tbody(
-									Tr(
-										Th(Text("1")),
-										Td(Text("Cy Ganderton")),
-										Td(Text("Quality Control Specialist")),
-										Td(Text("Blue")),
-									),
-									Tr(
-										Th(Text("2")),
-										Td(Text("Hart Hagerty")),
-										Td(Text("Desktop Support Technician")),
-										Td(Text("Purple")),
-									),
-									Tr(
-										Th(Text("3")),
-										Td(Text("Brice Swyre")),
-										Td(Text("Tax Accountant")),
-										Td(Text("Red")),
-									),
-								),
-							),
-						),
-					).RenderPageCtx(ctx, w, r)
-					return
+				//case *chalgen.CMS:
+				//	DefaultLayout(
+				//		Div(
+				//			Class("overflow-x-auto"),
+				//			Table(
+				//				Class("table"),
+				//				Thead(Tr(Th(), Th(Text("Name")), Th(Text("Job")), Th(Text("Favorite Color")))),
+				//				Tbody(
+				//					Tr(
+				//						Th(Text("1")),
+				//						Td(Text("Cy Ganderton")),
+				//						Td(Text("Quality Control Specialist")),
+				//						Td(Text("Blue")),
+				//					),
+				//					Tr(
+				//						Th(Text("2")),
+				//						Td(Text("Hart Hagerty")),
+				//						Td(Text("Desktop Support Technician")),
+				//						Td(Text("Purple")),
+				//					),
+				//					Tr(
+				//						Th(Text("3")),
+				//						Td(Text("Brice Swyre")),
+				//						Td(Text("Tax Accountant")),
+				//						Td(Text("Red")),
+				//					),
+				//				),
+				//			),
+				//		),
+				//	).RenderPageCtx(ctx, w, r)
+				//	return
 				case *chalgen.Xor:
 					DefaultLayout(
 						Div(T(string(xorEncryptDecrypt([]byte(u.Plaintext), []byte(u.Key))))),

@@ -14,7 +14,6 @@ func init() {
 		"AppType":        reflect.ValueOf((*chalgen.AppType)(nil)),
 		"AudioPlayer":    reflect.ValueOf((*chalgen.AudioPlayer)(nil)),
 		"Base64":         reflect.ValueOf((*chalgen.Base64)(nil)),
-		"CMS":            reflect.ValueOf((*chalgen.CMS)(nil)),
 		"CMSItem":        reflect.ValueOf((*chalgen.CMSItem)(nil)),
 		"CaesarCipher":   reflect.ValueOf((*chalgen.CaesarCipher)(nil)),
 		"Challenge":      reflect.ValueOf((*chalgen.Challenge)(nil)),

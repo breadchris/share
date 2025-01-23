@@ -4,21 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/xctf/docker/gotty.dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension.go" beforeDir="false" afterPath="$PROJECT_DIR$/extension.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/html.go" beforeDir="false" afterPath="$PROJECT_DIR$/html/html.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scratch.go" beforeDir="false" afterPath="$PROJECT_DIR$/scratch.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-config.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-config.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-html.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-html.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-xctf-chalgen.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-xctf-chalgen.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/chalgen/types.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/chalgen/types.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/chals.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/chals.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/filemanager.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/filemanager.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/phone.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/phone.go" afterDir="false" />
-    </list>
+    <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -46,38 +32,38 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;DefaultGoTemplateProperty&quot;: &quot;Go File&quot;,
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.modules.automatic.dependencies.download&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
-    &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/hacked/Documents/GitHub/share/xctf/models&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.0&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;/Users/hacked/Documents/GitHub/share/screenshare/ui/node_modules/typescript/lib&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "DefaultGoTemplateProperty": "Go File",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.go.migrated.go.modules.settings": "true",
+    "RunOnceActivity.go.modules.automatic.dependencies.download": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "git-widget-placeholder": "something",
+    "go.import.settings.migrated": "true",
+    "go.sdk.automatically.set": "true",
+    "last_opened_file_path": "/Users/hacked/Documents/GitHub/share/xctf/models",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "Modules",
+    "project.structure.proportion": "0.0",
+    "project.structure.side.proportion": "0.0",
+    "settings.editor.selected.configurable": "preferences.lookFeel",
+    "ts.external.directory.path": "/Users/hacked/Documents/GitHub/share/screenshare/ui/node_modules/typescript/lib",
+    "vue.rearranger.settings.migration": "true"
   },
-  &quot;keyToStringList&quot;: {
-    &quot;DatabaseDriversLRU&quot;: [
-      &quot;sqlite&quot;
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "sqlite"
     ]
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/xctf/models" />
@@ -217,7 +203,7 @@
       <workItem from="1733469566503" duration="15468000" />
       <workItem from="1733810624238" duration="1553000" />
       <workItem from="1734634779652" duration="96643000" />
-      <workItem from="1737226481809" duration="7640000" />
+      <workItem from="1737226481809" duration="7982000" />
     </task>
     <servers />
   </component>
