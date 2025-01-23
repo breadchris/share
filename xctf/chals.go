@@ -37,8 +37,8 @@ import (
 )
 
 func init() {
-	gob.Register(SessionState{})
 	gob.Register(chalgen.User{})
+	gob.Register(SessionState{})
 	gob.Register(PhoneState{})
 }
 
@@ -263,7 +263,6 @@ func New(d deps.Deps) *http.ServeMux {
 
 func Handle(d deps.Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		compId := r.PathValue("compid")
 		chalId := r.PathValue("chalid")
 		p := r.PathValue("path")
@@ -350,6 +349,37 @@ func Handle(d deps.Deps) http.HandlerFunc {
 		for _, n := range graph.Nodes {
 			if n.ID == chalId {
 				switch u := n.Challenge.Value.(type) {
+				case *chalgen.CMS:
+					DefaultLayout(
+						Div(
+							Class("overflow-x-auto"),
+							Table(
+								Class("table"),
+								Thead(Tr(Th(), Th(Text("Name")), Th(Text("Job")), Th(Text("Favorite Color")))),
+								Tbody(
+									Tr(
+										Th(Text("1")),
+										Td(Text("Cy Ganderton")),
+										Td(Text("Quality Control Specialist")),
+										Td(Text("Blue")),
+									),
+									Tr(
+										Th(Text("2")),
+										Td(Text("Hart Hagerty")),
+										Td(Text("Desktop Support Technician")),
+										Td(Text("Purple")),
+									),
+									Tr(
+										Th(Text("3")),
+										Td(Text("Brice Swyre")),
+										Td(Text("Tax Accountant")),
+										Td(Text("Red")),
+									),
+								),
+							),
+						),
+					).RenderPageCtx(ctx, w, r)
+					return
 				case *chalgen.Xor:
 					DefaultLayout(
 						Div(T(string(xorEncryptDecrypt([]byte(u.Plaintext), []byte(u.Key))))),
@@ -378,6 +408,59 @@ func Handle(d deps.Deps) http.HandlerFunc {
 						Posts: u.Posts,
 					}).RenderPageCtx(ctx, w, r)
 					return
+				case *chalgen.FileManager:
+					var sess SessionState
+					chatState := d.Session.Get(r.Context(), chalId)
+					if chatState != nil {
+						ss, ok := chatState.(SessionState)
+						if !ok {
+							http.Error(w, "Failed to parse session", http.StatusInternalServerError)
+							return
+						}
+						sess = ss
+					}
+					if err := r.ParseForm(); err != nil {
+						http.Error(w, "Failed to parse the form", http.StatusBadRequest)
+						return
+					}
+					parts := strings.Split(p, "/")
+					if parts[len(parts)-1] == "logout" {
+						d.Session.Remove(r.Context(), chalId)
+						w.Header().Set("Location", baseURL)
+						w.WriteHeader(http.StatusFound)
+						return
+					}
+					if parts[len(parts)-1] == "login" {
+						password := r.FormValue("password")
+						if u.Password == password {
+							sess.User = chalgen.User{
+								Username: "user",
+							}
+							d.Session.Put(r.Context(), chalId, sess)
+						}
+						w.Header().Set("Location", baseURL)
+						w.WriteHeader(http.StatusFound)
+						return
+					}
+
+					var newUrls []string
+					for _, ul := range u.URLs {
+						ul, err = templChals(ul)
+						if err != nil {
+							http.Error(w, err.Error(), http.StatusInternalServerError)
+							return
+						}
+						newUrls = append(newUrls, ul)
+					}
+					u.URLs = newUrls
+
+					DefaultLayout(FileManager(FileManagerState{
+						Flag:    n.Flag,
+						Session: sess,
+						URL: FileManagerURL{
+							Login: baseURL + "/login",
+						},
+					}, u)).RenderPageCtx(ctx, w, r)
 				case *chalgen.Slack:
 					var sess SessionState
 					chatState := d.Session.Get(r.Context(), chalId)

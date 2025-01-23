@@ -27,6 +27,13 @@ func (s *Challenge) UnmarshalJSON(b []byte) error {
 	}
 
 	switch t {
+	case "cms":
+		var c CMS
+		if err := json.Unmarshal(raw["value"], &c); err != nil {
+			return err
+		}
+		s.Type = t
+		s.Value = &c
 	case "base64":
 		var c Base64
 		if err := json.Unmarshal(raw["value"], &c); err != nil {
@@ -128,6 +135,9 @@ type ChallengeType interface {
 }
 
 type (
+	CMS struct {
+		Items []CMSItem
+	}
 	Base64 struct {
 		Data string
 	}
@@ -200,6 +210,7 @@ type (
 )
 
 // Implement the interface for all ChallengeType structs
+func (*CMS) isChallengeType()          {}
 func (*Base64) isChallengeType()       {}
 func (*Twitter) isChallengeType()      {}
 func (*CaesarCipher) isChallengeType() {}
@@ -218,7 +229,11 @@ func (*Hashes) isChallengeType()       {}
 func (*AudioPlayer) isChallengeType()  {}
 func (*Data) isChallengeType()         {}
 
-// Additional Struct Definitions
+type CMSItem struct {
+	Title   string
+	Content string
+}
+
 type Song struct {
 	Name        string
 	Artist      string

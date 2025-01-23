@@ -25,6 +25,13 @@ type Phone struct {
 }
 
 func App(state PhoneState, i int, a *chalgen.PhoneApp) *Node {
+	if a.App == nil {
+		if a.HTML != "" {
+			return Raw(a.HTML)
+		} else {
+			return Iframe(Src(a.URL), Class("w-full h-96"))
+		}
+	}
 	switch t := a.App.Value.(type) {
 	// TODO breadchris this isn't going to work, need type and value for apps
 	case *chalgen.PhotoGallery:
@@ -91,11 +98,7 @@ func App(state PhoneState, i int, a *chalgen.PhoneApp) *Node {
 			)
 		}
 	default:
-		if a.HTML != "" {
-			return Raw(a.HTML)
-		} else {
-			return Iframe(Src(a.URL), Class("w-full h-96"))
-		}
+		return P(T("unknown app type"))
 	}
 	return nil
 }
@@ -113,7 +116,7 @@ func RenderPhone(state PhoneState, phone *chalgen.Phone) *Node {
 								apps := []*Node{}
 								for i, a := range phone.Apps {
 									apps = append(apps,
-										A(Class("btn w-20 h-20 bg-blue-500 flex justify-center items-center text-white"), Attr("onclick", fmt.Sprintf("openApp('my_modal_%d')", i)),
+										A(Class("btn w-20 h-20 bg-blue-500 flex justify-center items-center text-white"), Attr("onclick", fmt.Sprintf("document.getElementById('my_modal_%d').showModal()", i)),
 											T(a.Name)),
 										Dialog(Id(fmt.Sprintf("my_modal_%d", i)), Class("modal"),
 											Div(Class("modal-box"),

@@ -688,6 +688,14 @@ func Td(o ...*Node) *Node {
 	return NewNode("td", o)
 }
 
+func Thead(o ...*Node) *Node {
+	return NewNode("thead", o)
+}
+
+func Tbody(o ...*Node) *Node {
+	return NewNode("tbody", o)
+}
+
 func H1(o ...*Node) *Node {
 	return NewNode("h1", o)
 }
