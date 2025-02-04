@@ -21,6 +21,7 @@ import (
 
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
+	"github.com/breadchris/share/websocket"
 )
 
 type Calendar struct {
@@ -694,6 +695,7 @@ type EverOutEvent struct {
 	Price       string
 	ImageURL    string
 	EventURL    string
+	Liked       bool
 }
 
 func init() {
@@ -785,6 +787,31 @@ func ScraperUiForm(d deps.Deps) *Node {
 func NewEverout(d deps.Deps) *http.ServeMux {
 	eventsDB := d.Docs.WithCollection("events")
 	topEventsDB := d.Docs.WithCollection("topEvents")
+
+	// topEventsDB.DeleteAll()
+	// eventsDB.DeleteAll()
+
+	d.WebsocketRegistry.Register2("like", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
+		eventsDB := d.Docs.WithCollection("events")
+		id := msgMap["id"].(string)
+
+		var event EverOutEvent
+		eventsDB.Get(id, &event)
+		if event.Liked {
+			event.Liked = false
+		} else {
+			event.Liked = true
+		}
+
+		eventsDB.Set(id, event)
+
+		cmdMsgs := []string{
+			LikeButton(id, event.Liked).Render(),
+		}
+		for _, msg := range cmdMsgs {
+			hub.Broadcast <- []byte(msg)
+		}
+	})
 
 	m := http.NewServeMux()
 	m.HandleFunc("/ui", func(w http.ResponseWriter, r *http.Request) {
@@ -948,6 +975,48 @@ func loadEvents() map[string][]EverOutEvent {
 	return eventsByDate
 }
 
+func LikeButton(id string, liked bool) *Node {
+	var bntClass *Node
+	if liked {
+		bntClass = Class("btn btn-success p-1 border-none")
+	} else {
+		bntClass = Class("btn btn-outline btn-error p-1 border-none")
+	}
+
+	return Form(
+		Id(id),
+		Attr("ws-send", "submit"),
+		Input(
+			Type("hidden"),
+			Name("id"),
+			Value(id),
+		),
+		Input(
+			Type("hidden"),
+			Name("like"),
+			Attr("readonly", ""),
+		),
+		Button(
+			Type("submit"),
+			Attr("onclick", "this.classList.toggle('btn-outline'); this.classList.toggle('btn-error'); this.classList.toggle('btn-success');"),
+			bntClass,
+			Svg(
+				Attr("xmlns", "http://www.w3.org/2000/svg"),
+				Class("h-6 w-6"),
+				Fill("none"),
+				ViewBox("0 0 24 24"),
+				Stroke("currentColor"),
+				Path(
+					StrokeLinecap("round"),
+					StrokeLinejoin("round"),
+					StrokeWidth("2"),
+					Attr("d", "M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"),
+				),
+			),
+		),
+	)
+}
+
 func RenderEverout(eventsByDate map[string][]EverOutEvent) *Node {
 	var dateNodes []*Node
 
@@ -967,6 +1036,7 @@ func RenderEverout(eventsByDate map[string][]EverOutEvent) *Node {
 				Div(
 					Class("h-48 bg-cover bg-center"),
 					Style_(fmt.Sprintf("background-image: url('%s');", event.ImageURL)),
+					LikeButton(event.Title, event.Liked),
 				),
 				Div(
 					Class("p-4"),
@@ -1105,7 +1175,7 @@ func ScrapeEventsByDate(date time.Time) ([]EverOutEvent, error) {
 
 		url := fmt.Sprintf("https://everout.com/seattle/events/?page=%d&start-date=%s", page, date.Format("2006-01-02"))
 		fmt.Printf("Scraping date %s, page %d of %d: %s\n", date.Format("2006-01-02"), page, totalPages, url)
-		events, totalPagesFromPage, err := ScrapeEventsWithPagination(url,  date.Format("2006-01-02"))
+		events, totalPagesFromPage, err := ScrapeEventsWithPagination(url, date.Format("2006-01-02"))
 		if err != nil {
 			return allEvents, err
 		}
@@ -1217,7 +1287,7 @@ func ScrapeTopEventsForDate(date time.Time) ([]EverOutEvent, error) {
 	return allEvents, nil
 }
 
-func ParseDoc(doc *goquery.Document, data string) []EverOutEvent {
+func ParseDoc(doc *goquery.Document, date string) []EverOutEvent {
 	events := []EverOutEvent{}
 	doc.Find("div.event.list-item").Each(func(i int, s *goquery.Selection) {
 		var event EverOutEvent
@@ -1233,6 +1303,9 @@ func ParseDoc(doc *goquery.Document, data string) []EverOutEvent {
 		everoutDate := stripChars(s.Find("div.event-date").Text(), "\n")
 		everoutDate = stripChars(everoutDate, " ")
 		event.EveroutDate = everoutDate
+		event.Date = date 
+
+		fmt.Println("THE DATE IS: ", date)
 
 		timeStr := stripChars(s.Find("div.event-time").Text(), "\n")
 		timeStr = stripChars(timeStr, " ")

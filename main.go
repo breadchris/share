@@ -178,6 +178,7 @@ func startServer(useTLS bool, port int) {
 	p("/calendar", interpreted(NewCalendar))
 	g := NewGithub(deps)
 	p("/github", interpreted(g.Routes))
+	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./eventcalendar.go", "./websocket/websocket.go", "./card.go"}))
 	p("/filecode", func() *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

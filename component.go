@@ -19,7 +19,7 @@ type SocketEndpoint struct {
 }
 
 func Regester(d deps.Deps, endpoint SocketEndpoint) {
-	d.WebsocketRegistry.Register2(endpoint.Command, func(message string, hub *websocket.Hub) {
+	d.WebsocketRegistry.Register2(endpoint.Command, func(message string, hub *websocket.Hub, msgMap map[string]interface{} ) {
 		cmdMsgs := []string{
 			AiSwitch(d, message, hub, endpoint.Tools),
 			endpoint.Function(d, message, hub),

@@ -3,14 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/breadchris/share/calendar"
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	"github.com/google/uuid"
 	"github.com/russross/blackfriday/v2"
-	"net/http"
-	"strings"
-	"time"
 )
 
 type NotesState struct {
@@ -38,7 +39,7 @@ type Reference struct {
 	ID   string
 	Text string
 	URL  string
-}
+}																																																																																																																																																																																																																											
 
 func NewNotes(d deps.Deps) *http.ServeMux {
 	mux := http.NewServeMux()
@@ -521,6 +522,10 @@ func RenderTrashSvg() *Node {
 		Path(D("M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6")),
 		Path(D("M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2")),
 	)
+}
+
+func RenderNotes() *Node {
+
 }
 
 func RenderMemo(cal calendar.State, notesState NotesState) *Node {

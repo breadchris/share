@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
@@ -50,7 +51,7 @@ func NewAI(d deps.Deps) *http.ServeMux {
 		}
 	})
 
-	d.WebsocketRegistry.Register2("chat", func(message string, hub *websocket.Hub) {
+	d.WebsocketRegistry.Register2("chat", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
 		tools := getTools(d, hub)
 		respMsg := AiSwitch(d, message, hub, tools)
 		respBubble := ""
@@ -97,34 +98,55 @@ func NewAI(d deps.Deps) *http.ServeMux {
 }
 
 func get(d deps.Deps, w http.ResponseWriter, r *http.Request) {
+	//isMobile := strings.Contains(r.Header.Get("User-Agent"), "Android") || strings.Contains(r.Header.Get("User-Agent"), "iPhone")
 	body := Div(
-		Div(
-			Id("display"),
-		),
 		centerComponent(
-			Div(Div(
+			Div(
+				Button(
+					Id("nav-button"),
+					T("Feed"),
+					OnClick(`
+					document.getElementById('display-container').classList.toggle('hidden'); 
+					document.getElementById('chat-container').classList.toggle('hidden');
+					document.getElementById('nav-button').innerText = document.getElementById('nav-button').innerText === 'Feed' ? 'Chat' : 'Feed';
+					`),
+				),
+			),
+		),
+		Div(
+			Id("display-container"),
+			Class("hidden"),
+			Div(
+				Id("display"),
+			)),
+		centerComponent(
+			Div(
+				Id("chat-container"),
 				Div(
-					Attr("hx-swap-oob", "beforeend"),
-					Id("messages"),
-					Class("rounded-lg shadow-lg w-[16.5rem] h-[25.5rem] overflow-y-scroll"),
 					Div(
-						Id("chat"),
+						Attr("hx-swap-oob", "beforeend"),
+						Id("messages"),
+						Class("rounded-lg shadow-lg w-[16.5rem] h-[25.5rem] overflow-y-scroll"),
+						Div(
+							Id("chat"),
+						),
+					),
+					Div(
+						Id("content-container"),
+						Form(
+							Attr("ws-send", "submit"),
+							TextArea(
+								Name("chat"),
+								Placeholder("Type your message..."),
+							),
+							Div(Input(
+								Type("submit"),
+								Value("Submit"),
+								Class("btn btn-primary"),
+							))),
 					),
 				),
-				Div(
-					Id("content-container"),
-					Form(
-						Attr("ws-send", "submit"),
-						TextArea(
-							Name("chat"),
-							Placeholder("Type your message..."),
-						),
-						Div(Input(
-							Type("submit"),
-							Value("Submit"),
-							Class("btn btn-primary"),
-						))),
-				)))))
+			)))
 
 	NewWebsocketPage2(body.Children).RenderPage(w, r)
 }
@@ -200,10 +222,39 @@ func createCal(d deps.Deps, message string, hub *websocket.Hub) string {
 		ID: id,
 	}
 
+	eventsDb := d.Docs.WithCollection("events")
+
+	events, err := eventsDb.List()
+	if err != nil {
+		fmt.Println("Failed to list events", err)
+	}
+
+	for _, event := range events {
+
+		var e EverOutEvent
+		json.Unmarshal(event.Data, &e)
+		var calEvent CalendarEvent
+
+		eventTime, err := time.Parse("2006-01-02", e.Date)
+		if err != nil {
+			fmt.Println("Failed to parse date", err)
+		}
+		if e.Liked {
+			fmt.Println("Liked event", eventTime)
+			calEvent.Name = e.Title
+			calEvent.Date = eventTime
+			calEvent.Description = e.Category
+			calEvent.Link = e.EventURL
+			calEvent.ImageURL = e.ImageURL
+			calEvent.ID = uuid.NewString()
+			c.Events = append(c.Events, calEvent)
+		}
+	}
+
 	hub.Broadcast <- []byte(
 		Div(
 			Id("display"),
-			GenerateCalendar(12, 2021, c),
+			RenderCalendar(c),
 		).Render(),
 	)
 	return ""
@@ -287,7 +338,7 @@ func listCategories(d deps.Deps, message string, hub *websocket.Hub) string {
 	for _, cat := range catagories {
 		strResp += cat + "\n"
 	}
-	fmt.Println(strResp)
+
 	return strResp
 }
 

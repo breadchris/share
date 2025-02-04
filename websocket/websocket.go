@@ -21,7 +21,7 @@ var websockerUpgrader = websocket.Upgrader{
 }
 
 type CommandFunc func(string, string, bool) []string
-type CommandFunc2 func(string, *Hub)
+type CommandFunc2 func(string, *Hub, map[string]interface{})
 type GenericCommandFunc func(interface{}, http.ResponseWriter, *http.Request) []string
 
 type CommandRegistry struct {
@@ -242,8 +242,9 @@ func (c *WebsocketClient) readPump3(w http.ResponseWriter, r *http.Request) {
 			handler, ok := c.registry.handlers3[key]
 			c.registry.mu.RUnlock()
 			if ok {
+				fmt.Println("key", key)
 				fmt.Println("value", value)
-				handler(value.(string), &hub)
+				handler(value.(string), &hub, msgMap)
 			}
 		}
 
