@@ -6,3 +6,5 @@ zine/Z-*.html
 dist/
 bin/
 cdk.out/
+
+coverage/*

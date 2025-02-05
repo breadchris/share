@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -121,7 +122,7 @@ func NewCard(d deps.Deps) *http.ServeMux {
 			http.Error(w, "Prompt is required", http.StatusBadRequest)
 			return
 		}
-		card, err := generateCard(d, db, pageId, prompt, w, r)
+		card, err := GenerateCard(d, pageId, prompt)
 		if err != nil {
 			http.Error(w, "Failed to generate card", http.StatusInternalServerError)
 			return
@@ -201,7 +202,7 @@ func NewCard(d deps.Deps) *http.ServeMux {
 				pageId = strings.Split(currentURL[0], "/card/")[1]
 			}
 		}
-		CallGenerateCard(d, pageId, prompt, w, r)
+		CallGenerateCard(d, pageId, prompt, w, r).RenderPage(w, r)
 	})
 
 	return mux
@@ -232,13 +233,7 @@ func cardGet(db *db.DocumentStore, w http.ResponseWriter, r *http.Request) {
 	NewWebsocketPage(makeCard(db, id, w, r).Children).RenderPage(w, r)
 }
 
-func makeCard(db *db.DocumentStore, id string, w http.ResponseWriter, r *http.Request) *Node {
-	isMobile := strings.Contains(r.Header.Get("User-Agent"), "Android") || strings.Contains(r.Header.Get("User-Agent"), "iPhone")
-	var card Card
-	if err := db.Get(id, &card); err != nil {
-		http.Error(w, "Could not get card", http.StatusNotFound)
-		return nil
-	}
+func makeCardNode(isMobile bool, card Card) *Node {
 
 	contentContainer := Div(
 		Id("card-container"),
@@ -297,7 +292,18 @@ func makeCard(db *db.DocumentStore, id string, w http.ResponseWriter, r *http.Re
 	)
 }
 
-func generateCard(d deps.Deps, db *db.DocumentStore, pageId string, prompt string, w http.ResponseWriter, r *http.Request) (Card, error) {
+func makeCard(db *db.DocumentStore, id string, w http.ResponseWriter, r *http.Request) *Node {
+	isMobile := strings.Contains(r.Header.Get("User-Agent"), "Android") || strings.Contains(r.Header.Get("User-Agent"), "iPhone")
+	var card Card
+	if err := db.Get(id, &card); err != nil {
+		http.Error(w, "Could not get card", http.StatusNotFound)
+		return nil
+	}
+	return makeCardNode(isMobile, card)
+}
+
+func GenerateCard(d deps.Deps, pageId string, prompt string) (Card, error) {
+	db := d.Docs.WithCollection("card")
 	card := Card{}
 	req := openai.ImageRequest{
 		Model:          openai.CreateImageModelDallE3,
@@ -309,9 +315,8 @@ func generateCard(d deps.Deps, db *db.DocumentStore, pageId string, prompt strin
 		ResponseFormat: openai.CreateImageResponseFormatURL,
 	}
 
-	resp, err := d.AI.CreateImage(r.Context(), req)
+	resp, err := d.AI.CreateImage(context.Background(), req)
 	if err != nil {
-		http.Error(w, "Failed to generate image", http.StatusInternalServerError)
 		return card, err
 	}
 	imageURL := resp.Data[0].URL
@@ -319,7 +324,6 @@ func generateCard(d deps.Deps, db *db.DocumentStore, pageId string, prompt strin
 	now := strconv.Itoa(time.Now().Nanosecond())
 	imagePath, err := downloadImage(imageURL, fmt.Sprintf("generated_image%s.png", now))
 	if err != nil {
-		http.Error(w, "Failed to download image", http.StatusInternalServerError)
 		return card, err
 	}
 
@@ -328,12 +332,10 @@ func generateCard(d deps.Deps, db *db.DocumentStore, pageId string, prompt strin
 
 	if err := db.Get(pageId, &card); err != nil {
 		fmt.Println("Failed with: ", err)
-		http.Error(w, "Could not get card!", http.StatusInternalServerError)
 		return card, err
 	}
 	card.Image = imagePath
 	if err := db.Set(pageId, card); err != nil {
-		http.Error(w, "Could not save image", http.StatusInternalServerError)
 		return card, err
 	} else {
 		fmt.Println("Saved image to:", imagePath)
@@ -353,7 +355,7 @@ type Prop struct {
 	Description string `json:"description"`
 }
 
-func CallGenerateCard(d deps.Deps, pageId string, prompt string, w http.ResponseWriter, r *http.Request) {
+func CallGenerateCard(d deps.Deps, pageId string, prompt string, w http.ResponseWriter, r *http.Request) *Node {
 	function := openai.FunctionDefinition{
 		Name:        "generateCard",
 		Description: "Generate a new card with a message and an image",
@@ -393,7 +395,7 @@ func CallGenerateCard(d deps.Deps, pageId string, prompt string, w http.Response
 	})
 	if err != nil {
 		fmt.Println("Error:", err)
-		return
+		return nil
 	}
 	db := d.Docs.WithCollection("card")
 	tool_calls := resp.Choices[0].Message.ToolCalls[0]
@@ -402,23 +404,23 @@ func CallGenerateCard(d deps.Deps, pageId string, prompt string, w http.Response
 		err = json.Unmarshal([]byte(tool_calls.Function.Arguments), &createCard)
 		if err != nil {
 			fmt.Println("Error:", err)
-			return
+			return nil
 		}
-		card, err := generateCard(d, db, pageId, prompt, w, r)
+		card, err := GenerateCard(d, pageId, prompt)
 		if err != nil {
 			fmt.Println("Error:", err)
-			return
+			return nil
 		}
 		card.Message = createCard.MessagePrompt
 		card.ImagePrompt = createCard.ImagePrompt
 		if err := db.Set(pageId, card); err != nil {
 			fmt.Println("Error:", err)
-			return
+			return nil
 		}
 
 	}
-	card := makeCard(db, pageId, w, r)
-	card.RenderPage(w, r)
+	return makeCard(db, pageId, w, r)
+
 }
 
 func NewCardId() string {

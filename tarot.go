@@ -2,6 +2,9 @@ package main
 
 import (
 	"context"
+	"strconv"
+	"time"
+	"unicode/utf8"
 
 	"encoding/json"
 	"fmt"
@@ -19,16 +22,36 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
-func getTarot(d deps.Deps, w http.ResponseWriter, r *http.Request) {
-	// db := d.Docs.WithCollection("tarot")
+type AITarotCard struct {
+	Name        string
+	Role        string
+	Examples    string
+	Themes      string
+	Description string
+}
+type TarotCard struct {
+	Id            string
+	Message       string
+	Type          Archetype
+	AICard        AITarotCard
+	InitialPrompt string
+	ImagePath     string
+}
 
+func getTarot(d deps.Deps, w http.ResponseWriter, r *http.Request) string {
 	id := r.PathValue("id")
 	if id == "" {
 		id = "t" + uuid.NewString()
 
 		http.Redirect(w, r, "/tarot/"+id, http.StatusSeeOther)
-		return
+		return ""
 	}
+
+	card := TarotCard{
+		Id: id,
+	}
+	db := d.Docs.WithCollection("tarot")
+	db.Set(id, card)
 
 	Html(
 		Attr("data-theme", "dark"),
@@ -65,31 +88,91 @@ func getTarot(d deps.Deps, w http.ResponseWriter, r *http.Request) {
 			),
 		),
 	).RenderPage(w, r)
+	return id
 }
 
 func NewTarot(d deps.Deps) *http.ServeMux {
-
+	id := ""
 	mux := http.NewServeMux()
 	mux.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
-			getTarot(d, w, r)
+			id = getTarot(d, w, r)
 		}
 	})
 
+	archetypes := loadArchetypes()
+
 	d.WebsocketRegistry.Register2("archetype", func(archetype string, hub *websocket.Hub, msgMap map[string]interface{}) {
 		fmt.Println("Archetype Endpoint")
+		db := d.Docs.WithCollection("tarot")
+		card := TarotCard{}
+		db.Get(id, &card)
 
-		gptResp := gptCall(d, archetype, hub)
+		selectedArchetype := findArchetype(archetypes, archetype)
+		selectedArchetypeString := ""
+		if selectedArchetype != nil {
+			selectedArchetypeString = fmt.Sprintf("Name: %s\nRole: %s\nExamples: %s\nThemes: %s", selectedArchetype.Name, selectedArchetype.Role, strings.Join(selectedArchetype.Examples, ", "), strings.Join(selectedArchetype.Themes, ", "))
+		}
 
-		display := toolCall(d, gptResp, hub, archetypeTools())
+		message := "Given this archetype, " + selectedArchetypeString + ", create a new character that fits this archetype. It should have the following properties: name, role, examples, themes. Rather than making a specific character, keep it general and closer to an archetype. It should be a recognizable position in society."
+		gptResp := gptCall(d, message, hub)
+
+		card.Type = *selectedArchetype
+		card.Message = gptResp
+		db.Set(id, card)
+
+		display := toolCall(d, gptResp, hub, []Tool2{
+			createTool2(Tool2{
+				Name: "CreateArchetype",
+				Desc: "Create a new archetype",
+				Function: func(d deps.Deps, hub *websocket.Hub, name, role, examples, themes, description string) string {
+					db := d.Docs.WithCollection("tarot")
+					card := TarotCard{}
+					db.Get(id, &card)
+					card.AICard = AITarotCard{
+						Name:        name,
+						Role:        role,
+						Examples:    examples,
+						Themes:      themes,
+						Description: description,
+					}
+					db.Set(id, card)
+					fmt.Println("Creating archetype with description:", description)
+					card, err := GenerateImage(d, id, description)
+					if err != nil {
+						fmt.Println("Error generating image:", err)
+					}
+
+					return Div(
+						Id("content-container"),
+						Attr("hx-swap-oob", "beforeend"),
+						Div(
+							Img(
+								Class("w-full h-full object-cover"),
+								Attr("src", card.ImagePath),
+								Attr("alt", "Card Image"),
+							),
+							Div(T("Name: "+card.AICard.Name)),
+							Div(T("Role: "+card.AICard.Role)),
+						),
+					).Render()
+				},
+				Props: []ToolProp2{
+					{Argument: "name", Description: "Name of the archetype", Type: "string"},
+					{Argument: "role", Description: "Role of the archetype", Type: "string"},
+					{Argument: "examples", Description: "Examples of the archetype", Type: "string"},
+					{Argument: "themes", Description: "Themes of the archetype", Type: "string"},
+					{Argument: "description", Description: "A visual description of this archetype", Type: "string"},
+				},
+			}),
+		})
 
 		hub.Broadcast <- []byte(display)
 	})
 
 	d.WebsocketRegistry.Register2("chat", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
 		fmt.Println("Chat Endpoint")
-		archetypes := loadArchetypes()
 		archetypeNames := []string{}
 		for _, archetype := range archetypes {
 			archetypeNames = append(archetypeNames, archetype.Name)
@@ -97,10 +180,16 @@ func NewTarot(d deps.Deps) *http.ServeMux {
 				archetypeNames = append(archetypeNames, archetype.AlternativeNames[rand.IntN(len(archetype.AlternativeNames))])
 			}
 		}
+		db := d.Docs.WithCollection("tarot")
+		card := TarotCard{}
+		db.Get(id, &card)
+		card.InitialPrompt = message
+		db.Set(id, card)
+
 		display := toolCall(d, message, hub, []Tool2{
 			createTool2(Tool2{
 				Name: "RelatedArchetypes",
-				Desc: "Given a prompt select five related archetypes from this list: " + strings.Join(archetypeNames, ", "),
+				Desc: fmt.Sprintf("Given this prompt, \"%s\" select five related archetypes from this list: %s", message, strings.Join(archetypeNames, ", ")),
 				Function: func(d deps.Deps, hub *websocket.Hub, archetypeOne string, archetypeTwo string, archetypeThree string, archetypeFour string, archetypeFive string) string {
 					options := []string{}
 					options = append(options, archetypeOne)
@@ -200,76 +289,9 @@ type ToolProp2 struct {
 	Type        string
 }
 
-// func objectCall(d deps.Deps, message string, hub *websocket.Hub) string {
-
-// 	message = "Given the character of, " + message + ", create an archetype."
-// 	var ctx context.Context = context.Background()
-
-// 	resp, err := d.AI.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
-// 		Model: openai.GPT4o20240513,
-// 		Messages: []openai.ChatCompletionMessage{
-// 			{Role: openai.ChatMessageRoleSystem, Content: "You are a helpful assistant."},
-// 			{Role: openai.ChatMessageRoleUser, Content: message},
-// 		},
-// 		MaxTokens: 150,
-// 		ResponseFormat:&openai.ChatCompletionResponseFormat{
-// 			Type: openai.ChatCompletionResponseFormatTypeJSONSchema,
-// 			JSONSchema: openai.ChatCompletionResponseFormatJSONSchema{
-// 				Name: "archetype",
-// 				Description: "A character archetype",
-// 				Schema: json.Marshal(Archetype{}),
-// 				Strict: true,
-// 			}
-// 		},
-// 	})
-// 	if err != nil {
-// 		fmt.Println("Failed to create chat completion", err)
-// 	}
-// 	fmt.Println("RESPONSE: ", resp)
-// 	choice := resp.Choices[0]
-
-// 	respMsg := resp.Choices[0].Message.Content
-
-// 	if respMsg == "" {
-// 		functionCall := choice.Message.ToolCalls[0].Function
-// 		for _, tool := range tools {
-// 			if tool.Name == functionCall.Name {
-// 				var jsonMap map[string]interface{}
-// 				json.Unmarshal([]byte(functionCall.Arguments), &jsonMap)
-
-// 				// Convert JSON arguments to reflect values
-// 				argValues := []reflect.Value{reflect.ValueOf(d), reflect.ValueOf(hub)}
-// 				for _, prop := range tool.Props {
-// 					argValue := convertArgument(jsonMap[prop.Argument], prop.Type)
-// 					argValues = append(argValues, argValue)
-// 				}
-
-// 				// Call the function using reflection
-// 				result := reflect.ValueOf(tool.Function).Call(argValues)
-
-// 				// Handle the result (assuming a single return value of type string)
-// 				if len(result) > 0 {
-// 					respMsg = result[0].Interface().(string)
-// 				}
-// 			}
-// 		}
-// 	}
-
-// 	return respMsg
-// }
-
 func gptCall(d deps.Deps, message string, hub *websocket.Hub) string {
 	fmt.Println("Running gptCall")
 
-	archetypes := loadArchetypes()
-
-	selectedArchetype := findArchetype(archetypes, message)
-	selectedArchetypeString := ""
-	if selectedArchetype != nil {
-		selectedArchetypeString = fmt.Sprintf("Name: %s\nRole: %s\nExamples: %s\nThemes: %s", selectedArchetype.Name, selectedArchetype.Role, strings.Join(selectedArchetype.Examples, ", "), strings.Join(selectedArchetype.Themes, ", "))
-	}
-
-	message = "Given this archetype, " + selectedArchetypeString + ", create a new character that fits this archetype. It should have the following properties: name, role, examples, themes. Rather than making a specific character, keep it general and closer to an archetype. It should be a recognizable position in society."
 	var ctx context.Context = context.Background()
 
 	resp, err := d.AI.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
@@ -359,34 +381,6 @@ func convertArgument(value interface{}, argType string) reflect.Value {
 	}
 }
 
-func archetypeTools() []Tool2 {
-	return []Tool2{
-		createTool2(Tool2{
-			Name: "CreateArchetype",
-			Desc: "Create a new archetype",
-			Function: func(d deps.Deps, hub *websocket.Hub, name string, role string, examples string, themes string) string {
-				return Div(
-					Id("content-container"),
-					Attr("hx-swap-oob", "beforeend"),
-					Div(
-						Class("archetype-details"),
-						Div(T("Name: "+name)),
-						Div(T("Role: "+role)),
-						Div(T("Examples: "+examples)),
-						Div(T("Themes: "+themes)),
-					),
-				).Render()
-			},
-			Props: []ToolProp2{
-				{Argument: "name", Description: "Name of the archetype", Type: "string"},
-				{Argument: "role", Description: "Role of the archetype", Type: "string"},
-				{Argument: "examples", Description: "List of examples", Type: "string"},
-				{Argument: "themes", Description: "List of themes", Type: "string"},
-			},
-		}),
-	}
-}
-
 func createTool2(createTool Tool2) Tool2 {
 	properties := map[string]string{}
 	for _, prop := range createTool.Props {
@@ -437,4 +431,46 @@ func loadArchetypes() []Archetype {
 		fmt.Println("Error loading archetypes:", err)
 	}
 	return archetypes
+}
+
+func GenerateImage(d deps.Deps, pageId string, prompt string) (TarotCard, error) {
+	db := d.Docs.WithCollection("tarot")
+	card := TarotCard{}
+
+	req := openai.ImageRequest{
+		Model:          openai.CreateImageModelDallE3,
+		Prompt:         prompt,
+		N:              1,
+		Quality:        openai.CreateImageQualityHD,
+		Size:           openai.CreateImageSize1024x1792,
+		Style:          openai.CreateImageStyleVivid,
+		ResponseFormat: openai.CreateImageResponseFormatURL,
+	}
+
+	resp, err := d.AI.CreateImage(context.Background(), req)
+	if err != nil {
+		return card, err
+	}
+	imageURL := resp.Data[0].URL
+
+	now := strconv.Itoa(time.Now().Nanosecond())
+	imagePath, err := downloadImage(imageURL, fmt.Sprintf("generated_image%s.png", now))
+	if err != nil {
+		return card, err
+	}
+
+	_, i := utf8.DecodeRuneInString(imagePath)
+	imagePath = imagePath[i:]
+
+	if err := db.Get(pageId, &card); err != nil {
+		fmt.Println("Failed with: ", err)
+		return card, err
+	}
+	card.ImagePath = imagePath
+	if err := db.Set(pageId, card); err != nil {
+		return card, err
+	} else {
+		fmt.Println("Saved image to:", imagePath)
+	}
+	return card, nil
 }
