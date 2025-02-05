@@ -47,11 +47,31 @@ func getTarot(d deps.Deps, w http.ResponseWriter, r *http.Request) string {
 		return ""
 	}
 
-	card := TarotCard{
-		Id: id,
-	}
+	card := TarotCard{}
 	db := d.Docs.WithCollection("tarot")
-	db.Set(id, card)
+	content := Div()
+	err := db.Get(id, &card)
+	if err != nil {
+		fmt.Println("card not found, creating new card")
+		card.Id = id
+		db.Set(id, card)
+		content = Div(
+			T("Welcome to the Tarot Chat! Please describe how you are feeling or ask a question."),
+			Form(
+				Attr("ws-send", "submit"),
+				TextArea(
+					Name("chat"),
+					Placeholder("Enter a message..."),
+				),
+				Div(Input(
+					Type("submit"),
+					Value("Submit"),
+					Class("btn btn-primary"),
+				))))
+	} else {
+		fmt.Println("card found")
+		content = displayCard(card)
+	}
 
 	Html(
 		Attr("data-theme", "dark"),
@@ -72,18 +92,7 @@ func getTarot(d deps.Deps, w http.ResponseWriter, r *http.Request) string {
 				Attr("ws-connect", "/websocket/ws"),
 				Div(
 					Id("content-container"),
-					T("Welcome to the Tarot Chat! Please describe how you are feeling or ask a question."),
-					Form(
-						Attr("ws-send", "submit"),
-						TextArea(
-							Name("chat"),
-							Placeholder("Enter a message..."),
-						),
-						Div(Input(
-							Type("submit"),
-							Value("Submit"),
-							Class("btn btn-primary"),
-						))),
+					content,
 				),
 			),
 		),
@@ -147,15 +156,7 @@ func NewTarot(d deps.Deps) *http.ServeMux {
 					return Div(
 						Id("content-container"),
 						Attr("hx-swap-oob", "beforeend"),
-						Div(
-							Img(
-								Class("w-full h-full object-cover"),
-								Attr("src", card.ImagePath),
-								Attr("alt", "Card Image"),
-							),
-							Div(T("Name: "+card.AICard.Name)),
-							Div(T("Role: "+card.AICard.Role)),
-						),
+						displayCard(card),
 					).Render()
 				},
 				Props: []ToolProp2{
@@ -220,6 +221,19 @@ func NewTarot(d deps.Deps) *http.ServeMux {
 	})
 
 	return mux
+}
+
+func displayCard(card TarotCard) *Node {
+	return Div(
+		Id(card.Id),
+		Img(
+			Class("w-full h-full object-cover"),
+			Attr("src", card.ImagePath),
+			Attr("alt", "Card Image"),
+		),
+		Div(T("Name: "+card.AICard.Name)),
+		Div(T("Role: "+card.AICard.Role)),
+	)
 }
 
 func generateRadioForm(options []string) *Node {
