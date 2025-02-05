@@ -1,0 +1,184 @@
+[
+    {
+        "name": "Creator",
+        "alternative_names": ["Maker", "Originator", "Architect"],
+        "role": "The source of life, the maker of the world or cosmos.",
+        "examples": ["Atum (Egyptian)", "Brahma (Hindu)", "Pangu (Chinese)", "Yahweh (Hebrew)"],
+        "themes": ["Creation", "Order", "Origin stories"]
+    },
+    {
+        "name": "Hero",
+        "alternative_names": ["Champion", "Adventurer", "Savior"],
+        "role": "Embarks on a journey of challenge and transformation.",
+        "examples": ["Heracles (Greek)", "Odysseus (Greek)", "Gilgamesh (Mesopotamian)", "Cu Chulainn (Celtic)"],
+        "themes": ["Courage", "Self-discovery", "Triumph over adversity"]
+    },
+    {
+        "name": "Mentor",
+        "alternative_names": ["Guide", "Sage", "Teacher"],
+        "role": "Provides wisdom, advice, or tools to the hero.",
+        "examples": ["Athena (Greek)", "Merlin (Arthurian)", "Yoda (Star Wars)", "Thoth (Egyptian)"],
+        "themes": ["Guidance", "Wisdom", "Enlightenment"]
+    },
+    {
+        "name": "Trickster",
+        "alternative_names": ["Deceiver", "Jester", "Manipulator"],
+        "role": "Challenges norms through deception, humor, or wit.",
+        "examples": ["Loki (Norse)", "Hermes (Greek)", "Anansi (African)", "Coyote (Native American)"],
+        "themes": ["Chaos", "Change", "Creativity", "Breaking boundaries"]
+    },
+    {
+        "name": "Shadow",
+        "alternative_names": ["Darkness", "Adversary", "Villain"],
+        "role": "Represents internal or external darkness, fear, or opposition.",
+        "examples": ["Hades (Greek)", "Set (Egyptian)", "Sauron (The Lord of the Rings)"],
+        "themes": ["Fear", "Struggle", "Inner conflict", "Temptation"]
+    },
+    {
+        "name": "Sage",
+        "alternative_names": ["Seer", "Elder", "Scholar"],
+        "role": "An older, often mystical figure providing deep knowledge.",
+        "examples": ["Gandalf (The Lord of the Rings)", "Oracle at Delphi (Greek)", "Norns (Norse)"],
+        "themes": ["Destiny", "Insight", "Guidance through experience"]
+    },
+    {
+        "name": "Innocent",
+        "alternative_names": ["Child", "Pure One", "Explorer"],
+        "role": "Symbolizes purity, potential, and the beginning of a journey.",
+        "examples": ["Persephone (Greek)", "Dorothy (The Wizard of Oz)", "Little Prince (The Little Prince)"],
+        "themes": ["Purity", "Naivety", "Growth", "Wonder"]
+    },
+    {
+        "name": "Rebel",
+        "alternative_names": ["Outcast", "Revolutionary", "Nonconformist"],
+        "role": "Defies authority or societal expectations.",
+        "examples": ["Prometheus (Greek)", "Satan (Christian mythology)", "Spartacus (Roman)"],
+        "themes": ["Freedom", "Defiance", "Individuality"]
+    },
+    {
+        "name": "Lover",
+        "alternative_names": ["Romantic", "Devotee", "Beloved"],
+        "role": "Represents passion, connection, and devotion.",
+        "examples": ["Aphrodite (Greek)", "Isis and Osiris (Egyptian)", "Romeo and Juliet (Shakespearean)"],
+        "themes": ["Love", "Sacrifice", "Desire"]
+    },
+    {
+        "name": "Ruler",
+        "alternative_names": ["King", "Leader", "Governor"],
+        "role": "A leader who seeks to maintain order and justice.",
+        "examples": ["Zeus (Greek)", "Odin (Norse)", "King Arthur (Arthurian)"],
+        "themes": ["Responsibility", "Power", "Control", "Governance"]
+    },
+    {
+        "name": "Destroyer",
+        "alternative_names": ["Ender", "Annihilator", "Transformer"],
+        "role": "Brings destruction or chaos to make way for new creation.",
+        "examples": ["Shiva (Hindu)", "Ragnarok (Norse)", "Kali (Hindu)"],
+        "themes": ["Death", "Transformation", "Renewal"]
+    },
+    {
+        "name": "Mother",
+        "alternative_names": ["Nurturer", "Protector", "Giver"],
+        "role": "Represents nurturing, protection, and creation of life.",
+        "examples": ["Gaia (Greek)", "Isis (Egyptian)", "Demeter (Greek)"],
+        "themes": ["Fertility", "Motherhood", "Protection"]
+    },
+    {
+        "name": "Mediator",
+        "alternative_names": ["Peacemaker", "Arbitrator", "Diplomat"],
+        "role": "Facilitates compromise and harmony between conflicting parties.",
+        "examples": ["Hera (Greek)", "Solomon (Hebrew)", "Maat (Egyptian)"],
+        "themes": ["Balance", "Justice", "Compromise"]
+    },
+    {
+        "name": "Warrior",
+        "alternative_names": ["Fighter", "Champion", "Defender"],
+        "role": "Fights for honor, justice, or survival.",
+        "examples": ["Achilles (Greek)", "Thor (Norse)", "Arjuna (Hindu)"],
+        "themes": ["Strength", "Discipline", "Courage"]
+    },
+    {
+        "name": "Confused",
+        "alternative_names": ["Wanderer", "Lost One", "Uncertain"],
+        "role": "Represents disorientation, indecision, and a search for clarity.",
+        "examples": ["Alice (Alice in Wonderland)", "Dante (early Divine Comedy)", "Neo (The Matrix)"],
+        "themes": ["Self-discovery", "Uncertainty", "Transformation"]
+    },
+    {
+        "name": "Healer",
+        "alternative_names": ["Restorer", "Medic", "Caretaker"],
+        "role": "Restores health, balance, and well-being.",
+        "examples": ["Asclepius (Greek)", "Imhotep (Egyptian)", "Chiron (Greek)"],
+        "themes": ["Healing", "Compassion", "Restoration"]
+    },
+    {
+        "name": "Seeker",
+        "alternative_names": ["Questor", "Pilgrim", "Explorer"],
+        "role": "Searches for truth, enlightenment, or a greater purpose.",
+        "examples": ["Siddhartha Gautama (Buddha)", "Odysseus (Greek)", "Dante (Divine Comedy)"],
+        "themes": ["Quest", "Discovery", "Spiritual growth"]
+    },
+    {
+        "name": "Prophet",
+        "alternative_names": ["Visionary", "Foreteller", "Oracle"],
+        "role": "Foretells or sees the future, often guiding others.",
+        "examples": ["Cassandra (Greek)", "Tiresias (Greek)", "Elijah (Hebrew)"],
+        "themes": ["Prophecy", "Insight", "Destiny"]
+    },
+    {
+        "name": "Martyr",
+        "alternative_names": ["Sacrificer", "Redeemer", "Saint"],
+        "role": "Sacrifices themselves for a cause or for others.",
+        "examples": ["Jesus Christ (Christian)", "Joan of Arc (Historical)", "Socrates (Greek)"],
+        "themes": ["Sacrifice", "Redemption", "Selflessness"]
+    },
+    {
+        "name": "Fool",
+        "alternative_names": ["Jester", "Clown", "Wanderer"],
+        "role": "Represents spontaneity, risk, and childlike wonder; often stumbles into wisdom.",
+        "examples": ["The Fool (Tarot)", "Falstaff (Shakespeare)", "Hanuman (Hindu)"],
+        "themes": ["Innocence", "Unpredictability", "Humor"]
+    },
+    {
+        "name": "Twin",
+        "alternative_names": ["Duality", "Mirror", "Double"],
+        "role": "Represents balance, opposing forces, or the self's dual nature.",
+        "examples": ["Castor and Pollux (Greek)", "Yin and Yang (Chinese)", "Romulus and Remus (Roman)"],
+        "themes": ["Duality", "Balance", "Conflict between opposites"]
+    },
+    {
+        "name": "Guardian",
+        "alternative_names": ["Protector", "Gatekeeper", "Sentinel"],
+        "role": "Protects a threshold or sacred space.",
+        "examples": ["Cerberus (Greek)", "Heimdall (Norse)", "Sphinx (Egyptian)"],
+        "themes": ["Protection", "Challenge", "Boundaries"]
+    },
+    {
+        "name": "Scholar",
+        "alternative_names": ["Teacher", "Philosopher", "Intellectual"],
+        "role": "Seeks knowledge and passes it on to others.",
+        "examples": ["Confucius (Chinese)", "Aristotle (Greek)", "Thoth (Egyptian)"],
+        "themes": ["Wisdom", "Learning", "Intellectual growth"]
+    },
+    {
+        "name": "Orphan",
+        "alternative_names": ["Survivor", "Lost One", "Seeker"],
+        "role": "Begins life without guidance but learns to survive and thrive.",
+        "examples": ["Harry Potter", "Moses (Hebrew)", "Simba (The Lion King)"],
+        "themes": ["Abandonment", "Resilience", "Self-reliance"]
+    },
+    {
+        "name": "Herald",
+        "alternative_names": ["Messenger", "Announcer", "Harbinger"],
+        "role": "Announces a significant event or call to adventure.",
+        "examples": ["Hermes (Greek)", "John the Baptist (Christian)", "Messengers in epic tales"],
+        "themes": ["Warning", "Opportunity", "Change"]
+    },
+    {
+        "name": "Temptress",
+        "alternative_names": ["Seductress", "Enchantress", "Siren"],
+        "role": "Uses allure to lead others astray.",
+        "examples": ["Circe (Greek)", "Delilah (Hebrew)", "The Sirens (Greek)"],
+        "themes": ["Temptation", "Danger", "Desire"]
+    }
+]

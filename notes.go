@@ -524,9 +524,6 @@ func RenderTrashSvg() *Node {
 	)
 }
 
-func RenderNotes() *Node {
-
-}
 
 func RenderMemo(cal calendar.State, notesState NotesState) *Node {
 	var posts []*Node

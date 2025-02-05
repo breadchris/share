@@ -50,6 +50,7 @@ func (cr *CommandRegistry) Register(command string, handler CommandFunc) {
 func (cr *CommandRegistry) Register2(command string, handler CommandFunc2) {
 	cr.mu.Lock()
 	defer cr.mu.Unlock()
+	fmt.Println("Registering command", command)
 	cr.handlers3[command] = handler
 }
 

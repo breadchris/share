@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -52,8 +53,9 @@ func NewAI(d deps.Deps) *http.ServeMux {
 	})
 
 	d.WebsocketRegistry.Register2("chat", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
+		fmt.Println("chatsdfasdvadsv", message)
 		tools := getTools(d, hub)
-		respMsg := AiSwitch(d, message, hub, tools)
+		respMsg := GptToolCall(d, message, hub, tools)
 		respBubble := ""
 		msgs := strings.Split(respMsg, "\n")
 		msgNodes := []*Node{}
@@ -455,4 +457,45 @@ func getTools(d deps.Deps, hub *websocket.Hub) []Tool {
 			},
 		),
 	}
+}
+
+func GptToolCall(d deps.Deps, message string, hub *websocket.Hub, tools []Tool) string {
+	openaiTools := []openai.Tool{}
+	for _, tool := range tools {
+		openaiTools = append(openaiTools, tool.Tool)
+	}
+
+	var ctx context.Context = context.Background()
+
+	resp, err := d.AI.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
+		Model: openai.GPT4o20240513,
+		Messages: []openai.ChatCompletionMessage{
+			{Role: openai.ChatMessageRoleSystem, Content: "You are a helpful assistant."},
+			{Role: openai.ChatMessageRoleUser, Content: message},
+		},
+		Tools:     openaiTools,
+		MaxTokens: 150,
+	})
+	if err != nil {
+		fmt.Println("Failed to create chat completion", err)
+	}
+	choice := resp.Choices[0]
+
+	respMsg := resp.Choices[0].Message.Content
+
+	if respMsg == "" {
+		functionCall := choice.Message.ToolCalls[0].Function
+		for _, tool := range tools {
+			if tool.Name == functionCall.Name {
+				var jsonMap map[string]interface{}
+				json.Unmarshal([]byte(functionCall.Arguments), &jsonMap)
+				prop := tool.Props[0].Arguement
+				arg := jsonMap[prop].(string)
+
+				respMsg = tool.Function(d, arg, hub)
+			}
+		}
+	}
+
+	return respMsg
 }
