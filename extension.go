@@ -101,6 +101,7 @@ func NewExtension(d deps.Deps) *http.ServeMux {
 
 	m.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
+		ctx := context.WithValue(r.Context(), "baseURL", "/extension")
 
 		switch r.Method {
 		case http.MethodGet:
@@ -118,7 +119,6 @@ func NewExtension(d deps.Deps) *http.ServeMux {
 					return
 				}
 
-				ctx := context.WithValue(r.Context(), "baseURL", "/extension")
 				DefaultLayout(
 					Div(
 						Class("mx-auto w-3/4 pt-6 space-y-6"),
@@ -129,8 +129,6 @@ func NewExtension(d deps.Deps) *http.ServeMux {
 				return
 			}
 
-			// Render all pages
-			ctx := context.WithValue(r.Context(), "baseURL", "/extension")
 			DefaultLayout(
 				RenderMasonry(state),
 			).RenderPageCtx(ctx, w, r)

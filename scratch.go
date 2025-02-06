@@ -4718,3 +4718,33 @@ func RenderDoksBlogList() *Node {
 		),
 	)
 }
+
+func RenderCMS() *Node {
+	return Div(
+		Class("overflow-x-auto"),
+		Table(
+			Class("table"),
+			Thead(Tr(Th(), Th(Text("Name")), Th(Text("Job")), Th(Text("Favorite Color")))),
+			Tbody(
+				Tr(
+					Th(Text("1")),
+					Td(Text("Cy Ganderton")),
+					Td(Text("Quality Control Specialist")),
+					Td(Text("Blue")),
+				),
+				Tr(
+					Th(Text("2")),
+					Td(Text("Hart Hagerty")),
+					Td(Text("Desktop Support Technician")),
+					Td(Text("Purple")),
+				),
+				Tr(
+					Th(Text("3")),
+					Td(Text("Brice Swyre")),
+					Td(Text("Tax Accountant")),
+					Td(Text("Red")),
+				),
+			),
+		),
+	)
+}

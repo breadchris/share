@@ -10,10 +10,12 @@ import (
 func init() {
 	Symbols["github.com/breadchris/share/xctf/chalgen/chalgen"] = map[string]reflect.Value{
 		// type definitions
-		"PhoneApp":            reflect.ValueOf((*chalgen.PhoneApp)(nil)),
+		"App":            reflect.ValueOf((*chalgen.App)(nil)),
 		"AppType":        reflect.ValueOf((*chalgen.AppType)(nil)),
 		"AudioPlayer":    reflect.ValueOf((*chalgen.AudioPlayer)(nil)),
 		"Base64":         reflect.ValueOf((*chalgen.Base64)(nil)),
+		"CMS":            reflect.ValueOf((*chalgen.CMS)(nil)),
+		"CMSItem":        reflect.ValueOf((*chalgen.CMSItem)(nil)),
 		"CaesarCipher":   reflect.ValueOf((*chalgen.CaesarCipher)(nil)),
 		"Challenge":      reflect.ValueOf((*chalgen.Challenge)(nil)),
 		"ChallengeType":  reflect.ValueOf((*chalgen.ChallengeType)(nil)),
@@ -39,6 +41,7 @@ func init() {
 		"PassShare":      reflect.ValueOf((*chalgen.PassShare)(nil)),
 		"Pdf":            reflect.ValueOf((*chalgen.Pdf)(nil)),
 		"Phone":          reflect.ValueOf((*chalgen.Phone)(nil)),
+		"PhoneApp":       reflect.ValueOf((*chalgen.PhoneApp)(nil)),
 		"PhotoGallery":   reflect.ValueOf((*chalgen.PhotoGallery)(nil)),
 		"Search":         reflect.ValueOf((*chalgen.Search)(nil)),
 		"Slack":          reflect.ValueOf((*chalgen.Slack)(nil)),
