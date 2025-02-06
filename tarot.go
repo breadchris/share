@@ -38,6 +38,21 @@ type TarotCard struct {
 	ImagePath     string
 }
 
+func chatForm(name string) *Node {
+	return Form(
+		Attr("ws-send", "submit"),
+		TextArea(
+			Name(name),
+			Placeholder("Enter a message..."),
+		),
+		Div(Input(
+			Type("submit"),
+			Value("Submit"),
+			Class("btn btn-primary"),
+		)),
+	)
+}
+
 func getTarot(d deps.Deps, w http.ResponseWriter, r *http.Request) string {
 	id := r.PathValue("id")
 	if id == "" {
@@ -57,20 +72,18 @@ func getTarot(d deps.Deps, w http.ResponseWriter, r *http.Request) string {
 		db.Set(id, card)
 		content = Div(
 			T("Welcome to the Tarot Chat! Please describe how you are feeling or ask a question."),
-			Form(
-				Attr("ws-send", "submit"),
-				TextArea(
-					Name("chat"),
-					Placeholder("Enter a message..."),
-				),
-				Div(Input(
-					Type("submit"),
-					Value("Submit"),
-					Class("btn btn-primary"),
-				))))
+			chatForm("chat"))
 	} else {
 		fmt.Println("card found")
-		content = displayCard(card)
+		content = Div(
+			displayCard(card),
+			Div(
+				Div(
+					Id("messages"),
+				),
+				chatForm("cardchat"),
+			),
+		)
 	}
 
 	Html(
@@ -125,7 +138,7 @@ func NewTarot(d deps.Deps) *http.ServeMux {
 		}
 
 		message := "Given this archetype, " + selectedArchetypeString + ", create a new character that fits this archetype. It should have the following properties: name, role, examples, themes. Rather than making a specific character, keep it general and closer to an archetype. It should be a recognizable position in society."
-		gptResp := gptCall(d, message, hub)
+		gptResp := gptCall(d, message, hub, "You are fortune teller who is trying to help someone understand an aspect of themself.")
 
 		card.Type = *selectedArchetype
 		card.Message = gptResp
@@ -220,20 +233,42 @@ func NewTarot(d deps.Deps) *http.ServeMux {
 		hub.Broadcast <- []byte(display)
 	})
 
+	d.WebsocketRegistry.Register2("cardchat", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
+		fmt.Println("CardChat Endpoint")
+		archetypeNames := []string{}
+		for _, archetype := range archetypes {
+			archetypeNames = append(archetypeNames, archetype.Name)
+			if len(archetype.AlternativeNames) > 0 {
+				archetypeNames = append(archetypeNames, archetype.AlternativeNames[rand.IntN(len(archetype.AlternativeNames))])
+			}
+		}
+		db := d.Docs.WithCollection("tarot")
+		card := TarotCard{}
+		db.Get(id, &card)
+
+		assistant := fmt.Sprintf("You are %s, you are defined by this: %s", card.AICard.Name, card.AICard.Role)
+
+		gptResp := gptCall(d, message, hub, assistant)
+		display := Div(
+			Id("messages"),
+			Attr("hx-swap-oob", "beforeend"),
+			Div(
+				Class("messages chat-end"),
+				Div(
+					Class("chat-bubble"),
+					Div(T(gptResp)),
+				),
+			),
+		).Render()
+
+		hub.Broadcast <- []byte(display)
+	})
+
 	return mux
 }
 
 func displayCard(card TarotCard) *Node {
-	return Div(
-		Id(card.Id),
-		Img(
-			Class("w-full h-full object-cover"),
-			Attr("src", card.ImagePath),
-			Attr("alt", "Card Image"),
-		),
-		Div(T("Name: "+card.AICard.Name)),
-		Div(T("Role: "+card.AICard.Role)),
-	)
+	return cardTextImageTemplate(card.Id, "rounded-lg shadow-lg w-[16.5rem] h-[25.5rem]", card.ImagePath, card.AICard.Role)
 }
 
 func generateRadioForm(options []string) *Node {
@@ -303,7 +338,7 @@ type ToolProp2 struct {
 	Type        string
 }
 
-func gptCall(d deps.Deps, message string, hub *websocket.Hub) string {
+func gptCall(d deps.Deps, message string, hub *websocket.Hub, assistant string) string {
 	fmt.Println("Running gptCall")
 
 	var ctx context.Context = context.Background()
@@ -311,7 +346,7 @@ func gptCall(d deps.Deps, message string, hub *websocket.Hub) string {
 	resp, err := d.AI.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
 		Model: openai.GPT4o20240513,
 		Messages: []openai.ChatCompletionMessage{
-			{Role: openai.ChatMessageRoleSystem, Content: "You are fortune teller who is trying to help someone understand an aspect of themself."},
+			{Role: openai.ChatMessageRoleSystem, Content: assistant},
 			{Role: openai.ChatMessageRoleUser, Content: message},
 		},
 		MaxTokens: 1000,
@@ -320,10 +355,7 @@ func gptCall(d deps.Deps, message string, hub *websocket.Hub) string {
 		fmt.Println("Failed to create chat completion", err)
 	}
 
-	respMsg := resp.Choices[0].Message.Content
-
-	fmt.Println("respMsg: ", respMsg)
-	return respMsg
+	return resp.Choices[0].Message.Content
 }
 
 func toolCall(d deps.Deps, message string, hub *websocket.Hub, tools []Tool2) string {

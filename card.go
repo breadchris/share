@@ -519,10 +519,15 @@ func imageSection(imageSrc string, isEditing bool, pageId string) *Node {
 func contentSection(message string) *Node {
 	return Div(
 		Id("content"),
-		Class("p-4"),
-		P(
-			Class("mt-2"),
-			T(message),
+		Class("p-4 h-[40%] overflow-hidden relative"), 
+		Div(
+			Id("text-container"),
+			Class("absolute inset-0 flex items-center justify-center text-center p-2"),
+			P(
+				Class("dynamic-text mt-2"),
+				Attr("style", "font-size: min(max(0.8rem, calc(10vw / " + fmt.Sprintf("%d", len(message)/10+1) + ")), 1.5rem);"), // Dynamic font size calculation
+				T(message),
+			),
 		),
 	)
 }

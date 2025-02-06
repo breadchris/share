@@ -53,7 +53,6 @@ func NewAI(d deps.Deps) *http.ServeMux {
 	})
 
 	d.WebsocketRegistry.Register2("chat", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
-		fmt.Println("chatsdfasdvadsv", message)
 		tools := getTools(d, hub)
 		respMsg := GptToolCall(d, message, hub, tools)
 		respBubble := ""
