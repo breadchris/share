@@ -27,13 +27,13 @@ func (s *Challenge) UnmarshalJSON(b []byte) error {
 	}
 
 	switch t {
-	//case "cms":
-	//	var c CMS
-	//	if err := json.Unmarshal(raw["value"], &c); err != nil {
-	//		return err
-	//	}
-	//	s.Type = t
-	//	s.Value = &c
+	case "cms":
+		var c CMS
+		if err := json.Unmarshal(raw["value"], &c); err != nil {
+			return err
+		}
+		s.Type = t
+		s.Value = &c
 	case "base64":
 		var c Base64
 		if err := json.Unmarshal(raw["value"], &c); err != nil {
@@ -135,9 +135,9 @@ type ChallengeType interface {
 }
 
 type (
-	//CMS struct {
-	//	Items []CMSItem
-	//}
+	CMS struct {
+		Items []CMSItem
+	}
 	Base64 struct {
 		Data string
 	}
@@ -210,7 +210,7 @@ type (
 )
 
 // Implement the interface for all ChallengeType structs
-// func (*CMS) isChallengeType()          {}
+func (*CMS) isChallengeType()          {}
 func (*Base64) isChallengeType()       {}
 func (*Twitter) isChallengeType()      {}
 func (*CaesarCipher) isChallengeType() {}
@@ -230,8 +230,16 @@ func (*AudioPlayer) isChallengeType()  {}
 func (*Data) isChallengeType()         {}
 
 type CMSItem struct {
-	Title   string
-	Content string
+	Title           string  // Book title
+	Content         string  // Book description or summary
+	Author          string  // Author name
+	PublicationYear int     // Year of publication
+	Genre           string  // Genre category
+	AvailableCopies int     // Number of available copies
+	FeesOwed        float64 // Outstanding fees for a loaned book
+	ISBN            string  // ISBN number
+	LibrarySection  string  // Library section
+	Borrower        string  `description:"The name of the person who has borrowed the book."`
 }
 
 type Song struct {

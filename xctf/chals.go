@@ -19,6 +19,8 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
 	"github.com/google/uuid"
+	"github.com/sashabaranov/go-openai"
+	"github.com/sashabaranov/go-openai/jsonschema"
 	"github.com/yeka/zip"
 	"html/template"
 	"io"
@@ -124,17 +126,6 @@ func New(d deps.Deps) *http.ServeMux {
 				return
 			}
 
-			var chals []*Node
-			for _, n := range g.Nodes {
-				chals = append(chals, Li(
-					Class("flex items-center justify-between gap-x-6 py-5"),
-					Div(
-						Class("min-w-0"),
-						A(Href("/"+id+"/"+n.ID), Text(n.Name)),
-					),
-				))
-			}
-
 			DefaultLayout(
 				Div(
 					Class("p-5 max-w-lg mx-auto"),
@@ -165,7 +156,20 @@ func New(d deps.Deps) *http.ServeMux {
 						Input(Class("input"), Id("competition-graph"), Type("hidden"), Value(competition.Graph), Name("graph")),
 						Button(Class("btn"), Type("submit"), Text("Save")),
 					),
-					Ch(chals),
+					Ch(func() []*Node {
+						var chals []*Node
+						for _, n := range g.Nodes {
+							chals = append(chals, Li(
+								Class("flex items-center justify-between gap-x-6 py-5"),
+								Div(
+									Class("min-w-0"),
+									A(Class("btn"), Href("/"+id+"/"+n.ID), Text(n.Name)),
+									A(Class("btn"), Href("/"+id+"/"+n.ID+"/ai"), Text("ai")),
+								),
+							))
+						}
+						return chals
+					}()),
 					Div(
 						Script(Attr("src", "/static/leapclient.js")),
 						Script(Attr("src", "/static/leap-bind-textarea.js")),
@@ -255,6 +259,68 @@ func New(d deps.Deps) *http.ServeMux {
 			}
 			getGroupList().RenderPageCtx(ctx, w, r)
 		}
+	})
+	m.HandleFunc("/{compid}/{chalid}/ai", func(w http.ResponseWriter, r *http.Request) {
+		var t chalgen.CMS
+		schema, err := jsonschema.GenerateSchemaForType(t)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		msgParts := []openai.ChatMessagePart{
+			{
+				Type: openai.ChatMessagePartTypeText,
+				Text: fmt.Sprintf(`
+Consider the following story:
+A library database was hacked and the hacker deleted all the records of the library database. The library database contained information about the books, authors, and the users who borrowed the books. The library database was used by the library staff to manage the library. The library staff noticed that the library database was hacked when they tried to access the library database and found that all the records were deleted. The library staff contacted the cyber forensic team to investigate the incident. The cyber forensic team investigated the incident and found that the hacker used a malware to hack the library database. The cyber forensic team analyzed the malware and found that the malware was designed to delete all the records of the library database. The cyber forensic team traced the IP address of the hacker to a foreign country. The cyber forensic team contacted the law enforcement agencies in the foreign country and provided them with the IP address of the hacker. The law enforcement agencies in the foreign country investigated the incident and arrested the hacker. The hacker confessed to hacking the library database and deleting all the records. The law enforcement agencies recovered the deleted records of the library database and restored the library database.
+
+Based on this story, generate a cyber forensic chat evidence for the library database. Include the book Hacker Recipes.
+Add real books about cybersecurity and programming adjacent topics to the library database. Include 30 books.
+`),
+			},
+		}
+
+		request := openai.ChatCompletionRequest{
+			Model: openai.GPT4oMini,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role: "system",
+					Content: `you are an expert story teller who specializes in telling cyber forensic stories.
+You will generate cyber forensic evidence based on a provided story line and type of evidence to generate.`,
+				},
+				{
+					Role:         "user",
+					MultiContent: msgParts,
+				},
+			},
+			ResponseFormat: &openai.ChatCompletionResponseFormat{
+				Type: openai.ChatCompletionResponseFormatTypeJSONSchema,
+				JSONSchema: &openai.ChatCompletionResponseFormatJSONSchema{
+					Name:   "schema",
+					Schema: schema,
+					Strict: true,
+				},
+			},
+		}
+
+		res, err := d.AI.CreateChatCompletion(context.Background(), request)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		for _, choice := range res.Choices {
+			if choice.Message.Role == "assistant" {
+				err := json.Unmarshal([]byte(choice.Message.Content), &t)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(t)
 	})
 	m.HandleFunc("/{compid}/{chalid}", Handle(d))
 	m.HandleFunc("/{compid}/{chalid}/{path...}", Handle(d))
@@ -346,40 +412,63 @@ func Handle(d deps.Deps) http.HandlerFunc {
 			return buf.String(), nil
 		}
 
+		db, err := sql.Open("sqlite3", ":memory:")
+		if err != nil {
+			log.Fatalf("Failed to open database: %v", err)
+		}
+		defer db.Close()
+
 		for _, n := range graph.Nodes {
 			if n.ID == chalId {
 				switch u := n.Challenge.Value.(type) {
-				//case *chalgen.CMS:
-				//	DefaultLayout(
-				//		Div(
-				//			Class("overflow-x-auto"),
-				//			Table(
-				//				Class("table"),
-				//				Thead(Tr(Th(), Th(Text("Name")), Th(Text("Job")), Th(Text("Favorite Color")))),
-				//				Tbody(
-				//					Tr(
-				//						Th(Text("1")),
-				//						Td(Text("Cy Ganderton")),
-				//						Td(Text("Quality Control Specialist")),
-				//						Td(Text("Blue")),
-				//					),
-				//					Tr(
-				//						Th(Text("2")),
-				//						Td(Text("Hart Hagerty")),
-				//						Td(Text("Desktop Support Technician")),
-				//						Td(Text("Purple")),
-				//					),
-				//					Tr(
-				//						Th(Text("3")),
-				//						Td(Text("Brice Swyre")),
-				//						Td(Text("Tax Accountant")),
-				//						Td(Text("Red")),
-				//					),
-				//				),
-				//			),
-				//		),
-				//	).RenderPageCtx(ctx, w, r)
-				//	return
+				case *chalgen.CMS:
+					DefaultLayout(
+						Div(
+							Class("p-5 max-w-lg mx-auto"),
+							Div(Class("text-lg"), Text("Library Database")),
+							//Ch(func() []*Node {
+							//	var tc []*Node
+							//	for _, t := range tablesAndColumns {
+							//		tc = append(
+							//			tc, Div(
+							//				H2(Text(t.Table)),
+							//				Table(
+							//					Class("table"),
+							//					Thead(Tr(Th(Text("Column")), Th(Text("Type")))),
+							//					Tbody(Ch(func() []*Node {
+							//						var rows []*Node
+							//						for _, c := range t.Columns {
+							//							rows = append(rows, Tr(Td(Text(c.Name)), Td(Text(c.Type))))
+							//						}
+							//						return rows
+							//					}())),
+							//				),
+							//			),
+							//		)
+							//	}
+							//	return tc
+							//}()),
+							Table(
+								Class("table"),
+								Thead(Tr(Th(Text("Title")), Th(Text("Content")), Th(Text("Author")), Th(Text("Fees Owed")))),
+								Tbody(
+									Ch(func() []*Node {
+										var rows []*Node
+										for _, u := range u.Items {
+											rows = append(rows, Tr(
+												Td(Text(u.Title)),
+												Td(Text(u.Content)),
+												Td(Text(u.Author)),
+												Td(Text(fmt.Sprintf("%0.2f", u.FeesOwed))),
+											))
+										}
+										return rows
+									}()),
+								),
+							),
+						),
+					).RenderPageCtx(ctx, w, r)
+					return
 				case *chalgen.Xor:
 					DefaultLayout(
 						Div(T(string(xorEncryptDecrypt([]byte(u.Plaintext), []byte(u.Key))))),
@@ -923,6 +1012,93 @@ func Handle(d deps.Deps) http.HandlerFunc {
 		slog.Error("challenge not found", "compId", compId, "chalId", chalId)
 		http.NotFound(w, r)
 	}
+}
+
+func setupDatabase(db *sql.DB) {
+	queries := []string{
+		`CREATE TABLE IF NOT EXISTS authors (
+		    author_id INTEGER PRIMARY KEY,
+		    name TEXT NOT NULL,
+		    birth_year INTEGER
+		);`,
+		`CREATE TABLE IF NOT EXISTS books (
+		    book_id INTEGER PRIMARY KEY,
+		    title TEXT NOT NULL,
+		    author_id INTEGER NOT NULL,
+		    publication_year INTEGER,
+		    FOREIGN KEY (author_id) REFERENCES authors(author_id)
+		);`,
+	}
+
+	for _, query := range queries {
+		if _, err := db.Exec(query); err != nil {
+			log.Fatalf("Failed to execute query: %v", err)
+		}
+	}
+}
+
+type DbColumn struct {
+	ColumnID     int
+	Name         string
+	Type         string
+	NotNull      bool
+	DefaultValue string
+	PrimaryKey   bool
+}
+
+type DbTable struct {
+	Table   string
+	Columns []DbColumn
+}
+
+func inspectSchemas(db *sql.DB) []DbTable {
+	tablesQuery := "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';"
+	tables, err := db.Query(tablesQuery)
+	if err != nil {
+		log.Fatalf("Failed to fetch tables: %v", err)
+	}
+	defer tables.Close()
+
+	var dbTables []DbTable
+	for tables.Next() {
+		var tableName string
+		if err := tables.Scan(&tableName); err != nil {
+			log.Fatalf("Failed to scan table name: %v", err)
+		}
+
+		columnsQuery := fmt.Sprintf("PRAGMA table_info('%s');", tableName)
+		columns, err := db.Query(columnsQuery)
+		if err != nil {
+			log.Fatalf("Failed to fetch columns for table %s: %v", tableName, err)
+		}
+		defer columns.Close()
+
+		var columnDetails []DbColumn
+
+		for columns.Next() {
+			var cid int
+			var name, colType, defaultValue sql.NullString
+			var notNull, pk int
+
+			if err := columns.Scan(&cid, &name, &colType, &notNull, &defaultValue, &pk); err != nil {
+				log.Fatalf("Failed to scan column info: %v", err)
+			}
+
+			columnDetails = append(columnDetails, DbColumn{
+				ColumnID:     cid,
+				Name:         name.String,
+				Type:         colType.String,
+				NotNull:      notNull == 1,
+				DefaultValue: defaultValue.String,
+				PrimaryKey:   pk == 1,
+			})
+		}
+		dbTables = append(dbTables, DbTable{
+			Table:   tableName,
+			Columns: columnDetails,
+		})
+	}
+	return dbTables
 }
 
 func NewPCAP(wr io.Writer, p *chalgen.PCAP) error {
