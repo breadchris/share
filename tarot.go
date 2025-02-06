@@ -83,10 +83,21 @@ func getTarot(d deps.Deps, w http.ResponseWriter, r *http.Request) string {
 				),
 				chatForm("cardchat"),
 			),
+			Button(
+				Attr("ws-send", "submit"),
+				Name("screenshot"),
+				Class("btn btn-primary"),
+				T("Screenshot"),
+			),
 		)
 	}
 
-	Html(
+	buildTarotPage(content).RenderPage(w, r)
+	return id
+}
+
+func buildTarotPage(content *Node) *Node {
+	return Html(
 		Attr("data-theme", "dark"),
 		Head(
 			Title(T("Tarot")),
@@ -109,8 +120,7 @@ func getTarot(d deps.Deps, w http.ResponseWriter, r *http.Request) string {
 				),
 			),
 		),
-	).RenderPage(w, r)
-	return id
+	)
 }
 
 func NewTarot(d deps.Deps) *http.ServeMux {
@@ -264,6 +274,32 @@ func NewTarot(d deps.Deps) *http.ServeMux {
 		hub.Broadcast <- []byte(display)
 	})
 
+	d.WebsocketRegistry.Register2("screenshot", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
+		fmt.Println("Screenshot Endpoint")
+		db := d.Docs.WithCollection("tarot")
+		card := TarotCard{}
+		db.Get(id, &card)
+
+		displayCard := buildTarotPage(displayCard(card)).Render()
+
+		err, screenshotPath := captureDivScreenshotFromHTML(displayCard, id)
+		if err != nil {
+			fmt.Println("Error capturing screenshot:", err)
+		}
+		screenshotPath = "/" + screenshotPath
+		fmt.Println("Screenshot path:", screenshotPath)
+		display := Div(
+			Id("content-container"),
+			Div(
+				Class("rounded-lg shadow-lg w-[16.5rem] h-[25.5rem]"),
+				Img(
+					Attr("src", screenshotPath),
+				),
+			),
+		).Render()
+		hub.Broadcast <- []byte(display)
+
+	})
 	return mux
 }
 
