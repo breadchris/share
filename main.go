@@ -140,18 +140,15 @@ func startServer(useTLS bool, port int) {
 		return m
 	}
 
-	// z := NewZineMaker(deps)
-	// z.SetupZineRoutes()
-
 	socket.SetupHandlers(registry)
 
 	p("/xctf", interpreted(xctf.New))
 	p("/recipe", interpreted(NewRecipe))
 	p("/articles", interpreted(NewArticle))
 	p("/zine", interpreted(NewZine))
-	p("/card", interpreted(NewCard))
+	// p("/card", interpreted(NewCard))
 	p("/ai", interpreted(NewAI))
-	p("/tarot", interpreted(NewTarot))
+	p("/card", interpreted(NewCard2))
 	p("/websocket", interpreted(func(deps deps2.Deps) *http.ServeMux {
 		return socket.WebsocketUI(registry)
 	}))

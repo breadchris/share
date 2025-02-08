@@ -206,7 +206,7 @@ func loadPanelData(zineId string) map[string]PanelData {
 }
 
 // =================================================================================================
-//============================================ Handlers ============================================
+// ============================================ Handlers ===========================================
 // =================================================================================================
 
 func (z *ZineMaker) GenerateImage(w http.ResponseWriter, r *http.Request) {
@@ -481,8 +481,8 @@ func captureDivScreenshotFromHTML(htmlContent, zineId string) (error, string) {
 	}
 
 	// Build the full file URL for ChromeDP
-	fileURL := fmt.Sprintf("http://justshare.io/%s", htmlPath)
-	// fileURL := fmt.Sprintf("http://localhost:8080/%s", htmlPath)
+	//fileURL := fmt.Sprintf("http://justshare.io/%s", htmlPath)
+	fileURL := fmt.Sprintf("http://localhost:8080/%s", htmlPath)
 
 	// Capture the screenshot using ChromeDP
 	var buf []byte
