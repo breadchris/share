@@ -28,6 +28,30 @@ import {createRoot} from 'react-dom/client';
 import {Panel, PanelGroup, PanelResizeHandle} from "react-resizable-panels";
 import Flow from "./App";
 
+function useDebounce<T extends (...args: any[]) => void>(callback: T, delay: number): T {
+    const timeoutRef = useRef<number>();
+
+    const debouncedFunction = useCallback((...args: Parameters<T>) => {
+        if (timeoutRef.current !== undefined) {
+            clearTimeout(timeoutRef.current);
+        }
+        timeoutRef.current = window.setTimeout(() => {
+            callback(...args);
+        }, delay);
+    }, [callback, delay]);
+
+    useEffect(() => {
+        return () => {
+            if (timeoutRef.current !== undefined) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, []);
+
+    // Type assertion to match the signature of T.
+    return debouncedFunction as T;
+}
+
 function generateUUID() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (char) {
         const random = Math.random() * 16 | 0;
@@ -42,6 +66,18 @@ function TextUpdaterNode({ data }) {
             <Handle type="target" position={Position.Top} />
             <div className={"p-6"}>
                 <iframe src={"/code"} style={{height: "500px", width: "700px"}}></iframe>
+            </div>
+            <Handle type="source" position={Position.Bottom} id="a" />
+        </>
+    );
+}
+
+function EvidenceNode({ data }) {
+    return (
+        <>
+            <Handle type="target" position={Position.Top} />
+            <div className={"p-6"}>
+                {data.label}
             </div>
             <Handle type="source" position={Position.Bottom} id="a" />
         </>
@@ -224,7 +260,8 @@ export const EpubReader: React.FC<{url: string}> = ({url}) => {
     )
 }
 
-export default function GraphApp({ id }) {
+export default function GraphApp({ props }) {
+    const { id, graph } = props;
     const [nodes, setNodes] = useState([]);
     const [edges, setEdges] = useState([]);
     const socketRef = useRef<WebSocket | null>(null);
@@ -241,75 +278,98 @@ export default function GraphApp({ id }) {
     };
 
     useEffect(() => {
-        if (!id) {
+        if (!graph) {
             return;
         }
+        setNodes(graph.nodes || []);
+        setEdges(graph.edges || []);
+    }, [graph]);
 
-        socketRef.current = new WebSocket('ws://localhost:8080/graph/ws/' + id);
-
-        socketRef.current.onopen = () => {
-            console.log('WebSocket connection established');
-        };
-
-        socketRef.current.onmessage = (event) => {
-            const msg = JSON.parse(event.data);
-            if (msg.type === 'graph') {
-                const graph = JSON.parse(msg.value);
-                console.log(graph)
-                setNodes(graph.nodes || []);
-                setEdges(graph.edges || []);
-            }
-            if (msg.type === 'ai') {
-                const { id, text } = msg.value;
-                setNodes((nodes) => nodes.map((node) => {
-                    if (node.id === id) {
-                        return {
-                            ...node,
-                            data: {
-                                ...node.data,
-                                text: text,
-                            },
-                        };
-                    }
-                    return node;
-                }));
-            }
-        };
-
-        socketRef.current.onclose = () => {
-            console.log('WebSocket connection closed');
-        };
-
-        socketRef.current.onerror = (error) => {
-            console.error('WebSocket error:', error);
-        };
-
-        return () => {
-            if (socketRef.current) {
-                socketRef.current.close();
-            }
-        };
-    }, [id, setNodes, setEdges]);
+    // useEffect(() => {
+    //     if (!id) {
+    //         return;
+    //     }
+    //
+    //     socketRef.current = new WebSocket('ws://localhost:8080/graph/ws/' + id);
+    //
+    //     socketRef.current.onopen = () => {
+    //         console.log('WebSocket connection established');
+    //     };
+    //
+    //     socketRef.current.onmessage = (event) => {
+    //         const msg = JSON.parse(event.data);
+    //         if (msg.type === 'graph') {
+    //             const graph = JSON.parse(msg.value);
+    //             console.log(graph)
+    //             setNodes(graph.nodes || []);
+    //             setEdges(graph.edges || []);
+    //         }
+    //         if (msg.type === 'ai') {
+    //             const { id, text } = msg.value;
+    //             setNodes((nodes) => nodes.map((node) => {
+    //                 if (node.id === id) {
+    //                     return {
+    //                         ...node,
+    //                         data: {
+    //                             ...node.data,
+    //                             text: text,
+    //                         },
+    //                     };
+    //                 }
+    //                 return node;
+    //             }));
+    //         }
+    //     };
+    //
+    //     socketRef.current.onclose = () => {
+    //         console.log('WebSocket connection closed');
+    //     };
+    //
+    //     socketRef.current.onerror = (error) => {
+    //         console.error('WebSocket error:', error);
+    //     };
+    //
+    //     return () => {
+    //         if (socketRef.current) {
+    //             socketRef.current.close();
+    //         }
+    //     };
+    // }, [id, setNodes, setEdges]);
 
     const sendGraphUpdate = (nodes, edges) => {
-        if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-            socketRef.current.send(JSON.stringify({
-                type: 'graph',
-                value: JSON.stringify({ nodes, edges }),
-            }));
-        } else {
-            console.log('WebSocket is not open');
-        }
+        fetch(`/graph/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ nodes, edges }),
+        }).then((response) => {
+            if (!response.ok) {
+                console.error('Failed to update graph');
+            }
+        }).catch((error) => {
+            console.error('Failed to update graph:', error);
+        });
+        // if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+        //     socketRef.current.send(JSON.stringify({
+        //         type: 'graph',
+        //         value: JSON.stringify({ nodes, edges }),
+        //     }));
+        // } else {
+        //     console.log('WebSocket is not open');
+        // }
     }
+
+    const debouncedUpdate = useDebounce(sendGraphUpdate, 500);
 
     const setSyncedNodes = useCallback((nodes) => {
         setNodes(nodes);
-        sendGraphUpdate(nodes, edges);
+        debouncedUpdate(nodes, edges);
     }, [edges]);
 
     const setSyncedEdges = useCallback((ed) => {
         setEdges(ed);
-        sendGraphUpdate(nodes, ed);
+        debouncedUpdate(nodes, ed);
     }, [nodes]);
 
     const onNodesChange: OnNodesChange = useCallback(
@@ -342,22 +402,22 @@ export default function GraphApp({ id }) {
             console.log(event)
 
             const id = generateUUID();
-            setSyncedNodes(nodes.concat([{
-                id: id,
-                position: screenToFlowPosition({
-                    x: event.clientX,
-                    y: event.clientY,
-                }),
-                type: 'ai',
-                data: { label: `Node ${id}` },
-                origin: [0.5, 0.0],
-            }]));
-
-            setSyncedEdges(edges.concat({
-                id: generateUUID(),
-                source: connectingNodeId.current,
-                target: id
-            }));
+            // setSyncedNodes(nodes.concat([{
+            //     id: id,
+            //     position: screenToFlowPosition({
+            //         x: event.clientX,
+            //         y: event.clientY,
+            //     }),
+            //     type: 'ai',
+            //     data: { label: `Node ${id}` },
+            //     origin: [0.5, 0.0],
+            // }]));
+            //
+            // setSyncedEdges(edges.concat({
+            //     id: generateUUID(),
+            //     source: connectingNodeId.current,
+            //     target: id
+            // }));
 
             // if (!connectingNodeId.current) return;
             //
@@ -428,6 +488,7 @@ export default function GraphApp({ id }) {
 
     const nodeTypes = useMemo(() => {
         return {
+            evidence: EvidenceNode,
             textUpdater: TextUpdaterNode,
             epub: EpubNode,
             pdf: PDFNode,
@@ -515,39 +576,57 @@ export default function GraphApp({ id }) {
         }
     }, []);
 
+    const [flag, setFlag] = useState("");
+
     return (
         <div style={{ width: '100vw', height: '100vh' }}>
             <PanelGroup direction="horizontal">
                 <Panel defaultSize={20}>
-                    {/*<div className={"overflow-auto h-full"} hx-get={`/code/sidebar`} hx-trigger="revealed"></div>*/}
-                    {/*<iframe src={"/code/sidebar?file=vote.go"} className={"h-full w-full"}></iframe>*/}
-                    <aside>
-                        <div className="dndnode output" onDragStart={(event) => onDragStart(event, 'ai')} draggable>
-                            AI
-                        </div>
-                        <div className={"dndnode output"} onDragStart={(event) => onDragStart(event, 'textUpdater')} draggable>
-                            Text Updater
-                        </div>
-                        <div className={"dndnode output"} onDragStart={(event) => onDragStart(event, 'epub')} draggable>
-                            Epub
-                        </div>
-                        <div className={"dndnode output"} onDragStart={(event) => onDragStart(event, 'pdf')} draggable>
-                            PDF
-                        </div>
-                        <div className={"dndnode output"} onDragStart={(event) => onDragStart(event, 'youtube')} draggable>
-                            Youtube
-                        </div>
-                        <div className={"dndnode output"} onDragStart={(event) => onDragStart(event, 'url')} draggable>
-                            URL
-                        </div>
-                    </aside>
-                    <ul>
-                        {nodes.map((node) => (
-                            <li key={node.id}>
-                                <button onClick={() => focusNode(node)}>{node.data.label}</button>
-                            </li>
-                        ))}
-                    </ul>
+                    <input className={"input"} onChange={(e) => {
+                        setFlag(e.target.value);
+                    }} placeholder={"flag"} />
+                    <button className={"btn"} onClick={() => {
+                        const id = generateUUID();
+                        setSyncedNodes(nodes.concat([{
+                            id: id,
+                            position: screenToFlowPosition({
+                                x: 100,
+                                y: 100,
+                            }),
+                            type: 'evidence',
+                            data: { label: flag },
+                            origin: [0.5, 0.0],
+                        }]));
+                    }}>submit</button>
+                {/*    /!*<div className={"overflow-auto h-full"} hx-get={`/code/sidebar`} hx-trigger="revealed"></div>*!/*/}
+                {/*    /!*<iframe src={"/code/sidebar?file=vote.go"} className={"h-full w-full"}></iframe>*!/*/}
+                {/*    <aside>*/}
+                {/*        <div className="dndnode output" onDragStart={(event) => onDragStart(event, 'ai')} draggable>*/}
+                {/*            AI*/}
+                {/*        </div>*/}
+                {/*        <div className={"dndnode output"} onDragStart={(event) => onDragStart(event, 'textUpdater')} draggable>*/}
+                {/*            Text Updater*/}
+                {/*        </div>*/}
+                {/*        <div className={"dndnode output"} onDragStart={(event) => onDragStart(event, 'epub')} draggable>*/}
+                {/*            Epub*/}
+                {/*        </div>*/}
+                {/*        <div className={"dndnode output"} onDragStart={(event) => onDragStart(event, 'pdf')} draggable>*/}
+                {/*            PDF*/}
+                {/*        </div>*/}
+                {/*        <div className={"dndnode output"} onDragStart={(event) => onDragStart(event, 'youtube')} draggable>*/}
+                {/*            Youtube*/}
+                {/*        </div>*/}
+                {/*        <div className={"dndnode output"} onDragStart={(event) => onDragStart(event, 'url')} draggable>*/}
+                {/*            URL*/}
+                {/*        </div>*/}
+                {/*    </aside>*/}
+                {/*    <ul>*/}
+                {/*        {nodes.map((node) => (*/}
+                {/*            <li key={node.id}>*/}
+                {/*                <button onClick={() => focusNode(node)}>{node.data.label}</button>*/}
+                {/*            </li>*/}
+                {/*        ))}*/}
+                {/*    </ul>*/}
                 </Panel>
                 <PanelResizeHandle className="w-2 bg-gray-300"/>
                 <Panel>
@@ -577,11 +656,12 @@ export default function GraphApp({ id }) {
 }
 
 const g = document.getElementById('graph');
-const id = g.getAttribute('data-id');
+const p = g.getAttribute('data-props');
+const props = JSON.parse(p);
 const root = createRoot(g);
 root.render((
     <ReactFlowProvider>
-        <GraphApp id={id} />
+        <GraphApp props={props} />
         {/*{<Flow />}*/}
     </ReactFlowProvider>
 ));

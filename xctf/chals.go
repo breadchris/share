@@ -135,6 +135,20 @@ func New(d deps.Deps) *http.ServeMux {
 					Div(Id("error"), Class("alert alert-error hidden")),
 					getGroupList(),
 					Div(Class("divider")),
+					Ch(func() []*Node {
+						var chals []*Node
+						for _, n := range g.Nodes {
+							chals = append(chals, Li(
+								Class("flex items-center justify-between gap-x-6 py-5"),
+								Div(
+									Class("min-w-0"),
+									A(Class("btn"), Href("/"+id+"/"+n.ID), Text(n.Name)),
+									A(Class("btn"), Href("/"+id+"/"+n.ID+"/ai"), Text("ai")),
+								),
+							))
+						}
+						return chals
+					}()),
 					Form(
 						Class("flex flex-col space-y-4"),
 						Div(Text("new competition")),
@@ -156,20 +170,6 @@ func New(d deps.Deps) *http.ServeMux {
 						Input(Class("input"), Id("competition-graph"), Type("hidden"), Value(competition.Graph), Name("graph")),
 						Button(Class("btn"), Type("submit"), Text("Save")),
 					),
-					Ch(func() []*Node {
-						var chals []*Node
-						for _, n := range g.Nodes {
-							chals = append(chals, Li(
-								Class("flex items-center justify-between gap-x-6 py-5"),
-								Div(
-									Class("min-w-0"),
-									A(Class("btn"), Href("/"+id+"/"+n.ID), Text(n.Name)),
-									A(Class("btn"), Href("/"+id+"/"+n.ID+"/ai"), Text("ai")),
-								),
-							))
-						}
-						return chals
-					}()),
 					Div(
 						Script(Attr("src", "/static/leapclient.js")),
 						Script(Attr("src", "/static/leap-bind-textarea.js")),
@@ -324,6 +324,10 @@ You will generate cyber forensic evidence based on a provided story line and typ
 	})
 	m.HandleFunc("/{compid}/{chalid}", Handle(d))
 	m.HandleFunc("/{compid}/{chalid}/{path...}", Handle(d))
+
+	g := NewGraph(d)
+	m.Handle("/graph", http.StripPrefix("/graph", g))
+
 	return m
 }
 
@@ -616,8 +620,8 @@ func Handle(d deps.Deps) http.HandlerFunc {
 					}
 
 					for _, p := range u.Channels {
-						for _, n := range p.Messages {
-							n.Content, err = templChals(n.Content)
+						for i, n := range p.Messages {
+							p.Messages[i].Content, err = templChals(n.Content)
 							if err != nil {
 								http.Error(w, err.Error(), http.StatusInternalServerError)
 								return

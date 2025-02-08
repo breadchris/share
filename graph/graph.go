@@ -215,25 +215,64 @@ func New(d deps.Deps) *http.ServeMux {
 	})
 	mux.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
-		if id == "" {
-			id = uuid.NewString()
-			graph := Graph{
-				Nodes: []GraphNode{},
-				Edges: []GraphEdge{},
+
+		switch r.Method {
+		case http.MethodGet:
+			if id == "" {
+				id = uuid.NewString()
+				graph := Graph{
+					Nodes: []GraphNode{},
+					Edges: []GraphEdge{},
+				}
+				if err := graphs.Set(id, graph); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				http.Redirect(w, r, "/graph/"+id, http.StatusFound)
+				return
 			}
-			if err := graphs.Set(id, graph); err != nil {
+
+			type Props struct {
+				Id    string `json:"id"`
+				Graph Graph  `json:"graph"`
+			}
+
+			p := Props{
+				Id: id,
+			}
+
+			err := graphs.Get(id, &p.Graph)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusNotFound)
+				return
+			}
+
+			sg, err := json.Marshal(p)
+			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			http.Redirect(w, r, "/graph/"+id, http.StatusFound)
+
+			Html(
+				Title(T("Graph")),
+				Link(Attr("rel", "stylesheet"), Attr("type", "text/css"), Attr("href", "/static/graph/graph.css")),
+				Style(Text(style)),
+				Div(Id("graph"), Attr("data-props", string(sg))),
+				Script(Src("/static/graph/graph.js"), Attr("type", "module")),
+			).RenderPage(w, r)
+		case http.MethodPut:
+			var g Graph
+			if err := json.NewDecoder(r.Body).Decode(&g); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			if err := graphs.Set(id, g); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
 		}
-		Html(
-			Title(T("Graph")),
-			Link(Attr("rel", "stylesheet"), Attr("type", "text/css"), Attr("href", "/static/graph/graph.css")),
-			Style(Text(style)),
-			Div(Id("graph"), Attr("data-id", id)),
-			Script(Src("/static/graph/graph.js"), Attr("type", "module")),
-		).RenderPage(w, r)
 	})
 	return mux
 }
