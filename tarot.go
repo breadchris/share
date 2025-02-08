@@ -29,6 +29,12 @@ type AITarotCard struct {
 	Themes      string
 	Description string
 }
+
+type ContentCard struct {
+	Link    string
+	Summary string
+}
+
 type TarotCard struct {
 	Id            string
 	Message       string
@@ -36,6 +42,7 @@ type TarotCard struct {
 	AICard        AITarotCard
 	InitialPrompt string
 	ImagePath     string
+	ContentCard   ContentCard
 }
 
 func chatForm(name string) *Node {
@@ -54,9 +61,10 @@ func chatForm(name string) *Node {
 }
 
 func getTarot(d deps.Deps, w http.ResponseWriter, r *http.Request) string {
+	fmt.Println("getTarot")
 	id := r.PathValue("id")
 	if id == "" {
-		id = "t" + uuid.NewString()
+		id = "tarot" + uuid.NewString()
 
 		http.Redirect(w, r, "/tarot/"+id, http.StatusSeeOther)
 		return ""
@@ -66,8 +74,15 @@ func getTarot(d deps.Deps, w http.ResponseWriter, r *http.Request) string {
 	db := d.Docs.WithCollection("tarot")
 	content := Div()
 	err := db.Get(id, &card)
+
 	if err != nil {
 		fmt.Println("card not found, creating new card")
+		card.Id = id
+		db.Set(id, card)
+	}
+
+	if card.AICard.Name == "" {
+		fmt.Println("Tarot card not found, creating new card")
 		card.Id = id
 		db.Set(id, card)
 		content = Div(
@@ -92,15 +107,15 @@ func getTarot(d deps.Deps, w http.ResponseWriter, r *http.Request) string {
 		)
 	}
 
-	buildTarotPage(content).RenderPage(w, r)
+	buildPage(content, "Tarot").RenderPage(w, r)
 	return id
 }
 
-func buildTarotPage(content *Node) *Node {
+func buildPage(content *Node, title string) *Node {
 	return Html(
 		Attr("data-theme", "dark"),
 		Head(
-			Title(T("Tarot")),
+			Title(T(title)),
 			Script(
 				Src("https://unpkg.com/htmx.org@1.9.12"),
 			),
@@ -123,13 +138,137 @@ func buildTarotPage(content *Node) *Node {
 	)
 }
 
-func NewTarot(d deps.Deps) *http.ServeMux {
+func getContentCard(d deps.Deps, w http.ResponseWriter, r *http.Request) string {
+	id := r.PathValue("id")
+	if id == "" {
+		id = "content" + uuid.NewString()
+		http.Redirect(w, r, "/content/"+id, http.StatusSeeOther)
+		return ""
+	}
+
+	content := Div()
+	card := TarotCard{}
+	db := d.Docs.WithCollection("tarot")
+	// Check if the card already exists in the database.
+	err := db.Get(id, &card)
+	if err != nil {
+		// If the card doesn't exist, create a new one.
+		card.Id = id
+		db.Set(id, card)
+	}
+
+	if card.ContentCard.Link == "" {
+		// If the card doesn't exist, create a new one.
+		card.Id = id
+		db.Set(id, card)
+		fmt.Println("Creating new content card with id:", id)
+		// Build a form that allows the user to submit a URL and a description.
+		content = Div(
+			T("Welcome to the Content Card Page!"),
+			T("Submit a link and a description below to generate a summary and image."),
+			Form(
+				Attr("ws-send", "contentcard"), // This tells htmx to send the form via WebSocket to the "contentcard" endpoint.
+				Div(
+					Label(T("URL:")),
+					Input(
+						Type("url"),
+						Name("contentlink"),
+						Placeholder("Enter a URL..."),
+						Class("input input-bordered w-full"),
+					),
+				),
+				Div(
+					Label(T("Description:")),
+					TextArea(
+						Name("contentdescription"),
+						Placeholder("Enter a brief description of the content..."),
+						Class("textarea textarea-bordered w-full"),
+					),
+				),
+				Div(
+					Input(
+						Type("submit"),
+						Value("Generate Content Card"),
+						Class("btn btn-primary mt-4"),
+					),
+				),
+			),
+		)
+	} else {
+		fmt.Println("Content card found with id:", id)
+		content = displayContentCard(card)
+	}
+
+	buildPage(content, "Content Card").RenderPage(w, r)
+	return id
+}
+
+func getCard(d deps.Deps, w http.ResponseWriter, r *http.Request) string {
+	id := r.PathValue("id")
+	if id == "" {
+		// Generate a new id. You could prefix with something (or not) as needed.
+		id = "c" + uuid.NewString()
+		http.Redirect(w, r, "/card/"+id, http.StatusSeeOther)
+	}
+
+	// generate qr code for link
+	qrcodeUrl, err := GenerateQRCode("https://justshare.io/card/" + id)
+	if err != nil {
+		fmt.Println("Error generating QR code:", err)
+	}
+
+	card := TarotCard{}
+	db := d.Docs.WithCollection("tarot")
+	err = db.Get(id, &card)
+	if err != nil {
+		card.Id = id
+		db.Set(id, card)
+	} else {
+		if card.ContentCard.Link != "" {
+			http.Redirect(w, r, "/card/content/"+id, http.StatusSeeOther)
+			return id
+		} else if card.AICard.Name != "" {
+			http.Redirect(w, r, "/card/tarot/"+id, http.StatusSeeOther)
+			return id
+		}
+	}
+
+	// Display two buttons/links to choose between Tarot Card and Content Card.
+	content := Div(
+		T("Select the type of card you want to create:"),
+		Div(
+			A(Attr("href", "/card/tarot/"+id), Class("btn btn-primary m-2"), T("Tarot Card")),
+			A(Attr("href", "/card/content/"+id), Class("btn btn-secondary m-2"), T("Content Card")),
+		),
+		Img(
+			Attr("src", qrcodeUrl),
+			Class("rounded-lg shadow-lg w-[16.5rem] h-[16.5rem]"),
+		),
+	)
+
+	buildPage(content, "Select Card Type").RenderPage(w, r)
+	return id
+}
+
+func NewCard2(d deps.Deps) *http.ServeMux {
 	id := ""
 	mux := http.NewServeMux()
 	mux.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
+			id = getCard(d, w, r)
+		}
+	})
+	mux.HandleFunc("/tarot/{id...}", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
 			id = getTarot(d, w, r)
+		}
+	})
+	mux.HandleFunc("/content/{id...}", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			id = getContentCard(d, w, r)
 		}
 	})
 
@@ -215,12 +354,13 @@ func NewTarot(d deps.Deps) *http.ServeMux {
 				Name: "RelatedArchetypes",
 				Desc: fmt.Sprintf("Given this prompt, \"%s\" select five related archetypes from this list: %s", message, strings.Join(archetypeNames, ", ")),
 				Function: func(d deps.Deps, hub *websocket.Hub, archetypeOne string, archetypeTwo string, archetypeThree string, archetypeFour string, archetypeFive string) string {
-					options := []string{}
-					options = append(options, archetypeOne)
-					options = append(options, archetypeTwo)
-					options = append(options, archetypeThree)
-					options = append(options, archetypeFour)
-					options = append(options, archetypeFive)
+					options := []string{
+						archetypeOne,
+						archetypeTwo,
+						archetypeThree,
+						archetypeFour,
+						archetypeFive,
+					}
 
 					form := generateRadioForm(options)
 
@@ -256,7 +396,7 @@ func NewTarot(d deps.Deps) *http.ServeMux {
 		card := TarotCard{}
 		db.Get(id, &card)
 
-		assistant := fmt.Sprintf("You are %s, you are defined by this: %s", card.AICard.Name, card.AICard.Role)
+		assistant := fmt.Sprintf("You are %s. You are currently thinking: %s. You are defined by this: %s", card.AICard.Name, card.InitialPrompt, card.AICard.Role)
 
 		gptResp := gptCall(d, message, hub, assistant)
 		display := Div(
@@ -280,7 +420,7 @@ func NewTarot(d deps.Deps) *http.ServeMux {
 		card := TarotCard{}
 		db.Get(id, &card)
 
-		displayCard := buildTarotPage(displayCard(card)).Render()
+		displayCard := buildPage(displayCard(card), "Tarot").Render()
 
 		err, screenshotPath := captureDivScreenshotFromHTML(displayCard, id)
 		if err != nil {
@@ -300,7 +440,68 @@ func NewTarot(d deps.Deps) *http.ServeMux {
 		hub.Broadcast <- []byte(display)
 
 	})
+
+	d.WebsocketRegistry.Register2("contentlink", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
+		fmt.Println("Contentlink Endpoint")
+		// "message" is expected to be the value of the "contentlink" input (i.e. the submitted URL).
+		link := message
+
+		fmt.Println("Content Card: Received link:", link)
+
+		aditionalContent := msgMap["contentdescription"].(string)
+
+		// Construct a GPT prompt that instructs GPT to summarize the page and then produce an image description.
+		prompt := fmt.Sprintf(
+			"Please summarize this: %s. Then, generate a vivid, creative image description that captures the essence of this page.",
+			aditionalContent,
+		)
+
+		// Call GPT using your existing gptCall function.
+		summary := gptCall(d, prompt, hub, "You are an expert webpage summarizer and image description generator.")
+		fmt.Println("Generated summary:", summary)
+
+		// Generate an image using the summary as the prompt.
+		card, err := GenerateImage(d, id, summary)
+		if err != nil {
+			fmt.Println("Error generating image for content card:", err)
+		}
+
+		card.ContentCard.Link = link
+		card.ContentCard.Summary = summary
+
+		// Save the card to the database.
+		db := d.Docs.WithCollection("tarot")
+		db.Set(id, card)
+
+		// Build the display for the content card: show both the summary and the generated image.
+		display := displayContentCard(card).Render()
+
+		// Broadcast the generated display so the client page can update.
+		hub.Broadcast <- []byte(display)
+	})
+
 	return mux
+}
+
+func displayContentCard(card TarotCard) *Node {
+	return Div(
+		Id("content-container"),
+		Div(
+			A(Attr("href", card.ContentCard.Link), T("Lint to original Content")),
+		),
+		Div(
+			Class("card card-compact bg-base-100 shadow-xl m-4"),
+			Div(
+				Class("card-body"),
+				H2(T("Page Summary")),
+				P(T(card.ContentCard.Summary)),
+			),
+		),
+		Div(
+			Class("card card-compact bg-base-100 shadow-xl m-4"),
+			Img(Attr("src", card.ImagePath), Class("rounded-lg shadow-lg")),
+		),
+	)
 }
 
 func displayCard(card TarotCard) *Node {
@@ -342,20 +543,6 @@ type Archetype struct {
 	Role             string   `json:"role"`
 	Examples         []string `json:"examples"`
 	Themes           []string `json:"themes"`
-}
-
-func findArchetype(archetypes []Archetype, name string) *Archetype {
-	for _, archetype := range archetypes {
-		if strings.EqualFold(archetype.Name, name) {
-			return &archetype
-		}
-		for _, altName := range archetype.AlternativeNames {
-			if strings.EqualFold(altName, name) {
-				return &archetype
-			}
-		}
-	}
-	return nil
 }
 
 type Func2 func([]any, deps.Deps, *websocket.Hub) string
@@ -515,6 +702,18 @@ func loadArchetypes() []Archetype {
 	return archetypes
 }
 
+func GenerateQRCode(data string) (string, error) {
+	qrcodeUrl := "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + data
+	now := strconv.Itoa(time.Now().Nanosecond())
+	imagePath, err := downloadImage(qrcodeUrl, fmt.Sprintf("qrcode%s.png", now))
+	if err != nil {
+		return "", err
+	}
+	_, i := utf8.DecodeRuneInString(imagePath)
+	imagePath = imagePath[i:]
+	return imagePath, nil
+}
+
 func GenerateImage(d deps.Deps, pageId string, prompt string) (TarotCard, error) {
 	db := d.Docs.WithCollection("tarot")
 	card := TarotCard{}
@@ -545,6 +744,7 @@ func GenerateImage(d deps.Deps, pageId string, prompt string) (TarotCard, error)
 	imagePath = imagePath[i:]
 
 	if err := db.Get(pageId, &card); err != nil {
+		fmt.Println("Id not found: ", pageId)
 		fmt.Println("Failed with: ", err)
 		return card, err
 	}
@@ -555,4 +755,18 @@ func GenerateImage(d deps.Deps, pageId string, prompt string) (TarotCard, error)
 		fmt.Println("Saved image to:", imagePath)
 	}
 	return card, nil
+}
+
+func findArchetype(archetypes []Archetype, name string) *Archetype {
+	for _, archetype := range archetypes {
+		if strings.EqualFold(archetype.Name, name) {
+			return &archetype
+		}
+		for _, altName := range archetype.AlternativeNames {
+			if strings.EqualFold(altName, name) {
+				return &archetype
+			}
+		}
+	}
+	return nil
 }

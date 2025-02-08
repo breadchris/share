@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"reflect"
-	"strings"
 	"sync"
 
 	. "github.com/breadchris/share/html"
@@ -116,6 +115,7 @@ func NewWebsocketPage(children []*Node) *Node {
 }
 
 func WebsocketUI(registry *CommandRegistry) *http.ServeMux {
+	fmt.Println("WebsocketUI")
 	go hub.run()
 	SetupHandlers(registry)
 	mux := http.NewServeMux()
@@ -239,6 +239,7 @@ func (c *WebsocketClient) readPump3(w http.ResponseWriter, r *http.Request) {
 		delete(msgMap, "HEADERS")
 
 		for key, value := range msgMap {
+			fmt.Println(fmt.Sprintf("key: %s, value: %s", key, value))
 			c.registry.mu.RLock()
 			handler, ok := c.registry.handlers3[key]
 			c.registry.mu.RUnlock()
@@ -253,153 +254,6 @@ func (c *WebsocketClient) readPump3(w http.ResponseWriter, r *http.Request) {
 		// 	hub.Broadcast <- []byte(cmdMsg)
 		// 	// c.send <- []byte(cmdMsg)
 		// }
-	}
-}
-
-func (c *WebsocketClient) readPump2(w http.ResponseWriter, r *http.Request) {
-	defer func() {
-		hub.unregister <- c
-		c.conn.Close()
-	}()
-
-	for {
-		_, message, err := c.conn.ReadMessage()
-		if err != nil {
-			log.Println("ReadMessage error:", err)
-			break
-		}
-		var msgMap map[string]interface{}
-
-		err = json.Unmarshal(message, &msgMap)
-		if err != nil {
-			log.Println("JSON Unmarshal error:", err)
-			return
-		}
-
-		// pageId := ""
-		// if headers, ok := msgMap["HEADERS"].(map[string]interface{}); ok {
-		// 	if currentURL, ok := headers["HX-Current-URL"].(string); ok {
-		// 		splitUrl := strings.Split(currentURL, "/")
-		// 		pageId = splitUrl[len(splitUrl)-1]
-		// 	}
-		// 	delete(msgMap, "HEADERS")
-		// }
-
-		// if ID, ok := msgMap["id"].(string); ok {
-		// 	pageId = ID
-		// 	delete(msgMap, "id")
-		// }
-		// typeName := ""
-		// if typeName, ok := msgMap["typeName"].(string); ok {
-		// 	delete(msgMap, "typeName")
-		// }
-
-		typeName := msgMap["typeName"].(string)
-		delete(msgMap, "typeName")
-		delete(msgMap, "HEADERS")
-
-		fmt.Println("typeName", typeName)
-
-		t := c.registry.Types[typeName]
-
-		fields := GetFieldsWithTypeAndValue(t)
-
-		for key, field := range fields {
-			msgMap[key] = field.Value
-		}
-		msgJson, err := json.Marshal(msgMap)
-		if err != nil {
-			log.Println("JSON Marshal error:", err)
-			return
-		}
-
-		err = json.Unmarshal(msgJson, &t)
-		if err != nil {
-			log.Println("JSON Unmarshal error:", err)
-			return
-		}
-		t = c.registry.Types[typeName]
-		t = SetFieldsWithTypeAndValue(t, fields)
-		c.registry.Types[typeName] = t
-
-		cmdMsgs := []string{}
-		c.registry.mu.RLock()
-		handler, ok := c.registry.handlers2[typeName]
-		c.registry.mu.RUnlock()
-		if ok {
-			cmdMsgs = handler(t, w, r)
-		}
-
-		for _, cmdMsg := range cmdMsgs {
-			hub.Broadcast <- []byte(cmdMsg)
-			// c.send <- []byte(cmdMsg)
-		}
-	}
-}
-
-func (c *WebsocketClient) readPump(w http.ResponseWriter, r *http.Request) {
-	isMobile := strings.Contains(r.Header.Get("User-Agent"), "Android") || strings.Contains(r.Header.Get("User-Agent"), "iPhone")
-	defer func() {
-		hub.unregister <- c
-		c.conn.Close()
-	}()
-
-	for {
-		_, message, err := c.conn.ReadMessage()
-		if err != nil {
-			log.Println("ReadMessage error:", err)
-			break
-		}
-		var msgMap map[string]interface{}
-
-		err = json.Unmarshal(message, &msgMap)
-		if err != nil {
-			log.Println("JSON Unmarshal error:", err)
-			return
-		}
-
-		pageId := ""
-		// get msgMap["HEADERS"].(map[string]interface{})["HX-Current-URL"].(string), "/card/")[1] if it exists
-		if headers, ok := msgMap["HEADERS"].(map[string]interface{}); ok {
-			if currentURL, ok := headers["HX-Current-URL"].(string); ok {
-				splitUrl := strings.Split(currentURL, "/")
-				pageId = splitUrl[len(splitUrl)-1]
-			}
-			delete(msgMap, "HEADERS")
-		}
-
-		if ID, ok := msgMap["id"].(string); ok {
-			pageId = ID
-			delete(msgMap, "id")
-		}
-
-		for key, value := range msgMap {
-			// Get the command from the command field
-			msg, ok := value.(string)
-			if !ok {
-				msg = ""
-			}
-			cmdMsgs := []string{}
-
-			c.registry.mu.RLock()
-			handler, ok := c.registry.handlers[key]
-			c.registry.mu.RUnlock()
-			if ok {
-				cmdMsgs = handler(msg, pageId, isMobile)
-			} else {
-				cmdMsgs = []string{Div(
-					Id("container-1"),
-					Attr("hx-swap-oob", "innerHTML"),
-					T("Unknown command"),
-				).Render(),
-				}
-			}
-
-			for _, cmdMsg := range cmdMsgs {
-				hub.Broadcast <- []byte(cmdMsg)
-				// c.send <- []byte(cmdMsg)
-			}
-		}
 	}
 }
 

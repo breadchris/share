@@ -5,8 +5,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	_ "github.com/glebarez/go-sqlite"
 	"regexp"
+
+	_ "github.com/glebarez/go-sqlite"
 )
 
 type DocumentStore struct {
