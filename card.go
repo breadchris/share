@@ -507,7 +507,7 @@ func imageSection(imageSrc string, isEditing bool, pageId string) *Node {
 		Id("card-image"),
 		Class("w-full h-[60%] bg-gray-200 rounded-t-lg overflow-hidden relative"),
 		Img(
-			Class("w-full h-full object-cover"),
+			Class("max-w-full w-full h-full object-cover"),
 			Attr("src", imageSrc),
 			Attr("alt", "Card Image"),
 		),
@@ -518,16 +518,12 @@ func imageSection(imageSrc string, isEditing bool, pageId string) *Node {
 
 func contentSection(message string) *Node {
 	return Div(
-		Id("content"),
-		Class("p-4 h-[40%] overflow-hidden relative"), 
-		Div(
-			Id("text-container"),
-			Class("absolute inset-0 flex items-center justify-center text-center p-2"),
-			P(
-				Class("dynamic-text mt-2"),
-				Attr("style", "font-size: min(max(0.8rem, calc(10vw / " + fmt.Sprintf("%d", len(message)/10+1) + ")), 1.5rem);"), // Dynamic font size calculation
-				T(message),
-			),
+		Id("text-container"),
+		Class("inset-0 flex items-center justify-center text-center p-2"),
+		P(
+			Class("dynamic-text mt-2"),
+			// Attr("style", "font-size: min(max(0.8rem, calc(10vw / " + fmt.Sprintf("%d", len(message)/10+1) + ")), 1.5rem);"), // Dynamic font size calculation
+			T(message),
 		),
 	)
 }

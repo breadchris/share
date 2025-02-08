@@ -43,6 +43,7 @@ type TarotCard struct {
 	InitialPrompt string
 	ImagePath     string
 	ContentCard   ContentCard
+	QrCodePath    string
 }
 
 func chatForm(name string) *Node {
@@ -98,12 +99,12 @@ func getTarot(d deps.Deps, w http.ResponseWriter, r *http.Request) string {
 				),
 				chatForm("cardchat"),
 			),
-			Button(
-				Attr("ws-send", "submit"),
-				Name("screenshot"),
-				Class("btn btn-primary"),
-				T("Screenshot"),
-			),
+			// Button(
+			// 	Attr("ws-send", "submit"),
+			// 	Name("screenshot"),
+			// 	Class("btn btn-primary"),
+			// 	T("Screenshot"),
+			// ),
 		)
 	}
 
@@ -112,6 +113,9 @@ func getTarot(d deps.Deps, w http.ResponseWriter, r *http.Request) string {
 }
 
 func buildPage(content *Node, title string) *Node {
+	// add mobile styling to make the content larger
+	content.Attrs["Class"] = "transform origin-top scale-[3] md:scale-100 container w-full"
+
 	return Html(
 		Attr("data-theme", "dark"),
 		Head(
@@ -131,6 +135,8 @@ func buildPage(content *Node, title string) *Node {
 				Attr("ws-connect", "/websocket/ws"),
 				Div(
 					Id("content-container"),
+
+					Class("flex justify-center mt-4"),
 					content,
 				),
 			),
@@ -222,8 +228,10 @@ func getCard(d deps.Deps, w http.ResponseWriter, r *http.Request) string {
 	err = db.Get(id, &card)
 	if err != nil {
 		card.Id = id
+		card.QrCodePath = qrcodeUrl
 		db.Set(id, card)
 	} else {
+		card.QrCodePath = qrcodeUrl
 		if card.ContentCard.Link != "" {
 			http.Redirect(w, r, "/card/content/"+id, http.StatusSeeOther)
 			return id
@@ -232,7 +240,6 @@ func getCard(d deps.Deps, w http.ResponseWriter, r *http.Request) string {
 			return id
 		}
 	}
-
 	// Display two buttons/links to choose between Tarot Card and Content Card.
 	content := Div(
 		T("Select the type of card you want to create:"),
@@ -240,12 +247,11 @@ func getCard(d deps.Deps, w http.ResponseWriter, r *http.Request) string {
 			A(Attr("href", "/card/tarot/"+id), Class("btn btn-primary m-2"), T("Tarot Card")),
 			A(Attr("href", "/card/content/"+id), Class("btn btn-secondary m-2"), T("Content Card")),
 		),
-		Img(
-			Attr("src", qrcodeUrl),
-			Class("rounded-lg shadow-lg w-[16.5rem] h-[16.5rem]"),
-		),
+		// Img(
+		// 	Attr("src", qrcodeUrl),
+		// 	Class("rounded-lg shadow-lg w-[16.5rem] h-[16.5rem]"),
+		// ),
 	)
-
 	buildPage(content, "Select Card Type").RenderPage(w, r)
 	return id
 }
@@ -420,7 +426,14 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 		card := TarotCard{}
 		db.Get(id, &card)
 
-		displayCard := buildPage(displayCard(card), "Tarot").Render()
+		displayCard := buildPage(
+			cardTextImageTemplate(
+				card.Id,
+				"rounded-lg shadow-lg w-[16.5rem] h-[25.5rem]",
+				card.ImagePath,
+				card.AICard.Role),
+			"Tarot",
+		).Render()
 
 		err, screenshotPath := captureDivScreenshotFromHTML(displayCard, id)
 		if err != nil {
@@ -505,7 +518,7 @@ func displayContentCard(card TarotCard) *Node {
 }
 
 func displayCard(card TarotCard) *Node {
-	return cardTextImageTemplate(card.Id, "rounded-lg shadow-lg w-[16.5rem] h-[25.5rem]", card.ImagePath, card.AICard.Role)
+	return cardTextImageTemplate(card.Id, "rounded-lg shadow-lg w-full", card.ImagePath, card.AICard.Role)
 }
 
 func generateRadioForm(options []string) *Node {
