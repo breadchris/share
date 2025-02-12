@@ -662,25 +662,4 @@ func NewWebsocketPage(children []*Node) *Node {
 	)
 }
 
-func downloadImage(imageURL, outputName string) (string, error) {
-	imageResp, err := http.Get(imageURL)
-	if err != nil {
-		return "", err
-	}
-	defer imageResp.Body.Close()
 
-	outputPath := fmt.Sprintf("./data/images/" + outputName)
-
-	file, err := os.Create(outputPath)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
-
-	_, err = io.Copy(file, imageResp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	return outputPath, nil
-}
