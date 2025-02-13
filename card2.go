@@ -73,8 +73,21 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 					),
 					Button(
 						Class("bg-cyan-600 text-white px-4 py-2 rounded-lg"),
-						T("Add Text Section"),
+						T("Add Text"),
 						Name("newtextsection"),
+					),
+				),
+				Form(
+					Attr("ws-send", "submit"),
+					Input(
+						Type("hidden"),
+						Name("id"),
+						Value(cardId),
+					),
+					Button(
+						Class("bg-cyan-600 text-white px-4 py-2 rounded-lg"),
+						T("Add Heading"),
+						Name("newheadingsection"),
 					),
 				),
 			).Render())
@@ -198,6 +211,43 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 
 		hub.Broadcast <- []byte(textEditSection.Render())
 	})
+
+	d.WebsocketRegistry.Register2("newheadingsection", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
+		fmt.Println("New Text Section WebSocket Endpoint")
+		// Get the card ID from the message.
+		cardId, ok := msgMap["id"].(string)
+		if !ok || cardId == "" {
+			fmt.Println("No card id provided")
+			return
+		}
+		db := d.Docs.WithCollection("cards")
+		var card Card2
+		err := db.Get(cardId, &card)
+		if err != nil {
+			fmt.Println("Card not found:", cardId)
+			return
+		}
+
+		sectionDb := d.Docs.WithCollection("sections")
+		textSectionId := "s" + uuid.NewString()
+		section := Section2{
+			Id:   textSectionId,
+			Type: "text",
+		}
+		sectionDb.Set(textSectionId, section)
+
+		card.Sections = append(card.Sections, textSectionId)
+		db.Set(cardId, card)
+
+		headingEditSection := Div(
+			Id("card-container"),
+			Attr("hx-swap-oob", "beforeend"),
+			createHeadingEditSectionForm(textSectionId, card, d),
+		)
+
+		hub.Broadcast <- []byte(headingEditSection.Render())
+	})
+
 
 	d.WebsocketRegistry.Register2("savesection", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
 		fmt.Println("Save Text Section WebSocket Endpoint")
