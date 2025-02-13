@@ -62,8 +62,8 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 
 		hub.Broadcast <- []byte(
 			Nav(
-				Id("edit-nav"),
-				Class("flex justify-center space-x-4"),
+				Id("navbar"),
+				Class("flex justify-center space-x-4 mb-4"),
 				Form(
 					Attr("ws-send", "submit"),
 					Input(
@@ -95,20 +95,42 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 					Value("view"),
 				),
 				Div(Input(
+					Id("edit-button-input"),
 					Type("submit"),
 					Value("View"),
 					Class("btn btn-primary btn-circle"),
 				)),
 			).Render(),
 		)
+		hub.Broadcast <- []byte(
+			Button(
+				Id("save-all-button"),
+				OnClick(`
+					const updatedSectionsJson = sessionStorage.getItem('updatedSections');
+					const updatedSections = JSON.parse(updatedSectionsJson);;
+					if (updatedSections) {
+						updatedSections.forEach(sectionId => {
+							const button = document.getElementById(sectionId+"-button");
+							if (button) {
+								button.click();
+							}
+							else {
+								console.log("No button found for section:", sectionId);
+							}
+						});
+					}
+					sessionStorage.removeItem('updatedSections');
+					document.getElementById('edit-button-input').click();
+					`),
+				T("Save"),
+				Class("btn btn-primary btn-circle fixed top-4 right-4 rounded-full"),
+			).Render(),
+		)
 
 		sections := renderSections(card, true, d)
-
-		hub.Broadcast <- []byte(
-			Div(
-				Id("card-container"),
-				sections).Render(),
-		)
+		for _, section := range sections.Children {
+			hub.Broadcast <- []byte(section.Render())
+		}
 	})
 
 	d.WebsocketRegistry.Register2("view", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
@@ -126,11 +148,18 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 			return
 		}
 
-		hub.Broadcast <- []byte(Div(
-			Id("content-container"),
-			Div(Id("edit-nav")),
-			renderViewCard(card, d),
-		).Render())
+		// hub.Broadcast <- []byte(Div(
+		// 	Id("content-container"),
+		// 	navbar(),
+		// 	renderViewCard(card, d),
+		// ).Render())
+
+		hub.Broadcast <- []byte(navbar().Render())
+
+		cardView := renderViewCard(card, d)
+		for _, section := range cardView.Children {
+			hub.Broadcast <- []byte(section.Render())
+		}
 
 	})
 
@@ -170,9 +199,63 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 		hub.Broadcast <- []byte(textEditSection.Render())
 	})
 
-	d.WebsocketRegistry.Register2("savetextsection", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
-		fmt.Println("Edit Text Section WebSocket Endpoint")
+	d.WebsocketRegistry.Register2("savesection", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
+		fmt.Println("Save Text Section WebSocket Endpoint")
 		// Get the card ID from the message.
+		textSectionId, ok := msgMap["textSectionId"].(string)
+		if !ok || textSectionId == "" {
+			fmt.Println("No text section id provided")
+			return
+		}
+		cardId := msgMap["cardId"].(string)
+		if cardId == "" {
+			fmt.Println("No card id provided")
+			return
+		}
+		sectionType := msgMap["sectionType"].(string)
+		if sectionType == "" {
+			fmt.Println("No section type provided")
+			return
+		}
+
+		db := d.Docs.WithCollection("cards")
+		var card Card2
+		err := db.Get(cardId, &card)
+		if err != nil {
+			fmt.Println("Card not found:", cardId)
+			return
+		}
+
+		sectionDb := d.Docs.WithCollection("sections")
+		section := Section2{}
+
+		if sectionType == "text" {
+			section = Section2{
+				Id:   textSectionId,
+				Type: "text",
+				Data: TextSection{
+					Content: message,
+				},
+			}
+		} else if sectionType == "heading" {
+			section = Section2{
+				Id:   textSectionId,
+				Type: "heading",
+				Data: map[string]interface{}{
+					"content": message,
+				},
+			}
+		}
+		sectionDb.Set(textSectionId, section)
+
+		if !slices.Contains(card.Sections, textSectionId) {
+			card.Sections = append(card.Sections, textSectionId)
+		}
+		db.Set(cardId, card)
+	})
+
+	d.WebsocketRegistry.Register2("delete", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
+		fmt.Println("Delete Text Section WebSocket Endpoint")
 		textSectionId, ok := msgMap["textSectionId"].(string)
 		if !ok || textSectionId == "" {
 			fmt.Println("No text section id provided")
@@ -193,23 +276,27 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 		}
 
 		sectionDb := d.Docs.WithCollection("sections")
-		section := Section2{
-			Id:   textSectionId,
-			Type: "text",
-			Data: TextSection{
-				Content: message,
-			},
+
+		// Remove the section from the card.
+		for i, sectionId := range card.Sections {
+			if sectionId == textSectionId {
+				card.Sections = append(card.Sections[:i], card.Sections[i+1:]...)
+				break
+			}
 		}
-		sectionDb.Set(textSectionId, section)
-		
-		if !slices.Contains(card.Sections, textSectionId) {
-			card.Sections = append(card.Sections, textSectionId)
-		} 
-		db.Set(cardId, card)
+		// Delete the section.
+		err = sectionDb.Delete(textSectionId)
+		if err != nil {
+			fmt.Println("Error deleting section:", err)
+		}
+
+		hub.Broadcast <- []byte(Div(
+			Attr("hx-swap", "delete"),
+			Id(textSectionId),
+		).Render())
 	})
 	return mux
 }
-
 
 // --- HTTP Handler ---
 
@@ -232,9 +319,21 @@ func getCardHandler(d deps.Deps, w http.ResponseWriter, r *http.Request) {
 	err := db.Get(id, &card)
 	if err != nil {
 		// If not found, create a new blank card.
+		titleSection := Section2{
+			Id:   "s" + uuid.NewString(),
+			Type: "heading",
+			Data: map[string]interface{}{
+				"content": "My Custom Card",
+			},
+		}
+
+		sectionDb := d.Docs.WithCollection("sections")
+		sectionDb.Set(titleSection.Id, titleSection)
+
 		card = Card2{
-			Id:    id,
-			Title: "My Custom Card",
+			Id:       id,
+			Title:    "Share Card",
+			Sections: []string{titleSection.Id},
 		}
 		// Generate a QR code for sharing.
 		qrcodeUrl, err := GenerateQRCode("https://justshare.io/card/" + id)
@@ -247,7 +346,7 @@ func getCardHandler(d deps.Deps, w http.ResponseWriter, r *http.Request) {
 
 	buildPage(
 		Div(
-			Div(Id("edit-nav")),
+			navbar(),
 			renderViewCard(card, d),
 		),
 		card.Title,
@@ -307,9 +406,13 @@ func renderViewCard(card Card2, d deps.Deps) *Node {
 		)),
 	)
 
+	saveAllButton := Button(
+		Id("save-all-button"),
+	)
+
 	shareButton := Button(
 		Attr("onclick", "document.getElementById('qr-modal').classList.remove('hidden')"),
-		Class("mt-4 inline-flex items-center rounded-lg bg-gray-800 px-4 py-2 text-white hover:bg-gray-900"),
+		Class("fixed top-4 left-4 rounded-full btn btn-primary btn-circle"),
 		T("Share"),
 	)
 	shareSection := Div(
@@ -331,15 +434,18 @@ func renderViewCard(card Card2, d deps.Deps) *Node {
 
 	sections := renderSections(card, false, d)
 
+	cardContainer := Div(
+		Id("card-container"),
+	)
+
+	cardContainer.Children = append(cardContainer.Children, sections.Children...)
+
 	return Div(
 		Class("flex flex-col items-center"),
-		Div(
-			Id("card-container"),
-			H1(T(card.Title), Class("text-4xl font-medium tracking-tight text-black dark:text-white")),
-			sections,
-		),
+		cardContainer,
 		editButton,
-		shareSection,
+		saveAllButton,
+		Chl(shareSection.Children...),
 	)
 }
 
@@ -394,43 +500,134 @@ func createTextEditSectionForm(textSectionId string, card Card2, d deps.Deps) *N
 		textContent = content
 	}
 
-	return Form(
-		Id(textSectionId),
-		Attr("ws-send", "submit"),
-		Input(
-			Type("hidden"),
-			Name("textSectionId"),
-			Value(textSectionId),
-		),
-		Input(
-			Type("hidden"),
-			Name("cardId"),
-			Value(cardId),
-		),
-		Div(
-			Class("mt-4"),
-			TextArea(
-				Name("savetextsection"),
-				Placeholder(textContent),
-			),
-			Div(
-				Input(
-					Type("submit"),
-					Value("Save"),
-				),
-			),
-		),
-	)
-}
-
-func createTextViewSection(textSectionId, content string) *Node {
 	return Div(
 		Id(textSectionId),
-		Class("mt-4"),
-		T(content),
+		Class("relative grid grid-cols-3"),
+		Form(
+			Class("grid grid-cols-2 "),
+			Id(textSectionId+"-form"),
+			Attr("ws-send", "submit"),
+			Input(
+				Type("hidden"),
+				Name("textSectionId"),
+				Value(textSectionId),
+			),
+			Input(
+				Type("hidden"),
+				Name("cardId"),
+				Value(cardId),
+			),
+			Input(
+				Type("hidden"),
+				Name("sectionType"),
+				Value("text"),
+			),
+			Input(
+				Id(textSectionId+"-input"),
+				Type("hidden"),
+				Name("savesection"),
+				Value(textContent),
+			),
+			Button(
+				Id(textSectionId+"-button"),
+				Type("submit"),
+			),
+		),
+		Span(
+			Id(textSectionId+"-content"),
+			T(textContent),
+			Attr("contenteditable", "true"),
+		),
+		deleteButton(cardId, textSectionId),
+		Script(Raw(
+			fmt.Sprintf(`document.getElementById('%s-content').addEventListener('input', function(e) {
+				const content = document.getElementById('%s-content').innerText;
+				document.getElementById('%s-input').value = content;
+
+				const updatedSectionsJson = sessionStorage.getItem('updatedSections');
+				const updatedSections = JSON.parse(updatedSectionsJson);
+				if (updatedSections) {
+					updatedSections.push('%s');
+					sessionStorage.setItem('updatedSections', JSON.stringify(updatedSections));
+				} else {
+					sessionStorage.setItem('updatedSections', JSON.stringify(['%s']));
+				}
+			});`, textSectionId, textSectionId, textSectionId, textSectionId, textSectionId))),
 	)
 }
 
+func createHeadingEditSectionForm(textSectionId string, card Card2, d deps.Deps) *Node {
+	cardId := card.Id
+	textContent := "Enter text content..."
+	section := getSection(textSectionId, d)
+	if section.Data != nil {
+		dataMap, ok := section.Data.(map[string]interface{})
+		if !ok {
+			fmt.Println("Error: section.Data is not a map")
+		}
+		content, ok := dataMap["content"].(string)
+		if !ok {
+			fmt.Println("Error: content not found or not a string")
+		}
+		textContent = content
+	}
+
+	return Div(
+		Id(textSectionId),
+		Class("relative grid grid-cols-3"),
+		Form(
+			Class("grid grid-cols-2 "),
+			Id(textSectionId+"-form"),
+			Attr("ws-send", "submit"),
+			Input(
+				Type("hidden"),
+				Name("textSectionId"),
+				Value(textSectionId),
+			),
+			Input(
+				Type("hidden"),
+				Name("cardId"),
+				Value(cardId),
+			),
+			Input(
+				Type("hidden"),
+				Name("sectionType"),
+				Value("heading"),
+			),
+			Input(
+				Id(textSectionId+"-input"),
+				Type("hidden"),
+				Name("savesection"),
+				Value(textContent),
+			),
+			Button(
+				Id(textSectionId+"-button"),
+				Type("submit"),
+			),
+		),
+		H1(
+			Class("text-4xl font-medium tracking-tight text-black dark:text-white"),
+			Id(textSectionId+"-content"),
+			T(textContent),
+			Attr("contenteditable", "true"),
+		),
+		deleteButton(cardId, textSectionId),
+		Script(Raw(
+			fmt.Sprintf(`document.getElementById('%s-content').addEventListener('input', function(e) {
+				const content = document.getElementById('%s-content').innerText;
+				document.getElementById('%s-input').value = content;
+
+				const updatedSectionsJson = sessionStorage.getItem('updatedSections');
+				const updatedSections = JSON.parse(updatedSectionsJson);
+				if (updatedSections) {
+					updatedSections.push('%s');
+					sessionStorage.setItem('updatedSections', JSON.stringify(updatedSections));
+				} else {
+					sessionStorage.setItem('updatedSections', JSON.stringify(['%s']));
+				}
+			});`, textSectionId, textSectionId, textSectionId, textSectionId, textSectionId))),
+	)
+}
 
 func renderSections(card Card2, editMode bool, d deps.Deps) *Node {
 	sectionDb := d.Docs.WithCollection("sections")
@@ -443,7 +640,7 @@ func renderSections(card Card2, editMode bool, d deps.Deps) *Node {
 		}
 		if section.Type == "text" {
 			fmt.Println("Text Section", section.Data)
-			// Convert section.Data (which is map[string]interface{}) to TextSection
+			//TODO: use a type switch to convert raw json data to the correct type
 			dataMap, ok := section.Data.(map[string]interface{})
 			if !ok {
 				// handle error: unexpected data type
@@ -453,14 +650,39 @@ func renderSections(card Card2, editMode bool, d deps.Deps) *Node {
 			if !ok {
 				fmt.Println("Error: content not found or not a string")
 			}
-			textSection := TextSection{Content: content}
+
 			if editMode {
 				sections.Children = append(sections.Children, createTextEditSectionForm(sectionId, card, d))
 			} else {
-				sections.Children = append(sections.Children, createTextViewSection(sectionId, textSection.Content))
+				sections.Children = append(sections.Children, Div(
+					Id(sectionId),
+					Class("mt-4"),
+					T(content),
+				))
+			}
+		} else if section.Type == "heading" {
+			fmt.Println("Title Section", section.Data)
+			//TODO: use a type switch to convert raw json data to the correct type
+			dataMap, ok := section.Data.(map[string]interface{})
+			if !ok {
+				// handle error: unexpected data type
+				fmt.Println("Error: section.Data is not a map")
+			}
+			content, ok := dataMap["content"].(string)
+			if !ok {
+				fmt.Println("Error: content not found or not a string")
+			}
+
+			if editMode {
+				sections.Children = append(sections.Children, createHeadingEditSectionForm(sectionId, card, d))
+			} else {
+				sections.Children = append(sections.Children, Div(
+					Id(sectionId),
+					Class("text-4xl font-medium tracking-tight text-black dark:text-white"),
+					H1(T(content)),
+				))
 			}
 		}
-		
 	}
 
 	return sections
@@ -474,4 +696,43 @@ func getSection(sectionId string, d deps.Deps) Section2 {
 		fmt.Println("Error getting section:", err)
 	}
 	return section
+}
+
+func deleteButton(cardId, textSectionId string) *Node {
+	return Form(
+		// Class("absolute top-0 right-0"),
+		Attr("ws-send", "submit"),
+		Input(
+			Type("hidden"),
+			Name("textSectionId"),
+			Value(textSectionId),
+		),
+		Input(
+			Type("hidden"),
+			Name("cardId"),
+			Value(cardId),
+		),
+		Input(
+			Type("hidden"),
+			Name("delete"),
+			Value("delete"),
+		),
+		Input(
+			Class("rounded-full btn btn-primary btn-circle"),
+			Type("submit"),
+			Value("×"),
+		),
+	)
+}
+
+func navbar() *Node {
+	return Div(
+		Id("navbar"),
+		Class("flex justify-center space-x-4 mb-4"),
+		A(
+			Href("/card"),
+			Class("bg-cyan-600 text-white px-4 py-2 rounded-lg"),
+			T("New Card"),
+		),
+	)
 }
