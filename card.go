@@ -169,25 +169,12 @@ func NewCard(d deps.Deps) *http.ServeMux {
 			http.Error(w, "Could not save file", http.StatusInternalServerError)
 			return
 		}
-		// Generate the updated image HTML
-		card := Card{}
+	
 		imageSrc := "/data/cards/images/" + fileName
 
-		if err := db.Get(pageId, &card); err != nil {
-			fmt.Println("Failed with: ", err)
-			http.Error(w, "Could not get card!", http.StatusInternalServerError)
-			return
-		}
-		card.Image = imageSrc
-		if err := db.Set(pageId, card); err != nil {
-			http.Error(w, "Could not save image", http.StatusInternalServerError)
-			return
-		} else {
-			fmt.Println("Saved image to:", imageSrc)
-		}
 		// Render the updated image div
 		w.Header().Set("Content-Type", "text/html")
-		w.Write([]byte(imageSection(imageSrc, true, card.ID).Render()))
+		w.Write([]byte(imageSection(imageSrc, true, pageId).Render()))
 	})
 
 	mux.HandleFunc("/generate-card", func(w http.ResponseWriter, r *http.Request) {
@@ -580,14 +567,14 @@ func generateImageForm(pageId string) *Node {
 func uploadImageForm(pageId string) *Node {
 	return Div(
 		Id("upload-image-form"),
-		Class("absolute top-2 right-0 m-2"),
+		Class("relative"),
 		Form(
 			Class("text-right"),
 			Attr("enctype", "multipart/form-data"),
 			Attr("method", "POST"),
 			Attr("hx-post", "/card/upload-image"),
-			Attr("hx-target", "#card-image"),
-			Attr("hx-swap", "outerHTML"),
+			Attr("hx-target", "#upload-image-form"),
+			// Attr("hx-swap", "beforeend"),
 			Div(
 				Class("mt-2"),
 				Input(

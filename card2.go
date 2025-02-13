@@ -7,6 +7,7 @@ import (
 	"os"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -42,6 +43,83 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 	// Single endpoint for all card interactions.
 	mux.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		getCardHandler(d, w, r)
+	})
+
+	mux.HandleFunc("/upload-image", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println("Upload Image Endpoint")
+
+		pageId := r.FormValue("id")
+		if pageId == "" {
+			if currentURL, ok := r.Header["Hx-Current-Url"]; ok {
+				pageId = strings.Split(currentURL[0], "/card/")[1]
+			}
+		}
+
+		err := r.ParseMultipartForm(10 << 20) // Limit upload size to 10MB
+		if err != nil {
+			http.Error(w, "Could not parse multipart form", http.StatusBadRequest)
+			return
+		}
+		file, handler, err := r.FormFile("image")
+		if err != nil {
+			http.Error(w, "Could not get uploaded file", http.StatusBadRequest)
+			return
+		}
+		defer file.Close()
+		// Create the images directory if it doesn't exist
+		os.MkdirAll("data/cards/images/", os.ModePerm)
+		// Generate a unique filename
+		fileName := fmt.Sprintf("%d-%s", time.Now().UnixNano(), handler.Filename)
+		// Create the file
+		dst, err := os.Create("data/cards/images/" + fileName)
+		if err != nil {
+			http.Error(w, "Could not create file", http.StatusInternalServerError)
+			return
+		}
+		defer dst.Close()
+		// Copy the uploaded file to the destination file
+		_, err = io.Copy(dst, file)
+		if err != nil {
+			http.Error(w, "Could not save file", http.StatusInternalServerError)
+			return
+		}
+		imageSrc := "/data/cards/images/" + fileName
+
+		section := Section2{
+			Id:   "s" + uuid.NewString(),
+			Type: "image",
+			Data: map[string]interface{}{
+				"src": imageSrc,
+			},
+		}
+
+		sectionDb := d.Docs.WithCollection("sections")
+		err = sectionDb.Set(section.Id, section)
+		if err != nil {
+			http.Error(w, "Could not save section", http.StatusInternalServerError)
+			return
+		}
+
+		cardDb := d.Docs.WithCollection("cards")
+		card := Card2{}
+		err = cardDb.Get(pageId, &card)
+		if err != nil {
+			http.Error(w, "Could not get card", http.StatusInternalServerError)
+			return
+		}
+
+		card.Sections = append(card.Sections, section.Id)
+		err = cardDb.Set(pageId, card)
+		if err != nil {
+			http.Error(w, "Could not save card", http.StatusInternalServerError)
+			return
+		}
+
+		// Render the updated image div
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte(Div(
+			imageSection2(imageSrc, section.Id),
+		).Render()))
 	})
 
 	d.WebsocketRegistry.Register2("edit", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
@@ -88,6 +166,19 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 						Class("bg-cyan-600 text-white px-4 py-2 rounded-lg"),
 						T("Add Heading"),
 						Name("newheadingsection"),
+					),
+				),
+				Form(
+					Attr("ws-send", "submit"),
+					Input(
+						Type("hidden"),
+						Name("id"),
+						Value(cardId),
+					),
+					Button(
+						Class("bg-cyan-600 text-white px-4 py-2 rounded-lg"),
+						T("Add Image"),
+						Name("newimagesection"),
 					),
 				),
 			).Render())
@@ -160,12 +251,6 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 			fmt.Println("Card not found:", cardId)
 			return
 		}
-
-		// hub.Broadcast <- []byte(Div(
-		// 	Id("content-container"),
-		// 	navbar(),
-		// 	renderViewCard(card, d),
-		// ).Render())
 
 		hub.Broadcast <- []byte(navbar().Render())
 
@@ -248,6 +333,40 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 		hub.Broadcast <- []byte(headingEditSection.Render())
 	})
 
+	d.WebsocketRegistry.Register2("newimagesection", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
+		fmt.Println("New Text Section WebSocket Endpoint")
+		// Get the card ID from the message.
+		cardId, ok := msgMap["id"].(string)
+		if !ok || cardId == "" {
+			fmt.Println("No card id provided")
+			return
+		}
+		db := d.Docs.WithCollection("cards")
+		var card Card2
+		err := db.Get(cardId, &card)
+		if err != nil {
+			fmt.Println("Card not found:", cardId)
+			return
+		}
+
+		// sectionDb := d.Docs.WithCollection("sections")
+		// textSectionId := "s" + uuid.NewString()
+
+		// section := Section2{
+		// 	Id:   textSectionId,
+		// 	Type: "image",
+		// }
+		// sectionDb.Set(textSectionId, section)
+
+		// card.Sections = append(card.Sections, textSectionId)
+		// db.Set(cardId, card)
+		hub.Broadcast <- []byte(Div(
+			Id("card-container"),
+			Attr("hx-swap-oob", "beforeend"),
+			uploadImageForm2(cardId),
+		).Render())
+
+	})
 
 	d.WebsocketRegistry.Register2("savesection", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
 		fmt.Println("Save Text Section WebSocket Endpoint")
@@ -293,6 +412,14 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 				Type: "heading",
 				Data: map[string]interface{}{
 					"content": message,
+				},
+			}
+		} else if sectionType == "image" {
+			section = Section2{
+				Id:   textSectionId,
+				Type: "image",
+				Data: map[string]interface{}{
+					"src": message,
 				},
 			}
 		}
@@ -688,6 +815,9 @@ func renderSections(card Card2, editMode bool, d deps.Deps) *Node {
 		if err != nil {
 			fmt.Println("Error getting section:", err)
 		}
+		fmt.Println("Section:", section)
+		fmt.Println("Section ID:", section.Id)
+		fmt.Println("Section Type:", section.Type)
 		if section.Type == "text" {
 			fmt.Println("Text Section", section.Data)
 			//TODO: use a type switch to convert raw json data to the correct type
@@ -731,6 +861,23 @@ func renderSections(card Card2, editMode bool, d deps.Deps) *Node {
 					Class("text-4xl font-medium tracking-tight text-black dark:text-white"),
 					H1(T(content)),
 				))
+			}
+		} else if section.Type == "image" {
+			fmt.Println("Image Section", section.Data)
+			dataMap, ok := section.Data.(map[string]interface{})
+			if !ok {
+				// handle error: unexpected data type
+				fmt.Println("Error: section.Data is not a map")
+			}
+			src, ok := dataMap["src"].(string)
+			if !ok {
+				fmt.Println("Error: src not found or not a string")
+			}
+
+			if editMode {
+				sections.Children = append(sections.Children, uploadImageForm2(card.Id))
+			} else {
+				sections.Children = append(sections.Children, imageSection2(src, sectionId))
 			}
 		}
 	}
@@ -783,6 +930,55 @@ func navbar() *Node {
 			Href("/card"),
 			Class("bg-cyan-600 text-white px-4 py-2 rounded-lg"),
 			T("New Card"),
+		),
+	)
+}
+
+func imageSection2(imageSrc string, pageId string) *Node {
+	return Div(
+		Id("card-image-"+pageId),
+		Class("w-full h-[60%] bg-gray-200 rounded-t-lg overflow-hidden relative"),
+		Img(
+			Class("max-w-full w-full h-full object-cover"),
+			Attr("src", imageSrc),
+			Attr("alt", "Card Image"),
+		),
+		Div(
+			Id("toggle-image-form"),
+		),
+	)
+}
+
+func uploadImageForm2(pageId string) *Node {
+	return Div(
+		Id("upload-image-form-"+pageId),
+		Class("relative"),
+		Form(
+			Class("text-right"),
+			Attr("enctype", "multipart/form-data"),
+			Attr("method", "POST"),
+			Attr("hx-post", "/card/upload-image"),
+			Attr("hx-target", "#upload-image-form-"+pageId),
+			// Attr("hx-swap", "beforeend"),
+			Div(
+				Class("mt-2"),
+				Input(
+					Type("hidden"),
+					Name("id"),
+					Value(pageId),
+				),
+				Input(
+					Class("block w-full border shadow-sm rounded-lg text-sm focus:z-10 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none file:bg-gray-50 file:border-0 file:me-4 file:py-3 file:px-4"),
+					Type("file"),
+					Name("image"),
+					Attr("accept", "image/*"),
+				),
+			),
+			Input(
+				Class("mt-2 bg-green-500 hover:bg-green-700 text-white font-bold rounded"),
+				Type("submit"),
+				Value("Upload Image"),
+			),
 		),
 	)
 }
