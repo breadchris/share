@@ -32,17 +32,18 @@ type Section2 struct {
 	Data interface{} `json:"content"`
 }
 
-type TextSection struct {
-	Content string `json:"content"`
-}
-
 // --- Main Router and WebSocket Registration ---
 
 func NewCard2(d deps.Deps) *http.ServeMux {
+	cardSections := map[string]CardSection{
+		"text": createTextSection(),
+		"image": createImageSection(),
+		"heading": createHeadingSection(),
+	}
 	mux := http.NewServeMux()
 	// Single endpoint for all card interactions.
 	mux.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
-		getCardHandler(d, w, r)
+		getCardHandler(d, w, r, cardSections)
 	})
 
 	mux.HandleFunc("/upload-image", func(w http.ResponseWriter, r *http.Request) {
@@ -138,49 +139,30 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 			return
 		}
 
+		navButtons := []*Node{}
+
+		//iterate over cardSections
+		for _, val := range cardSections {
+			navButtons = append(navButtons, Form(
+				Attr("ws-send", "submit"),
+				Input(
+					Type("hidden"),
+					Name("id"),
+					Value(cardId),
+				),
+				Button(
+					Class("bg-cyan-600 text-white px-4 py-2 rounded-lg"),
+					T("Add "+val.Name),
+					Name(val.EndpointName),
+				),
+			))
+		}
+
 		hub.Broadcast <- []byte(
 			Nav(
 				Id("navbar"),
 				Class("flex justify-center space-x-4 mb-4"),
-				Form(
-					Attr("ws-send", "submit"),
-					Input(
-						Type("hidden"),
-						Name("id"),
-						Value(cardId),
-					),
-					Button(
-						Class("bg-cyan-600 text-white px-4 py-2 rounded-lg"),
-						T("Add Text"),
-						Name("newtextsection"),
-					),
-				),
-				Form(
-					Attr("ws-send", "submit"),
-					Input(
-						Type("hidden"),
-						Name("id"),
-						Value(cardId),
-					),
-					Button(
-						Class("bg-cyan-600 text-white px-4 py-2 rounded-lg"),
-						T("Add Heading"),
-						Name("newheadingsection"),
-					),
-				),
-				Form(
-					Attr("ws-send", "submit"),
-					Input(
-						Type("hidden"),
-						Name("id"),
-						Value(cardId),
-					),
-					Button(
-						Class("bg-cyan-600 text-white px-4 py-2 rounded-lg"),
-						T("Add Image"),
-						Name("newimagesection"),
-					),
-				),
+				Ch(navButtons),
 			).Render())
 
 		hub.Broadcast <- []byte(
@@ -231,7 +213,7 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 			).Render(),
 		)
 
-		sections := renderSections(card, true, d)
+		sections := renderSections(card, true, d, cardSections)
 		for _, section := range sections.Children {
 			hub.Broadcast <- []byte(section.Render())
 		}
@@ -254,117 +236,10 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 
 		hub.Broadcast <- []byte(navbar().Render())
 
-		cardView := renderViewCard(card, d)
+		cardView := renderViewCard(card, d, cardSections)
 		for _, section := range cardView.Children {
 			hub.Broadcast <- []byte(section.Render())
 		}
-
-	})
-
-	d.WebsocketRegistry.Register2("newtextsection", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
-		fmt.Println("New Text Section WebSocket Endpoint")
-		// Get the card ID from the message.
-		cardId, ok := msgMap["id"].(string)
-		if !ok || cardId == "" {
-			fmt.Println("No card id provided")
-			return
-		}
-		db := d.Docs.WithCollection("cards")
-		var card Card2
-		err := db.Get(cardId, &card)
-		if err != nil {
-			fmt.Println("Card not found:", cardId)
-			return
-		}
-
-		sectionDb := d.Docs.WithCollection("sections")
-		textSectionId := "s" + uuid.NewString()
-		section := Section2{
-			Id:   textSectionId,
-			Type: "text",
-		}
-		sectionDb.Set(textSectionId, section)
-
-		card.Sections = append(card.Sections, textSectionId)
-		db.Set(cardId, card)
-
-		textEditSection := Div(
-			Id("card-container"),
-			Attr("hx-swap-oob", "beforeend"),
-			createTextEditSectionForm(textSectionId, card, d),
-		)
-
-		hub.Broadcast <- []byte(textEditSection.Render())
-	})
-
-	d.WebsocketRegistry.Register2("newheadingsection", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
-		fmt.Println("New Text Section WebSocket Endpoint")
-		// Get the card ID from the message.
-		cardId, ok := msgMap["id"].(string)
-		if !ok || cardId == "" {
-			fmt.Println("No card id provided")
-			return
-		}
-		db := d.Docs.WithCollection("cards")
-		var card Card2
-		err := db.Get(cardId, &card)
-		if err != nil {
-			fmt.Println("Card not found:", cardId)
-			return
-		}
-
-		sectionDb := d.Docs.WithCollection("sections")
-		textSectionId := "s" + uuid.NewString()
-		section := Section2{
-			Id:   textSectionId,
-			Type: "text",
-		}
-		sectionDb.Set(textSectionId, section)
-
-		card.Sections = append(card.Sections, textSectionId)
-		db.Set(cardId, card)
-
-		headingEditSection := Div(
-			Id("card-container"),
-			Attr("hx-swap-oob", "beforeend"),
-			createHeadingEditSectionForm(textSectionId, card, d),
-		)
-
-		hub.Broadcast <- []byte(headingEditSection.Render())
-	})
-
-	d.WebsocketRegistry.Register2("newimagesection", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
-		fmt.Println("New Text Section WebSocket Endpoint")
-		// Get the card ID from the message.
-		cardId, ok := msgMap["id"].(string)
-		if !ok || cardId == "" {
-			fmt.Println("No card id provided")
-			return
-		}
-		db := d.Docs.WithCollection("cards")
-		var card Card2
-		err := db.Get(cardId, &card)
-		if err != nil {
-			fmt.Println("Card not found:", cardId)
-			return
-		}
-
-		// sectionDb := d.Docs.WithCollection("sections")
-		// textSectionId := "s" + uuid.NewString()
-
-		// section := Section2{
-		// 	Id:   textSectionId,
-		// 	Type: "image",
-		// }
-		// sectionDb.Set(textSectionId, section)
-
-		// card.Sections = append(card.Sections, textSectionId)
-		// db.Set(cardId, card)
-		hub.Broadcast <- []byte(Div(
-			Id("card-container"),
-			Attr("hx-swap-oob", "beforeend"),
-			uploadImageForm2(cardId),
-		).Render())
 
 	})
 
@@ -402,8 +277,8 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 			section = Section2{
 				Id:   textSectionId,
 				Type: "text",
-				Data: TextSection{
-					Content: message,
+				Data: map[string]interface{}{
+					"content": message,
 				},
 			}
 		} else if sectionType == "heading" {
@@ -472,12 +347,17 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 			Id(textSectionId),
 		).Render())
 	})
+
+	for _, val := range cardSections {
+		d.WebsocketRegistry.Register2(val.EndpointName, val.EndpointFunc(d))
+	}
+
 	return mux
 }
 
 // --- HTTP Handler ---
 
-func getCardHandler(d deps.Deps, w http.ResponseWriter, r *http.Request) {
+func getCardHandler(d deps.Deps, w http.ResponseWriter, r *http.Request, cardSections map[string]CardSection) {
 	// Extract card ID from the URL path.
 	id := r.PathValue("id")
 	fmt.Println("ID:", id)
@@ -524,7 +404,7 @@ func getCardHandler(d deps.Deps, w http.ResponseWriter, r *http.Request) {
 	buildPage(
 		Div(
 			navbar(),
-			renderViewCard(card, d),
+			renderViewCard(card, d, cardSections),
 		),
 		card.Title,
 	).RenderPage(w, r)
@@ -561,7 +441,7 @@ func buildPage(content *Node, title string) *Node {
 	)
 }
 
-func renderViewCard(card Card2, d deps.Deps) *Node {
+func renderViewCard(card Card2, d deps.Deps, cardSections map[string]CardSection) *Node {
 	editButton := Form(
 		Id("edit-button"),
 		Attr("ws-send", "submit"),
@@ -609,7 +489,7 @@ func renderViewCard(card Card2, d deps.Deps) *Node {
 		),
 	)
 
-	sections := renderSections(card, false, d)
+	sections := renderSections(card, false, d, cardSections)
 
 	cardContainer := Div(
 		Id("card-container"),
@@ -661,152 +541,7 @@ func downloadImage(imageURL, outputName string) (string, error) {
 	return outputPath, nil
 }
 
-func createTextEditSectionForm(textSectionId string, card Card2, d deps.Deps) *Node {
-	cardId := card.Id
-	textContent := "Enter text content..."
-	section := getSection(textSectionId, d)
-	if section.Data != nil {
-		dataMap, ok := section.Data.(map[string]interface{})
-		if !ok {
-			fmt.Println("Error: section.Data is not a map")
-		}
-		content, ok := dataMap["content"].(string)
-		if !ok {
-			fmt.Println("Error: content not found or not a string")
-		}
-		textContent = content
-	}
-
-	return Div(
-		Id(textSectionId),
-		Class("relative grid grid-cols-3"),
-		Form(
-			Class("grid grid-cols-2 "),
-			Id(textSectionId+"-form"),
-			Attr("ws-send", "submit"),
-			Input(
-				Type("hidden"),
-				Name("textSectionId"),
-				Value(textSectionId),
-			),
-			Input(
-				Type("hidden"),
-				Name("cardId"),
-				Value(cardId),
-			),
-			Input(
-				Type("hidden"),
-				Name("sectionType"),
-				Value("text"),
-			),
-			Input(
-				Id(textSectionId+"-input"),
-				Type("hidden"),
-				Name("savesection"),
-				Value(textContent),
-			),
-			Button(
-				Id(textSectionId+"-button"),
-				Type("submit"),
-			),
-		),
-		Span(
-			Id(textSectionId+"-content"),
-			T(textContent),
-			Attr("contenteditable", "true"),
-		),
-		deleteButton(cardId, textSectionId),
-		Script(Raw(
-			fmt.Sprintf(`document.getElementById('%s-content').addEventListener('input', function(e) {
-				const content = document.getElementById('%s-content').innerText;
-				document.getElementById('%s-input').value = content;
-
-				const updatedSectionsJson = sessionStorage.getItem('updatedSections');
-				const updatedSections = JSON.parse(updatedSectionsJson);
-				if (updatedSections) {
-					updatedSections.push('%s');
-					sessionStorage.setItem('updatedSections', JSON.stringify(updatedSections));
-				} else {
-					sessionStorage.setItem('updatedSections', JSON.stringify(['%s']));
-				}
-			});`, textSectionId, textSectionId, textSectionId, textSectionId, textSectionId))),
-	)
-}
-
-func createHeadingEditSectionForm(textSectionId string, card Card2, d deps.Deps) *Node {
-	cardId := card.Id
-	textContent := "Enter text content..."
-	section := getSection(textSectionId, d)
-	if section.Data != nil {
-		dataMap, ok := section.Data.(map[string]interface{})
-		if !ok {
-			fmt.Println("Error: section.Data is not a map")
-		}
-		content, ok := dataMap["content"].(string)
-		if !ok {
-			fmt.Println("Error: content not found or not a string")
-		}
-		textContent = content
-	}
-
-	return Div(
-		Id(textSectionId),
-		Class("relative grid grid-cols-3"),
-		Form(
-			Class("grid grid-cols-2 "),
-			Id(textSectionId+"-form"),
-			Attr("ws-send", "submit"),
-			Input(
-				Type("hidden"),
-				Name("textSectionId"),
-				Value(textSectionId),
-			),
-			Input(
-				Type("hidden"),
-				Name("cardId"),
-				Value(cardId),
-			),
-			Input(
-				Type("hidden"),
-				Name("sectionType"),
-				Value("heading"),
-			),
-			Input(
-				Id(textSectionId+"-input"),
-				Type("hidden"),
-				Name("savesection"),
-				Value(textContent),
-			),
-			Button(
-				Id(textSectionId+"-button"),
-				Type("submit"),
-			),
-		),
-		H1(
-			Class("text-4xl font-medium tracking-tight text-black dark:text-white"),
-			Id(textSectionId+"-content"),
-			T(textContent),
-			Attr("contenteditable", "true"),
-		),
-		deleteButton(cardId, textSectionId),
-		Script(Raw(
-			fmt.Sprintf(`document.getElementById('%s-content').addEventListener('input', function(e) {
-				const content = document.getElementById('%s-content').innerText;
-				document.getElementById('%s-input').value = content;
-
-				const updatedSectionsJson = sessionStorage.getItem('updatedSections');
-				const updatedSections = JSON.parse(updatedSectionsJson);
-				if (updatedSections) {
-					updatedSections.push('%s');
-					sessionStorage.setItem('updatedSections', JSON.stringify(updatedSections));
-				} else {
-					sessionStorage.setItem('updatedSections', JSON.stringify(['%s']));
-				}
-			});`, textSectionId, textSectionId, textSectionId, textSectionId, textSectionId))),
-	)
-}
-
-func renderSections(card Card2, editMode bool, d deps.Deps) *Node {
+func renderSections(card Card2, editMode bool, d deps.Deps, cardSections map[string]CardSection) *Node {
 	sectionDb := d.Docs.WithCollection("sections")
 	sections := Div()
 	for _, sectionId := range card.Sections {
@@ -818,8 +553,8 @@ func renderSections(card Card2, editMode bool, d deps.Deps) *Node {
 		fmt.Println("Section:", section)
 		fmt.Println("Section ID:", section.Id)
 		fmt.Println("Section Type:", section.Type)
+
 		if section.Type == "text" {
-			fmt.Println("Text Section", section.Data)
 			//TODO: use a type switch to convert raw json data to the correct type
 			dataMap, ok := section.Data.(map[string]interface{})
 			if !ok {
@@ -831,17 +566,14 @@ func renderSections(card Card2, editMode bool, d deps.Deps) *Node {
 				fmt.Println("Error: content not found or not a string")
 			}
 
+			textSection := cardSections["text"]
+
 			if editMode {
-				sections.Children = append(sections.Children, createTextEditSectionForm(sectionId, card, d))
+				sections.Children = append(sections.Children, textSection.EditFunc.(func(textSectionId string, card Card2, d deps.Deps) *Node)(sectionId, card, d))
 			} else {
-				sections.Children = append(sections.Children, Div(
-					Id(sectionId),
-					Class("mt-4"),
-					T(content),
-				))
+				sections.Children = append(sections.Children, textSection.ViewFunc(content, sectionId))
 			}
 		} else if section.Type == "heading" {
-			fmt.Println("Title Section", section.Data)
 			//TODO: use a type switch to convert raw json data to the correct type
 			dataMap, ok := section.Data.(map[string]interface{})
 			if !ok {
@@ -853,17 +585,14 @@ func renderSections(card Card2, editMode bool, d deps.Deps) *Node {
 				fmt.Println("Error: content not found or not a string")
 			}
 
+			headingSection := cardSections["heading"]
+
 			if editMode {
-				sections.Children = append(sections.Children, createHeadingEditSectionForm(sectionId, card, d))
+				sections.Children = append(sections.Children, headingSection.EditFunc.(func(textSectionId string, card Card2, d deps.Deps) *Node)(sectionId, card, d))
 			} else {
-				sections.Children = append(sections.Children, Div(
-					Id(sectionId),
-					Class("text-4xl font-medium tracking-tight text-black dark:text-white"),
-					H1(T(content)),
-				))
+				sections.Children = append(sections.Children, headingSection.ViewFunc(content, sectionId))
 			}
 		} else if section.Type == "image" {
-			fmt.Println("Image Section", section.Data)
 			dataMap, ok := section.Data.(map[string]interface{})
 			if !ok {
 				// handle error: unexpected data type
@@ -874,10 +603,12 @@ func renderSections(card Card2, editMode bool, d deps.Deps) *Node {
 				fmt.Println("Error: src not found or not a string")
 			}
 
+			imageSection := cardSections["image"]
+
 			if editMode {
-				sections.Children = append(sections.Children, uploadImageForm2(card.Id))
+				sections.Children = append(sections.Children, imageSection.EditFunc.(func(pageId string) *Node)(card.Id))
 			} else {
-				sections.Children = append(sections.Children, imageSection2(src, sectionId))
+				sections.Children = append(sections.Children, imageSection.ViewFunc(src, sectionId))
 			}
 		}
 	}
@@ -945,40 +676,6 @@ func imageSection2(imageSrc string, pageId string) *Node {
 		),
 		Div(
 			Id("toggle-image-form"),
-		),
-	)
-}
-
-func uploadImageForm2(pageId string) *Node {
-	return Div(
-		Id("upload-image-form-"+pageId),
-		Class("relative"),
-		Form(
-			Class("text-right"),
-			Attr("enctype", "multipart/form-data"),
-			Attr("method", "POST"),
-			Attr("hx-post", "/card/upload-image"),
-			Attr("hx-target", "#upload-image-form-"+pageId),
-			// Attr("hx-swap", "beforeend"),
-			Div(
-				Class("mt-2"),
-				Input(
-					Type("hidden"),
-					Name("id"),
-					Value(pageId),
-				),
-				Input(
-					Class("block w-full border shadow-sm rounded-lg text-sm focus:z-10 focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none file:bg-gray-50 file:border-0 file:me-4 file:py-3 file:px-4"),
-					Type("file"),
-					Name("image"),
-					Attr("accept", "image/*"),
-				),
-			),
-			Input(
-				Class("mt-2 bg-green-500 hover:bg-green-700 text-white font-bold rounded"),
-				Type("submit"),
-				Value("Upload Image"),
-			),
 		),
 	)
 }
