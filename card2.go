@@ -7,7 +7,6 @@ import (
 	"os"
 	"slices"
 	"strconv"
-	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -35,11 +34,8 @@ type Section2 struct {
 // --- Main Router and WebSocket Registration ---
 
 func NewCard2(d deps.Deps) *http.ServeMux {
-	cardSections := map[string]CardSection{
-		"text": createTextSection(),
-		"image": createImageSection(),
-		"heading": createHeadingSection(),
-	}
+	cardSections := initSections()
+
 	mux := http.NewServeMux()
 	// Single endpoint for all card interactions.
 	mux.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
@@ -49,12 +45,8 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 	mux.HandleFunc("/upload-image", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Upload Image Endpoint")
 
-		pageId := r.FormValue("id")
-		if pageId == "" {
-			if currentURL, ok := r.Header["Hx-Current-Url"]; ok {
-				pageId = strings.Split(currentURL[0], "/card/")[1]
-			}
-		}
+		sectionId := r.FormValue("sectionId")
+		cardId := r.FormValue("cardId")
 
 		err := r.ParseMultipartForm(10 << 20) // Limit upload size to 10MB
 		if err != nil {
@@ -86,40 +78,27 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 		}
 		imageSrc := "/data/cards/images/" + fileName
 
-		section := Section2{
-			Id:   "s" + uuid.NewString(),
-			Type: "image",
-			Data: map[string]interface{}{
-				"src": imageSrc,
-			},
+		section := Section2{}
+		sectionDb := d.Docs.WithCollection("sections")
+
+		sectionDb.Get(sectionId, &section)
+		section.Data = map[string]interface{}{
+			"src": imageSrc,
 		}
 
-		sectionDb := d.Docs.WithCollection("sections")
 		err = sectionDb.Set(section.Id, section)
 		if err != nil {
 			http.Error(w, "Could not save section", http.StatusInternalServerError)
 			return
 		}
 
-		cardDb := d.Docs.WithCollection("cards")
-		card := Card2{}
-		err = cardDb.Get(pageId, &card)
-		if err != nil {
-			http.Error(w, "Could not get card", http.StatusInternalServerError)
-			return
-		}
-
-		card.Sections = append(card.Sections, section.Id)
-		err = cardDb.Set(pageId, card)
-		if err != nil {
-			http.Error(w, "Could not save card", http.StatusInternalServerError)
-			return
-		}
-
 		// Render the updated image div
 		w.Header().Set("Content-Type", "text/html")
 		w.Write([]byte(Div(
-			imageSection2(imageSrc, section.Id),
+			Class("relative grid grid-cols-3"),
+			Form(Input(Type("hidden"))),
+			cardSections["image"].ViewFunc(imageSrc, section.Id),
+			deleteButton(cardId, section.Id),
 		).Render()))
 	})
 
@@ -426,7 +405,7 @@ func buildPage(content *Node, title string) *Node {
 			DaisyUI,
 		),
 		Body(
-			Class("min-h-screen bg-white dark:bg-gray-900 text-black dark:text-white"),
+			Class("min-h-screen"),
 			Div(
 				Attr("hx-ext", "ws"),
 				Attr("ws-connect", "/websocket/ws"),
@@ -434,7 +413,7 @@ func buildPage(content *Node, title string) *Node {
 				Div(
 					Id("content-container"),
 					Class("w-full max-w-7xl px-4 sm:px-6 lg:px-8"),
-					content,
+					Ch(content.Children),
 				),
 			),
 		),
@@ -541,81 +520,6 @@ func downloadImage(imageURL, outputName string) (string, error) {
 	return outputPath, nil
 }
 
-func renderSections(card Card2, editMode bool, d deps.Deps, cardSections map[string]CardSection) *Node {
-	sectionDb := d.Docs.WithCollection("sections")
-	sections := Div()
-	for _, sectionId := range card.Sections {
-		var section Section2
-		err := sectionDb.Get(sectionId, &section)
-		if err != nil {
-			fmt.Println("Error getting section:", err)
-		}
-		fmt.Println("Section:", section)
-		fmt.Println("Section ID:", section.Id)
-		fmt.Println("Section Type:", section.Type)
-
-		if section.Type == "text" {
-			//TODO: use a type switch to convert raw json data to the correct type
-			dataMap, ok := section.Data.(map[string]interface{})
-			if !ok {
-				// handle error: unexpected data type
-				fmt.Println("Error: section.Data is not a map")
-			}
-			content, ok := dataMap["content"].(string)
-			if !ok {
-				fmt.Println("Error: content not found or not a string")
-			}
-
-			textSection := cardSections["text"]
-
-			if editMode {
-				sections.Children = append(sections.Children, textSection.EditFunc.(func(textSectionId string, card Card2, d deps.Deps) *Node)(sectionId, card, d))
-			} else {
-				sections.Children = append(sections.Children, textSection.ViewFunc(content, sectionId))
-			}
-		} else if section.Type == "heading" {
-			//TODO: use a type switch to convert raw json data to the correct type
-			dataMap, ok := section.Data.(map[string]interface{})
-			if !ok {
-				// handle error: unexpected data type
-				fmt.Println("Error: section.Data is not a map")
-			}
-			content, ok := dataMap["content"].(string)
-			if !ok {
-				fmt.Println("Error: content not found or not a string")
-			}
-
-			headingSection := cardSections["heading"]
-
-			if editMode {
-				sections.Children = append(sections.Children, headingSection.EditFunc.(func(textSectionId string, card Card2, d deps.Deps) *Node)(sectionId, card, d))
-			} else {
-				sections.Children = append(sections.Children, headingSection.ViewFunc(content, sectionId))
-			}
-		} else if section.Type == "image" {
-			dataMap, ok := section.Data.(map[string]interface{})
-			if !ok {
-				// handle error: unexpected data type
-				fmt.Println("Error: section.Data is not a map")
-			}
-			src, ok := dataMap["src"].(string)
-			if !ok {
-				fmt.Println("Error: src not found or not a string")
-			}
-
-			imageSection := cardSections["image"]
-
-			if editMode {
-				sections.Children = append(sections.Children, imageSection.EditFunc.(func(pageId string) *Node)(card.Id))
-			} else {
-				sections.Children = append(sections.Children, imageSection.ViewFunc(src, sectionId))
-			}
-		}
-	}
-
-	return sections
-}
-
 func getSection(sectionId string, d deps.Deps) Section2 {
 	sectionDb := d.Docs.WithCollection("sections")
 	var section Section2
@@ -665,9 +569,9 @@ func navbar() *Node {
 	)
 }
 
-func imageSection2(imageSrc string, pageId string) *Node {
+func imageSection2(imageSrc string, id string) *Node {
 	return Div(
-		Id("card-image-"+pageId),
+		Id(id),
 		Class("w-full h-[60%] bg-gray-200 rounded-t-lg overflow-hidden relative"),
 		Img(
 			Class("max-w-full w-full h-full object-cover"),
