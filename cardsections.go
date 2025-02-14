@@ -84,12 +84,12 @@ func createImageSection() CardSection {
 			fmt.Println("New Image Section WebSocket Endpoint")
 
 			sectionDb := d.Docs.WithCollection("sections")
-			imageSectionId := "s" + uuid.NewString()
+			sectionId := "s" + uuid.NewString()
 			section := Section2{
-				Id:   imageSectionId,
+				Id:   sectionId,
 				Type: "image",
 			}
-			sectionDb.Set(imageSectionId, section)
+			sectionDb.Set(sectionId, section)
 
 			// Get the card ID from the message.
 			cardId, ok := msgMap["id"].(string)
@@ -105,13 +105,14 @@ func createImageSection() CardSection {
 				return
 			}
 
-			card.Sections = append(card.Sections, imageSectionId)
+			card.Sections = append(card.Sections, sectionId)
 			db.Set(cardId, card)
 
 			hub.Broadcast <- []byte(Div(
 				Id("card-container"),
+				Attr("hx-swap", "innerHTML"),
 				Attr("hx-swap-oob", "beforeend"),
-				editFunction(cardId, imageSectionId),
+				editFunction(cardId, sectionId),
 			).Render())
 		}
 	}
@@ -147,6 +148,20 @@ func createTextSection() CardSection {
 			fmt.Println("Error getting section:", err)
 		}
 
+		cardDb := d.Docs.WithCollection("cards")
+		var card2 Card2
+		err = cardDb.Get(cardId, &card2)
+		if err != nil {
+			fmt.Println("Error getting card:", err)
+		}
+		sectionNum := 0
+		for i, sectionId := range card2.Sections {
+			if sectionId == textSectionId {
+				sectionNum = i
+				break
+			}
+		}
+
 		if section.Data != nil {
 			dataMap, ok := section.Data.(map[string]interface{})
 			if !ok {
@@ -162,6 +177,7 @@ func createTextSection() CardSection {
 		return Div(
 			Id(textSectionId),
 			Class("relative grid grid-cols-3"),
+			Attr("data-id", fmt.Sprintf("%d", sectionNum)),
 			Form(
 				Class("grid grid-cols-2 "),
 				Id(textSectionId+"-form"),
@@ -194,7 +210,7 @@ func createTextSection() CardSection {
 			),
 			Span(
 				Id(textSectionId+"-content"),
-				Class("flex justify-center text-[2rem]"),
+				Class("flex justify-center text-[1rem]"),
 				T(textContent),
 				Attr("contenteditable", "true"),
 			),
@@ -234,20 +250,21 @@ func createTextSection() CardSection {
 			}
 
 			sectionDb := d.Docs.WithCollection("sections")
-			textSectionId := "s" + uuid.NewString()
+			sectionId := "s" + uuid.NewString()
 			section := Section2{
-				Id:   textSectionId,
+				Id:   sectionId,
 				Type: "text",
 			}
-			sectionDb.Set(textSectionId, section)
+			sectionDb.Set(sectionId, section)
 
-			card.Sections = append(card.Sections, textSectionId)
+			card.Sections = append(card.Sections, sectionId)
 			db.Set(cardId, card)
 
 			textEditSection := Div(
 				Id("card-container"),
+				Attr("hx-swap", "innerHTML"),
 				Attr("hx-swap-oob", "beforeend"),
-				editFunction(textSectionId, card, d),
+				editFunction(sectionId, card, d),
 			)
 
 			hub.Broadcast <- []byte(textEditSection.Render())
@@ -362,20 +379,21 @@ func createHeadingSection() CardSection {
 			}
 
 			sectionDb := d.Docs.WithCollection("sections")
-			textSectionId := "s" + uuid.NewString()
+			sectionId := "s" + uuid.NewString()
 			section := Section2{
-				Id:   textSectionId,
+				Id:   sectionId,
 				Type: "heading",
 			}
-			sectionDb.Set(textSectionId, section)
+			sectionDb.Set(sectionId, section)
 
-			card.Sections = append(card.Sections, textSectionId)
+			card.Sections = append(card.Sections, sectionId)
 			db.Set(cardId, card)
 
 			headingEditSection := Div(
 				Id("card-container"),
+				Attr("hx-swap", "innerHTML"),
 				Attr("hx-swap-oob", "beforeend"),
-				editFunction(textSectionId, card, d),
+				editFunction(sectionId, card, d),
 			)
 
 			hub.Broadcast <- []byte(headingEditSection.Render())
@@ -394,7 +412,7 @@ func createHeadingSection() CardSection {
 func renderSections(card Card2, editMode bool, d deps.Deps, cardSections map[string]CardSection) *Node {
 	sectionDb := d.Docs.WithCollection("sections")
 	sections := Div()
-	for _, sectionId := range card.Sections {
+	for i, sectionId := range card.Sections {
 		var section Section2
 		err := sectionDb.Get(sectionId, &section)
 		if err != nil {
@@ -416,7 +434,10 @@ func renderSections(card Card2, editMode bool, d deps.Deps, cardSections map[str
 			textSection := cardSections["text"]
 
 			if editMode {
-				sections.Children = append(sections.Children, textSection.EditFunc.(func(textSectionId string, card Card2, d deps.Deps) *Node)(sectionId, card, d))
+				sectionNode := textSection.EditFunc.(func(textSectionId string, card Card2, d deps.Deps) *Node)(sectionId, card, d)
+				sectionNode.Attrs["data-id"] = fmt.Sprintf("%d", i)
+
+				sections.Children = append(sections.Children, sectionNode)
 			} else {
 				sections.Children = append(sections.Children, textSection.ViewFunc(content, sectionId))
 			}
@@ -434,8 +455,10 @@ func renderSections(card Card2, editMode bool, d deps.Deps, cardSections map[str
 
 			headingSection := cardSections["heading"]
 
+			sectionNode := headingSection.EditFunc.(func(textSectionId string, card Card2, d deps.Deps) *Node)(sectionId, card, d)
+			sectionNode.Attrs["data-id"] = fmt.Sprintf("%d", i)
 			if editMode {
-				sections.Children = append(sections.Children, headingSection.EditFunc.(func(textSectionId string, card Card2, d deps.Deps) *Node)(sectionId, card, d))
+				sections.Children = append(sections.Children, sectionNode)
 			} else {
 				sections.Children = append(sections.Children, headingSection.ViewFunc(content, sectionId))
 			}
@@ -451,9 +474,10 @@ func renderSections(card Card2, editMode bool, d deps.Deps, cardSections map[str
 			}
 
 			imageSection := cardSections["image"]
-
+			sectionNode := imageSection.EditFunc.(func(cardId string, sectionId string) *Node)(card.Id, sectionId)
+			sectionNode.Attrs["data-id"] = fmt.Sprintf("%d", i)
 			if editMode {
-				sections.Children = append(sections.Children, imageSection.EditFunc.(func(cardId string, sectionId string) *Node)(card.Id, sectionId))
+				sections.Children = append(sections.Children, sectionNode)
 			} else {
 				sections.Children = append(sections.Children, imageSection.ViewFunc(src, sectionId))
 			}

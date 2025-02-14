@@ -392,7 +392,7 @@ func getCardHandler(d deps.Deps, w http.ResponseWriter, r *http.Request, cardSec
 func buildPage(content *Node, title string) *Node {
 	// Wrap the content in a responsive flex container that starts at the top and is centered horizontally.
 	return Html(
-		Attr("data-theme", "dark"),
+		Attr("data-theme", "valentine"),
 		Head(
 			Title(T(title)),
 			Script(
