@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,6 +19,12 @@ import (
 
 // --- Data Model Types ---
 
+type CardDisplay struct {
+	Id         string
+	Name       string
+	ImageURL   string
+	QrImageURL string
+}
 type Card2 struct {
 	Id         string   `json:"id"`
 	Title      string   `json:"title"`
@@ -40,6 +47,10 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 	// Single endpoint for all card interactions.
 	mux.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		getCardHandler(d, w, r, cardSections)
+	})
+
+	mux.HandleFunc("/sheet", func(w http.ResponseWriter, r *http.Request) {
+		getSheetHandler(d, w, r)
 	})
 
 	mux.HandleFunc("/upload-image", func(w http.ResponseWriter, r *http.Request) {
@@ -327,6 +338,38 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 		).Render())
 	})
 
+	d.WebsocketRegistry.Register2("sheet", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
+		fmt.Println("Sheet WebSocket Endpoint")
+		displayCards := []CardDisplay{}
+		displayCardDb := d.Docs.WithCollection("display_cards")
+		keys := msgMap["1"]
+		for _, key := range keys.([]interface{}) {
+			var displayCard CardDisplay
+			err := displayCardDb.Get(key.(string), &displayCard)
+			if err != nil {
+				fmt.Println("Error getting display card:", err)
+			}
+			displayCards = append(displayCards, displayCard)
+		}
+
+		sheetFront := Div(Id("sheet-front"), ZinePage())
+
+		for _, displayCard := range displayCards {
+			sheetFront.Children = append(sheetFront.Children, Div(
+				ZinePanel(),
+				Img(
+					Attr("style", "max-width: 100%; object-fit: contain;"),
+					Attr("src", displayCard.ImageURL),
+					Class("")),
+				),
+			)
+		}
+
+		hub.Broadcast <- []byte(sheetFront.Render())
+		hub.Broadcast <- []byte(makeQRCodeSheet(displayCards).Render())
+
+	})
+
 	for _, val := range cardSections {
 		d.WebsocketRegistry.Register2(val.EndpointName, val.EndpointFunc(d))
 	}
@@ -339,7 +382,6 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 func getCardHandler(d deps.Deps, w http.ResponseWriter, r *http.Request, cardSections map[string]CardSection) {
 	// Extract card ID from the URL path.
 	id := r.PathValue("id")
-	fmt.Println("ID:", id)
 
 	if id == "" {
 		fmt.Println("No ID provided.")
@@ -582,4 +624,134 @@ func imageSection2(imageSrc string, id string) *Node {
 			Id("toggle-image-form"),
 		),
 	)
+}
+
+func getSheetHandler(d deps.Deps, w http.ResponseWriter, r *http.Request) {
+	db := d.Docs.WithCollection("cards")
+	sectionDb := d.Docs.WithCollection("sections")
+	displayCardDb := d.Docs.WithCollection("display_cards")
+
+	cardsDoc, err := db.List()
+	if err != nil {
+		fmt.Println("Error getting cards:", err)
+	}
+	allCards := Form(
+		Attr("ws-send", "submit"),
+		Input(
+			Type("hidden"),
+			Name("sheet"),
+			Value("sheet"),
+		),
+		Input(
+			Class("btn btn-primary btn-circle"),
+			Type(("submit")),
+			Value("Create Sheet"),
+		),
+	)
+
+	display := []CardDisplay{}
+
+	for _, c := range cardsDoc {
+		card := Card2{}
+		json.Unmarshal(c.Data, &card)
+
+		displayCard := CardDisplay{
+			QrImageURL: card.QrCodePath,
+			Id:         "d" + uuid.NewString(),
+		}
+
+		sectionKeys := card.Sections
+		for i, sectionId := range sectionKeys {
+			section := Section2{}
+			err := sectionDb.Get(sectionId, &section)
+			if err != nil {
+				break
+			}
+
+			if section.Data != nil {
+				if i == 0 {
+					if section.Type == "heading" {
+						displayCard.Name = section.Data.(map[string]interface{})["content"].(string)
+					}
+				} else if i == 1 {
+					if section.Type == "image" {
+						displayCard.ImageURL = section.Data.(map[string]interface{})["src"].(string)
+					}
+				}
+
+				if displayCard.Name != "" && displayCard.ImageURL != "" {
+					displayCardDb.Set(displayCard.Id, displayCard)
+
+					display = append(display, displayCard)
+					allCards.Children = append(allCards.Children, Div(Input(
+						Type("checkbox"),
+						Name(fmt.Sprintf("%d", i)),
+						Value(displayCard.Id),
+					),
+						Label(
+							Attr("for", fmt.Sprintf("%d", i)),
+							T(displayCard.Name),
+						)))
+					break
+				}
+				if i > 1 {
+					break
+				}
+			}
+		}
+	}
+	buildPage(
+		Div(
+			allCards,
+			Div(Id("sheet-front")),
+			Div(Id("sheet-back")),
+		),
+		"Sheet Maker",
+	).RenderPage(w, r)
+}
+
+func makeQRCodeSheet(displayCards []CardDisplay) *Node {
+	qrSheet := Div(
+		Id("sheet-back"),
+		ZinePage(),
+	)
+	panels := []*Node{}
+	for i := 4; i < 8; i++ {
+		var displayCard CardDisplay
+		if i >= len(displayCards) {
+			displayCard = CardDisplay{
+				QrImageURL: "",
+			}
+		} else {
+			displayCard = displayCards[i]
+		}
+
+		panels = append(panels, Div(
+			ZinePanel(),
+			Img(
+				Attr("style", "max-width: 100%; object-fit: contain;"),
+				Attr("src", displayCard.QrImageURL),
+			),
+		))
+	}
+	for i := 0; i < 4; i++ {
+		if i >= len(displayCards) {
+			break
+		}
+		displayCard := displayCards[i]
+		panels = append(panels, Div(
+			ZinePanel(),
+			Img(
+				Attr("style", "max-width: 100%; object-fit: contain;"),
+				Attr("src", displayCard.QrImageURL),
+				Class(""),
+			),
+		))
+	}
+
+	for _, panel := range panels {
+		qrSheet.Children = append(qrSheet.Children, panel)
+	}
+
+	return qrSheet
 }
