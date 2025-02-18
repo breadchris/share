@@ -112,38 +112,6 @@ func getTarot(d deps.Deps, w http.ResponseWriter, r *http.Request) string {
 	return id
 }
 
-func buildPage(content *Node, title string) *Node {
-	// add mobile styling to make the content larger
-	content.Attrs["Class"] = "transform origin-top scale-[3] md:scale-100 container w-full"
-
-	return Html(
-		Attr("data-theme", "dark"),
-		Head(
-			Title(T(title)),
-			Script(
-				Src("https://unpkg.com/htmx.org@1.9.12"),
-			),
-			Script(
-				Src("https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"),
-			),
-			TailwindCSS,
-			DaisyUI,
-		),
-		Body(
-			Div(
-				Attr("hx-ext", "ws"),
-				Attr("ws-connect", "/websocket/ws"),
-				Div(
-					Id("content-container"),
-
-					Class("flex justify-center mt-4"),
-					content,
-				),
-			),
-		),
-	)
-}
-
 func getContentCard(d deps.Deps, w http.ResponseWriter, r *http.Request) string {
 	id := r.PathValue("id")
 	if id == "" {
@@ -173,7 +141,7 @@ func getContentCard(d deps.Deps, w http.ResponseWriter, r *http.Request) string 
 			T("Welcome to the Content Card Page!"),
 			T("Submit a link and a description below to generate a summary and image."),
 			Form(
-				Attr("ws-send", "contentcard"), // This tells htmx to send the form via WebSocket to the "contentcard" endpoint.
+				Attr("ws-send", "contentcard"),
 				Div(
 					Label(T("URL:")),
 					Input(
@@ -243,7 +211,9 @@ func getCard(d deps.Deps, w http.ResponseWriter, r *http.Request) string {
 	// Display two buttons/links to choose between Tarot Card and Content Card.
 	content := Div(
 		T("Select the type of card you want to create:"),
+		Class("center"),
 		Div(
+			Class("center"),
 			A(Attr("href", "/card/tarot/"+id), Class("btn btn-primary m-2"), T("Tarot Card")),
 			A(Attr("href", "/card/content/"+id), Class("btn btn-secondary m-2"), T("Content Card")),
 		),
@@ -256,7 +226,7 @@ func getCard(d deps.Deps, w http.ResponseWriter, r *http.Request) string {
 	return id
 }
 
-func NewCard2(d deps.Deps) *http.ServeMux {
+func NewTarot(d deps.Deps) *http.ServeMux {
 	id := ""
 	mux := http.NewServeMux()
 	mux.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
@@ -715,17 +685,7 @@ func loadArchetypes() []Archetype {
 	return archetypes
 }
 
-func GenerateQRCode(data string) (string, error) {
-	qrcodeUrl := "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" + data
-	now := strconv.Itoa(time.Now().Nanosecond())
-	imagePath, err := downloadImage(qrcodeUrl, fmt.Sprintf("qrcode%s.png", now))
-	if err != nil {
-		return "", err
-	}
-	_, i := utf8.DecodeRuneInString(imagePath)
-	imagePath = imagePath[i:]
-	return imagePath, nil
-}
+
 
 func GenerateImage(d deps.Deps, pageId string, prompt string) (TarotCard, error) {
 	db := d.Docs.WithCollection("tarot")

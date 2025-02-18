@@ -7,7 +7,7 @@ import (
 
 func New(d deps.Deps) *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/paint", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// return index.html
 		http.ServeFile(w, r, "paint/index.html")
 	})
