@@ -6,6 +6,7 @@ import (
 	"crypto/md5"
 	"database/sql"
 	"encoding/base64"
+	"encoding/csv"
 	"encoding/gob"
 	"encoding/hex"
 	"encoding/json"
@@ -47,6 +48,61 @@ func init() {
 func New(d deps.Deps) *http.ServeMux {
 	m := http.NewServeMux()
 	db := d.DB
+	m.HandleFunc("/image", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			imageHTML, err := os.ReadFile("xctf/image.html")
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Write(imageHTML)
+		case http.MethodPost:
+			var payload struct {
+				ImageURL string `json:"image_url"`
+				Areas    []struct {
+					Points []struct {
+						X float64
+						Y float64
+					} `json:"points"`
+				} `json:"areas"`
+			}
+
+			r.ParseForm()
+			p := r.FormValue("payload")
+
+			if err := json.Unmarshal([]byte(p), &payload); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			DefaultLayout(
+				Div(
+					Class("p-5 max-w-lg mx-auto"),
+					Div(Class("text-lg"), Text("Image Map")),
+					Div(
+						Class("relative"),
+						// render image map with areas https://www.w3schools.com/html/html_images_imagemap.asp
+						Img(Src(payload.ImageURL), UseMap("#image-map"), Width("600"), Height("400")),
+						Map(
+							Name("image-map"),
+							Ch(func() []*Node {
+								var areas []*Node
+								for i, a := range payload.Areas {
+									var coords []string
+									for _, p := range a.Points {
+										coords = append(coords, fmt.Sprintf("%d,%d", int(p.X/100*600), int(p.Y/100*400)))
+									}
+									areas = append(areas, Area(Shape("poly"), Coords(strings.Join(coords, ",")), Href("hello"), Alt(fmt.Sprintf("area %d", i))))
+								}
+								return areas
+							}()),
+						),
+					),
+				),
+			).RenderPageCtx(context.Background(), w, r)
+		}
+	})
 	m.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), "baseURL", "/xctf")
 
@@ -426,49 +482,127 @@ func Handle(d deps.Deps) http.HandlerFunc {
 			if n.ID == chalId {
 				switch u := n.Challenge.Value.(type) {
 				case *chalgen.CMS:
+					if p == "backup" {
+						records := [][]string{
+							{"first_name", "last_name", "username"},
+							{"Rob", "Pike", "rob"},
+							{"Ken", "Thompson", "ken"},
+							{"Robert", "Griesemer", "gri"},
+						}
+
+						wr := csv.NewWriter(w)
+
+						for _, record := range records {
+							if err := wr.Write(record); err != nil {
+								log.Fatalln("error writing record to csv:", err)
+							}
+						}
+
+						wr.Flush()
+
+						if err := wr.Error(); err != nil {
+							http.Error(w, err.Error(), http.StatusInternalServerError)
+						}
+						return
+					}
+					if p == "backups" {
+						DefaultLayout(
+							Div(
+								Class("p-5 max-w-lg mx-auto"),
+								Ul(
+									Li(A(Href("/backup"), Text("backup"))),
+								),
+							),
+						).RenderPageCtx(ctx, w, r)
+						return
+					}
+
+					_, err := db.Exec("CREATE TABLE IF NOT EXISTS books (id INTEGER PRIMARY KEY, title TEXT, content TEXT, author TEXT, fees_owed REAL, deleted BOOLEAN DEFAULT FALSE)")
+					if err != nil {
+						http.Error(w, err.Error(), http.StatusInternalServerError)
+						return
+					}
+
+					// batch insert u.Items into db
+					stmt, err := db.Prepare("INSERT INTO books(title, content, author, fees_owed) values(?, ?, ?, ?)")
+					if err != nil {
+						http.Error(w, err.Error(), http.StatusInternalServerError)
+						return
+					}
+
+					for _, item := range u.Items {
+						_, err := stmt.Exec(item.Title, item.Content, item.Author, item.FeesOwed)
+						if err != nil {
+							http.Error(w, err.Error(), http.StatusInternalServerError)
+							return
+						}
+					}
+
+					formatResults := func(items []chalgen.CMSItem) *Node {
+						return Table(
+							Id("results"),
+							Class("table"),
+							Thead(Tr(Th(Text("Title")), Th(Text("Content")), Th(Text("Author")), Th(Text("Fees Owed")))),
+							Tbody(
+								Ch(func() []*Node {
+									var rows []*Node
+									for _, u := range items {
+										rows = append(rows, Tr(
+											Td(Text(u.Title)),
+											Td(Text(u.Content)),
+											Td(Text(u.Author)),
+											Td(Text(fmt.Sprintf("%0.2f", u.FeesOwed))),
+										))
+									}
+									return rows
+								}()),
+							),
+						)
+					}
+
+					query := r.URL.Query().Get("search")
+					if query == "" {
+						http.Redirect(w, r, baseURL+"?search=SELECT title, content, author, fees_owed FROM books WHERE deleted = false", http.StatusFound)
+						return
+					}
+
+					items := u.Items
+					rows, err := db.Query(query)
+					if err != nil {
+						http.Error(w, err.Error(), http.StatusInternalServerError)
+						return
+					}
+					defer rows.Close()
+
+					items = []chalgen.CMSItem{}
+					for rows.Next() {
+						var item chalgen.CMSItem
+						if err := rows.Scan(&item.Title, &item.Content, &item.Author, &item.FeesOwed); err != nil {
+							http.Error(w, err.Error(), http.StatusInternalServerError)
+							return
+						}
+						items = append(items, item)
+					}
 					DefaultLayout(
 						Div(
 							Class("p-5 max-w-lg mx-auto"),
-							Div(Class("text-lg"), Text("Library Database")),
-							//Ch(func() []*Node {
-							//	var tc []*Node
-							//	for _, t := range tablesAndColumns {
-							//		tc = append(
-							//			tc, Div(
-							//				H2(Text(t.Table)),
-							//				Table(
-							//					Class("table"),
-							//					Thead(Tr(Th(Text("Column")), Th(Text("Type")))),
-							//					Tbody(Ch(func() []*Node {
-							//						var rows []*Node
-							//						for _, c := range t.Columns {
-							//							rows = append(rows, Tr(Td(Text(c.Name)), Td(Text(c.Type))))
-							//						}
-							//						return rows
-							//					}())),
-							//				),
-							//			),
-							//		)
-							//	}
-							//	return tc
-							//}()),
-							Table(
-								Class("table"),
-								Thead(Tr(Th(Text("Title")), Th(Text("Content")), Th(Text("Author")), Th(Text("Fees Owed")))),
-								Tbody(
-									Ch(func() []*Node {
-										var rows []*Node
-										for _, u := range u.Items {
-											rows = append(rows, Tr(
-												Td(Text(u.Title)),
-												Td(Text(u.Content)),
-												Td(Text(u.Author)),
-												Td(Text(fmt.Sprintf("%0.2f", u.FeesOwed))),
-											))
-										}
-										return rows
-									}()),
+							Div(
+								Class("navbar bg-base-100"),
+								Div(Class("flex-1"), A(Class("btn btn-ghost text-xl"), Text("Library Database"))),
+								Div(
+									Class("flex-none"),
+									Ul(
+										Class("menu menu-horizontal px-1"),
+										Li(A(Href("/backups"), Text("backups"))),
+									),
 								),
+							),
+							Form(
+								//HxGet("/search"),
+								//HxTarget("#results"),
+								//Input(Class("input w-full"), Type("text"), Name("search"), Value(query), Placeholder("search")),
+								//Button(Class("btn"), Type("submit"), Text("search")),
+								formatResults(items),
 							),
 						),
 					).RenderPageCtx(ctx, w, r)
@@ -634,7 +768,7 @@ func Handle(d deps.Deps) http.HandlerFunc {
 						userLookup[u.Username] = u
 					}
 
-					DefaultLayout(Chat(ChatState{
+					DefaultLayout(Chat(u, ChatState{
 						Flag:       n.Flag,
 						UserLookup: userLookup,
 						Session:    sess,

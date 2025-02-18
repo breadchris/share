@@ -24,7 +24,7 @@ type Message struct {
 	Timestamp int64
 }
 
-func Chat(state ChatState) *Node {
+func Chat(slack *chalgen.Slack, state ChatState) *Node {
 	return Div(Class("flex flex-col h-screen"),
 		Div(Class("navbar bg-base-100"),
 			Div(Class("flex-1"),
@@ -52,18 +52,19 @@ func Chat(state ChatState) *Node {
 											Label(Class("input input-bordered flex items-center gap-2"),
 												Svg(Class("w-4 h-4 opacity-70"), Attr("xmlns", "http://www.w3.org/2000/svg"), Attr("viewBox", "0 0 16 16"),
 													Path(Attrs(map[string]string{"d": "M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"}))),
-												Input(Type("text"), Name("username"), Class("grow"), Placeholder("Username"))),
+												Input(Type("text"), Name("username"), Class("grow"), Placeholder("username"))),
 											Label(Class("input input-bordered flex items-center gap-2"),
 												Svg(Class("w-4 h-4 opacity-70"), Attr("xmlns", "http://www.w3.org/2000/svg"), Attr("viewBox", "0 0 16 16"),
 													Path(Attrs(map[string]string{"d": "M14 6a4 4 0 0 1-4.899 3.899l-1.955 1.955a.5.5 0 0 1-.353.146H5v1.5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5v-2.293a.5.5 0 0 1 .146-.353l3.955-3.955A4 4 0 1 1 14 6Z"}))),
 												Input(Type("password"), Name("password"), Class("grow")),
-												Button(Type("submit"), Class("btn"), T("login")),
+											),
+											Button(Type("submit"), Class("btn align-right"), T("login")),
+										),
+										Div(Class("modal-action"),
+											Form(Method("dialog"),
+												Button(Class("btn"), T("close")),
 											),
 										),
-									)),
-								Div(Class("modal-action"),
-									Form(Method("dialog"),
-										Button(Class("btn"), T("close")),
 									),
 								),
 							})
@@ -73,16 +74,16 @@ func Chat(state ChatState) *Node {
 			),
 		),
 		Div(Class("flex bg-gray-900"),
-			Div(Class("w-32 bg-gray-800 text-white flex flex-col"),
+			Div(Class("w-48 bg-gray-800 text-white flex flex-col"),
 				Div(Class("px-4 py-6"),
 					H2(Class("text-xl font-semibold"), T("Channels")),
 					Ul(Class("mt-6"),
 						func() *Node {
-							channels := []*Node{}
-							for i, c := range state.Channel.Messages {
+							var channels []*Node
+							for i, c := range slack.Channels {
 								channels = append(channels, Li(Class("mt-2"),
 									A(Href(fmt.Sprintf("/?channel_id=%d", i)), Class("flex items-center space-x-2 px-4 py-2 bg-gray-900 rounded-md"),
-										Span(T(c.Username))),
+										Span(T(c.Name))),
 								))
 							}
 							return Ch(channels)
@@ -95,22 +96,36 @@ func Chat(state ChatState) *Node {
 					H1(Class("text-3xl font-semibold"), T(state.Channel.Name)),
 					P(Class("mt-4"),
 						func() *Node {
-							messages := []*Node{}
+							var messages []*Node
 							for i, m := range state.Channel.Messages {
-								messages = append(messages, Div(Class("flex items-start space-x-4"),
-									Div(Class("flex-shrink-0"),
-										Img(Class("h-10 w-10 rounded-full"), Src(state.UserLookup[m.Username].Image), Alt("User avatar"))),
+								messages = append(messages,
 									Div(
-										Div(Attr("onclick", fmt.Sprintf("openModal('msg_bio_modal_%d')", i)), Class("pointer-cursor text-sm text-gray-700"), T(m.Username)),
-										Dialog(Id(fmt.Sprintf("msg_bio_modal_%d", i)), Class("modal"),
-											Div(Class("modal-box"),
-												T(state.UserLookup[m.Username].Bio)),
-											Form(Method("dialog"), Class("modal-backdrop"),
-												Button(T("close")))),
-										Div(Class("mt-1 text-sm font-medium"), T(m.Content)),
-										Div(Class("text-sm text-gray-700"), T(time.Unix(m.Timestamp, 0).Format(time.ANSIC))),
+										Class("flex items-start space-x-4"),
+										Div(
+											Class("flex-shrink-0 align-center"),
+											Img(Class("h-10 w-10 rounded-full"), Src(state.UserLookup[m.Username].Image), Alt("User avatar")),
+										),
+										Div(
+											Div(Attr("onclick", fmt.Sprintf("openModal('msg_bio_modal_%d')", i)), Class("pointer-cursor text-sm text-gray-700"), T(m.Username)),
+											Dialog(
+												Id(fmt.Sprintf("msg_bio_modal_%d", i)),
+												Class("modal"),
+												Div(
+													Class("modal-box"),
+													T(state.UserLookup[m.Username].Bio),
+												),
+												Form(
+													Method("dialog"),
+													Class("modal-backdrop"),
+													Button(T("close")),
+												),
+											),
+											Div(Class("mt-1 text-sm font-medium"), T(m.Content)),
+											Div(Class("text-sm text-gray-700"), T(time.Unix(m.Timestamp, 0).Format(time.ANSIC))),
+										),
 									),
-								))
+								)
+								messages = append(messages, Div(Class("mt-4")))
 							}
 							return Ch(messages)
 						}(),

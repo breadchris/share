@@ -1,15 +1,5 @@
 package html
 
-func Map[TC any, TR any](collection []TC, iteratee func(item TC, index int) TR) []TR {
-	result := make([]TR, len(collection))
-
-	for i := range collection {
-		result[i] = iteratee(collection[i], i)
-	}
-
-	return result
-}
-
 func Filter[TC any, Slice ~[]TC](collection Slice, predicate func(item TC, index int) bool) Slice {
 	result := make(Slice, 0, len(collection))
 

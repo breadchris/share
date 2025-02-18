@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Image Map Editor</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            font-family: sans-serif;
+        }
+        #sidebar {
+            width: 250px;
+            background: #f0f0f0;
+            padding: 10px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+        #main {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #ddd;
+            position: relative;
+        }
+        #imageContainer {
+            position: relative;
+            display: inline-block;
+        }
+        #imageContainer img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+        .marker {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: red;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+        }
+        .area-item {
+            border: 1px solid #ccc;
+            margin: 5px 0;
+            padding: 5px;
+            cursor: pointer;
+        }
+        .area-item.active {
+            background: #cceeff;
+        }
+        input[type="number"],
+        input[type="text"] {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            margin-top: 5px;
+        }
+        #generatedHTML {
+            width: 100%;
+            height: 150px;
+            margin-top: 5px;
+            font-family: monospace;
+        }
+        #areaDetails {
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            padding: 5px;
+        }
+        #areaDetails label {
+            display: block;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+<div id="sidebar">
+    <h2>Areas</h2>
+    <div id="areaList"></div>
+    <button id="addAreaBtn">Add New Area</button>
+    <div>
+        <label for="coordIndex">Next Coordinate Index:</label>
+        <input type="number" id="coordIndex" value="0" min="0" />
+    </div>
+    <div>
+        <label for="imageURL">Image URL:</label>
+        <input type="text" id="imageURL" value="https://c8.alamy.com/comp/2FM2NNG/close-up-view-of-white-bookshelves-with-colorful-books-sweden-2FM2NNG.jpg" />
+        <button id="loadImageBtn">Load Image</button>
+    </div>
+    <form action="/xctf/image" method="POST">
+        <input type="hidden" value="" id="payload" name="payload" />
+        <button id="saveBtn">Save Image Map</button>
+    </form>
+    <button id="generateHTMLBtn">Generate HTML</button>
+    <textarea id="generatedHTML" placeholder="Generated HTML will appear here..."></textarea>
+    <!-- Area details panel will be injected here when an area is selected -->
+    <div id="areaDetails" style="display: none;">
+        <h3>Active Area Details</h3>
+        <div>
+            <label for="areaTitle">Title:</label>
+            <input type="text" id="areaTitle" placeholder="Enter area title" />
+        </div>
+        <div>
+            <label for="areaURL">URL:</label>
+            <input type="text" id="areaURL" placeholder="Enter area URL" />
+        </div>
+    </div>
+</div>
+<div id="main">
+    <div id="imageContainer">
+        <img
+                id="mapImage"
+                width="600"
+                height="400"
+                src="https://c8.alamy.com/comp/2FM2NNG/close-up-view-of-white-bookshelves-with-colorful-books-sweden-2FM2NNG.jpg"
+                alt="Map"
+        />
+    </div>
+</div>
+<script>
+    let areas = [];
+    let activeAreaIndex = null;
+    const imageContainer = document.getElementById("imageContainer");
+    const mapImage = document.getElementById("mapImage");
+    const areaListEl = document.getElementById("areaList");
+    const addAreaBtn = document.getElementById("addAreaBtn");
+    const coordIndexInput = document.getElementById("coordIndex");
+    const imageURLInput = document.getElementById("imageURL");
+    const loadImageBtn = document.getElementById("loadImageBtn");
+    const areaDetailsPanel = document.getElementById("areaDetails");
+    const areaTitleInput = document.getElementById("areaTitle");
+    const areaURLInput = document.getElementById("areaURL");
+
+    function createMarkerElement(xPercent, yPercent) {
+        const marker = document.createElement("div");
+        marker.className = "marker";
+        marker.style.left = xPercent + "%";
+        marker.style.top = yPercent + "%";
+        return marker;
+    }
+
+    function redrawMarkers() {
+        imageContainer.querySelectorAll(".marker").forEach((m) => m.remove());
+        if (activeAreaIndex === null) return;
+        const area = areas[activeAreaIndex];
+        if (!area.points) area.points = [];
+        area.points.forEach((pt, idx) => {
+            const marker = createMarkerElement(pt.x, pt.y);
+            marker.dataset.index = idx;
+            marker.addEventListener("click", (e) => {
+                e.stopPropagation();
+                area.points.splice(idx, 1);
+                redrawMarkers();
+                renderAreaList();
+            });
+            imageContainer.appendChild(marker);
+        });
+        // Update payload for form submission.
+        document.getElementById("payload").value = JSON.stringify({
+            image_url: mapImage.src,
+            areas: areas,
+        });
+    }
+
+    function renderAreaList() {
+        areaListEl.innerHTML = "";
+        areas.forEach((area, index) => {
+            const div = document.createElement("div");
+            div.className = "area-item" + (activeAreaIndex === index ? " active" : "");
+            let text =
+                "Area " +
+                (index + 1) +
+                " (" +
+                (area.points ? area.points.length : 0) +
+                " points)";
+            if (area.title) text += " - " + area.title;
+            if (area.url) text += " [" + area.url + "]";
+            div.textContent = text;
+            div.addEventListener("click", () => {
+                activeAreaIndex = index;
+                updateAreaDetails();
+                redrawMarkers();
+                renderAreaList();
+            });
+            areaListEl.appendChild(div);
+        });
+    }
+
+    function updateAreaDetails() {
+        if (activeAreaIndex === null) {
+            areaDetailsPanel.style.display = "none";
+        } else {
+            areaDetailsPanel.style.display = "block";
+            const area = areas[activeAreaIndex];
+            areaTitleInput.value = area.title || "";
+            areaURLInput.value = area.url || "";
+        }
+    }
+
+    // Listen for changes in the area details inputs.
+    areaTitleInput.addEventListener("input", (e) => {
+        if (activeAreaIndex !== null) {
+            areas[activeAreaIndex].title = e.target.value;
+            renderAreaList();
+        }
+    });
+    areaURLInput.addEventListener("input", (e) => {
+        if (activeAreaIndex !== null) {
+            areas[activeAreaIndex].url = e.target.value;
+            renderAreaList();
+        }
+    });
+
+    addAreaBtn.addEventListener("click", () => {
+        areas.push({ points: [], title: "", url: "" });
+        activeAreaIndex = areas.length - 1;
+        updateAreaDetails();
+        renderAreaList();
+        redrawMarkers();
+    });
+
+    loadImageBtn.addEventListener("click", () => {
+        const url = imageURLInput.value.trim();
+        if (url) {
+            mapImage.src = url;
+            redrawMarkers();
+        }
+    });
+
+    imageContainer.addEventListener("click", (e) => {
+        if (activeAreaIndex === null) {
+            alert("Please add or select an area first.");
+            return;
+        }
+        const rect = mapImage.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const xPercent = (x / rect.width) * 100;
+        const yPercent = (y / rect.height) * 100;
+        const area = areas[activeAreaIndex];
+        if (!area.points) area.points = [];
+        const thresholdPx = 10;
+        const existingIndex = area.points.findIndex((pt) => {
+            const ptX = (pt.x / 100) * rect.width;
+            const ptY = (pt.y / 100) * rect.height;
+            return Math.hypot(ptX - x, ptY - y) < thresholdPx;
+        });
+        if (existingIndex !== -1) {
+            area.points.splice(existingIndex, 1);
+        } else {
+            const index = parseInt(coordIndexInput.value, 10);
+            if (isNaN(index) || index < 0 || index > area.points.length) {
+                area.points.push({ x: xPercent, y: yPercent });
+            } else {
+                area.points.splice(index, 0, { x: xPercent, y: yPercent });
+            }
+        }
+        redrawMarkers();
+        renderAreaList();
+    });
+
+    // Generate HTML that renders the image with its map.
+    document.getElementById("generateHTMLBtn").addEventListener("click", () => {
+        const imageUrl = mapImage.src;
+        // Use the set width/height or fallback to natural dimensions.
+        const width = mapImage.width || mapImage.naturalWidth;
+        const height = mapImage.height || mapImage.naturalHeight;
+
+        let htmlOutput = "";
+        htmlOutput += `<img src="${imageUrl}" usemap="#imagemap" width="${width}" height="${height}" alt="Image Map" />\n`;
+        htmlOutput += `<map name="imagemap">\n`;
+        areas.forEach((area, index) => {
+            // Only generate an area if there are at least three points.
+            if (area.points && area.points.length >= 3) {
+                // Convert percentage points to pixel coordinates.
+                const coords = area.points
+                    .map((pt) => {
+                        const x = Math.round((pt.x / 100) * width);
+                        const y = Math.round((pt.y / 100) * height);
+                        return x + "," + y;
+                    })
+                    .join(",");
+                // Use area.url if defined; otherwise, use '#' as a fallback.
+                const href = area.url ? area.url : "#";
+                // Use title as the alt/title attribute; fallback to "Area N" if no title is provided.
+                const title = area.title ? area.title : "Area " + (index + 1);
+                htmlOutput += `  <area shape="poly" coords="${coords}" href="${href}" alt="${title}" title="${title}" />\n`;
+            }
+        });
+        htmlOutput += `</map>`;
+
+        document.getElementById("generatedHTML").value = htmlOutput;
+    });
+
+    renderAreaList();
+</script>
+</body>
+</html>

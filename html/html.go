@@ -744,6 +744,38 @@ func Img(o ...*Node) *Node {
 	return NewNode("img", o)
 }
 
+func Map(o ...*Node) *Node {
+	return NewNode("map", o)
+}
+
+func Area(o ...*Node) *Node {
+	return NewNode("area", o)
+}
+
+func Shape(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["shape"] = s
+		},
+	}
+}
+
+func Coords(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["coords"] = s
+		},
+	}
+}
+
+func UseMap(s string) *Node {
+	return &Node{
+		transform: func(p *Node) {
+			p.Attrs["usemap"] = s
+		},
+	}
+}
+
 func P(o ...*Node) *Node {
 	return NewNode("p", o)
 }

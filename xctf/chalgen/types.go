@@ -27,6 +27,13 @@ func (s *Challenge) UnmarshalJSON(b []byte) error {
 	}
 
 	switch t {
+	case "imagemap":
+		var c ImageMap
+		if err := json.Unmarshal(raw["value"], &c); err != nil {
+			return err
+		}
+		s.Type = t
+		s.Value = &c
 	case "cms":
 		var c CMS
 		if err := json.Unmarshal(raw["value"], &c); err != nil {
@@ -134,7 +141,17 @@ type ChallengeType interface {
 	isChallengeType()
 }
 
+type ImageConfig struct {
+	URL    string
+	Shape  string
+	Coords []int32
+}
+
 type (
+	ImageMap struct {
+		EntryImage   string
+		ImageConfigs []ImageConfig
+	}
 	CMS struct {
 		Items []CMSItem
 	}
@@ -210,6 +227,7 @@ type (
 )
 
 // Implement the interface for all ChallengeType structs
+func (*ImageMap) isChallengeType()     {}
 func (*CMS) isChallengeType()          {}
 func (*Base64) isChallengeType()       {}
 func (*Twitter) isChallengeType()      {}

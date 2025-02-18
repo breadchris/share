@@ -31,6 +31,8 @@ func init() {
 		"Graph":          reflect.ValueOf((*chalgen.Graph)(nil)),
 		"GraphNode":      reflect.ValueOf((*chalgen.GraphNode)(nil)),
 		"Hashes":         reflect.ValueOf((*chalgen.Hashes)(nil)),
+		"ImageConfig":    reflect.ValueOf((*chalgen.ImageConfig)(nil)),
+		"ImageMap":       reflect.ValueOf((*chalgen.ImageMap)(nil)),
 		"Maze":           reflect.ValueOf((*chalgen.Maze)(nil)),
 		"MazeCoordinate": reflect.ValueOf((*chalgen.MazeCoordinate)(nil)),
 		"MazePath":       reflect.ValueOf((*chalgen.MazePath)(nil)),

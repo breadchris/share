@@ -29,6 +29,7 @@ require (
 	github.com/blevesearch/bleve v1.0.14
 	github.com/breadchris/scs/v2 v2.0.0-20230909081317-6125300685dd
 	github.com/breadchris/yaegi v0.0.4
+	github.com/bwmarrin/discordgo v0.28.1
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/chromedp/cdproto v0.0.0-20240810084448-b931b754e476
 	github.com/chromedp/chromedp v0.10.0
@@ -37,6 +38,9 @@ require (
 	github.com/domodwyer/mailyak/v3 v3.6.2
 	github.com/dop251/goja v0.0.0-20241024094426-79f3a7efcdbd
 	github.com/dop251/goja_nodejs v0.0.0-20240728170619-29b559befffc
+	github.com/dsoprea/go-exif/v2 v2.0.0-20230826092837-6579e82b732d
+	github.com/dsoprea/go-exif/v3 v3.0.1
+	github.com/dsoprea/go-jpeg-image-structure/v2 v2.0.0-20221012074422-4f3f7e934102
 	github.com/evanphx/json-patch/v5 v5.9.0
 	github.com/evanw/esbuild v0.23.0
 	github.com/fatih/color v1.18.0
@@ -59,7 +63,9 @@ require (
 	github.com/gomarkdown/markdown v0.0.0-20240419095408-642f0ee99ae2
 	github.com/google/go-github/v55 v55.0.0
 	github.com/google/go-github/v66 v66.0.0
+	github.com/google/gopacket v1.1.19
 	github.com/google/uuid v1.6.0
+	github.com/google/wire v0.6.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/sessions v1.4.0
@@ -87,7 +93,9 @@ require (
 	github.com/nlnwa/gowarc v1.6.0
 	github.com/pdfcpu/pdfcpu v0.9.1
 	github.com/pion/randutil v0.1.0
+	github.com/pion/rtp v1.8.9
 	github.com/pion/turn/v4 v4.0.0
+	github.com/pion/webrtc/v3 v3.3.0
 	github.com/pkg/errors v0.9.1
 	github.com/pocketbase/dbx v1.10.1
 	github.com/pocketbase/tygoja v0.0.0-20240113091827-17918475d342
@@ -111,9 +119,11 @@ require (
 	github.com/urfave/cli/v2 v2.25.1
 	github.com/wasmerio/wasmer-go v1.0.4
 	github.com/x1unix/foundation v1.0.0
+	github.com/yeka/zip v0.0.0-20231116150916-03d6312748a9
 	github.com/yuin/goldmark v1.7.1
 	github.com/zmb3/spotify/v2 v2.4.2
 	go.abhg.dev/goldmark/frontmatter v0.2.0
+	go.uber.org/config v1.4.0
 	go.uber.org/mock v0.4.0
 	go.uber.org/zap v1.27.0
 	gocloud.dev v0.39.0
@@ -212,11 +222,7 @@ require (
 	github.com/dlclark/regexp2 v1.11.4 // indirect
 	github.com/dnaeon/go-vcr v1.2.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/dsoprea/go-exif v0.0.0-20230826092837-6579e82b732d // indirect
-	github.com/dsoprea/go-exif/v2 v2.0.0-20230826092837-6579e82b732d // indirect
-	github.com/dsoprea/go-exif/v3 v3.0.1 // indirect
 	github.com/dsoprea/go-iptc v0.0.0-20200610044640-bc9ca208b413 // indirect
-	github.com/dsoprea/go-jpeg-image-structure/v2 v2.0.0-20221012074422-4f3f7e934102 // indirect
 	github.com/dsoprea/go-logging v0.0.0-20200710184922-b02d349568dd // indirect
 	github.com/dsoprea/go-photoshop-info-format v0.0.0-20200610045659-121dd752914d // indirect
 	github.com/dsoprea/go-utility/v2 v2.0.0-20221003172846-a3e1774ef349 // indirect
@@ -250,10 +256,8 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/go-tpm v0.9.0 // indirect
-	github.com/google/gopacket v1.1.19 // indirect
 	github.com/google/pprof v0.0.0-20241210010833-40e02aabc2ad // indirect
 	github.com/google/s2a-go v0.1.8 // indirect
-	github.com/google/wire v0.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.13.0 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
@@ -346,7 +350,6 @@ require (
 	github.com/pion/logging v0.2.2 // indirect
 	github.com/pion/mdns v0.0.12 // indirect
 	github.com/pion/rtcp v1.2.14 // indirect
-	github.com/pion/rtp v1.8.9 // indirect
 	github.com/pion/sctp v1.8.33 // indirect
 	github.com/pion/sdp/v3 v3.0.9 // indirect
 	github.com/pion/srtp/v2 v2.0.20 // indirect
@@ -355,7 +358,6 @@ require (
 	github.com/pion/transport/v2 v2.2.10 // indirect
 	github.com/pion/transport/v3 v3.0.7 // indirect
 	github.com/pion/turn/v2 v2.1.6 // indirect
-	github.com/pion/webrtc/v3 v3.3.0 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/polydawn/refmt v0.89.0 // indirect
@@ -387,7 +389,6 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
-	github.com/yeka/zip v0.0.0-20231116150916-03d6312748a9 // indirect
 	go.etcd.io/bbolt v1.3.10 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0 // indirect

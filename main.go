@@ -142,6 +142,12 @@ func startServer(useTLS bool, port int) {
 
 	socket.SetupHandlers(registry)
 
+	//discord.NewConfig
+	//discord.NewDiscordSession
+	//discord.NewBot
+	//discord.NewHandler
+	//discord.NewSession
+
 	p("/xctf", interpreted(xctf.New))
 	p("/recipe", interpreted(NewRecipe))
 	p("/articles", interpreted(NewArticle))
