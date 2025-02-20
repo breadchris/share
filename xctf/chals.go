@@ -444,7 +444,7 @@ func Handle(d deps.Deps) http.HandlerFunc {
 				}
 				view = caesarCipher(c, int(u.Shift))
 			case *chalgen.Xor:
-				view = string(xorEncryptDecrypt([]byte(u.Plaintext), []byte(u.Key)))
+				view = hex.EncodeToString(xorEncryptDecrypt([]byte(u.Plaintext), []byte(u.Key)))
 			case *chalgen.PassShare:
 				view = base64.StdEncoding.EncodeToString([]byte(chalURL))
 			}

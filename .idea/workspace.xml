@@ -5,19 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/xctf/image.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/list/list.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/html.go" beforeDir="false" afterPath="$PROJECT_DIR$/html/html.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/lo.go" beforeDir="false" afterPath="$PROJECT_DIR$/html/lo.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pipeport.go" beforeDir="false" afterPath="$PROJECT_DIR$/pipeport.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-html.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-html.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-xctf-chalgen.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-xctf-chalgen.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/chalgen/types.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/chalgen/types.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/xctf/chals.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/chals.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/chat.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/chat.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xctf/chals_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/chals_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xctf/cmd/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/cmd/main.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -92,7 +85,7 @@
       <recent name="$PROJECT_DIR$/user" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Build.share">
+  <component name="RunManager" selected="Go Test.TestXor in github.com/breadchris/share/xctf">
     <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
       <module name="share" />
       <working_directory value="$PROJECT_DIR$" />
@@ -161,16 +154,16 @@
       <pattern value="^\QTestRSA\E$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestSearch in github.com/breadchris/share/cdk" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestXor in github.com/breadchris/share/xctf" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="share" />
-      <working_directory value="$PROJECT_DIR$/cdk" />
+      <working_directory value="$PROJECT_DIR$/xctf" />
       <root_directory value="$PROJECT_DIR$" />
       <kind value="PACKAGE" />
-      <package value="github.com/breadchris/share/cdk" />
+      <package value="github.com/breadchris/share/xctf" />
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
-      <pattern value="^\QTestSearch\E$" />
+      <pattern value="^\QTestXor\E$" />
       <method v="2" />
     </configuration>
     <configuration default="true" type="GoTestRunConfiguration" factoryName="Go Test">
@@ -186,18 +179,18 @@
     <list>
       <item itemvalue="Go Build.share" />
       <item itemvalue="Go Test.TestRSA in github.com/breadchris/share/xctf" />
+      <item itemvalue="Go Test.TestXor in github.com/breadchris/share/xctf" />
       <item itemvalue="Go Test.TestGenerate in github.com/breadchris/share/breadchris" />
       <item itemvalue="Go Test.TestImage in github.com/breadchris/share/xctf" />
       <item itemvalue="Go Test.TestEncryptZip in github.com/breadchris/share/xctf" />
-      <item itemvalue="Go Test.TestSearch in github.com/breadchris/share/cdk" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Test.TestXor in github.com/breadchris/share/xctf" />
         <item itemvalue="Go Test.TestImage in github.com/breadchris/share/xctf" />
         <item itemvalue="Go Test.TestRSA in github.com/breadchris/share/xctf" />
         <item itemvalue="Go Test.TestGenerate in github.com/breadchris/share/breadchris" />
         <item itemvalue="Go Test.TestEncryptZip in github.com/breadchris/share/xctf" />
-        <item itemvalue="Go Test.TestSearch in github.com/breadchris/share/cdk" />
       </list>
     </recent_temporary>
   </component>

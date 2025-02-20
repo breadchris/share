@@ -1,6 +1,7 @@
 package xctf
 
 import (
+	"encoding/hex"
 	exifcommon "github.com/dsoprea/go-exif/v2/common"
 	"github.com/dsoprea/go-exif/v3"
 	jis "github.com/dsoprea/go-jpeg-image-structure/v2"
@@ -8,6 +9,12 @@ import (
 	"testing"
 	"time"
 )
+
+func TestXor(t *testing.T) {
+	o := xorEncryptDecrypt([]byte("This is a test to see if it works."), []byte("dog"))
+	println(hex.EncodeToString(o))
+	println(string(xorEncryptDecrypt(o, []byte("dog"))))
+}
 
 func TestEncryptZip(t *testing.T) {
 	err := CreateEncryptedZip("/tmp/test", "password", "/tmp/enc.zip")

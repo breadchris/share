@@ -46,12 +46,7 @@ func lm(next http.Handler) http.Handler {
 func main() {
 	// Define the routing map
 	routingMap := map[string]http.Handler{
-		"camp.mcpshsf.com":     http.FileServer(http.Dir(".")),
-		"inn.camp.mcpshsf.com": http.FileServer(http.Dir("InnWebsite/root")),
-		"police.camp.mcpshsf.com": http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			http.ServeFile(w, r, "PoliceInterview/index.html")
-		}),
-		"fred.camp.mcpshsf.com": createReverseProxy("http://localhost:9000/"),
+		"hacker.2025.mcpshsf.com": createReverseProxy("http://localhost:9000/"),
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/list"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -148,6 +149,7 @@ func startServer(useTLS bool, port int) {
 	//discord.NewHandler
 	//discord.NewSession
 
+	p("/list", interpreted(list.New))
 	p("/xctf", interpreted(xctf.New))
 	p("/recipe", interpreted(NewRecipe))
 	p("/articles", interpreted(NewArticle))
