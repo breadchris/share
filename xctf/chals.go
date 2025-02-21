@@ -184,27 +184,13 @@ func New(d deps.Deps) *http.ServeMux {
 
 			DefaultLayout(
 				Div(
-					Class("p-5 max-w-lg mx-auto"),
+					Class("p-5 max-w-7xl mx-auto"),
 					Div(Class("text-sm text-center m-10"), T("hello, "+user.Username)),
 					Div(Class("divider")),
 					Div(Class("text-lg"), Text("competitions")),
 					Div(Id("error"), Class("alert alert-error hidden")),
 					getGroupList(),
 					Div(Class("divider")),
-					Ch(func() []*Node {
-						var chals []*Node
-						for _, n := range g.Nodes {
-							chals = append(chals, Li(
-								Class("flex items-center justify-between gap-x-6 py-5"),
-								Div(
-									Class("min-w-0"),
-									A(Class("btn"), Href("/"+id+"/"+n.ID), Text(n.Name)),
-									A(Class("btn"), Href("/"+id+"/"+n.ID+"/ai"), Text("ai")),
-								),
-							))
-						}
-						return chals
-					}()),
 					Form(
 						Class("flex flex-col space-y-4"),
 						Div(Text("new competition")),
@@ -233,6 +219,20 @@ func New(d deps.Deps) *http.ServeMux {
 						Div(Class("w-full h-full"), Id("monaco-editor"), Attr("data-props", string(mp))),
 						Script(Attr("src", "/static/code/monaco.js"), Attr("type", "module")),
 					),
+					Ch(func() []*Node {
+						var chals []*Node
+						for _, n := range g.Nodes {
+							chals = append(chals, Li(
+								Class("flex items-center justify-between gap-x-6 py-5"),
+								Div(
+									Class("min-w-0"),
+									A(Class("btn"), Href("/"+id+"/"+n.ID), Text(n.Name)),
+									A(Class("btn"), Href("/"+id+"/"+n.ID+"/ai"), Text("ai")),
+								),
+							))
+						}
+						return chals
+					}()),
 				),
 			).RenderPageCtx(ctx, w, r)
 		case http.MethodPost:
@@ -481,6 +481,23 @@ func Handle(d deps.Deps) http.HandlerFunc {
 		for _, n := range graph.Nodes {
 			if n.ID == chalId {
 				switch u := n.Challenge.Value.(type) {
+				case *chalgen.Site:
+					for _, ro := range u.Routes {
+						if ro.Route == p {
+							goNode, err := ParseHTMLString(ro.HTML)
+							if err != nil {
+								http.Error(w, err.Error(), http.StatusInternalServerError)
+								return
+							}
+							DefaultLayout(
+								Div(
+									Class("p-5 max-w-4xlg mx-auto"),
+									goNode,
+								),
+							).RenderPageCtx(ctx, w, r)
+							return
+						}
+					}
 				case *chalgen.CMS:
 					if p == "backup" {
 						records := [][]string{

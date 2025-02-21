@@ -135,8 +135,8 @@ func startServer(useTLS bool, port int) {
 	interpreted := func(f func(d deps2.Deps) *http.ServeMux, files ...string) *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			code.DynamicHTTPMux(f, files...)(deps).ServeHTTP(w, r)
-			//f(deps).ServeHTTP(w, r)
+			//code.DynamicHTTPMux(f, files...)(deps).ServeHTTP(w, r)
+			f(deps).ServeHTTP(w, r)
 		})
 		return m
 	}

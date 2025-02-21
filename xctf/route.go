@@ -1,4 +1,4 @@
-package main
+package xctf
 
 import (
 	"bytes"
@@ -46,7 +46,7 @@ func lm(next http.Handler) http.Handler {
 func main() {
 	// Define the routing map
 	routingMap := map[string]http.Handler{
-		"hacker.2025.mcpshsf.com": createReverseProxy("http://localhost:9000/"),
+		"hacker.2025.mcpshsf.com": CreateReverseProxy("http://localhost:9000/"),
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -66,7 +66,7 @@ func main() {
 	}
 }
 
-func createReverseProxy(target string) http.Handler {
+func CreateReverseProxy(target string) http.Handler {
 	url, err := url.Parse(target)
 	if err != nil {
 		log.Fatal(err)

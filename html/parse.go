@@ -11,7 +11,12 @@ func ParseHTML(n *html.Node) *Node {
 		goNode := NewNode(n.Data, nil) // Handle other tags generically
 
 		for _, attr := range n.Attr {
-			goNode.Attrs[attr.Key] = attr.Val
+			switch attr.Key {
+			case "href":
+				goNode.Init(Href(attr.Val))
+			default:
+				goNode.Attrs[attr.Key] = attr.Val
+			}
 		}
 
 		for c := n.FirstChild; c != nil; c = c.NextSibling {

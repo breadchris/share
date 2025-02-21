@@ -46,6 +46,8 @@ func init() {
 		"PhoneApp":       reflect.ValueOf((*chalgen.PhoneApp)(nil)),
 		"PhotoGallery":   reflect.ValueOf((*chalgen.PhotoGallery)(nil)),
 		"Search":         reflect.ValueOf((*chalgen.Search)(nil)),
+		"Site":           reflect.ValueOf((*chalgen.Site)(nil)),
+		"SiteRoute":      reflect.ValueOf((*chalgen.SiteRoute)(nil)),
 		"Slack":          reflect.ValueOf((*chalgen.Slack)(nil)),
 		"Solution":       reflect.ValueOf((*chalgen.Solution)(nil)),
 		"Song":           reflect.ValueOf((*chalgen.Song)(nil)),

@@ -439,7 +439,7 @@ func Ch(c []*Node) *Node {
 				if n == nil {
 					continue
 				}
-				p.Children = append(p.Children, n)
+				p.Init(n)
 			}
 		},
 	}
@@ -452,7 +452,7 @@ func Chl(c ...*Node) *Node {
 				if c == nil {
 					continue
 				}
-				p.Children = append(p.Children, n)
+				p.Init(n)
 			}
 		},
 	}
