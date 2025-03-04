@@ -23,6 +23,19 @@ func New(d deps.Deps) *http.ServeMux {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		if !func() bool {
+			for _, a := range d.Config.Admins {
+				if a == u {
+					return true
+				}
+			}
+			return false
+		}() {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
 		var user models.User
 		if err := db.First(&user, "id = ?", u).Error; err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

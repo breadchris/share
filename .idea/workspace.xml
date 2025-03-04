@@ -5,43 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/sqlnotebook/sqlnotebook.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xctf/access.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xctf/docker.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xctf/dungeon.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xctf/group.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xctf/imagemap.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xctf/index.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xctf/main.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/xctf/script.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/card2.go" beforeDir="false" afterPath="$PROJECT_DIR$/card2.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chat.go" beforeDir="false" afterPath="$PROJECT_DIR$/chat.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/code.go" beforeDir="false" afterPath="$PROJECT_DIR$/code/code.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/deps/deps.go" beforeDir="false" afterPath="$PROJECT_DIR$/deps/deps.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/leaps/leaps.go" beforeDir="false" afterPath="$PROJECT_DIR$/editor/leaps/leaps.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/daisyui.go" beforeDir="false" afterPath="$PROJECT_DIR$/html/daisyui.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/html.go" beforeDir="false" afterPath="$PROJECT_DIR$/html/html.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/models.go" beforeDir="false" afterPath="$PROJECT_DIR$/models/models.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scratch.go" beforeDir="false" afterPath="$PROJECT_DIR$/scratch.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-html.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-html.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-xctf-chalgen.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-xctf-chalgen.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/symbol.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/symbol.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tarot.go" beforeDir="false" afterPath="$PROJECT_DIR$/tarot.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/user/user.go" beforeDir="false" afterPath="$PROJECT_DIR$/user/user.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/wasmcode/code.go" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/code.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/chalgen/types.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/chalgen/types.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/chals.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/chals.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/chals_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/chals_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/chat.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/chat.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/docker/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/docker/Dockerfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/docker/files/asdf" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/filemanager.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/filemanager.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/graph.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/graph.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/graph.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/graph.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/image.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/twitter.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/twitter.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -249,7 +214,7 @@
       <workItem from="1740074470826" duration="6031000" />
       <workItem from="1740170419615" duration="33363000" />
       <workItem from="1740795290145" duration="5557000" />
-      <workItem from="1740941407379" duration="16700000" />
+      <workItem from="1740941407379" duration="17346000" />
     </task>
     <servers />
   </component>

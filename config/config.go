@@ -51,6 +51,7 @@ type AppConfig struct {
 	Figma              string        `json:"figma"`
 	Github             GithubConfig  `json:"github"`
 	Proxy              ProxyConfig   `json:"proxy"`
+	Admins             []string      `json:"admins"`
 }
 
 func New() AppConfig {
