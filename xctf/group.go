@@ -31,7 +31,7 @@ func groupComponent(s GroupCompState) *Node {
 				Class("flex flex-col space-y-4"),
 				Form(
 					Class("border p-4 rounded"),
-					HxPost("/group"),
+					HxPost("/group/"),
 					Div(Text("Create a New Group")),
 					Input(Class("input"), Type("text"), Name("name"), Placeholder("Group Name")),
 					Input(Type("hidden"), Name("action"), Value("create")),
@@ -39,7 +39,7 @@ func groupComponent(s GroupCompState) *Node {
 				),
 				Form(
 					Class("border p-4 rounded"),
-					HxPost("/group"),
+					HxPost("/group/"),
 					Div(Text("Join an Existing Group")),
 					Input(Class("input"), Type("text"), Name("join_code"), Placeholder("Join Code")),
 					Input(Type("hidden"), Name("action"), Value("join")),
