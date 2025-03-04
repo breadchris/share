@@ -7,6 +7,7 @@ import (
 	"github.com/breadchris/share/models"
 	"github.com/google/uuid"
 	"net/http"
+	"path"
 	"strings"
 )
 
@@ -30,7 +31,7 @@ func groupComponent(s GroupCompState) *Node {
 				Class("flex flex-col space-y-4"),
 				Form(
 					Class("border p-4 rounded"),
-					HxPost("/"),
+					HxPost("/group"),
 					Div(Text("Create a New Group")),
 					Input(Class("input"), Type("text"), Name("name"), Placeholder("Group Name")),
 					Input(Type("hidden"), Name("action"), Value("create")),
@@ -38,7 +39,7 @@ func groupComponent(s GroupCompState) *Node {
 				),
 				Form(
 					Class("border p-4 rounded"),
-					HxPost("/"),
+					HxPost("/group"),
 					Div(Text("Join an Existing Group")),
 					Input(Class("input"), Type("text"), Name("join_code"), Placeholder("Join Code")),
 					Input(Type("hidden"), Name("action"), Value("join")),
@@ -70,7 +71,7 @@ func groupComponent(s GroupCompState) *Node {
 
 func renderGroup(d deps.Deps, w http.ResponseWriter, r *http.Request) {
 	db := d.DB
-	ctx := context.WithValue(r.Context(), "baseURL", "/xctf/group")
+	ctx := context.WithValue(r.Context(), "baseURL", path.Join(d.BaseURL, "group"))
 
 	u, err := d.Session.GetUserID(r.Context())
 	if err != nil {
