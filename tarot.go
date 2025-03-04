@@ -685,8 +685,6 @@ func loadArchetypes() []Archetype {
 	return archetypes
 }
 
-
-
 func GenerateImage(d deps.Deps, pageId string, prompt string) (TarotCard, error) {
 	db := d.Docs.WithCollection("tarot")
 	card := TarotCard{}

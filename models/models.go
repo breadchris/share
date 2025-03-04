@@ -41,7 +41,9 @@ type Identity struct {
 type Group struct {
 	ID        string `gorm:"primaryKey"`
 	CreatedAt time.Time
-	Name      string `gorm:"unique;not null"`
+	Name      string             `gorm:"unique;not null"`
+	JoinCode  string             `gorm:"unique"`
+	Members   []*GroupMembership `gorm:"foreignKey:GroupID"`
 }
 
 type GroupMembership struct {

@@ -48,12 +48,12 @@ func New(d Deps) *http.ServeMux {
 		//	return
 		//}
 		w.Write([]byte(
-			RenderTabs([]Tab{
-				{
+			RenderTabs(
+				Tab{
 					Title:   "files",
 					Content: GenerateRenderDirectory(d.Leaps.Authenticator.GetPaths()),
 				},
-				{
+				Tab{
 					Title: "functions",
 					//Content: Ul(Class("menu bg-base-200 rounded-box w-56"),
 					//	Li(
@@ -65,7 +65,7 @@ func New(d Deps) *http.ServeMux {
 					//	)),
 					Active: true,
 				},
-			}).Render(),
+			).Render(),
 		))
 	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

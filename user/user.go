@@ -7,6 +7,7 @@ import (
 	"github.com/breadchris/share/models"
 	"github.com/google/uuid"
 	"net/http"
+	"strings"
 )
 
 func New(d deps.Deps) *http.ServeMux {
@@ -30,7 +31,7 @@ func New(d deps.Deps) *http.ServeMux {
 
 		getGroupList := func() *Node {
 			var groups []models.Group
-			if err := db.Find(&groups).Error; err != nil {
+			if err := db.Preload("Members").Find(&groups).Error; err != nil {
 				return Div(Text(err.Error()))
 			}
 			var groupList []*Node
@@ -41,6 +42,7 @@ func New(d deps.Deps) *http.ServeMux {
 					Div(
 						Class("min-w-0"),
 						A(Href("/"+g.ID), Text(g.Name)),
+						P(Class("text-sm text-gray-500"), Text(g.JoinCode)),
 					),
 					Div(
 						Class("flex flex-none- items-center gap-x-4"),
@@ -85,6 +87,18 @@ func New(d deps.Deps) *http.ServeMux {
 					Div(Class("divider")),
 					Form(
 						Class("flex flex-col space-y-4"),
+						Div(Text("join")),
+						HxPut("/"+id),
+						HxTarget("#group-list"),
+						//BuildFormCtx(BuildCtx{
+						//	CurrentFieldPath: "",
+						//	Name:             "group",
+						//}, group),
+						Input(Class("input"), Type("text"), Value(""), Name("code"), Placeholder("join code")),
+						Button(Class("btn"), Type("submit"), Text("Join")),
+					),
+					Form(
+						Class("flex flex-col space-y-4"),
 						Div(Text("new group")),
 						HxPost("/"+id),
 						HxTarget("#group-list"),
@@ -107,8 +121,15 @@ func New(d deps.Deps) *http.ServeMux {
 				id = uuid.NewString()
 			}
 			group := models.Group{
-				ID:   id,
-				Name: r.FormValue("name"),
+				ID:       id,
+				Name:     r.FormValue("name"),
+				JoinCode: strings.ToUpper(uuid.NewString()[0:6]),
+				Members: []*models.GroupMembership{
+					{
+						UserID: u,
+						Role:   "admin",
+					},
+				},
 			}
 
 			if group.ID == "" {
@@ -122,6 +143,29 @@ func New(d deps.Deps) *http.ServeMux {
 					return
 				}
 			}
+			getGroupList().RenderPageCtx(ctx, w, r)
+		case http.MethodPut:
+			if id == "" {
+				http.Error(w, "Missing group ID", http.StatusBadRequest)
+				return
+			}
+
+			var group models.Group
+			if err := db.Where("join_code = ?", r.FormValue("code")).First(&group).Error; err != nil {
+				http.Error(w, "Error joining group: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			if err := db.Create(&models.GroupMembership{
+				ID:      uuid.NewString(),
+				UserID:  u,
+				GroupID: group.ID,
+				Role:    "member",
+			}).Error; err != nil {
+				http.Error(w, "Error joining group: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+
 			getGroupList().RenderPageCtx(ctx, w, r)
 		case http.MethodDelete:
 			if id == "" {

@@ -6,20 +6,23 @@ import (
 	"crypto/md5"
 	"database/sql"
 	"encoding/base64"
-	"encoding/csv"
 	"encoding/gob"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/breadchris/posts"
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	mmodels "github.com/breadchris/share/models"
 	"github.com/breadchris/share/xctf/chalgen"
 	"github.com/breadchris/share/xctf/models"
+	"github.com/dsoprea/go-exif/v3"
+	jis "github.com/dsoprea/go-jpeg-image-structure/v2"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
 	"github.com/google/uuid"
+	"github.com/russross/blackfriday/v2"
 	"github.com/sashabaranov/go-openai"
 	"github.com/sashabaranov/go-openai/jsonschema"
 	"github.com/yeka/zip"
@@ -32,6 +35,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -40,75 +44,483 @@ import (
 )
 
 func init() {
-	gob.Register(chalgen.User{})
-	gob.Register(SessionState{})
 	gob.Register(PhoneState{})
 }
 
+type GroupState struct {
+	Graph  Graph      `json:"graph"`
+	Report posts.Post `json:"report"`
+}
+
+// TODO add base url
 func New(d deps.Deps) *http.ServeMux {
 	m := http.NewServeMux()
 	db := d.DB
-	m.HandleFunc("/image", func(w http.ResponseWriter, r *http.Request) {
+
+	// TODO breadchris fix this
+	if d.BaseURL == "" {
+		d.BaseURL = "/xctf"
+	}
+
+	render := func(w http.ResponseWriter, r *http.Request, page *Node) {
+		ctx := context.WithValue(r.Context(), "baseURL", d.BaseURL)
+		page.RenderPageCtx(ctx, w, r)
+	}
+
+	groupState := d.Docs.WithCollection("group_state")
+
+	groupM := NewGroup(d)
+	m.Handle("/group/", http.StripPrefix("/group", groupM))
+
+	m.HandleFunc("/report/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
-		case http.MethodGet:
-			imageHTML, err := os.ReadFile("xctf/image.html")
+		case http.MethodPut:
+			u, err := d.Session.GetUserID(r.Context())
 			if err != nil {
+				http.Error(w, err.Error(), http.StatusUnauthorized)
+				return
+			}
+			user := mmodels.User{}
+			if err := db.Preload("GroupMemberships").First(&user, "id = ?", u).Error; err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			w.Write(imageHTML)
-		case http.MethodPost:
-			var payload struct {
-				ImageURL string `json:"image_url"`
-				Areas    []struct {
-					Points []struct {
-						X float64
-						Y float64
-					} `json:"points"`
-				} `json:"areas"`
+			if len(user.GroupMemberships) == 0 {
+				http.Error(w, "user not in group", http.StatusForbidden)
+				return
 			}
 
-			r.ParseForm()
-			p := r.FormValue("payload")
-
-			if err := json.Unmarshal([]byte(p), &payload); err != nil {
+			groupId := user.GroupMemberships[0].GroupID
+			g, err := io.ReadAll(r.Body)
+			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 
-			DefaultLayout(
-				Div(
-					Class("p-5 max-w-lg mx-auto"),
-					Div(Class("text-lg"), Text("Image Map")),
-					Div(
-						Class("relative"),
-						// render image map with areas https://www.w3schools.com/html/html_images_imagemap.asp
-						Img(Src(payload.ImageURL), UseMap("#image-map"), Width("600"), Height("400")),
-						Map(
-							Name("image-map"),
-							Ch(func() []*Node {
-								var areas []*Node
-								for i, a := range payload.Areas {
-									var coords []string
-									for _, p := range a.Points {
-										coords = append(coords, fmt.Sprintf("%d,%d", int(p.X/100*600), int(p.Y/100*400)))
-									}
-									areas = append(areas, Area(Shape("poly"), Coords(strings.Join(coords, ",")), Href("hello"), Alt(fmt.Sprintf("area %d", i))))
-								}
-								return areas
-							}()),
-						),
-					),
-				),
-			).RenderPageCtx(context.Background(), w, r)
+			var gs GroupState
+			if err := groupState.Get(groupId, &gs); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			gs.Report = posts.Post{
+				Blocknote: string(g),
+			}
+
+			if err := groupState.Set(groupId, gs); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
 		}
 	})
-	m.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), "baseURL", "/xctf")
+
+	m.HandleFunc("/graph/", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPut:
+			u, err := d.Session.GetUserID(r.Context())
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusUnauthorized)
+				return
+			}
+			user := mmodels.User{}
+			if err := db.Preload("GroupMemberships").First(&user, "id = ?", u).Error; err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if len(user.GroupMemberships) == 0 {
+				http.Error(w, "user not in group", http.StatusForbidden)
+				return
+			}
+
+			groupId := user.GroupMemberships[0].GroupID
+			var g Graph
+			if err := json.NewDecoder(r.Body).Decode(&g); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			var gs GroupState
+			if err := groupState.Get(groupId, &gs); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			gs.Graph = g
+
+			if err := groupState.Set(groupId, gs); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+		}
+	})
+
+	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		var comp models.Competition
+		res := d.DB.Where("active = true").First(&comp)
+		if res.Error != nil {
+			http.NotFound(w, r)
+			return
+		}
+
+		var graph chalgen.Graph
+		if err := json.Unmarshal([]byte(comp.Graph), &graph); err != nil {
+			slog.Error("unable to unmarshal graph", "error", err)
+			http.NotFound(w, r)
+			return
+		}
+
+		entrypointURL := (func() string {
+			for _, n := range graph.Nodes {
+				if n.Entrypoint {
+					return fmt.Sprintf("/competition/%s/%s", comp.ID, n.ID)
+				}
+			}
+			return ""
+		})()
 
 		u, err := d.Session.GetUserID(r.Context())
 		if err != nil {
-			http.Redirect(w, r, "/login?next=/xctf", http.StatusFound)
+			http.Redirect(w, r, "/login?next="+d.BaseURL, http.StatusFound)
+			return
+		}
+		user := mmodels.User{}
+		if err := db.Preload("GroupMemberships").First(&user, "id = ?", u).Error; err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		groupId := user.GroupMemberships[0].GroupID
+
+		var group mmodels.Group
+		if err := db.Preload("Members.User").First(&group, "id = ?", groupId).Error; err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		var gs GroupState
+		err = groupState.Get(groupId, &gs)
+		if err != nil {
+			gs.Graph = Graph{
+				Nodes: []GraphNode{},
+				Edges: []GraphEdge{},
+			}
+			if err := groupState.Set(groupId, gs); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+		}
+
+		type Props struct {
+			Id    string `json:"id"`
+			Graph Graph  `json:"graph"`
+		}
+
+		p := Props{
+			Id:    groupId,
+			Graph: gs.Graph,
+		}
+		sg, err := json.Marshal(p)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		type ReportProps struct {
+			ProviderURL string     `json:"provider_url"`
+			Room        string     `json:"room"`
+			Username    string     `json:"username"`
+			Post        posts.Post `json:"post"`
+		}
+		props := ReportProps{
+			ProviderURL: d.Config.Blog.YJSURL,
+			Room:        "blog",
+			Username:    u,
+			Post:        gs.Report,
+		}
+		editorProps, err := json.Marshal(props)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		render(w, r, DefaultLayout(
+			Div(
+				Class("p-5 max-w-7xl mx-auto"),
+				Div(Class("text-sm text-center m-10"), T("hello, "+user.Username)),
+				Div(Class("divider")),
+				If(entrypointURL != "", Div(
+					Class("text-md text-center"),
+					A(Class("btn"), Href(entrypointURL), Text("start here")),
+					Div(Class("divider")),
+				), Nil()),
+				Div(
+					Class("tabs tabs-border"),
+					Input(AriaLabel("graph"), Class("tab"), Type("radio"), Id("tab1"), Name("tabs"), Checked(true)),
+					Div(
+						Class("tab-content border-base-300 bg-base-100 p-10"),
+						Link(Attr("rel", "stylesheet"), Attr("type", "text/css"), Attr("href", "/static/xctf/graph.css")),
+						Style(Text(style)),
+						Div(Id("graph"), Attr("data-props", string(sg))),
+						Script(Attr("src", "/static/xctf/graph.js"), Attr("type", "module")),
+					),
+					Input(AriaLabel("report"), Class("tab"), Type("radio"), Id("tab2"), Name("tabs")),
+					Div(
+						Class("tab-content border-base-300 bg-base-100 p-10"),
+						Div(Id("editor"), Attrs(map[string]string{
+							"props": string(editorProps),
+						})),
+					),
+					Input(AriaLabel("group"), Class("tab"), Type("radio"), Id("tab3"), Name("tabs")),
+					Div(
+						Class("tab-content border-base-300 bg-base-100 p-10"),
+						groupComponent(GroupCompState{
+							Group: group,
+							User:  user,
+						}),
+					),
+				),
+			),
+		))
+	})
+
+	m.HandleFunc("/gps", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+		case http.MethodGet:
+			DefaultLayout(
+				Div(
+					Link(Attr("rel", "stylesheet"), Attr("href", "https://unpkg.com/leaflet/dist/leaflet.css")),
+					Div(
+						Class("flex"),
+						Div(
+							Id("map"),
+							Attr("style", "height: 400px; width: 70%;"),
+						),
+						Div(
+							Id("sidebar"),
+							Attr("style", "width: 30%; padding-left: 10px;"),
+							H3(Text("Points List")),
+							Ul(Id("pointsList")),
+							P(Text("Click a point to select it for insertion of the next marker.")),
+						),
+					),
+					Button(
+						Id("saveBtn"),
+						Class("btn"),
+						Text("Save GPX"),
+					),
+					Script(
+						Attr("src", "https://unpkg.com/leaflet/dist/leaflet.js"),
+					),
+					Script(Attr("src", "https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js")),
+					Script(Raw(`
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the map.
+    var map = L.map('map').setView([51.505, -0.09], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    //var gpxLayer = new L.GPX("/path/to/your.gpx", {
+    //    async: true
+    //}).on('loaded', function(e) {
+    //    // Adjust the map's view to the bounds of the GPX track.
+    //    map.fitBounds(e.target.getBounds());
+    //}).addTo(map);
+
+    // Array to store marker objects in order.
+    var markers = [];
+    // Index of the currently selected point for insertion (-1 means no selection).
+    var selectedIndex = -1;
+    // Create a polyline that will connect the marker points.
+    var polyline = L.polyline([], { color: 'blue' }).addTo(map);
+
+    // Function to update the polyline connecting all markers.
+    function updatePolyline() {
+        var latlngs = markers.map(function(marker) {
+            return marker.getLatLng();
+        });
+        polyline.setLatLngs(latlngs);
+    }
+
+    // Function to update the sidebar list of points.
+    function updatePointsList() {
+        var list = document.getElementById('pointsList');
+        list.innerHTML = '';
+        markers.forEach(function(marker, index) {
+            var li = document.createElement('li');
+            var latlng = marker.getLatLng();
+            li.textContent = 'Point ' + (index + 1) + ': (' + latlng.lat.toFixed(4) + ', ' + latlng.lng.toFixed(4) + ')';
+            li.style.cursor = 'pointer';
+            li.style.padding = '4px';
+            li.style.border = '1px solid #ccc';
+            li.style.marginBottom = '4px';
+            li.style.backgroundColor = (index === selectedIndex) ? '#ddd' : '';
+            li.addEventListener('click', function() {
+                // Toggle selection: clicking an already-selected point deselects it.
+                selectedIndex = (selectedIndex === index) ? -1 : index;
+                updatePointsList();
+            });
+            list.appendChild(li);
+        });
+    }
+
+    // Map click event: add a new marker.
+    map.on('click', function(e) {
+        var latlng = e.latlng;
+        var marker = L.marker(latlng).addTo(map);
+        
+        // If a point is selected in the list, insert after that point.
+        if (selectedIndex >= 0 && selectedIndex < markers.length) {
+            markers.splice(selectedIndex + 1, 0, marker);
+            // Reset selection after insertion.
+            selectedIndex = -1;
+        } else {
+            // Otherwise, add the marker to the end.
+            markers.push(marker);
+        }
+        
+        // Attach a click handler to remove the marker.
+        marker.on('click', function(ev) {
+            // Prevent the map click event from firing.
+            ev.originalEvent.stopPropagation();
+            var idx = markers.indexOf(marker);
+            if (idx !== -1) {
+                markers.splice(idx, 1);
+                // Adjust selectedIndex if needed.
+                if (selectedIndex === idx) {
+                    selectedIndex = -1;
+                } else if (selectedIndex > idx) {
+                    selectedIndex--;
+                }
+                map.removeLayer(marker);
+                updatePolyline();
+                updatePointsList();
+            }
+        });
+        
+        updatePolyline();
+        updatePointsList();
+    });
+
+    // Save GPX button: build GPX XML and post it to the backend.
+    document.getElementById('saveBtn').addEventListener('click', function() {
+        var gpx = '<?xml version="1.0" encoding="UTF-8"?>\n';
+        gpx += '<gpx version="1.1" creator="LeafletGPXApp">\n';
+        gpx += '<trk><name>Track</name><trkseg>\n';
+        markers.forEach(function(marker) {
+            var latlng = marker.getLatLng();
+            gpx += '<trkpt lat="' + latlng.lat + '" lon="' + latlng.lng + '"></trkpt>\n';
+        });
+        gpx += '</trkseg></trk>\n';
+        gpx += '</gpx>';
+        
+        fetch('/savegpx', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/xml' },
+            body: gpx
+        }).then(function(response) {
+            if (response.ok) {
+                alert('GPX saved successfully!');
+            } else {
+                alert('Error saving GPX.');
+            }
+        });
+    });
+});
+			`)),
+				),
+			).RenderPageCtx(r.Context(), w, r)
+		}
+	})
+
+	m.HandleFunc("/map", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "xctf/index.html")
+	})
+
+	m.HandleFunc("/map/main.css", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "xctf/main.css")
+	})
+
+	m.HandleFunc("/map/script.js", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "xctf/script.js")
+	})
+
+	uploadDir := func(id string) string {
+		return path.Join("data/xctf/", id)
+	}
+
+	m.HandleFunc("/competition/{id}/upload", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		switch r.Method {
+		case http.MethodPost:
+			r.ParseMultipartForm(10 << 20)
+
+			f, h, err := r.FormFile("file")
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			defer f.Close()
+
+			if h.Size > 10*1024*1024 {
+				http.Error(w, "File is too large must be < 10mb", http.StatusBadRequest)
+				return
+			}
+
+			ext := filepath.Ext(h.Filename)
+
+			ud := uploadDir(id)
+			if err = os.MkdirAll(ud, os.ModePerm); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			name := path.Join(ud, uuid.NewString()+ext)
+			o, err := os.Create(name)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			defer o.Close()
+
+			if _, err = io.Copy(o, f); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			// TODO https
+			w.Write([]byte(fmt.Sprintf("/%s", name)))
+			return
+		}
+		w.Write([]byte("invalid method"))
+	})
+
+	adminRouteMiddleware := func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			u, err := d.Session.GetUserID(r.Context())
+			if err != nil {
+				http.Redirect(w, r, fmt.Sprintf("/login?next=%s/admin", d.BaseURL), http.StatusFound)
+				return
+			}
+
+			var user mmodels.User
+			if err := db.Preload("GroupMemberships.Group").First(&user, "id = ?", u).Error; err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			for _, gm := range user.GroupMemberships {
+				if gm.Group.Name == "xctf-2025" {
+					next(w, r)
+				}
+			}
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+		}
+	}
+	m.HandleFunc("/competition/{id...}", adminRouteMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), "baseURL", d.BaseURL+"/competition")
+
+		u, err := d.Session.GetUserID(r.Context())
+		if err != nil {
+			http.Redirect(w, r, "/login?next="+d.BaseURL, http.StatusFound)
 			return
 		}
 		var user mmodels.User
@@ -182,6 +594,13 @@ func New(d deps.Deps) *http.ServeMux {
 				return
 			}
 
+			ud := uploadDir(id)
+			files, err := os.ReadDir(ud)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
 			DefaultLayout(
 				Div(
 					Class("p-5 max-w-7xl mx-auto"),
@@ -191,48 +610,71 @@ func New(d deps.Deps) *http.ServeMux {
 					Div(Id("error"), Class("alert alert-error hidden")),
 					getGroupList(),
 					Div(Class("divider")),
-					Form(
-						Class("flex flex-col space-y-4"),
-						Div(Text("new competition")),
-						HxPost("/"+id),
-						HxTarget("#competition-list"),
-						//BuildFormCtx(BuildCtx{
-						//	CurrentFieldPath: "",
-						//	Name:             "competition",
-						//}, competition),
-						Input(Class("input"), Type("text"), Value(competition.Name), Name("name"), Placeholder("Name")),
-						Div(
-							Class("form-control"),
-							Label(
-								Class("label cursor-pointer"),
-								Span(Class("label-text"), Text("active")),
-								Input(Type("checkbox"), Name("active"), Checked(competition.Active), Class("checkbox checkbox-primary")),
-							),
-						),
-						Input(Class("input"), Id("competition-graph"), Type("hidden"), Value(competition.Graph), Name("graph")),
-						Button(Class("btn"), Type("submit"), Text("Save")),
-					),
 					Div(
-						Script(Attr("src", "/static/leapclient.js")),
-						Script(Attr("src", "/static/leap-bind-textarea.js")),
-						Link(Rel("stylesheet"), Attr("href", "/static/code/monaco.css")),
-						Div(Class("w-full h-full"), Id("monaco-editor"), Attr("data-props", string(mp))),
-						Script(Attr("src", "/static/code/monaco.js"), Attr("type", "module")),
-					),
-					Ch(func() []*Node {
-						var chals []*Node
-						for _, n := range g.Nodes {
-							chals = append(chals, Li(
-								Class("flex items-center justify-between gap-x-6 py-5"),
-								Div(
-									Class("min-w-0"),
-									A(Class("btn"), Href("/"+id+"/"+n.ID), Text(n.Name)),
-									A(Class("btn"), Href("/"+id+"/"+n.ID+"/ai"), Text("ai")),
+						Form(
+							Class("flex flex-col space-y-4"),
+							Div(Text("update competition")),
+							HxPost("/"+id),
+							HxTarget("#competition-list"),
+							//BuildFormCtx(BuildCtx{
+							//	CurrentFieldPath: "",
+							//	Name:             "competition",
+							//}, competition),
+							Input(Class("input"), Type("text"), Value(competition.Name), Name("name"), Placeholder("Name")),
+							Div(
+								Class("form-control"),
+								Label(
+									Class("label cursor-pointer"),
+									Span(Class("label-text"), Text("active")),
+									Input(Type("checkbox"), Name("active"), Checked(competition.Active), Class("checkbox checkbox-primary")),
 								),
-							))
-						}
-						return chals
-					}()),
+							),
+							Input(Class("input"), Id("competition-graph"), Type("hidden"), Value(competition.Graph), Name("graph")),
+							Button(Class("btn"), Type("submit"), Text("Save")),
+						),
+						Div(
+							Script(Attr("src", "/static/leapclient.js")),
+							Script(Attr("src", "/static/leap-bind-textarea.js")),
+							Link(Rel("stylesheet"), Attr("href", "/static/code/monaco.css")),
+							Div(Class("w-full h-full"), Id("monaco-editor"), Attr("data-props", string(mp))),
+							Script(Attr("src", "/static/code/monaco.js"), Attr("type", "module")),
+						),
+						Div(
+							Class("grid grid-cols-4 gap-4"),
+							Ch(func() []*Node {
+								var chals []*Node
+								for _, n := range g.Nodes {
+									chals = append(chals, Div(
+										Class("card shadow-xl"),
+										Div(
+											Class("card-body"),
+											Div(Class("card-title"), Text(n.Name)),
+											Div(Class("card-actions justify-end"),
+												A(Class("btn"), Href("/"+id+"/"+n.ID), Text("view")),
+												A(Class("btn"), Href("/"+id+"/"+n.ID+"/ai"), Text("ai")),
+											),
+										),
+									))
+								}
+								return chals
+							}()),
+						),
+					),
+					Div(Class("divider")),
+					Div(
+						H1(T("Upload a File")),
+						Form(Method("POST"), Action("/"+id+"/upload"), Attr("enctype", "multipart/form-data"),
+							Input(Type("file"), Id("file"), Name("file"), Attr("required", "true")),
+							Button(Type("submit"), T("Submit")),
+						),
+						func() *Node {
+							var nodes []*Node
+							for _, f := range files {
+								nodes = append(nodes, A(Attr("href", "/data/xctf/"+id+"/"+f.Name()), Text(f.Name())))
+							}
+							return Ch(nodes)
+						}(),
+					),
 				),
 			).RenderPageCtx(ctx, w, r)
 		case http.MethodPost:
@@ -315,8 +757,8 @@ func New(d deps.Deps) *http.ServeMux {
 			}
 			getGroupList().RenderPageCtx(ctx, w, r)
 		}
-	})
-	m.HandleFunc("/{compid}/{chalid}/ai", func(w http.ResponseWriter, r *http.Request) {
+	}))
+	m.HandleFunc("/competition/{compid}/{chalid}/ai", func(w http.ResponseWriter, r *http.Request) {
 		var t chalgen.CMS
 		schema, err := jsonschema.GenerateSchemaForType(t)
 		if err != nil {
@@ -378,8 +820,8 @@ You will generate cyber forensic evidence based on a provided story line and typ
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(t)
 	})
-	m.HandleFunc("/{compid}/{chalid}", Handle(d))
-	m.HandleFunc("/{compid}/{chalid}/{path...}", Handle(d))
+	m.HandleFunc("/competition/{compid}/{chalid}", Handle(d))
+	m.HandleFunc("/competition/{compid}/{chalid}/{path...}", Handle(d))
 
 	g := NewGraph(d)
 	m.Handle("/graph", http.StripPrefix("/graph", g))
@@ -388,12 +830,25 @@ You will generate cyber forensic evidence based on a provided story line and typ
 }
 
 func Handle(d deps.Deps) http.HandlerFunc {
+	ChalURL := func(scheme, compId, chalID, host string) string {
+		path := fmt.Sprintf("%s/competition/%s/%s", d.BaseURL, compId, chalID)
+		if host == "" {
+			return path
+		}
+		u := url.URL{
+			// TODO breadchris check if the original request was https
+			Scheme: scheme,
+			Host:   host,
+			Path:   path,
+		}
+		return u.String()
+	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		compId := r.PathValue("compid")
 		chalId := r.PathValue("chalid")
 		p := r.PathValue("path")
 
-		baseURL := Fmt("/xctf/%s/%s", compId, chalId)
+		baseURL := Fmt("%s/competition/%s/%s", d.BaseURL, compId, chalId)
 		ctx := context.WithValue(r.Context(), "baseURL", baseURL)
 
 		//baseURL := fmt.Sprintf("/play/%s/%s", compId, chalId)
@@ -447,6 +902,12 @@ func Handle(d deps.Deps) http.HandlerFunc {
 				view = hex.EncodeToString(xorEncryptDecrypt([]byte(u.Plaintext), []byte(u.Key)))
 			case *chalgen.PassShare:
 				view = base64.StdEncoding.EncodeToString([]byte(chalURL))
+			case *chalgen.CMS:
+				view = chalURL
+			case *chalgen.UrlEncode:
+				view = url.QueryEscape(u.Value)
+			case *chalgen.File:
+				view = path.Join("/data/xctf", compId, u.Path)
 			}
 			if view != "" {
 				challenges[n.Name] = view
@@ -481,6 +942,21 @@ func Handle(d deps.Deps) http.HandlerFunc {
 		for _, n := range graph.Nodes {
 			if n.ID == chalId {
 				switch u := n.Challenge.Value.(type) {
+				case *chalgen.Text:
+					t, err := templChals(u.Value)
+					if err != nil {
+						http.Error(w, err.Error(), http.StatusInternalServerError)
+						return
+					}
+					renderer := blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{})
+					b := blackfriday.Run([]byte(t), blackfriday.WithRenderer(renderer))
+					DefaultLayout(
+						Div(
+							Class("p-5 max-w-4xlg mx-auto"),
+							Raw(string(b)),
+						),
+					).RenderPageCtx(ctx, w, r)
+					return
 				case *chalgen.Site:
 					for _, ro := range u.Routes {
 						if ro.Route == p {
@@ -499,26 +975,24 @@ func Handle(d deps.Deps) http.HandlerFunc {
 						}
 					}
 				case *chalgen.CMS:
-					if p == "backup" {
-						records := [][]string{
-							{"first_name", "last_name", "username"},
-							{"Rob", "Pike", "rob"},
-							{"Ken", "Thompson", "ken"},
-							{"Robert", "Griesemer", "gri"},
-						}
+					if p == "log" {
+						fillers := defaultFillerContent()
+						logEntries := generateAccessLogEntries(100, fillers)
+						logEntries = append(logEntries, AccessLogEntry{
+							Timestamp:      time.Now().Format(time.RFC3339),
+							UserID:         "g3tl0st",
+							IPAddress:      "localhost:9000",
+							Method:         "GET",
+							URL:            "/backups",
+							Status:         "200",
+							ResponseTimeMs: "100",
+							Referrer:       "",
+							UserAgent:      "",
+						})
 
-						wr := csv.NewWriter(w)
-
-						for _, record := range records {
-							if err := wr.Write(record); err != nil {
-								log.Fatalln("error writing record to csv:", err)
-							}
-						}
-
-						wr.Flush()
-
-						if err := wr.Error(); err != nil {
+						if err := writeAccessLogCSV(w, logEntries); err != nil {
 							http.Error(w, err.Error(), http.StatusInternalServerError)
+							return
 						}
 						return
 					}
@@ -526,8 +1000,22 @@ func Handle(d deps.Deps) http.HandlerFunc {
 						DefaultLayout(
 							Div(
 								Class("p-5 max-w-lg mx-auto"),
-								Ul(
-									Li(A(Href("/backup"), Text("backup"))),
+								Div(
+									Class("navbar bg-base-100"),
+									Div(Class("flex-1"), A(Class("btn btn-ghost text-xl"), Text("Library Database"))),
+									Div(
+										Class("flex-none"),
+										Ul(
+											Class("menu menu-horizontal px-1"),
+											Li(A(Href("/backups"), Text("backups"))),
+										),
+									),
+								),
+								Div(
+									Class("p-5"),
+									Ul(
+										Li(A(Href("/log"), Text("access log"))),
+									),
 								),
 							),
 						).RenderPageCtx(ctx, w, r)
@@ -541,14 +1029,14 @@ func Handle(d deps.Deps) http.HandlerFunc {
 					}
 
 					// batch insert u.Items into db
-					stmt, err := db.Prepare("INSERT INTO books(title, content, author, fees_owed) values(?, ?, ?, ?)")
+					stmt, err := db.Prepare("INSERT INTO books(title, content, author, fees_owed, deleted) values(?, ?, ?, ?, ?)")
 					if err != nil {
 						http.Error(w, err.Error(), http.StatusInternalServerError)
 						return
 					}
 
 					for _, item := range u.Items {
-						_, err := stmt.Exec(item.Title, item.Content, item.Author, item.FeesOwed)
+						_, err := stmt.Exec(item.Title, item.Content, item.Author, item.FeesOwed, item.Deleted)
 						if err != nil {
 							http.Error(w, err.Error(), http.StatusInternalServerError)
 							return
@@ -640,12 +1128,15 @@ func Handle(d deps.Deps) http.HandlerFunc {
 					).RenderPageCtx(ctx, w, r)
 					return
 				case *chalgen.Twitter:
-					for _, p := range u.Posts {
-						p.Content, err = templChals(p.Content)
+					for i, p := range u.Posts {
+						u.Posts[i].Content, err = templChals(p.Content)
 						if err != nil {
 							http.Error(w, err.Error(), http.StatusInternalServerError)
 							return
 						}
+						renderer := blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{})
+						b := blackfriday.Run([]byte(u.Posts[i].Content), blackfriday.WithRenderer(renderer))
+						u.Posts[i].Content = string(b)
 					}
 					RenderTwitter(TwitterState{
 						Flag:  n.Flag,
@@ -653,15 +1144,15 @@ func Handle(d deps.Deps) http.HandlerFunc {
 					}).RenderPageCtx(ctx, w, r)
 					return
 				case *chalgen.FileManager:
-					var sess SessionState
+					var username string
 					chatState := d.Session.Get(r.Context(), chalId)
 					if chatState != nil {
-						ss, ok := chatState.(SessionState)
+						ss, ok := chatState.(string)
 						if !ok {
 							http.Error(w, "Failed to parse session", http.StatusInternalServerError)
 							return
 						}
-						sess = ss
+						username = ss
 					}
 					if err := r.ParseForm(); err != nil {
 						http.Error(w, "Failed to parse the form", http.StatusBadRequest)
@@ -674,13 +1165,16 @@ func Handle(d deps.Deps) http.HandlerFunc {
 						w.WriteHeader(http.StatusFound)
 						return
 					}
+					if parts[len(parts)-1] == "logout" {
+						d.Session.Remove(r.Context(), chalId)
+						w.Header().Set("Location ", baseURL)
+						w.WriteHeader(http.StatusFound)
+						return
+					}
 					if parts[len(parts)-1] == "login" {
 						password := r.FormValue("password")
 						if u.Password == password {
-							sess.User = chalgen.User{
-								Username: "user",
-							}
-							d.Session.Put(r.Context(), chalId, sess)
+							d.Session.Put(r.Context(), chalId, "user")
 						}
 						w.Header().Set("Location", baseURL)
 						w.WriteHeader(http.StatusFound)
@@ -698,23 +1192,27 @@ func Handle(d deps.Deps) http.HandlerFunc {
 					}
 					u.URLs = newUrls
 
-					DefaultLayout(FileManager(FileManagerState{
-						Flag:    n.Flag,
-						Session: sess,
-						URL: FileManagerURL{
-							Login: baseURL + "/login",
-						},
-					}, u)).RenderPageCtx(ctx, w, r)
+					DefaultLayout(
+						Div(Class("p-5 max-w-lg mx-auto"),
+							FileManager(FileManagerState{
+								Flag:     n.Flag,
+								Username: username,
+								URL: FileManagerURL{
+									Login: baseURL + "/login",
+								},
+							}, u),
+						),
+					).RenderPageCtx(ctx, w, r)
 				case *chalgen.Slack:
-					var sess SessionState
+					var username string
 					chatState := d.Session.Get(r.Context(), chalId)
 					if chatState != nil {
-						ss, ok := chatState.(SessionState)
+						ss, ok := chatState.(string)
 						if !ok {
 							http.Error(w, "Failed to parse session", http.StatusInternalServerError)
 							return
 						}
-						sess = ss
+						username = ss
 					}
 					if err := r.ParseForm(); err != nil {
 						http.Error(w, "Failed to parse the form", http.StatusBadRequest)
@@ -732,8 +1230,8 @@ func Handle(d deps.Deps) http.HandlerFunc {
 						password := r.FormValue("password")
 						for _, us := range u.Users {
 							if us.Username == username && us.Password == password {
-								sess.User = us
-								d.Session.Put(r.Context(), chalId, sess)
+								username = us.Username
+								d.Session.Put(r.Context(), chalId, username)
 							}
 						}
 						w.Header().Set("Location", baseURL)
@@ -749,12 +1247,12 @@ func Handle(d deps.Deps) http.HandlerFunc {
 						}
 					}
 
-					if sess.User.Username != "" {
+					if username != "" {
 						u.Channels = func() []chalgen.Channel {
 							var cs []chalgen.Channel
 							for _, c := range u.Channels {
 								for _, us := range c.Usernames {
-									if us == sess.User.Username {
+									if us == username {
 										cs = append(cs, c)
 									}
 								}
@@ -788,10 +1286,61 @@ func Handle(d deps.Deps) http.HandlerFunc {
 					DefaultLayout(Chat(u, ChatState{
 						Flag:       n.Flag,
 						UserLookup: userLookup,
-						Session:    sess,
+						Username:   username,
 						Channel:    c,
 					})).RenderPageCtx(ctx, w, r)
 					return
+				case *chalgen.Zip:
+					err := CreateEncryptedZip("data/zip", "password", "data/zipout.zip")
+					if err != nil {
+						http.Error(w, err.Error(), http.StatusInternalServerError)
+						return
+					}
+
+					f, err := os.Open("data/zipout.zip")
+					if err != nil {
+						http.Error(w, err.Error(), http.StatusInternalServerError)
+						return
+					}
+
+					w.Header().Set("Content-Type", "application/zip")
+					w.Header().Set("Content-Disposition", "attachment; filename=files.zip")
+					io.Copy(w, f)
+					return
+				case *chalgen.Exif:
+					fi := "/Users/hacked/Downloads/1999 Happy Meal Lego.jpg"
+
+					intfc, _ := jis.NewJpegMediaParser().ParseFile(fi)
+					sl := intfc.(*jis.SegmentList)
+					ib, _ := sl.ConstructExifBuilder()
+					ifd0Ib, _ := exif.GetOrCreateIbFromRootIb(ib, "IFD0")
+					ifdIb, _ := exif.GetOrCreateIbFromRootIb(ib, "IFD")
+
+					//g := exif.GpsDegrees{
+					//	Degrees: 0,
+					//	Minutes: 0,
+					//	Seconds: 0,
+					//}
+					//gi := exif.GpsInfo{
+					//	Latitude:  g,
+					//	Longitude: g,
+					//}
+					_ = ifd0Ib.SetStandardWithName("Comment", u.Value)
+					_ = ifdIb.SetStandardWithName("DateTimeOriginal", time.Date(2021, time.January, 1, 0, 0, 0, 0, time.UTC))
+					//err := ib.AddStandard(exifcommon.IfdPathStandardGps.TagId(), gi)
+					//if err != nil {
+					//	http.Error(w, err.Error(), http.StatusInternalServerError)
+					//	return
+					//}
+
+					_ = sl.SetExif(ib)
+					//f, _ := os.OpenFile("/tmp/1999 Happy Meal Lego.jpg", os.O_RDWR|os.O_CREATE, 0755)
+					//defer f.Close()
+					//_ = sl.Write(f)
+
+					w.Header().Set("Content-Type", "image/jpeg")
+					w.Header().Set("Content-Disposition", "attachment; filename=file.jpg")
+					_ = sl.Write(w)
 				case *chalgen.Phone:
 					var sess PhoneState
 					chatState := d.Session.Get(r.Context(), chalId)
@@ -835,327 +1384,6 @@ func Handle(d deps.Deps) http.HandlerFunc {
 						}, u),
 					).RenderPageCtx(ctx, w, r)
 					return
-				/*
-					case *Node_Base:
-						switch t := u.Base.Type.(type) {
-						case *Challenge_Audioplayer:
-							t.Audioplayer.Songs = append(t.Audioplayer.Songs, &Song{
-								Name:   n.Meta.Flag,
-								Artist: "flag",
-							})
-							templ.Handler(tmpl.Page(tmpl.AudioPlayer(t.Audioplayer))).ServeHTTP(w, r)
-							return
-						case *Challenge_Data:
-							w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
-							w.Write([]byte(t.Data.Data))
-							return
-						case *Challenge_Pdf:
-							pdf := fpdf.New("P", "mm", "A4", "")
-							pdf.AddPage()
-							pdf.SetFont("Arial", "", 12)
-							pdf.SetFont("Arial", "", 12)
-							pdf.MultiCell(0, 10, t.Pdf.Content, "", "", false)
-							pdf.Ln(5)
-							w.Header().Set("content-type", "application/pdf")
-							err = pdf.Output(w)
-							if err != nil {
-								slog.Error("failed to generated pdf", "err", err)
-								http.Error(w, "failed to generate pdf", http.StatusBadRequest)
-								return
-							}
-							return
-						case *Challenge_Maze:
-							if err := r.ParseForm(); err != nil {
-								http.Error(w, "Failed to parse the form", http.StatusBadRequest)
-								return
-							}
-							var solvedPaths []string
-							if p == "solve" {
-								for _, path := range t.Maze.Paths {
-									solved := true
-									for _, coord := range path.Coords {
-										b := fmt.Sprintf("%d:%d", coord.Row, coord.Col)
-										if r.Form.Get(b) != "on" {
-											solved = false
-											break
-										}
-									}
-									if solved {
-										solvedPaths = append(solvedPaths, path.Result)
-									}
-								}
-							}
-							if p == "qr" {
-								var (
-									png []byte
-									ok  bool
-								)
-								v := r.FormValue("value")
-								if png, ok = s.qrMemo[v]; !ok {
-									png, err = qrcode.Encode(v, qrcode.Medium, 256)
-									if err != nil {
-										http.Error(w, "failed to create qr code", http.StatusBadRequest)
-										return
-									}
-								}
-								w.Header().Set("Content-Type", "image/png")
-								w.Write(png)
-								return
-							}
-							templ.Handler(tmpl.Page(tmpl.Maze(tmpl.MazeState{
-								QR: func(s string) string {
-									return fmt.Sprintf("%s/qr?value=%s", baseURL, s)
-								},
-								Solve:       templ.URL(baseURL + "/solve"),
-								SolvedPaths: solvedPaths,
-							}, t.Maze))).ServeHTTP(w, r)
-							return
-						case *Challenge_Filemanager:
-							var sess tmpl.SessionState
-							chatState := s.manager.GetChalState(r.Context(), chalId)
-							if chatState != nil {
-								ss, ok := chatState.(tmpl.SessionState)
-								if !ok {
-									http.Error(w, "Failed to parse session", http.StatusInternalServerError)
-									return
-								}
-								sess = ss
-							}
-							if err := r.ParseForm(); err != nil {
-								http.Error(w, "Failed to parse the form", http.StatusBadRequest)
-								return
-							}
-							if p == "logout" {
-								s.manager.RemoveChalState(r.Context(), chalId)
-								w.Header().Set("Location", baseURL)
-								w.WriteHeader(http.StatusFound)
-								return
-							}
-							if p == "login" {
-								password := r.FormValue("password")
-								if t.Filemanager.Password == password {
-									sess.User = &User{
-										Username: "user",
-									}
-									s.manager.SetChalState(r.Context(), chalId, sess)
-								}
-								w.Header().Set("Location", baseURL)
-								w.WriteHeader(http.StatusFound)
-								return
-							}
-
-							var newUrls []string
-							for _, ul := range t.Filemanager.Urls {
-								ul, err = templChals(ul)
-								if err != nil {
-									http.Error(w, err.Error(), http.StatusInternalServerError)
-									return
-								}
-								newUrls = append(newUrls, ul)
-							}
-							t.Filemanager.Urls = newUrls
-
-							templ.Handler(tmpl.Page(tmpl.FileManager(tmpl.FileManagerState{
-								Flag:    n.Meta.Flag,
-								Session: sess,
-								URL: tmpl.FileManagerURL{
-									Login: templ.URL(baseURL + "/login"),
-								},
-							}, t.Filemanager)), templ.WithErrorHandler(func(r *http.Request, err error) http.Handler {
-								slog.Error("failed to template phone", "err", err)
-								return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-									w.WriteHeader(http.StatusBadRequest)
-									if _, err := io.WriteString(w, err.Error()); err != nil {
-										slog.Error("failed to write response", "err", err)
-									}
-								})
-							})).ServeHTTP(w, r)
-							return
-						case *Challenge_Exif:
-							// TODO breadchris generate exif image
-							w.Header().Set("Content-Type", "image/jpeg")
-							w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s.jpg", "image"))
-							if err != nil {
-								http.Error(w, err.Error(), http.StatusInternalServerError)
-								return
-							}
-							return
-						case *Challenge_Pcap:
-							w.Header().Set("Content-Type", "application/vnd.tcpdump.pcap")
-							w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s.pcap", "asdf"))
-							err = s.NewPCAP(w, t.Pcap)
-							if err != nil {
-								http.Error(w, err.Error(), http.StatusInternalServerError)
-							}
-							return
-						case *Challenge_Phone:
-							var sess tmpl.PhoneState
-							chatState := s.manager.GetChalState(r.Context(), chalId)
-							if chatState != nil {
-								ss, ok := chatState.(tmpl.PhoneState)
-								if !ok {
-									http.Error(w, "Failed to parse session", http.StatusInternalServerError)
-									return
-								}
-								sess = ss
-							}
-							if p == "tracker/login" {
-								password := r.FormValue("password")
-								if sess.NextAttempt.After(time.Now()) {
-									http.Error(w, "You must wait 1 minute before trying again", http.StatusBadRequest)
-									return
-								}
-								for _, app := range t.Phone.Apps {
-									switch t := app.Type.(type) {
-									case *App_Tracker:
-										if t.Tracker.Password == password {
-											// TODO breadchris set message that user is logged in
-											sess.TrackerAuthed = true
-											s.manager.SetChalState(r.Context(), chalId, sess)
-										}
-									}
-								}
-							}
-							for _, app := range t.Phone.Apps {
-								app.Url, err = templChals(app.Url)
-								if err != nil {
-									http.Error(w, err.Error(), http.StatusInternalServerError)
-									return
-								}
-							}
-							templ.Handler(tmpl.Page(tmpl.Phone(tmpl.PhoneState{
-								Flag:          n.Meta.Flag,
-								TrackerLogin:  templ.URL(baseURL + "/tracker/login"),
-								TrackerAuthed: sess.TrackerAuthed,
-							}, t.Phone)), templ.WithErrorHandler(func(r *http.Request, err error) http.Handler {
-								slog.Error("failed to template phone", "err", err)
-								return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-									w.WriteHeader(http.StatusBadRequest)
-									if _, err := io.WriteString(w, err.Error()); err != nil {
-										slog.Error("failed to write response", "err", err)
-									}
-								})
-							})).ServeHTTP(w, r)
-							return
-						case *Challenge_Slack:
-						case *Challenge_Twitter:
-						case *Challenge_Passshare:
-							st := tmpl.PassShareState{
-								BaseURL: baseURL,
-							}
-							if p == "solve" {
-								w.Header().Set("Content-Type", "application/json")
-								w.WriteHeader(http.StatusOK)
-								type req struct {
-									Hash string `json:"hash"`
-								}
-								type res struct {
-									Success  bool   `json:"success"`
-									Password string `json:"password"`
-									Flag     string `json:"flag"`
-								}
-								writeRes := func(s bool, p string) {
-									re := res{
-										Success: s,
-									}
-									if s {
-										re.Password = p
-										re.Flag = n.Meta.Flag
-									}
-									b, _ := json.Marshal(re)
-									w.Write(b)
-								}
-								var re req
-								if err := json.NewDecoder(r.Body).Decode(&re); err != nil {
-									writeRes(false, "")
-									return
-								}
-
-								for _, sl := range t.Passshare.Solutions {
-									if re.Hash == sl.Hash {
-										writeRes(true, t.Passshare.Password)
-										return
-									}
-								}
-								writeRes(false, t.Passshare.Password)
-								return
-							}
-							templ.Handler(tmpl.Page(tmpl.PassShare(st, t.Passshare)), templ.WithErrorHandler(func(r *http.Request, err error) http.Handler {
-								slog.Error("failed to template passshare", "err", err)
-								return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-									w.WriteHeader(http.StatusBadRequest)
-									if _, err := io.WriteString(w, err.Error()); err != nil {
-										slog.Error("failed to write response", "err", err)
-									}
-								})
-							})).ServeHTTP(w, r)
-							return
-						case *Challenge_Search:
-							s := tmpl.SearchState{
-								SearchURL: templ.SafeURL(baseURL + "/search"),
-							}
-							t.Search.Password, err = templChals(t.Search.Password)
-							if err != nil {
-								http.Error(w, err.Error(), http.StatusInternalServerError)
-								return
-							}
-
-							var newEntries []string
-							for _, se := range t.Search.Entry {
-								se, err = templChals(se)
-								if err != nil {
-									http.Error(w, err.Error(), http.StatusInternalServerError)
-									return
-								}
-								newEntries = append(newEntries, se)
-							}
-							t.Search.Entry = newEntries
-
-							if p == "search" {
-								err := r.ParseForm()
-								if err != nil {
-									http.Error(w, err.Error(), http.StatusBadRequest)
-									return
-								}
-								q := r.FormValue("query")
-								r, err := performSearch(n.Meta.Flag, t.Search, q)
-								if err != nil {
-									http.Error(w, err.Error(), http.StatusInternalServerError)
-									return
-								}
-								s.Results = r
-							}
-							templ.Handler(tmpl.Page(tmpl.Search(s, t.Search))).ServeHTTP(w, r)
-							return
-						case *Challenge_Hashes:
-							s := GenerateMD5Hashes(t.Hashes)
-							w.Header().Set("Content-Disposition", "attachment; filename=hashes.txt")
-							w.Header().Set("Content-Type", "text/plain")
-							if p == "rainbow" {
-								for _, h := range s {
-									_, err := w.Write([]byte(fmt.Sprintf("%s,%s\n", h.Content, h.Hash)))
-									if err != nil {
-										http.Error(w, err.Error(), http.StatusInternalServerError)
-										return
-									}
-								}
-								return
-							}
-							_, err := w.Write([]byte(n.Meta.Flag + "\n"))
-							if err != nil {
-								http.Error(w, err.Error(), http.StatusInternalServerError)
-								return
-							}
-							for _, h := range s {
-								_, err := w.Write([]byte(h.Hash + "\n"))
-								if err != nil {
-									http.Error(w, err.Error(), http.StatusInternalServerError)
-									return
-								}
-							}
-							return
-						}
-				*/
 				default:
 					slog.Error("challenge type not defined", "compId", compId, "chalId", chalId, "name", n.Name)
 					http.NotFound(w, r)
@@ -1393,6 +1621,47 @@ func GenerateMD5Hashes(hashes *chalgen.Hashes) []MD5Hash {
 	return result
 }
 
+func createEncryptedZip(directory, password string, w io.Writer) error {
+	zipWriter := zip.NewWriter(w)
+	defer zipWriter.Close()
+
+	err := filepath.Walk(directory, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		relPath, err := filepath.Rel(directory, path)
+		if err != nil {
+			return err
+		}
+
+		file, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		zipFile, err := zipWriter.Encrypt(relPath, password, zip.AES256Encryption)
+		if err != nil {
+			return err
+		}
+
+		if _, err = io.Copy(zipFile, file); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func CreateEncryptedZip(directory, password, outputPath string) error {
 	outputFile, err := os.Create(outputPath)
 	if err != nil {
@@ -1497,18 +1766,4 @@ func mapRune(runes []rune, f func(rune) rune) []rune {
 		result = append(result, f(r))
 	}
 	return result
-}
-
-func ChalURL(scheme, compId, chalID, host string) string {
-	path := fmt.Sprintf("/xctf/%s/%s", compId, chalID)
-	if host == "" {
-		return path
-	}
-	u := url.URL{
-		// TODO breadchris check if the original request was https
-		Scheme: scheme,
-		Host:   host,
-		Path:   path,
-	}
-	return u.String()
 }

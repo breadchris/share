@@ -14,11 +14,31 @@ import {
     Edge,
     useReactFlow, OnNodesChange, OnEdgesChange, OnConnect, applyNodeChanges, applyEdgeChanges, useStoreApi,
 } from '@xyflow/react';
+import "@blocknote/core/fonts/inter.css";
+import {
+    createReactInlineContentSpec,
+    DefaultReactSuggestionItem,
+    getDefaultReactSlashMenuItems,
+    SuggestionMenuController,
+    useCreateBlockNote
+} from "@blocknote/react";
+import { BlockNoteView } from "@blocknote/mantine";
+import "@blocknote/mantine/style.css";
 
 import '@xyflow/react/dist/style.css';
 
 import {createRoot} from 'react-dom/client';
 import {Panel, PanelGroup, PanelResizeHandle} from "react-resizable-panels";
+
+import {
+    Block,
+    BlockNoteEditor,
+    BlockNoteSchema,
+    defaultBlockSpecs, defaultInlineContentSpecs,
+    filterSuggestionItems, insertOrUpdateBlock,
+    PartialBlock
+} from "@blocknote/core";
+import {CodeBlock, insertCode} from "../breadchris/CodeBlock";
 
 function useDebounce<T extends (...args: any[]) => void>(callback: T, delay: number): T {
     const timeoutRef = useRef<number>();
@@ -141,7 +161,7 @@ export default function GraphApp({ props }) {
     // }, [id, setNodes, setEdges]);
 
     const sendGraphUpdate = (nodes, edges) => {
-        fetch(`/xctf/graph/${id}`, {
+        fetch(`/xctf/graph/`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -286,9 +306,9 @@ export default function GraphApp({ props }) {
     const [flag, setFlag] = useState("");
 
     return (
-        <div style={{ width: '100vw', height: '100vh' }}>
-            <PanelGroup direction="horizontal">
-                <Panel defaultSize={20}>
+        <div style={{ width: '100%', height: '100vh' }}>
+            <PanelGroup direction="vertical">
+                <Panel defaultSize={10}>
                     <input className={"input"} onChange={(e) => {
                         setFlag(e.target.value);
                     }} placeholder={"flag"} />
@@ -297,8 +317,8 @@ export default function GraphApp({ props }) {
                         setSyncedNodes(nodes.concat([{
                             id: id,
                             position: screenToFlowPosition({
-                                x: 100,
-                                y: 100,
+                                x: 400,
+                                y: 400,
                             }),
                             type: 'evidence',
                             data: { label: flag },
@@ -346,7 +366,7 @@ export default function GraphApp({ props }) {
                         onConnectEnd={onConnectEnd}
                         fitView
                         fitViewOptions={{ padding: 2 }}
-                        nodeOrigin={[0.5, 0]}
+                        nodeOrigin={[0, 0]}
                         onConnect={onConnect}
                         onDrop={onDrop}
                         onDragOver={onDragOver}
@@ -360,6 +380,132 @@ export default function GraphApp({ props }) {
             </PanelGroup>
         </div>
     );
+}
+
+async function saveToStorage(jsonBlocks: Block[]) {
+    // Save contents to local storage. You might want to debounce this or replace
+    // with a call to your API / database.
+    localStorage.setItem("editorContent", JSON.stringify(jsonBlocks));
+}
+
+async function loadFromStorage() {
+    // Gets the previously stored editor contents.
+    const storageString = localStorage.getItem("editorContent");
+    return storageString
+        ? (JSON.parse(storageString) as PartialBlock[])
+        : undefined;
+}
+
+const schema = BlockNoteSchema.create({
+    blockSpecs: {
+        ...defaultBlockSpecs,
+        procode: CodeBlock,
+    },
+    inlineContentSpecs: {
+        ...defaultInlineContentSpecs,
+    }
+});
+
+export const Editor = ({ props }) => {
+    const sendUpdate = (doc) => {
+        fetch(`/xctf/report/`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(doc),
+        }).then((response) => {
+            if (!response.ok) {
+                console.error('Failed to update report');
+            }
+        }).catch((error) => {
+            console.error('Failed to update graph:', error);
+        });
+    }
+
+    const debouncedUpdate = useDebounce(sendUpdate, 500);
+    const [initialContent, setInitialContent] = useState<
+        PartialBlock[] | undefined | "loading"
+    >(props?.post?.Blocknote ? JSON.parse(props?.post.Blocknote) : "loading");
+
+    useEffect(() => {
+        // TODO breadchris how to handle loading from storage when blocknote is provided
+        if (!props?.post?.Blocknote) {
+            console.log("loading from storage");
+            loadFromStorage().then((content) => {
+                setInitialContent(content);
+            });
+        }
+    }, []);
+
+    const editor = useMemo(() => {
+        if (initialContent === "loading") { // || (props?.provider_url && providerRef.current === undefined)) {
+            return undefined;
+        }
+
+        // TODO breadchris when content is loaded, set the form inputs
+        const e = BlockNoteEditor.create({
+            initialContent,
+            uploadFile: async (file: File) => {
+                const body = new FormData();
+                body.append("file", file);
+
+                const ret = await fetch("/upload", {
+                    method: "POST",
+                    body: body,
+                });
+                return await ret.text();
+            },
+            schema: schema,
+        });
+
+        saveToStorage(e.document);
+
+        // (async () => {
+        //     document.getElementById("html").value = await e.blocksToFullHTML(e.document);
+        //     document.getElementById("markdown").value = await e.blocksToMarkdownLossy()
+        //     document.getElementById("blocknote").value = JSON.stringify(e.document);
+        // })();
+
+        return e;
+    }, [initialContent]);
+
+    if (editor === undefined) {
+        return <div>Loading...</div>;
+    }
+
+    return (
+        <BlockNoteView
+            editor={editor}
+            onChange={async () => {
+                saveToStorage(editor.document);
+                debouncedUpdate(editor.document);
+            }}
+            slashMenu={false}
+        >
+            <SuggestionMenuController
+                triggerCharacter={"/"}
+                getItems={async (query) =>
+                    filterSuggestionItems(
+                        [
+                            ...getDefaultReactSlashMenuItems(editor),
+                            insertCode(),
+                        ],
+                        query
+                    )
+                }
+            />
+        </BlockNoteView>
+    );
+}
+
+const e = document.getElementById('editor');
+if (e) {
+    const r = createRoot(e);
+    const props = e.getAttribute('props');
+    r.render((
+        <Editor props={JSON.parse(props)} />
+    ));
 }
 
 const g = document.getElementById('graph');

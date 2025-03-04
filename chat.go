@@ -339,7 +339,7 @@ func RenderChat(cs chatState) (string, error) {
 					),
 					RenderGraph(cs.Graph),
 				),
-				Script(T(`
+				Script(Raw(`
 					document.body.addEventListener('htmx:sseBeforeMessage', function (e) {
 						console.log(e);
 					})

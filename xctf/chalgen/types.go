@@ -118,6 +118,27 @@ func (s *Challenge) UnmarshalJSON(b []byte) error {
 		}
 		s.Type = t
 		s.Value = &c
+	case "url_encode":
+		var c UrlEncode
+		if err := json.Unmarshal(raw["value"], &c); err != nil {
+			return err
+		}
+		s.Type = t
+		s.Value = &c
+	case "text":
+		var c Text
+		if err := json.Unmarshal(raw["value"], &c); err != nil {
+			return err
+		}
+		s.Type = t
+		s.Value = &c
+	case "file":
+		var c File
+		if err := json.Unmarshal(raw["value"], &c); err != nil {
+			return err
+		}
+		s.Type = t
+		s.Value = &c
 	}
 	return nil
 }
@@ -160,6 +181,15 @@ type SiteRoute struct {
 }
 
 type (
+	File struct {
+		Path string
+	}
+	Text struct {
+		Value string
+	}
+	UrlEncode struct {
+		Value string
+	}
 	Site struct {
 		Routes []SiteRoute
 	}
@@ -242,6 +272,9 @@ type (
 )
 
 // Implement the interface for all ChallengeType structs
+func (f File) isChallengeType()        {}
+func (*Text) isChallengeType()         {}
+func (*UrlEncode) isChallengeType()    {}
 func (*Site) isChallengeType()         {}
 func (*ImageMap) isChallengeType()     {}
 func (*CMS) isChallengeType()          {}
@@ -274,6 +307,7 @@ type CMSItem struct {
 	ISBN            string  // ISBN number
 	LibrarySection  string  // Library section
 	Borrower        string  `description:"The name of the person who has borrowed the book."`
+	Deleted         bool
 }
 
 type Song struct {

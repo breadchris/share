@@ -1,6 +1,7 @@
 package html
 
 import (
+	"github.com/google/uuid"
 	"path/filepath"
 	"strings"
 )
@@ -88,7 +89,8 @@ type Tab struct {
 	Active  bool
 }
 
-func RenderTabs(tabs []Tab) *Node {
+func RenderTabs(tabs ...Tab) *Node {
+	tabId := uuid.NewString()
 	t := Div(
 		Role("tablist"),
 		Class("tabs tabs-bordered w-full"),
@@ -96,7 +98,7 @@ func RenderTabs(tabs []Tab) *Node {
 	for _, tab := range tabs {
 		input := Input(
 			Type("radio"),
-			Name("my_tabs_1"),
+			Name(tabId),
 			Role("tab"),
 			Class("tab"),
 			AriaLabel(tab.Title),

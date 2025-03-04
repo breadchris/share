@@ -18,4 +18,5 @@ type Deps struct {
 	AI                *openai.Client
 	Config            config.AppConfig
 	WebsocketRegistry *websocket.CommandRegistry
+	BaseURL           string
 }

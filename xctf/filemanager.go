@@ -6,10 +6,10 @@ import (
 )
 
 type FileManagerState struct {
-	Flag    string
-	BaseURL string
-	Session SessionState
-	URL     FileManagerURL
+	Flag     string
+	BaseURL  string
+	Username string
+	URL      FileManagerURL
 }
 
 type FileManagerURL struct {
@@ -17,9 +17,10 @@ type FileManagerURL struct {
 }
 
 func FileManager(state FileManagerState, fileManager *chalgen.FileManager) *Node {
-	if state.Session.User.Username != "" {
-		return Div(Class("mx-4"),
+	if state.Username != "" {
+		return Div(Class("mx-4 space-y-4"),
 			P(T(state.Flag)),
+			A(Class("btn"), Href(state.BaseURL+"/logout"), T("logout")),
 			Ul(Class("menu menu-xs bg-base-200 rounded-lg max-w-xs w-full"),
 				func() *Node {
 					items := []*Node{}

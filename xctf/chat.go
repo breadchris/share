@@ -9,13 +9,9 @@ import (
 
 type ChatState struct {
 	Flag       string
-	Session    SessionState
+	Username   string
 	Channel    chalgen.Channel
 	UserLookup map[string]chalgen.User
-}
-
-type SessionState struct {
-	User chalgen.User
 }
 
 type Message struct {
@@ -25,6 +21,7 @@ type Message struct {
 }
 
 func Chat(slack *chalgen.Slack, state ChatState) *Node {
+	user, ok := state.UserLookup[state.Username]
 	return Div(Class("flex flex-col h-screen"),
 		Div(Class("navbar bg-base-100"),
 			Div(Class("flex-1"),
@@ -33,12 +30,12 @@ func Chat(slack *chalgen.Slack, state ChatState) *Node {
 				Ul(Class("menu menu-horizontal px-1 space-x-2"),
 					Li(A(Href("#"), T(state.Flag))),
 					func() *Node {
-						if state.Session.User.Username != "" {
+						if ok {
 							return Ch([]*Node{
-								Li(Button(Class("btn"), Attr("onclick", "my_modal_2.showModal()"), T(state.Session.User.Username))),
+								Li(Button(Class("btn"), Attr("onclick", "my_modal_2.showModal()"), T(user.Username))),
 								Dialog(Id("my_modal_2"), Class("modal"),
 									Div(Class("modal-box"),
-										T(state.Session.User.Bio)),
+										T(user.Bio)),
 									Form(Method("dialog"), Class("modal-backdrop"),
 										Button(T("close")))),
 								Li(A(Href("/logout"), T("logout"))),
@@ -73,62 +70,67 @@ func Chat(slack *chalgen.Slack, state ChatState) *Node {
 				),
 			),
 		),
-		Div(Class("flex bg-gray-900"),
-			Div(Class("w-48 bg-gray-800 text-white flex flex-col"),
-				Div(Class("px-4 py-6"),
-					H2(Class("text-xl font-semibold"), T("Channels")),
-					Ul(Class("mt-6"),
-						func() *Node {
-							var channels []*Node
-							for i, c := range slack.Channels {
-								channels = append(channels, Li(Class("mt-2"),
-									A(Href(fmt.Sprintf("/?channel_id=%d", i)), Class("flex items-center space-x-2 px-4 py-2 bg-gray-900 rounded-md"),
-										Span(T(c.Name))),
-								))
-							}
-							return Ch(channels)
-						}(),
+		If(len(slack.Channels) == 0,
+			Div(Class("flex-1 flex items-center justify-center"),
+				H1(Class("text-3xl font-semibold"), T("Login to view chat messages!")),
+			),
+			Div(Class("flex bg-gray-900"),
+				Div(Class("w-48 bg-gray-800 text-white flex flex-col"),
+					Div(Class("px-4 py-6"),
+						H2(Class("text-xl font-semibold"), T("Channels")),
+						Ul(Class("mt-6"),
+							func() *Node {
+								var channels []*Node
+								for i, c := range slack.Channels {
+									channels = append(channels, Li(Class("mt-2"),
+										A(Href(fmt.Sprintf("/?channel_id=%d", i)), Class("flex items-center space-x-2 px-4 py-2 bg-gray-900 rounded-md"),
+											Span(T(c.Name))),
+									))
+								}
+								return Ch(channels)
+							}(),
+						),
 					),
 				),
-			),
-			Div(Class("flex-1 overflow-y-auto text-white"),
-				Div(Class("px-4 py-6"),
-					H1(Class("text-3xl font-semibold"), T(state.Channel.Name)),
-					P(Class("mt-4"),
-						func() *Node {
-							var messages []*Node
-							for i, m := range state.Channel.Messages {
-								messages = append(messages,
-									Div(
-										Class("flex items-start space-x-4"),
+				Div(Class("flex-1 overflow-y-auto text-white"),
+					Div(Class("px-4 py-6"),
+						H1(Class("text-3xl font-semibold"), T(state.Channel.Name)),
+						P(Class("mt-4"),
+							func() *Node {
+								var messages []*Node
+								for i, m := range state.Channel.Messages {
+									messages = append(messages,
 										Div(
-											Class("flex-shrink-0 align-center"),
-											Img(Class("h-10 w-10 rounded-full"), Src(state.UserLookup[m.Username].Image), Alt("User avatar")),
-										),
-										Div(
-											Div(Attr("onclick", fmt.Sprintf("openModal('msg_bio_modal_%d')", i)), Class("pointer-cursor text-sm text-gray-700"), T(m.Username)),
-											Dialog(
-												Id(fmt.Sprintf("msg_bio_modal_%d", i)),
-												Class("modal"),
-												Div(
-													Class("modal-box"),
-													T(state.UserLookup[m.Username].Bio),
-												),
-												Form(
-													Method("dialog"),
-													Class("modal-backdrop"),
-													Button(T("close")),
-												),
+											Class("flex items-start space-x-4"),
+											Div(
+												Class("flex-shrink-0 align-center"),
+												Img(Class("h-10 w-10 rounded-full"), Src(state.UserLookup[m.Username].Image), Alt("User avatar")),
 											),
-											Div(Class("mt-1 text-sm font-medium"), T(m.Content)),
-											Div(Class("text-sm text-gray-700"), T(time.Unix(m.Timestamp, 0).Format(time.ANSIC))),
+											Div(
+												Div(Attr("onclick", fmt.Sprintf("openModal('msg_bio_modal_%d')", i)), Class("pointer-cursor text-sm text-gray-700"), T(m.Username)),
+												Dialog(
+													Id(fmt.Sprintf("msg_bio_modal_%d", i)),
+													Class("modal"),
+													Div(
+														Class("modal-box"),
+														T(state.UserLookup[m.Username].Bio),
+													),
+													Form(
+														Method("dialog"),
+														Class("modal-backdrop"),
+														Button(T("close")),
+													),
+												),
+												Div(Class("mt-1 text-sm font-medium"), T(m.Content)),
+												Div(Class("text-sm text-gray-700"), T(time.Unix(m.Timestamp, 0).Format(time.ANSIC))),
+											),
 										),
-									),
-								)
-								messages = append(messages, Div(Class("mt-4")))
-							}
-							return Ch(messages)
-						}(),
+									)
+									messages = append(messages, Div(Class("mt-4")))
+								}
+								return Ch(messages)
+							}(),
+						),
 					),
 				),
 			),

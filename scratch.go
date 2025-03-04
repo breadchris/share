@@ -9,10 +9,6 @@ type Item struct {
 	Value string
 }
 
-func Render() *Node {
-	return RenderComponents()
-}
-
 func RenderComponents() *Node {
 	return Html(
 		Head(

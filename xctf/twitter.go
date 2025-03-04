@@ -23,7 +23,7 @@ func RenderTwitter(s TwitterState) *Node {
 				Img(Src("https://randomuser.me/api/portraits/lego/1.jpg"), Alt("Profile Image"), Class("profile-img mr-3")),
 				Div(
 					H5(Class("card-title mb-0"), T(post.Username)),
-					P(Class("card-text mt-2"), T(post.Content)),
+					P(Class("card-text mt-2"), Raw(post.Content)),
 				),
 			),
 		))

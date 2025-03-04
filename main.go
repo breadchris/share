@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/breadchris/share/list"
+	"github.com/breadchris/share/sqlnotebook"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -84,6 +85,56 @@ func loadDB() *gorm.DB {
 	return db
 }
 
+func startXCTF(port int) error {
+	appConfig := config2.New()
+
+	s, err := session.New()
+	if err != nil {
+		log.Fatalf("Failed to create session store: %v", err)
+	}
+	db := loadDB()
+	e := NewSMTPEmail(&appConfig)
+	a := NewAuth(s, e, appConfig, db)
+
+	oai := openai.NewClient(appConfig.OpenAIKey)
+	docs := NewSqliteDocumentStore("data/docs.db")
+
+	p := func(p string, f func(d deps2.Deps) *http.ServeMux) {
+		deps := deps2.Deps{
+			DB:      db,
+			Docs:    docs,
+			Session: s,
+			AI:      oai,
+			Config:  appConfig,
+			BaseURL: p,
+		}
+		m := http.NewServeMux()
+		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			f(deps).ServeHTTP(w, r)
+		})
+		http.Handle(p+"/", http.StripPrefix(p, m))
+	}
+
+	fileUpload()
+
+	p("", xctf.New)
+	p("/user", user.New)
+
+	http.HandleFunc("/register", a.handleRegister)
+	http.HandleFunc("/account", a.accountHandler)
+	http.HandleFunc("/login", a.handleLogin)
+	http.HandleFunc("/logout", a.handleLogout)
+	http.HandleFunc("/auth/google", a.startGoogleAuth)
+	http.HandleFunc("/auth/google/callback", a.handleGoogleCallback)
+	http.HandleFunc("/static/", serveFiles("static"))
+	http.HandleFunc("/data/", serveFiles("data"))
+
+	h := s.LoadAndSave(http.DefaultServeMux)
+
+	log.Printf("Starting HTTP server on port: %d", port)
+	return http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), h)
+}
+
 func startServer(useTLS bool, port int) {
 	appConfig := config2.New()
 
@@ -135,8 +186,8 @@ func startServer(useTLS bool, port int) {
 	interpreted := func(f func(d deps2.Deps) *http.ServeMux, files ...string) *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			//code.DynamicHTTPMux(f, files...)(deps).ServeHTTP(w, r)
-			f(deps).ServeHTTP(w, r)
+			code.DynamicHTTPMux(f, files...)(deps).ServeHTTP(w, r)
+			//f(deps).ServeHTTP(w, r)
 		})
 		return m
 	}
@@ -149,6 +200,8 @@ func startServer(useTLS bool, port int) {
 	//discord.NewHandler
 	//discord.NewSession
 
+	p("/dungeon", interpreted(xctf.NewDungeon))
+	p("/sqlnotebook", interpreted(sqlnotebook.New))
 	p("/list", interpreted(list.New))
 	p("/xctf", interpreted(xctf.New))
 	p("/recipe", interpreted(NewRecipe))
@@ -275,6 +328,7 @@ func startServer(useTLS bool, port int) {
 	go func() {
 		entrypoints := []string{
 			"./graph/graph.tsx",
+			"./xctf/graph.tsx",
 			"./code/monaco.tsx",
 			//"./code/playground.ts",
 			"./music.tsx",
@@ -442,6 +496,18 @@ func main() {
 			return nil
 		},
 		Commands: []*cli.Command{
+			{
+				Name: "xctf",
+				Flags: []cli.Flag{
+					&cli.IntFlag{
+						Name:  "port",
+						Value: 8080,
+					},
+				},
+				Action: func(c *cli.Context) error {
+					return startXCTF(c.Int("port"))
+				},
+			},
 			{
 				Name: "start",
 				Flags: []cli.Flag{

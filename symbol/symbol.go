@@ -28,6 +28,7 @@
 //go:generate yaegi extract github.com/stripe/stripe-go/v80/checkout/session
 //go:generate yaegi extract github.com/PuerkitoBio/goquery
 //go:generate yaegi extract github.com/gorilla/websocket
+//go:generate yaegi extract github.com/breadchris/share/websocket
 //go:generate yaegi extract github.com/russross/blackfriday/v2
 //go:generate yaegi extract github.com/go-shiori/dom
 //go:generate yaegi extract github.com/go-shiori/go-readability
@@ -48,6 +49,9 @@
 //go:generate yaegi extract github.com/google/gopacket/layers
 //go:generate yaegi extract github.com/breadchris/share/xctf/chalgen
 //go:generate yaegi extract github.com/yeka/zip
+//go:generate yaegi extract github.com/dsoprea/go-exif/v2/common
+//go:generate yaegi extract github.com/dsoprea/go-exif/v3
+//go:generate yaegi extract github.com/dsoprea/go-jpeg-image-structure/v2
 
 package symbol
 

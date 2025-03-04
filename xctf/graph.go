@@ -169,12 +169,6 @@ type Measured struct {
 }
 
 var style = `
-body, html {
-	margin: 0;
-	padding: 0;
-	height: 100%;
-	overflow: hidden;
-}
 #graph {
 	overscroll-behavior-x: contain;
 }

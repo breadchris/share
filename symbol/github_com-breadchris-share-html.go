@@ -129,6 +129,7 @@ func init() {
 		"Rect":                    reflect.ValueOf(html.Rect),
 		"Rel":                     reflect.ValueOf(html.Rel),
 		"ReloadNode":              reflect.ValueOf(html.ReloadNode),
+		"Render":                  reflect.ValueOf(html.Render),
 		"RenderDirectory":         reflect.ValueOf(html.RenderDirectory),
 		"RenderGoFunction":        reflect.ValueOf(html.RenderGoFunction),
 		"RenderHTML":              reflect.ValueOf(html.RenderHTML),

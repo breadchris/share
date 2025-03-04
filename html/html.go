@@ -12,7 +12,7 @@ import (
 
 var (
 	DaisyUI = Link(
-		Href("https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css"),
+		Href("https://cdn.jsdelivr.net/npm/daisyui@5"),
 		Attr("rel", "stylesheet"),
 		Attr("type", "text/css"),
 	)
@@ -21,7 +21,7 @@ var (
 	Hyperscript = Script(Src("https://unpkg.com/hyperscript.org@0.9.13"))
 )
 
-func DefaultLayout(n *Node) *Node {
+func DefaultLayout(n ...*Node) *Node {
 	return Html(
 		Head(
 			Meta(Charset("UTF-8")),
@@ -30,11 +30,12 @@ func DefaultLayout(n *Node) *Node {
 				"content": "width=device-width, initial-scale=1.0",
 			})),
 			DaisyUI,
-			TailwindCSS,
+			Script(Src("https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4")),
+			//TailwindCSS,
 			HTMX,
 		),
 		Body(
-			n,
+			Ch(n),
 		),
 	)
 }
@@ -194,6 +195,16 @@ func (s *Node) RenderPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Node) RenderPageCtx(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
+	_, err := w.Write([]byte(s.RenderCtx(ctx)))
+	if err != nil {
+		http.Error(w, "Error rendering HTML", http.StatusInternalServerError)
+	}
+}
+
+func Render(root string, w http.ResponseWriter, s *Node) {
+	ctx := context.WithValue(context.Background(), "baseURL", root)
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 	_, err := w.Write([]byte(s.RenderCtx(ctx)))

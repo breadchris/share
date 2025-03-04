@@ -260,17 +260,15 @@ func Render() *Node {
 }
 `
 		Div(
-			RenderTabs([]Tab{
-				{
-					Title: "examples",
-					Content: Ul(
-						Class("menu bg-base-200 rounded-box w-56"),
-						Li(
-							Pre(Id("example"), OnClick("sendEvent('example', {id: \"example\"})"), T(code)),
-						),
+			RenderTabs(Tab{
+				Title: "examples",
+				Content: Ul(
+					Class("menu bg-base-200 rounded-box w-56"),
+					Li(
+						Pre(Id("example"), OnClick("sendEvent('example', {id: \"example\"})"), T(code)),
 					),
-					Active: true,
-				},
+				),
+				Active: true,
 			}),
 		).RenderPage(w, r)
 	})

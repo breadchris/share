@@ -259,12 +259,10 @@ func RegisterRoutes(logger log.Modular) *Leaps {
 			//w.Write(data)
 
 			w.Write([]byte(
-				html.RenderTabs([]html.Tab{
-					{
-						Title:   "files",
-						Content: html.GenerateRenderDirectory(authenticator.GetPaths()),
-						Active:  true,
-					},
+				html.RenderTabs(html.Tab{
+					Title:   "files",
+					Content: html.GenerateRenderDirectory(authenticator.GetPaths()),
+					Active:  true,
 				}).Render(),
 			))
 		})
