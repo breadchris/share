@@ -190,7 +190,7 @@ func New(d deps.Deps) *http.ServeMux {
 		}
 
 		var (
-			tabs  *Node
+			tabs  []*Node
 			group mmodels.Group
 		)
 		if len(user.GroupMemberships) > 0 {
@@ -246,7 +246,7 @@ func New(d deps.Deps) *http.ServeMux {
 				return
 			}
 
-			tabs.Children = append(tabs.Children,
+			tabs = append(tabs,
 				Input(AriaLabel("graph"), Class("tab"), Type("radio"), Id("tab1"), Name("tabs"), Checked(true)),
 				Div(
 					Class("tab-content border-base-300 bg-base-100 p-10"),
@@ -276,8 +276,8 @@ func New(d deps.Deps) *http.ServeMux {
 				), Nil()),
 				Div(
 					Class("tabs tabs-border"),
-					tabs,
-					Input(AriaLabel("group"), Class("tab"), Type("radio"), Id("tab3"), Name("tabs")),
+					Ch(tabs),
+					Input(AriaLabel("group"), Class("tab"), Type("radio"), Id("tab3"), Name("tabs"), If(len(tabs) == 0, Checked(true), Nil()),
 					Div(
 						Class("tab-content border-base-300 bg-base-100 p-10"),
 						groupComponent(GroupCompState{
