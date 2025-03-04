@@ -63,7 +63,12 @@ func New(d deps.Deps) *http.ServeMux {
 	}
 
 	render := func(w http.ResponseWriter, r *http.Request, page *Node) {
-		ctx := context.WithValue(r.Context(), "baseURL", d.BaseURL)
+		ctx := context.WithValue(r.Context(), "baseURL", func() string {
+			if d.BaseURL == "/" {
+				return ""
+			}
+			return d.BaseURL
+		}())
 		page.RenderPageCtx(ctx, w, r)
 	}
 
