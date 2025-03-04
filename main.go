@@ -106,7 +106,12 @@ func startXCTF(port int) error {
 			Session: s,
 			AI:      oai,
 			Config:  appConfig,
-			BaseURL: p,
+			BaseURL: func() string {
+				if p == "" {
+					return "/"
+				}
+				return p
+			}(),
 		}
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

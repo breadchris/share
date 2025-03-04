@@ -510,6 +510,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			for _, gm := range user.GroupMemberships {
 				if gm.Group.Name == "xctf-2025" {
 					next(w, r)
+					return
 				}
 			}
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
