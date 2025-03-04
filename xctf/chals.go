@@ -188,57 +188,81 @@ func New(d deps.Deps) *http.ServeMux {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		groupId := user.GroupMemberships[0].GroupID
 
-		var group mmodels.Group
-		if err := db.Preload("Members.User").First(&group, "id = ?", groupId).Error; err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+		var (
+			tabs  *Node
+			group mmodels.Group
+		)
+		if len(user.GroupMemberships) > 0 {
+			groupId := user.GroupMemberships[0].GroupID
 
-		var gs GroupState
-		err = groupState.Get(groupId, &gs)
-		if err != nil {
-			gs.Graph = Graph{
-				Nodes: []GraphNode{},
-				Edges: []GraphEdge{},
-			}
-			if err := groupState.Set(groupId, gs); err != nil {
+			if err := db.Preload("Members.User").First(&group, "id = ?", groupId).Error; err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
 			}
-		}
 
-		type Props struct {
-			Id    string `json:"id"`
-			Graph Graph  `json:"graph"`
-		}
+			var gs GroupState
+			err = groupState.Get(groupId, &gs)
+			if err != nil {
+				gs.Graph = Graph{
+					Nodes: []GraphNode{},
+					Edges: []GraphEdge{},
+				}
+				if err := groupState.Set(groupId, gs); err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+				}
+			}
 
-		p := Props{
-			Id:    groupId,
-			Graph: gs.Graph,
-		}
-		sg, err := json.Marshal(p)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+			type Props struct {
+				Id    string `json:"id"`
+				Graph Graph  `json:"graph"`
+			}
 
-		type ReportProps struct {
-			ProviderURL string     `json:"provider_url"`
-			Room        string     `json:"room"`
-			Username    string     `json:"username"`
-			Post        posts.Post `json:"post"`
-		}
-		props := ReportProps{
-			ProviderURL: d.Config.Blog.YJSURL,
-			Room:        "blog",
-			Username:    u,
-			Post:        gs.Report,
-		}
-		editorProps, err := json.Marshal(props)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			p := Props{
+				Id:    groupId,
+				Graph: gs.Graph,
+			}
+			sg, err := json.Marshal(p)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			type ReportProps struct {
+				ProviderURL string     `json:"provider_url"`
+				Room        string     `json:"room"`
+				Username    string     `json:"username"`
+				Post        posts.Post `json:"post"`
+			}
+			props := ReportProps{
+				ProviderURL: d.Config.Blog.YJSURL,
+				Room:        "blog",
+				Username:    u,
+				Post:        gs.Report,
+			}
+			editorProps, err := json.Marshal(props)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			tabs.Children = append(tabs.Children,
+				Input(AriaLabel("graph"), Class("tab"), Type("radio"), Id("tab1"), Name("tabs"), Checked(true)),
+				Div(
+					Class("tab-content border-base-300 bg-base-100 p-10"),
+					Link(Attr("rel", "stylesheet"), Attr("type", "text/css"), Attr("href", "/static/xctf/graph.css")),
+					Style(Text(style)),
+					Div(Id("graph"), Attr("data-props", string(sg))),
+					Script(Attr("src", "/static/xctf/graph.js"), Attr("type", "module")),
+				),
+				Input(AriaLabel("report"), Class("tab"), Type("radio"), Id("tab2"), Name("tabs")),
+				Div(
+					Class("tab-content border-base-300 bg-base-100 p-10"),
+					Div(Id("editor"), Attrs(map[string]string{
+						"props": string(editorProps),
+					})),
+				),
+			)
 		}
 		render(w, r, DefaultLayout(
 			Div(
@@ -252,21 +276,7 @@ func New(d deps.Deps) *http.ServeMux {
 				), Nil()),
 				Div(
 					Class("tabs tabs-border"),
-					Input(AriaLabel("graph"), Class("tab"), Type("radio"), Id("tab1"), Name("tabs"), Checked(true)),
-					Div(
-						Class("tab-content border-base-300 bg-base-100 p-10"),
-						Link(Attr("rel", "stylesheet"), Attr("type", "text/css"), Attr("href", "/static/xctf/graph.css")),
-						Style(Text(style)),
-						Div(Id("graph"), Attr("data-props", string(sg))),
-						Script(Attr("src", "/static/xctf/graph.js"), Attr("type", "module")),
-					),
-					Input(AriaLabel("report"), Class("tab"), Type("radio"), Id("tab2"), Name("tabs")),
-					Div(
-						Class("tab-content border-base-300 bg-base-100 p-10"),
-						Div(Id("editor"), Attrs(map[string]string{
-							"props": string(editorProps),
-						})),
-					),
+					tabs,
 					Input(AriaLabel("group"), Class("tab"), Type("radio"), Id("tab3"), Name("tabs")),
 					Div(
 						Class("tab-content border-base-300 bg-base-100 p-10"),
