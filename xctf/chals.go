@@ -277,7 +277,7 @@ func New(d deps.Deps) *http.ServeMux {
 				Div(
 					Class("tabs tabs-border"),
 					Ch(tabs),
-					Input(AriaLabel("group"), Class("tab"), Type("radio"), Id("tab3"), Name("tabs"), If(len(tabs) == 0, Checked(true), Nil()),
+					Input(AriaLabel("group"), Class("tab"), Type("radio"), Id("tab3"), Name("tabs"), If(len(tabs) == 0, Checked(true), Nil())),
 					Div(
 						Class("tab-content border-base-300 bg-base-100 p-10"),
 						groupComponent(GroupCompState{
