@@ -310,16 +310,9 @@ func (s *Auth) accountHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func LoginPage(s AuthState) *Node {
-	return Html(
-		Head(
-			Meta(Charset("UTF-8")),
-			Meta(Attr("name", "viewport"), Content("width=device-width, initial-scale=1.0")),
-			Title(T("Login")),
-			Link(Href("https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"), Rel("stylesheet")),
-			Script(Src("https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js")),
-		),
-		Body(Class("bg-gray-100 flex items-center justify-center min-h-screen"),
-			Div(Class("bg-white p-8 rounded shadow-md w-full max-w-md"),
+	return DefaultLayout(
+		Body(Class("flex items-center justify-center min-h-screen"),
+			Div(Class("p-8 rounded shadow-md w-full max-w-md"),
 				H1(Class("text-2xl font-bold mb-4"), T("Login")),
 
 				If(len(s.Msg) > 0,
@@ -329,19 +322,19 @@ func LoginPage(s AuthState) *Node {
 					Nil(),
 				),
 
-				A(Href("/auth/google"), Class("bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"), T("Login with Google")),
+				A(Href("/auth/google"), Class("btn"), T("Login with Google")),
 
-				Form(Method("POST"), Action("/login"), Attr("enctype", "multipart/form-data"),
-					Div(Class("mb-4"),
-						Hr(Class("my-5")),
-						Input(Type("password"), Id("secret"), Name("secret"), Placeholder("secret"), Class("shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline")),
-						Hr(Class("my-5")),
-						Input(Type("email"), Id("email"), Name("email"), Placeholder("email"), Class("shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline")),
-					),
-					Div(Class("flex items-center justify-between"),
-						Button(Class("bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"), Type("submit"), T("Submit")),
-					),
-				),
+				//Form(Method("POST"), Action("/login"), Attr("enctype", "multipart/form-data"),
+				//	Div(Class("mb-4"),
+				//		Hr(Class("my-5")),
+				//		Input(Type("password"), Id("secret"), Name("secret"), Placeholder("secret"), Class("input")),
+				//		Hr(Class("my-5")),
+				//		Input(Type("email"), Id("email"), Name("email"), Placeholder("email"), Class("input")),
+				//	),
+				//	Div(Class("flex items-center justify-between"),
+				//		Button(Class("bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"), Type("submit"), T("Submit")),
+				//	),
+				//),
 
 				Div(Id("result"), Class("mt-4")),
 			),
