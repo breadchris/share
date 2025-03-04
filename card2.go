@@ -434,17 +434,22 @@ func getCardHandler(d deps.Deps, w http.ResponseWriter, r *http.Request, cardSec
 func buildPage(content *Node, title string) *Node {
 	// Wrap the content in a responsive flex container that starts at the top and is centered horizontally.
 	return DefaultLayout(
-		Div(
+		Body(
+			Attr("data-theme", "dracula"),
 			Script(
 				Src("https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"),
 			),
-			Attr("hx-ext", "ws"),
-			Attr("ws-connect", "/websocket/ws"),
-			Class("flex flex-col items-center justify-start min-h-screen pt-8"),
+			Class("min-h-screen"),
 			Div(
-				Id("content-container"),
-				Class("w-full max-w-7xl px-4 sm:px-6 lg:px-8"),
-				Ch(content.Children),
+				Attr("hx-ext", "ws"),
+				Attr("ws-connect", "/websocket/ws"),
+				Class("flex flex-col items-center justify-start min-h-screen pt-8"),
+				Style(T("touch-action: manipulation;")),
+				Div(
+					Id("content-container"),
+					// Class("w-full max-w-7xl px-4 sm:px-6 lg:px-8"),
+					Ch(content.Children),
+				),
 			),
 		),
 	)
@@ -502,12 +507,13 @@ func renderViewCard(card Card2, d deps.Deps, cardSections map[string]CardSection
 
 	cardContainer := Div(
 		Id("card-container"),
+		Class("w-full aspect-[2.5/3.5] border-2 border-solid"),
 	)
 
 	cardContainer.Children = append(cardContainer.Children, sections.Children...)
 
 	return Div(
-		Class("flex flex-col items-center"),
+		Class("flex flex-col items-center w-screen p-6"),
 		cardContainer,
 		editButton,
 		saveAllButton,
