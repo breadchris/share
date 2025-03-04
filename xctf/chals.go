@@ -517,7 +517,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 	}
 	m.HandleFunc("/competition/{id...}", adminRouteMiddleware(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), "baseURL", d.BaseURL+"/competition")
+		ctx := context.WithValue(r.Context(), "baseURL", path.Join(d.BaseURL, "competition"))
 
 		u, err := d.Session.GetUserID(r.Context())
 		if err != nil {
