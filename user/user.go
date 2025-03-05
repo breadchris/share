@@ -198,16 +198,9 @@ func New(d deps.Deps) *http.ServeMux {
 				},
 			}
 
-			if group.ID == "" {
-				if err := db.Create(&group).Error; err != nil {
-					http.Error(w, "Error creating group: "+err.Error(), http.StatusInternalServerError)
-					return
-				}
-			} else {
-				if err := db.Save(&group).Error; err != nil {
-					http.Error(w, "Error updating group: "+err.Error(), http.StatusInternalServerError)
-					return
-				}
+			if err := db.Create(&group).Error; err != nil {
+				http.Error(w, "Error creating group: "+err.Error(), http.StatusInternalServerError)
+				return
 			}
 			getGroupList().RenderPageCtx(ctx, w, r)
 		case http.MethodPut:
