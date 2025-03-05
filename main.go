@@ -74,7 +74,6 @@ func loadDB(dsn string) *gorm.DB {
 		if err != nil {
 			log.Fatalf("Failed to create db: %v", err)
 		}
-		return db
 	} else if strings.HasPrefix(dsn, "sqlite://") {
 		dsn = strings.TrimPrefix(dsn, "sqlite://")
 		db, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{})
