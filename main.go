@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/breadchris/share/list"
 	"github.com/breadchris/share/sqlnotebook"
+	"gorm.io/driver/postgres"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -63,10 +64,25 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func loadDB() *gorm.DB {
-	db, err := gorm.Open(sqlite.Open("data/db.sqlite"), &gorm.Config{})
-	if err != nil {
-		log.Fatalf("Failed to create db: %v", err)
+func loadDB(dsn string) *gorm.DB {
+	var (
+		db  *gorm.DB
+		err error
+	)
+	if strings.HasPrefix(dsn, "postgres://") {
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		if err != nil {
+			log.Fatalf("Failed to create db: %v", err)
+		}
+		return db
+	} else if strings.HasPrefix(dsn, "sqlite://") {
+		dsn = strings.TrimPrefix(dsn, "sqlite://")
+		db, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{})
+		if err != nil {
+			log.Fatalf("Failed to create db: %v", err)
+		}
+	} else {
+		log.Fatalf("Unknown db: %s", dsn)
 	}
 
 	if err := db.AutoMigrate(
@@ -92,7 +108,7 @@ func startXCTF(port int) error {
 	if err != nil {
 		log.Fatalf("Failed to create session store: %v", err)
 	}
-	db := loadDB()
+	db := loadDB(appConfig.DB)
 	e := NewSMTPEmail(&appConfig)
 	a := NewAuth(s, e, appConfig, db)
 
@@ -158,7 +174,7 @@ func startServer(useTLS bool, port int) {
 	if err != nil {
 		log.Fatalf("Failed to create session store: %v", err)
 	}
-	db := loadDB()
+	db := loadDB(appConfig.DB)
 	e := NewSMTPEmail(&appConfig)
 	a := NewAuth(s, e, appConfig, db)
 
@@ -532,7 +548,7 @@ func main() {
 			{
 				Name: "food",
 				Action: func(c *cli.Context) error {
-					db := loadDB()
+					db := loadDB("sqlite://data/db.sqlite")
 
 					println("loading food data")
 					//f, err := loadBrandedFoodData()

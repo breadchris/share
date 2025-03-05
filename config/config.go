@@ -52,11 +52,13 @@ type AppConfig struct {
 	Github             GithubConfig  `json:"github"`
 	Proxy              ProxyConfig   `json:"proxy"`
 	Admins             []string      `json:"admins"`
+	DB                 string        `json:"db"`
 }
 
 func New() AppConfig {
 	appConfig := AppConfig{
 		SessionSecret: "secret",
+		DB:            "sqlite://data/db.sqlite",
 	}
 
 	configFile, err := os.Open("data/config.json")
