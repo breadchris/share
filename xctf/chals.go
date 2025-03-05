@@ -61,6 +61,9 @@ func New(d deps.Deps) *http.ServeMux {
 	if d.BaseURL == "" {
 		d.BaseURL = "/xctf"
 	}
+	if d.BaseURL == "/" {
+		d.BaseURL = ""
+	}
 
 	render := func(w http.ResponseWriter, r *http.Request, page *Node) {
 		ctx := context.WithValue(r.Context(), "baseURL", func() string {
