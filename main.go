@@ -26,7 +26,6 @@ import (
 	"github.com/evanw/esbuild/pkg/api"
 
 	"github.com/breadchris/share/graph"
-	"github.com/breadchris/share/models"
 	"github.com/breadchris/share/paint"
 	"github.com/breadchris/share/test"
 	"github.com/breadchris/share/user"
@@ -47,7 +46,6 @@ import (
 	"github.com/breadchris/share/llm"
 	"github.com/breadchris/share/session"
 	"github.com/breadchris/share/wasmcode"
-	xmodels "github.com/breadchris/share/xctf/models"
 	"github.com/gomarkdown/markdown"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -84,19 +82,19 @@ func loadDB(dsn string) *gorm.DB {
 		log.Fatalf("Unknown db: %s", dsn)
 	}
 
-	if err := db.AutoMigrate(
-		&models.User{},
-		&models.Identity{},
-		&models.Group{},
-		&models.GroupMembership{},
-		&models.Food{},
-		&models.FoodName{},
-
-		// xctf models
-		&xmodels.Competition{},
-	); err != nil {
-		log.Fatalf("Failed to migrate db: %v", err)
-	}
+	//if err := db.AutoMigrate(
+	//	&models.User{},
+	//	&models.Identity{},
+	//	&models.Group{},
+	//	&models.GroupMembership{},
+	//	&models.Food{},
+	//	&models.FoodName{},
+	//
+	//	// xctf models
+	//	&xmodels.Competition{},
+	//); err != nil {
+	//	log.Fatalf("Failed to migrate db: %v", err)
+	//}
 	return db
 }
 
