@@ -31,7 +31,8 @@ func groupComponent(s GroupCompState) *Node {
 				Class("flex flex-col space-y-4"),
 				Form(
 					Class("border p-4 rounded"),
-					HxPost("/group/"),
+					Method("POST"),
+					Action("/group/"),
 					Div(Text("Create a New Group")),
 					Input(Class("input"), Type("text"), Name("name"), Placeholder("Group Name")),
 					Input(Type("hidden"), Name("action"), Value("create")),
@@ -39,7 +40,8 @@ func groupComponent(s GroupCompState) *Node {
 				),
 				Form(
 					Class("border p-4 rounded"),
-					HxPost("/group/"),
+					Method("POST"),
+					Action("/group/"),
 					Div(Text("Join an Existing Group")),
 					Input(Class("input"), Type("text"), Name("join_code"), Placeholder("Join Code")),
 					Input(Type("hidden"), Name("action"), Value("join")),
@@ -134,16 +136,17 @@ func renderGroup(d deps.Deps, w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "Error updating user: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
-			DefaultLayout(
-				Div(
-					Class("p-5 max-w-lg mx-auto"),
-					Div(Class("text-sm text-center m-10"), T("Group Created")),
-					Div(Class("divider")),
-					Div(Class("text-lg"), Text("Your Group")),
-					Div(Text("Name: "+group.Name)),
-					Div(Text("Join Code: "+group.JoinCode)),
-				),
-			).RenderPageCtx(ctx, w, r)
+			//DefaultLayout(
+			//	Div(
+			//		Class("p-5 max-w-lg mx-auto"),
+			//		Div(Class("text-sm text-center m-10"), T("Group Created")),
+			//		Div(Class("divider")),
+			//		Div(Class("text-lg"), Text("Your Group")),
+			//		Div(Text("Name: "+group.Name)),
+			//		Div(Text("Join Code: "+group.JoinCode)),
+			//	),
+			//).RenderPageCtx(ctx, w, r)
+			http.Redirect(w, r, d.BaseURL, http.StatusFound)
 		case "join":
 			joinCode := r.FormValue("join_code")
 			if joinCode == "" {
@@ -166,16 +169,18 @@ func renderGroup(d deps.Deps, w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "Error updating user: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
-			DefaultLayout(
-				Div(
-					Class("p-5 max-w-lg mx-auto"),
-					Div(Class("text-sm text-center m-10"), T("Joined Group")),
-					Div(Class("divider")),
-					Div(Class("text-lg"), Text("Your Group")),
-					Div(Text("Name: "+group.Name)),
-					Div(Text("Join Code: "+group.JoinCode)),
-				),
-			).RenderPageCtx(ctx, w, r)
+			//DefaultLayout(
+			//	Div(
+			//		Class("p-5 max-w-lg mx-auto"),
+			//		Div(Class("text-sm text-center m-10"), T("Joined Group")),
+			//		Div(Class("divider")),
+			//		Div(Class("text-lg"), Text("Your Group")),
+			//		Div(Text("Name: "+group.Name)),
+			//		Div(Text("Join Code: "+group.JoinCode)),
+			//	),
+			//).RenderPageCtx(ctx, w, r)
+			http.Redirect(w, r, d.BaseURL, http.StatusFound)
+			return
 		default:
 			http.Error(w, "Invalid action", http.StatusBadRequest)
 		}

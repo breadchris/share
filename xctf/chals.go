@@ -611,6 +611,11 @@ document.addEventListener('DOMContentLoaded', function() {
 			}
 
 			ud := uploadDir(id)
+			if err = os.MkdirAll(ud, os.ModePerm); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
 			files, err := os.ReadDir(ud)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)

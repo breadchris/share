@@ -15,6 +15,32 @@ func New(d deps.Deps) *http.ServeMux {
 
 	db := d.DB
 
+	mux.HandleFunc("/member/{id...}", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodDelete:
+			id := r.PathValue("id")
+			if id == "" {
+				http.Error(w, "Missing member ID", http.StatusBadRequest)
+				return
+			}
+
+			var group models.GroupMembership
+			if err := db.First(&group, "id = ?", id).Error; err != nil {
+				http.Error(w, "Error finding member: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			if err := db.Delete(&models.GroupMembership{
+				ID: id,
+			}).Error; err != nil {
+				http.Error(w, "Error deleting member: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			P(T("Member deleted")).RenderPage(w, r)
+		}
+	})
+
 	mux.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), "baseURL", "/user")
 
@@ -80,7 +106,7 @@ func New(d deps.Deps) *http.ServeMux {
 		case http.MethodGet:
 			var group models.Group
 			if id != "" {
-				if err := db.First(&group, "id = ?", id).Error; err != nil {
+				if err := db.Preload("Members.User").First(&group, "id = ?", id).Error; err != nil {
 					// TODO breadchris
 					w.Header().Set("HX-Target", "#error")
 					w.Write([]byte(err.Error()))
@@ -106,7 +132,7 @@ func New(d deps.Deps) *http.ServeMux {
 						//	CurrentFieldPath: "",
 						//	Name:             "group",
 						//}, group),
-						Input(Class("input"), Type("text"), Value(""), Name("code"), Placeholder("join code")),
+						Input(Class("input w-full"), Type("text"), Value(""), Name("code"), Placeholder("join code")),
 						Button(Class("btn"), Type("submit"), Text("Join")),
 					),
 					Form(
@@ -118,9 +144,37 @@ func New(d deps.Deps) *http.ServeMux {
 						//	CurrentFieldPath: "",
 						//	Name:             "group",
 						//}, group),
-						Input(Class("input"), Type("text"), Value(group.Name), Name("name"), Placeholder("Name")),
+						Input(Class("input w-full"), Type("text"), Value(group.Name), Name("name"), Placeholder("Name")),
 						Button(Class("btn"), Type("submit"), Text("Save")),
 					),
+					func() *Node {
+						var groupList []*Node
+						for _, us := range group.Members {
+							g := us.User
+							groupList = append(groupList, Li(
+								Id("g_"+g.ID),
+								Class("flex items-center justify-between gap-x-6 py-5"),
+								Div(
+									Class("min-w-0"),
+									P(Text(g.Username)),
+								),
+								Div(
+									Class("flex flex-none- items-center gap-x-4"),
+									A(
+										Class("btn"),
+										HxDelete("/member/"+us.ID),
+										//HxTarget("#member-list"),
+										Text("delete"),
+									),
+								),
+							))
+						}
+						return Ul(
+							Id("member-list"),
+							Class(""),
+							Ch(groupList),
+						)
+					}(),
 				),
 			).RenderPageCtx(ctx, w, r)
 		case http.MethodPost:
