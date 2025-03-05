@@ -85,7 +85,7 @@ function EvidenceNode({ data }) {
 }
 
 export default function GraphApp({ props }) {
-    const { id, graph } = props;
+    const { id, graph, saveURL } = props;
     const [nodes, setNodes] = useState([]);
     const [edges, setEdges] = useState([]);
     const socketRef = useRef<WebSocket | null>(null);
@@ -161,7 +161,7 @@ export default function GraphApp({ props }) {
     // }, [id, setNodes, setEdges]);
 
     const sendGraphUpdate = (nodes, edges) => {
-        fetch(`/xctf/graph/`, {
+        fetch(saveURL, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

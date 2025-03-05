@@ -222,13 +222,15 @@ func New(d deps.Deps) *http.ServeMux {
 			}
 
 			type Props struct {
-				Id    string `json:"id"`
-				Graph Graph  `json:"graph"`
+				Id      string `json:"id"`
+				Graph   Graph  `json:"graph"`
+				SaveURL string `json:"saveURL"`
 			}
 
 			p := Props{
-				Id:    groupId,
-				Graph: gs.Graph,
+				Id:      groupId,
+				Graph:   gs.Graph,
+				SaveURL: d.BaseURL + "/graph/",
 			}
 			sg, err := json.Marshal(p)
 			if err != nil {
@@ -282,6 +284,7 @@ func New(d deps.Deps) *http.ServeMux {
 					A(Class("btn"), Href(entrypointURL), Text("start here")),
 					Div(Class("divider")),
 				), Nil()),
+				P(Class("text-gray-400"), T("the evidence builder isn't perfect, it is recommended that only one team member makes changes to the graph and report at a time.")),
 				Div(
 					Class("tabs tabs-border"),
 					Ch(tabs),
@@ -847,8 +850,17 @@ You will generate cyber forensic evidence based on a provided story line and typ
 	m.HandleFunc("/competition/{compid}/{chalid}", Handle(d))
 	m.HandleFunc("/competition/{compid}/{chalid}/{path...}", Handle(d))
 
-	g := NewGraph(d)
-	m.Handle("/graph", http.StripPrefix("/graph", g))
+	//g := NewGraph(d)
+	m.HandleFunc("/graph", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodPost:
+			var g chalgen.Graph
+			if err := json.NewDecoder(r.Body).Decode(&g); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+		}
+	})
 
 	return m
 }
@@ -984,15 +996,10 @@ func Handle(d deps.Deps) http.HandlerFunc {
 				case *chalgen.Site:
 					for _, ro := range u.Routes {
 						if ro.Route == p {
-							goNode, err := ParseHTMLString(ro.HTML)
-							if err != nil {
-								http.Error(w, err.Error(), http.StatusInternalServerError)
-								return
-							}
 							DefaultLayout(
 								Div(
 									Class("p-5 max-w-4xlg mx-auto"),
-									goNode,
+									Raw(ro.HTML),
 								),
 							).RenderPageCtx(ctx, w, r)
 							return
