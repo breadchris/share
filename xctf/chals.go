@@ -162,17 +162,20 @@ func New(d deps.Deps) *http.ServeMux {
 		}
 	})
 
+	m.HandleFunc("/shell", func(w http.ResponseWriter, r *http.Request) {
+		Iframe(Src("https://shell.mcpshsf.com"), Attr("style", "width: 100%; height: 600px;")).RenderPage(w, r)
+	})
+
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		routingMap := map[string]http.Handler{
-			"shell.mcpshsf.com": CreateReverseProxy("http://localhost:8080/"),
-		}
-
-		host := r.Host
-		if handler, found := routingMap[host]; found {
-			handler.ServeHTTP(w, r)
-			return
-		}
-
+		//routingMap := map[string]http.Handler{
+		//	"shell.mcpshsf.com": CreateReverseProxy("http://localhost:8080/"),
+		//}
+		//
+		//host := r.Host
+		//if handler, found := routingMap[host]; found {
+		//	handler.ServeHTTP(w, r)
+		//	return
+		//}
 		var comp models.Competition
 		res := d.DB.Where("active = true").First(&comp)
 		if res.Error != nil {
@@ -286,7 +289,8 @@ func New(d deps.Deps) *http.ServeMux {
 				Div(
 					Class("tab-content border-base-300 bg-base-100 p-10"),
 					P(Class("text-gray-400"), T("NOTE! when you lose this connection, you will lose your data. don't get too attached, take notes and save them.")),
-					Iframe(Src("https://shell.mcpshsf.com"), Attr("style", "width: 100%; height: 600px;")),
+					Button(Class("btn"), HxGet("/shell"), HxTarget("#shell"), Text("connect")),
+					Div(Id("shell")),
 				),
 			)
 		}
