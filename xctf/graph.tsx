@@ -499,6 +499,7 @@ export const Editor = ({ props }) => {
     );
 }
 
+
 const e = document.getElementById('editor');
 if (e) {
     const r = createRoot(e);
