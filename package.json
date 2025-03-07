@@ -3,9 +3,9 @@
     "build": "GOOS=js GOARCH=wasm go build -o dist/editor.wasm editor.go && cp $(go env GOROOT)/misc/wasm/wasm_exec.js js/site/wasm_exec.js"
   },
   "dependencies": {
-    "@blocknote/core": "^0.15.9",
-    "@blocknote/mantine": "^0.15.9",
-    "@blocknote/react": "^0.15.9",
+    "@blocknote/core": "^0.25.1",
+    "@blocknote/mantine": "^0.25.1",
+    "@blocknote/react": "^0.25.1",
     "@blueprintjs/core": "4.13.0",
     "@monaco-editor/react": "^4.6.0",
     "@react-pdf-viewer/core": "^3.12.0",

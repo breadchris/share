@@ -396,6 +396,7 @@ async function loadFromStorage() {
         : undefined;
 }
 
+
 const schema = BlockNoteSchema.create({
     blockSpecs: {
         ...defaultBlockSpecs,
