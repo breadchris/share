@@ -572,6 +572,11 @@ func deleteButton(cardId, textSectionId string) *Node {
 		Attr("ws-send", "submit"),
 		Input(
 			Type("hidden"),
+			Name("delete"),
+			Value("delete"),
+		),
+		Input(
+			Type("hidden"),
 			Name("textSectionId"),
 			Value(textSectionId),
 		),
@@ -579,11 +584,6 @@ func deleteButton(cardId, textSectionId string) *Node {
 			Type("hidden"),
 			Name("cardId"),
 			Value(cardId),
-		),
-		Input(
-			Type("hidden"),
-			Name("delete"),
-			Value("delete"),
 		),
 		Input(
 			Class("rounded-full btn btn-primary btn-circle"),

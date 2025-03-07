@@ -53,25 +53,7 @@ func (cr *CommandRegistry) Register2(command string, handler CommandFunc2) {
 	cr.handlers3[command] = handler
 }
 
-func (cr *CommandRegistry) RegisterGeneric(input interface{}, handler GenericCommandFunc) {
-	command := getType(input)
-	cr.mu.Lock()
-	defer cr.mu.Unlock()
-	cr.Types[command] = input
 
-	if handler != nil {
-		fmt.Println("handler is not nil")
-		cr.handlers2[command] = handler
-	} else {
-		fmt.Println("handler is nil")
-		cr.handlers2[command] = func(input interface{}, w http.ResponseWriter, r *http.Request) []string {
-			fmt.Println("input", input)
-			return []string{
-				Div(Id("content-container"), TypeToForm(input)).Render(),
-			}
-		}
-	}
-}
 
 type WebsocketClient struct {
 	conn     *websocket.Conn

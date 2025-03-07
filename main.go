@@ -154,9 +154,8 @@ func startServer(useTLS bool, port int) {
 	p("/recipe", interpreted(NewRecipe))
 	p("/articles", interpreted(NewArticle))
 	p("/zine", interpreted(NewZine))
-	// p("/card", interpreted(NewCard))
 	p("/ai", interpreted(NewAI))
-	p("/card", interpreted(NewCard2))
+	p("/card", interpreted(NewCard))
 	p("/websocket", interpreted(func(deps deps2.Deps) *http.ServeMux {
 		return socket.WebsocketUI(registry)
 	}))
