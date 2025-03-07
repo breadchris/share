@@ -168,7 +168,6 @@ func New(d deps.Deps) *http.ServeMux {
 		}
 
 		host := r.Host
-		println(host)
 		if handler, found := routingMap[host]; found {
 			handler.ServeHTTP(w, r)
 			return
@@ -282,6 +281,11 @@ func New(d deps.Deps) *http.ServeMux {
 					Div(Id("editor"), Attrs(map[string]string{
 						"props": string(editorProps),
 					})),
+				),
+				Input(AriaLabel("shell"), Class("tab"), Type("radio"), Id("tab2"), Name("tabs")),
+				Div(
+					Class("tab-content border-base-300 bg-base-100 p-10"),
+					Iframe(Src("https://shell.mcpshsf.com"), Attr("style", "width: 100%; height: 600px;")),
 				),
 			)
 		}
