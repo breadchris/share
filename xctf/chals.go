@@ -285,6 +285,7 @@ func New(d deps.Deps) *http.ServeMux {
 				Input(AriaLabel("shell"), Class("tab"), Type("radio"), Id("tab2"), Name("tabs")),
 				Div(
 					Class("tab-content border-base-300 bg-base-100 p-10"),
+					P(Class("text-gray-400"), T("NOTE! when you lose this connection, you will lose your data. don't get too attached, take notes and save them.")),
 					Iframe(Src("https://shell.mcpshsf.com"), Attr("style", "width: 100%; height: 600px;")),
 				),
 			)
