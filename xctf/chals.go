@@ -163,6 +163,16 @@ func New(d deps.Deps) *http.ServeMux {
 	})
 
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		routingMap := map[string]http.Handler{
+			"shell.mcpshsf.com": CreateReverseProxy("http://localhost:8080/"),
+		}
+
+		host := r.Host
+		if handler, found := routingMap[host]; found {
+			handler.ServeHTTP(w, r)
+			return
+		}
+
 		var comp models.Competition
 		res := d.DB.Where("active = true").First(&comp)
 		if res.Error != nil {
