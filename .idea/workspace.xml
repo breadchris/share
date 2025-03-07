@@ -5,11 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/xctf/chals.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/chals.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/route.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/route.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -217,7 +213,7 @@
       <workItem from="1740074470826" duration="6031000" />
       <workItem from="1740170419615" duration="33363000" />
       <workItem from="1740795290145" duration="5557000" />
-      <workItem from="1740941407379" duration="32448000" />
+      <workItem from="1740941407379" duration="32688000" />
     </task>
     <servers />
   </component>

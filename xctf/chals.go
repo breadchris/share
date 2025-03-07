@@ -168,6 +168,7 @@ func New(d deps.Deps) *http.ServeMux {
 		}
 
 		host := r.Host
+		println(host)
 		if handler, found := routingMap[host]; found {
 			handler.ServeHTTP(w, r)
 			return
