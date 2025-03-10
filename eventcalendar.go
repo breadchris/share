@@ -809,7 +809,10 @@ func NewEverout(d deps.Deps) *http.ServeMux {
 			LikeButton(id, event.Liked).Render(),
 		}
 		for _, msg := range cmdMsgs {
-			hub.Broadcast <- []byte(msg)
+			hub.Broadcast <- websocket.Message{
+				Room:    id,
+				Content:  []byte(msg),
+			}
 		}
 	})
 

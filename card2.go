@@ -148,40 +148,50 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 			))
 		}
 
-		hub.Broadcast <- []byte(
-			Nav(
-				Id("navbar"),
-				Class("flex justify-center space-x-4 mb-4"),
-				Ch(navButtons),
-			).Render())
+		fmt.Println("Sending edit view to:", cardId)
 
-		hub.Broadcast <- []byte(
-			Form(
-				Id("edit-button"),
-				Attr("ws-send", "submit"),
-				Class("fixed top-4 right-4 rounded-full"),
-				Input(
-					Type("hidden"),
-					Name("id"),
-					Value(card.Id),
-				),
-				Input(
-					Type("hidden"),
-					Name("view"),
-					Value("view"),
-				),
-				Div(Input(
-					Id("edit-button-input"),
-					Type("submit"),
-					Value("View"),
-					Class("btn btn-primary btn-circle"),
-				)),
-			).Render(),
-		)
-		hub.Broadcast <- []byte(
-			Button(
-				Id("save-all-button"),
-				OnClick(`
+		hub.Broadcast <- websocket.Message{
+			Room: cardId,
+			Content: []byte(
+				Nav(
+					Id("navbar"),
+					Class("flex justify-center space-x-4 mb-4"),
+					Ch(navButtons),
+				).Render()),
+		}
+
+		hub.Broadcast <- websocket.Message{
+			Room: cardId,
+			Content: []byte(
+				Form(
+					Id("edit-button"),
+					Attr("ws-send", "submit"),
+					Class("fixed top-4 right-4 rounded-full"),
+					Input(
+						Type("hidden"),
+						Name("id"),
+						Value(card.Id),
+					),
+					Input(
+						Type("hidden"),
+						Name("view"),
+						Value("view"),
+					),
+					Div(Input(
+						Id("edit-button-input"),
+						Type("submit"),
+						Value("View"),
+						Class("btn btn-primary btn-circle"),
+					)),
+				).Render(),
+			),
+		}
+		hub.Broadcast <- websocket.Message{
+			Room: cardId,
+			Content: []byte(
+				Button(
+					Id("save-all-button"),
+					OnClick(`
 					const updatedSectionsJson = sessionStorage.getItem('updatedSections');
 					const updatedSections = JSON.parse(updatedSectionsJson);;
 					if (updatedSections) {
@@ -198,14 +208,18 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 					sessionStorage.removeItem('updatedSections');
 					document.getElementById('edit-button-input').click();
 					`),
-				T("Save"),
-				Class("btn btn-primary btn-circle fixed top-4 right-4 rounded-full"),
-			).Render(),
-		)
+					T("Save"),
+					Class("btn btn-primary btn-circle fixed top-4 right-4 rounded-full"),
+				).Render(),
+			),
+		}
 
 		sections := renderSections(card, true, d, cardSections)
 		for _, section := range sections.Children {
-			hub.Broadcast <- []byte(section.Render())
+			hub.Broadcast <- websocket.Message{
+				Room:    cardId,
+				Content: []byte(section.Render()),
+			}
 		}
 	})
 
@@ -224,11 +238,17 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 			return
 		}
 
-		hub.Broadcast <- []byte(navbar().Render())
+		hub.Broadcast <- websocket.Message{
+			Room:    cardId,
+			Content: []byte(navbar().Render()),
+		}
 
 		cardView := renderViewCard(card, d, cardSections)
 		for _, section := range cardView.Children {
-			hub.Broadcast <- []byte(section.Render())
+			hub.Broadcast <- websocket.Message{
+				Room:    cardId,
+				Content: []byte(section.Render()),
+			}
 		}
 
 	})
@@ -332,14 +352,18 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 			fmt.Println("Error deleting section:", err)
 		}
 
-		hub.Broadcast <- []byte(Div(
-			Attr("hx-swap", "delete"),
-			Id(textSectionId),
-		).Render())
+		hub.Broadcast <- websocket.Message{
+			Room: cardId,
+			Content: []byte(Div(
+				Attr("hx-swap", "delete"),
+				Id(textSectionId),
+			).Render()),
+		}
 	})
 
 	d.WebsocketRegistry.Register2("sheet", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
 		fmt.Println("Sheet WebSocket Endpoint")
+
 		displayCards := []CardDisplay{}
 		displayCardDb := d.Docs.WithCollection("display_cards")
 		keys := msgMap["1"]
@@ -365,8 +389,14 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 			)
 		}
 
-		hub.Broadcast <- []byte(sheetFront.Render())
-		hub.Broadcast <- []byte(makeQRCodeSheet(displayCards).Render())
+		hub.Broadcast <- websocket.Message{
+			Room:    "sheet",
+			Content: []byte(sheetFront.Render()),
+		}
+		hub.Broadcast <- websocket.Message{
+			Room:    "sheet",
+			Content: []byte(makeQRCodeSheet(displayCards).Render()),
+		}
 
 	})
 
@@ -423,6 +453,7 @@ func getCardHandler(d deps.Deps, w http.ResponseWriter, r *http.Request, cardSec
 	}
 
 	buildPage(
+		id,
 		Div(
 			renderViewCard(card, d, cardSections),
 			navbar(),
@@ -431,7 +462,7 @@ func getCardHandler(d deps.Deps, w http.ResponseWriter, r *http.Request, cardSec
 	).RenderPage(w, r)
 }
 
-func buildPage(content *Node, title string) *Node {
+func buildPage(id string, content *Node, title string) *Node {
 	// Wrap the content in a responsive flex container that starts at the top and is centered horizontally.
 	return ThemedLayout("dark",
 		Body(
@@ -441,7 +472,7 @@ func buildPage(content *Node, title string) *Node {
 			Class("min-h-screen"),
 			Div(
 				Attr("hx-ext", "ws"),
-				Attr("ws-connect", "/websocket/ws"),
+				Attr("ws-connect", "/websocket/ws?room="+id),
 				Class("flex flex-col items-center justify-start min-h-screen pt-8"),
 				Style(T("touch-action: manipulation;")),
 				Div(
@@ -477,13 +508,12 @@ func renderViewCard(card Card2, d deps.Deps, cardSections map[string]CardSection
 	)
 
 	themeButton := Label(
-		Class("swap flex justify-center fixed top-4"),
+		Class("swap swap-rotate flex justify-center fixed top-4"),
 		Input(
 			Type("checkbox"),
 			Class("theme-controller"),
 			Attr("value", "light"),
 			OnClick("document.documentElement.setAttribute('data-theme', this.checked ? 'light' : 'dark')"),
-
 		),
 		Svg(
 			Class("swap-off h-10 w-10 fill-current"),
@@ -501,8 +531,12 @@ func renderViewCard(card Card2, d deps.Deps, cardSections map[string]CardSection
 				Attr("d", "M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"),
 			),
 		),
+		Style(Raw(`
+			html {
+				transition: background-color 0.75s ease, color 0.75s ease;
+			}
+		`)),
 	)
-	
 
 	saveAllButton := Button(
 		Id("save-all-button"),
@@ -723,6 +757,7 @@ func getSheetHandler(d deps.Deps, w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	buildPage(
+		"sheet",
 		Div(
 			allCards,
 			Div(Id("sheet-front")),

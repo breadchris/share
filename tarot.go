@@ -108,7 +108,7 @@ func getTarot(d deps.Deps, w http.ResponseWriter, r *http.Request) string {
 		)
 	}
 
-	buildPage(content, "Tarot").RenderPage(w, r)
+	buildPage(id, content, "Tarot").RenderPage(w, r)
 	return id
 }
 
@@ -173,7 +173,7 @@ func getContentCard(d deps.Deps, w http.ResponseWriter, r *http.Request) string 
 		content = displayContentCard(card)
 	}
 
-	buildPage(content, "Content Card").RenderPage(w, r)
+	buildPage(id, content, "Content Card").RenderPage(w, r)
 	return id
 }
 
@@ -222,7 +222,7 @@ func getCard(d deps.Deps, w http.ResponseWriter, r *http.Request) string {
 		// 	Class("rounded-lg shadow-lg w-[16.5rem] h-[16.5rem]"),
 		// ),
 	)
-	buildPage(content, "Select Card Type").RenderPage(w, r)
+	buildPage(id, content, "Select Card Type").RenderPage(w, r)
 	return id
 }
 
@@ -307,7 +307,10 @@ func NewTarot(d deps.Deps) *http.ServeMux {
 			}),
 		})
 
-		hub.Broadcast <- []byte(display)
+		hub.Broadcast <- websocket.Message{
+			Room:    id,
+			Content: []byte(display),
+		}
 	})
 
 	d.WebsocketRegistry.Register2("chat", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
@@ -356,7 +359,10 @@ func NewTarot(d deps.Deps) *http.ServeMux {
 			}),
 		})
 
-		hub.Broadcast <- []byte(display)
+		hub.Broadcast <- websocket.Message{
+			Room:    id,
+			Content: []byte(display),
+		}
 	})
 
 	d.WebsocketRegistry.Register2("cardchat", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
@@ -387,7 +393,10 @@ func NewTarot(d deps.Deps) *http.ServeMux {
 			),
 		).Render()
 
-		hub.Broadcast <- []byte(display)
+		hub.Broadcast <- websocket.Message{
+			Room:    id,
+			Content: []byte(display),
+		}
 	})
 
 	d.WebsocketRegistry.Register2("screenshot", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
@@ -397,6 +406,7 @@ func NewTarot(d deps.Deps) *http.ServeMux {
 		db.Get(id, &card)
 
 		displayCard := buildPage(
+			id,
 			cardTextImageTemplate(
 				card.Id,
 				"rounded-lg shadow-lg w-[16.5rem] h-[25.5rem]",
@@ -420,7 +430,10 @@ func NewTarot(d deps.Deps) *http.ServeMux {
 				),
 			),
 		).Render()
-		hub.Broadcast <- []byte(display)
+		hub.Broadcast <- websocket.Message{
+			Room:    id,
+			Content: []byte(display),
+		}
 
 	})
 
@@ -460,7 +473,10 @@ func NewTarot(d deps.Deps) *http.ServeMux {
 		display := displayContentCard(card).Render()
 
 		// Broadcast the generated display so the client page can update.
-		hub.Broadcast <- []byte(display)
+		hub.Broadcast <- websocket.Message{
+			Room:    id,
+			Content: []byte(display),
+		}
 	})
 
 	return mux

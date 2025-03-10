@@ -92,7 +92,10 @@ func NewAI(d deps.Deps) *http.ServeMux {
 		}
 
 		for _, cmdMsg := range cmdMsgs {
-			hub.Broadcast <- []byte(cmdMsg)
+			hub.Broadcast <- websocket.Message{
+				Room:    "airoom",
+				Content: []byte(cmdMsg),
+			}
 		}
 	})
 	return mux
@@ -252,12 +255,15 @@ func createCal(d deps.Deps, message string, hub *websocket.Hub) string {
 		}
 	}
 
-	hub.Broadcast <- []byte(
-		Div(
-			Id("display"),
-			RenderCalendar(c),
-		).Render(),
-	)
+	hub.Broadcast <- websocket.Message{
+		Room: "airoom",
+		Content: []byte(
+			Div(
+				Id("display"),
+				RenderCalendar(c),
+			).Render(),
+		),
+	}
 	return ""
 }
 
@@ -271,9 +277,12 @@ func scraperMenu(d deps.Deps, message string, hub *websocket.Hub) string {
 		ScraperUiForm(d),
 	)
 
-	hub.Broadcast <- []byte(
-		scraper.Render(),
-	)
+	hub.Broadcast <- websocket.Message{
+		Room: "airoom",
+		Content: []byte(
+			scraper.Render(),
+		),
+	}
 	return message
 }
 
@@ -313,9 +322,12 @@ func showEvents(d deps.Deps, message string, hub *websocket.Hub) string {
 		RenderEverout(eventsByDate),
 	).Render()
 
-	hub.Broadcast <- []byte(
-		eventView,
-	)
+	hub.Broadcast <- websocket.Message{
+		Room: "airoom",
+		Content: []byte(
+			eventView,
+		),
+	}
 	return ""
 }
 
@@ -378,12 +390,15 @@ func getCategory(d deps.Deps, message string, hub *websocket.Hub) string {
 	for _, e := range catEvents {
 		eventsByDate[e.Date] = append(eventsByDate[e.Date], e)
 	}
-	hub.Broadcast <- []byte(
-		Div(
-			Id("display"),
-			RenderEverout(eventsByDate),
-		).Render(),
-	)
+	hub.Broadcast <- websocket.Message{
+		Room: "airoom",
+		Content: []byte(
+			Div(
+				Id("display"),
+				RenderEverout(eventsByDate),
+			).Render(),
+		),
+	}
 	return ""
 }
 

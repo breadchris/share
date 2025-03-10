@@ -108,12 +108,16 @@ func createImageSection() CardSection {
 			card.Sections = append(card.Sections, sectionId)
 			db.Set(cardId, card)
 
-			hub.Broadcast <- []byte(Div(
-				Id("card-container"),
-				Attr("hx-swap", "innerHTML"),
-				Attr("hx-swap-oob", "beforeend"),
-				editFunction(cardId, sectionId),
-			).Render())
+			hub.Broadcast <- websocket.Message{
+				Room: cardId,
+				Content: []byte(Div(
+					Id("card-container"),
+					Attr("hx-swap", "innerHTML"),
+					Attr("hx-swap-oob", "beforeend"),
+					editFunction(cardId, sectionId),
+				).Render()),
+			}
+
 		}
 	}
 
@@ -267,7 +271,10 @@ func createTextSection() CardSection {
 				editFunction(sectionId, card, d),
 			)
 
-			hub.Broadcast <- []byte(textEditSection.Render())
+			hub.Broadcast <- websocket.Message{
+				Room:    cardId,
+				Content: []byte(textEditSection.Render()),
+			}
 		}
 	}
 
@@ -396,7 +403,10 @@ func createHeadingSection() CardSection {
 				editFunction(sectionId, card, d),
 			)
 
-			hub.Broadcast <- []byte(headingEditSection.Render())
+			hub.Broadcast <- websocket.Message{
+				Room:    cardId,
+				Content: []byte(headingEditSection.Render()),
+			}
 		}
 	}
 
