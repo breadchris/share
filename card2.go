@@ -513,7 +513,7 @@ func renderViewCard(card Card2, d deps.Deps, cardSections map[string]CardSection
 			Type("checkbox"),
 			Class("theme-controller"),
 			Attr("value", "light"),
-			OnClick("document.documentElement.setAttribute('data-theme', this.checked ? 'light' : 'dark')"),
+			OnClick("toggleTheme()"),
 		),
 		Svg(
 			Class("swap-off h-10 w-10 fill-current"),
@@ -536,6 +536,26 @@ func renderViewCard(card Card2, d deps.Deps, cardSections map[string]CardSection
 				transition: background-color 0.75s ease, color 0.75s ease;
 			}
 		`)),
+		Script(Raw(`
+			function toggleTheme() {
+				const isChecked = document.querySelector('.theme-controller').checked;
+        		const newTheme = isChecked ? 'light' : 'dark';
+
+				localStorage.setItem('theme', newTheme);
+				document.documentElement.setAttribute('data-theme', newTheme);
+			}
+
+			document.addEventListener("DOMContentLoaded", function() {
+				theme = localStorage.getItem('theme');
+				if (theme) {
+					document.documentElement.setAttribute('data-theme', theme);
+					document.querySelector('.theme-controller').checked = theme === 'light';
+				}
+				else {
+					document.documentElement.setAttribute('data-theme', 'dark');
+				}
+			});
+			`)),
 	)
 
 	saveAllButton := Button(
