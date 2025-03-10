@@ -161,8 +161,9 @@ type Edge struct {
 }
 
 type Graph struct {
-	Nodes []GraphNode
-	Edges []Edge
+	Message string
+	Nodes   []GraphNode
+	Edges   []Edge
 }
 
 type ChallengeType interface {

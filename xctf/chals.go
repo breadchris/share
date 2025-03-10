@@ -294,6 +294,9 @@ func New(d deps.Deps) *http.ServeMux {
 				),
 			)
 		}
+
+		renderer := blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{})
+		b := blackfriday.Run([]byte(graph.Message), blackfriday.WithRenderer(renderer))
 		render(w, r, DefaultLayout(
 			Div(
 				Class("p-5 max-w-7xl mx-auto"),
@@ -304,6 +307,8 @@ func New(d deps.Deps) *http.ServeMux {
 				Div(Class("divider")),
 				If(entrypointURL != "", Div(
 					Class("text-md text-center"),
+					Raw(string(b)),
+					P(Class("m-4")),
 					A(Class("btn"), Href(entrypointURL), Text("start here")),
 					Div(Class("divider")),
 				), Nil()),

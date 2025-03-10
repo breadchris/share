@@ -357,7 +357,7 @@ func LoginPage(s AuthState) *Node {
 							),
 						),
 					),
-					Input(AriaLabel("forgot"), Class("tab"), Type("radio"), Id("tab3"), Name("tabs"), Checked(true)),
+					Input(AriaLabel("forgot"), Class("tab"), Type("radio"), Id("tab3"), Name("tabs"), Checked(false)),
 					Div(
 						Class("tab-content border-base-300 bg-base-100 p-10"),
 						Form(Method("POST"), Class("space-y-4"), Action("/login?reset=true"), Attr("enctype", "multipart/form-data"),
