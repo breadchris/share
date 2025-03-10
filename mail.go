@@ -18,7 +18,7 @@ func NewSMTPEmail(a *config.AppConfig) *SMTPEmail {
 	return &SMTPEmail{a: a.SMTP}
 }
 
-func (s *SMTPEmail) SendRecoveryEmail(to, subject, body, code string) error {
+func (s *SMTPEmail) SendRecoveryEmail(to, subject, body string) error {
 	var msg bytes.Buffer
 	writer := multipart.NewWriter(&msg)
 

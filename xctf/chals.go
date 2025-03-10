@@ -297,7 +297,10 @@ func New(d deps.Deps) *http.ServeMux {
 		render(w, r, DefaultLayout(
 			Div(
 				Class("p-5 max-w-7xl mx-auto"),
-				Div(Class("text-sm text-center m-10"), T("hello, "+user.Username)),
+				Div(Class("flex items-center justify-between gap-x-6 py-5"),
+					Div(Class("text-sm text-center m-10"), T("hello, "+user.Username)),
+					A(Class("btn btn-ghost"), Href("/logout"), Text("logout")),
+				),
 				Div(Class("divider")),
 				If(entrypointURL != "", Div(
 					Class("text-md text-center"),

@@ -141,21 +141,37 @@ func (s *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 	next := r.URL.Query().Get("next")
 	switch r.Method {
 	case http.MethodGet:
-		sec := r.URL.Query().Get("sec")
-		if sec == "" {
-			LoginPage(AuthState{
-				Next: next,
-			}).RenderPage(w, r)
-			return
-		}
-		var user models.User
-		if err := s.db.Where("secrets LIKE ?", fmt.Sprintf("%%%s%%", sec)).First(&user).Error; err == nil {
-			s.s.SetUserID(r.Context(), user.ID)
-			http.Redirect(w, r, "/", http.StatusFound)
-			return
-		}
-		http.Error(w, "invalid secret", http.StatusBadRequest)
+		LoginPage(AuthState{
+			Next: next,
+		}).RenderPage(w, r)
+		return
 	case http.MethodPost:
+		reset := r.URL.Query().Get("reset")
+		if reset == "true" {
+			f := r.FormValue("email")
+			var user models.User
+			if err := s.db.Where("username = ?", f).First(&user).Error; err != nil {
+				LoginPage(AuthState{Msg: "Invalid email"}).RenderPage(w, r)
+				return
+			}
+
+			user.Password = uuid.NewString()
+			if err := s.db.Save(&user).Error; err != nil {
+				LoginPage(AuthState{Msg: "Error resetting password"}).RenderPage(w, r)
+				return
+			}
+
+			msg := fmt.Sprintf("Your new password: %s. Click <a href=\"%s/login\">here</a> to login.", user.Password, s.c.ExternalURL)
+			e := s.e.SendRecoveryEmail(user.Username, "Recover your account", msg)
+			if e != nil {
+				fmt.Printf("Error sending email: %v\n", e)
+				LoginPage(AuthState{Msg: "Error sending email"}).RenderPage(w, r)
+				return
+			}
+			LoginPage(AuthState{Msg: "check your email"}).RenderPage(w, r)
+			return
+		}
+
 		err := r.ParseMultipartForm(10 << 20) // 10 MB
 		if err != nil {
 			http.Error(w, "Error parsing form data", http.StatusBadRequest)
@@ -324,7 +340,7 @@ func LoginPage(s AuthState) *Node {
 								Input(Type("password"), Id("password"), Name("password"), Placeholder("password"), Class("input")),
 							),
 							Div(Class("flex items-center justify-between"),
-								Button(Class("btn"), Type("submit"), T("Submit")),
+								Button(Class("btn"), Type("submit"), T("submit")),
 							),
 						),
 					),
@@ -337,8 +353,16 @@ func LoginPage(s AuthState) *Node {
 								Input(Type("password"), Id("password"), Name("password"), Placeholder("password"), Class("input")),
 							),
 							Div(Class("flex items-center justify-between"),
-								Button(Class("btn"), Type("submit"), T("Submit")),
+								Button(Class("btn"), Type("submit"), T("submit")),
 							),
+						),
+					),
+					Input(AriaLabel("forgot"), Class("tab"), Type("radio"), Id("tab3"), Name("tabs"), Checked(true)),
+					Div(
+						Class("tab-content border-base-300 bg-base-100 p-10"),
+						Form(Method("POST"), Class("space-y-4"), Action("/login?reset=true"), Attr("enctype", "multipart/form-data"),
+							Input(Type("email"), Id("email"), Name("email"), Placeholder("email"), Class("input")),
+							Button(Class("btn"), Type("submit"), T("reset password")),
 						),
 					),
 				),
