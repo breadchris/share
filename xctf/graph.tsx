@@ -407,7 +407,6 @@ const schema = BlockNoteSchema.create({
     }
 });
 
-
 export const Editor = ({ props }) => {
     const sendUpdate = (doc) => {
         fetch(`/report/`, {
