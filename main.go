@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/breadchris/share/list"
+	"github.com/breadchris/share/models"
 	"github.com/breadchris/share/sqlnotebook"
+	xmodels "github.com/breadchris/share/xctf/models"
 	"gorm.io/driver/postgres"
 	"html/template"
 	"io"
@@ -82,19 +84,19 @@ func loadDB(dsn string) *gorm.DB {
 		log.Fatalf("Unknown db: %s", dsn)
 	}
 
-	//if err := db.AutoMigrate(
-	//	&models.User{},
-	//	&models.Identity{},
-	//	&models.Group{},
-	//	&models.GroupMembership{},
-	//	&models.Food{},
-	//	&models.FoodName{},
-	//
-	//	// xctf models
-	//	&xmodels.Competition{},
-	//); err != nil {
-	//	log.Fatalf("Failed to migrate db: %v", err)
-	//}
+	if err := db.AutoMigrate(
+		&models.User{},
+		&models.Identity{},
+		&models.Group{},
+		&models.GroupMembership{},
+		&models.Food{},
+		&models.FoodName{},
+
+		// xctf models
+		&xmodels.Competition{},
+	); err != nil {
+		log.Fatalf("Failed to migrate db: %v", err)
+	}
 	return db
 }
 
@@ -128,6 +130,7 @@ func startXCTF(port int) error {
 		}
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			//code.DynamicHTTPMux(f)(deps).ServeHTTP(w, r)
 			f(deps).ServeHTTP(w, r)
 		})
 		http.Handle(p+"/", http.StripPrefix(p, m))

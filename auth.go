@@ -13,7 +13,6 @@ import (
 	"github.com/markbates/goth/providers/google"
 	"github.com/samber/lo"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 	"log/slog"
 	"net/http"
 	"time"
@@ -163,78 +162,73 @@ func (s *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		f := r.FormValue("email")
-		if f != "" {
-			var user models.User
-			if err := s.db.Preload(clause.Associations).Where("username = ?", f).First(&user).Error; err == nil {
-				msg := fmt.Sprintf("Click <a href=\"%s/login?sec=%s\">here</a> to login.", s.c.ExternalURL, user.Secrets[0])
-				e := s.e.SendRecoveryEmail(user.Username, "Recover your account", msg, user.Secrets[0].Secret)
-				if e != nil {
-					fmt.Printf("Error sending email: %v\n", e)
-					LoginPage(AuthState{Msg: "Error sending email"}).RenderPage(w, r)
-					return
-				}
-				LoginPage(AuthState{Msg: "check your email"}).RenderPage(w, r)
-				return
-			}
-			LoginPage(AuthState{Msg: "no user with that email"}).RenderPage(w, r)
+		p := r.FormValue("password")
+
+		var user models.User
+		if err := s.db.Where("username = ?", f).First(&user).Error; err != nil {
+			LoginPage(AuthState{Msg: "Invalid email or password"}).RenderPage(w, r)
 			return
 		}
 
-		sec := r.FormValue("id")
-		var user models.User
-		if err := s.db.Where("secrets LIKE ?", fmt.Sprintf("%%%s%%", sec)).First(&user).Error; err == nil {
-			s.s.SetUserID(r.Context(), user.ID)
-			http.Redirect(w, r, "/", http.StatusFound)
+		if p != user.Password {
+			LoginPage(AuthState{Msg: "Invalid email or password"}).RenderPage(w, r)
 			return
 		}
-		http.Error(w, "Invalid secret", http.StatusBadRequest)
+
+		s.s.SetUserID(r.Context(), user.ID)
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+
+		//if f != "" {
+		//	var user models.User
+		//	if err := s.db.Preload(clause.Associations).Where("username = ?", f).First(&user).Error; err == nil {
+		//		msg := fmt.Sprintf("Click <a href=\"%s/login?sec=%s\">here</a> to login.", s.c.ExternalURL, user.Secrets[0])
+		//		e := s.e.SendRecoveryEmail(user.Username, "Recover your account", msg, user.Secrets[0].Secret)
+		//		if e != nil {
+		//			fmt.Printf("Error sending email: %v\n", e)
+		//			LoginPage(AuthState{Msg: "Error sending email"}).RenderPage(w, r)
+		//			return
+		//		}
+		//		LoginPage(AuthState{Msg: "check your email"}).RenderPage(w, r)
+		//		return
+		//	}
+		//	LoginPage(AuthState{Msg: "no user with that email"}).RenderPage(w, r)
+		//	return
+		//}
+		//sec := r.FormValue("id")
+		//var user models.User
+		//if err := s.db.Where("secrets LIKE ?", fmt.Sprintf("%%%s%%", sec)).First(&user).Error; err == nil {
+		//	s.s.SetUserID(r.Context(), user.ID)
+		//	http.Redirect(w, r, "/", http.StatusFound)
+		//	return
+		//}
+		//http.Error(w, "Invalid secret", http.StatusBadRequest)
 		return
 	}
 }
 
 func (s *Auth) handleRegister(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case http.MethodGet:
-		i := r.URL.Query().Get("invite")
-		RegisterPage(RegisterState{Invite: i}).RenderPage(w, r)
 	case http.MethodPost:
 		email := r.FormValue("email")
-		invite := r.FormValue("invite")
-		id := uuid.NewString()
-
-		if invite == "" {
-			http.Error(w, "Invite required", http.StatusBadRequest)
-			return
-		}
-
-		inviteFrom, ok := inviteLookup[invite]
-		if ok {
-			delete(inviteLookup, invite)
-		} else {
-			http.Error(w, "Invalid invite", http.StatusBadRequest)
-			return
-		}
-		invites = append(invites, Invite{From: inviteFrom, To: id})
+		password := r.FormValue("password")
 
 		var existingUser models.User
 		if err := s.db.Where("username = ?", email).First(&existingUser).Error; err == nil {
-			http.Error(w, "User already exists", http.StatusBadRequest)
+			LoginPage(AuthState{Msg: "User already exists"}).RenderPage(w, r)
 			return
 		}
 
-		sec := uuid.NewString()
+		id := uuid.NewString()
 		user := models.User{
 			ID:        id,
 			Username:  email,
 			CreatedAt: time.Now(),
+			Password:  password,
 		}
 		s.db.Create(&user)
 		s.s.SetUserID(r.Context(), id)
-		Div(
-			Img(Src("/qr?data="+sec)),
-			Hr(),
-			A(Href("/"), T("go home")),
-		).RenderPage(w, r)
+		http.Redirect(w, r, "/", http.StatusFound)
 	}
 }
 
@@ -313,62 +307,45 @@ func LoginPage(s AuthState) *Node {
 	return DefaultLayout(
 		Body(Class("flex items-center justify-center min-h-screen"),
 			Div(Class("p-8 rounded shadow-md w-full max-w-md"),
-				H1(Class("text-2xl font-bold mb-4"), T("Login")),
-
 				If(len(s.Msg) > 0,
 					Div(Class("bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"), Role("alert"),
 						Span(Class("block sm:inline"), T(s.Msg)),
 					),
 					Nil(),
 				),
+				Div(
+					Class("tabs tabs-border"),
+					Input(AriaLabel("login"), Class("tab"), Type("radio"), Id("tab1"), Name("tabs"), Checked(true)),
+					Div(
+						Class("tab-content border-base-300 bg-base-100 p-10"),
+						Form(Method("POST"), Action("/login"), Attr("enctype", "multipart/form-data"),
+							Div(Class("mb-4 space-y-4"),
+								Input(Type("email"), Id("email"), Name("email"), Placeholder("email"), Class("input")),
+								Input(Type("password"), Id("password"), Name("password"), Placeholder("password"), Class("input")),
+							),
+							Div(Class("flex items-center justify-between"),
+								Button(Class("btn"), Type("submit"), T("Submit")),
+							),
+						),
+					),
+					Input(AriaLabel("register"), Class("tab"), Type("radio"), Id("tab2"), Name("tabs"), Checked(false)),
+					Div(
+						Class("tab-content border-base-300 bg-base-100 p-10"),
+						Form(Method("POST"), Action("/register"), Attr("enctype", "multipart/form-data"),
+							Div(Class("mb-4 space-y-4"),
+								Input(Type("email"), Id("email"), Name("email"), Placeholder("email"), Class("input")),
+								Input(Type("password"), Id("password"), Name("password"), Placeholder("password"), Class("input")),
+							),
+							Div(Class("flex items-center justify-between"),
+								Button(Class("btn"), Type("submit"), T("Submit")),
+							),
+						),
+					),
+				),
 
-				A(Href("/auth/google"), Class("btn"), T("Login with Google")),
-
-				//Form(Method("POST"), Action("/login"), Attr("enctype", "multipart/form-data"),
-				//	Div(Class("mb-4"),
-				//		Hr(Class("my-5")),
-				//		Input(Type("password"), Id("secret"), Name("secret"), Placeholder("secret"), Class("input")),
-				//		Hr(Class("my-5")),
-				//		Input(Type("email"), Id("email"), Name("email"), Placeholder("email"), Class("input")),
-				//	),
-				//	Div(Class("flex items-center justify-between"),
-				//		Button(Class("bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"), Type("submit"), T("Submit")),
-				//	),
-				//),
+				//A(Href("/auth/google"), Class("btn"), T("Login with Google")),
 
 				Div(Id("result"), Class("mt-4")),
-			),
-		),
-	)
-}
-
-type RegisterState struct {
-	Invite string
-}
-
-func RegisterPage(state RegisterState) *Node {
-	return Html(
-		Head(
-			Meta(Charset("UTF-8")),
-			Meta(Attr("name", "viewport"), Content("width=device-width, initial-scale=1.0")),
-			Title(T("Login")),
-			Link(Href("https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"), Rel("stylesheet")),
-			Script(Src("https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js")),
-		),
-		Body(Class("bg-gray-100 flex items-center justify-center h-screen"),
-			Div(Class("w-full max-w-md"),
-				Form(HxPost("/register"), HxTarget("#result"), HxSwap("innerHTML"),
-					Input(Type("hidden"), Name("invite"), Value(state.Invite)),
-					Div(Class("mb-4"),
-						Label(Class("block text-gray-700 text-sm font-bold mb-2"), For("email"), T("Email")),
-						Input(Class("shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"), Id("email"), Type("email"), Name("email"), Placeholder("Email")),
-					),
-					Div(Class("flex items-center justify-between"),
-						Button(Class("bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"), Type("submit"), T("Register")),
-					),
-					Div(Id("result"), Class("mt-4")),
-				),
-				P(Class("text-center text-gray-500 text-xs"), T("share")),
 			),
 		),
 	)

@@ -4,7 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="" />
+    <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2/storage_v2/_src_/schema/main.uQUzAA.meta" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2/storage_v2/_src_/schema/main.uQUzAA.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/auth.go" beforeDir="false" afterPath="$PROJECT_DIR$/auth.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/models.go" beforeDir="false" afterPath="$PROJECT_DIR$/models/models.go" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -78,7 +85,7 @@
       <recent name="$PROJECT_DIR$/xctf/cmd" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Build.share">
+  <component name="RunManager" selected="Go Build.xctf">
     <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
       <module name="share" />
       <working_directory value="$PROJECT_DIR$" />
@@ -92,6 +99,17 @@
       <module name="share" />
       <working_directory value="$PROJECT_DIR$" />
       <go_parameters value="-i" />
+      <kind value="PACKAGE" />
+      <package value="github.com/breadchris/share" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <output_directory value="$PROJECT_DIR$/data" />
+      <method v="2" />
+    </configuration>
+    <configuration name="xctf" type="GoApplicationRunConfiguration" factoryName="Go Application">
+      <module name="share" />
+      <working_directory value="$PROJECT_DIR$" />
+      <parameters value="xctf" />
       <kind value="PACKAGE" />
       <package value="github.com/breadchris/share" />
       <directory value="$PROJECT_DIR$" />
@@ -171,6 +189,7 @@
     </configuration>
     <list>
       <item itemvalue="Go Build.share" />
+      <item itemvalue="Go Build.xctf" />
       <item itemvalue="Go Test.TestRSA in github.com/breadchris/share/xctf" />
       <item itemvalue="Go Test.TestXor in github.com/breadchris/share/xctf" />
       <item itemvalue="Go Test.TestGenerate in github.com/breadchris/share/breadchris" />
@@ -211,7 +230,7 @@
       <workItem from="1740074470826" duration="6031000" />
       <workItem from="1740170419615" duration="33363000" />
       <workItem from="1740795290145" duration="5557000" />
-      <workItem from="1740941407379" duration="36534000" />
+      <workItem from="1740941407379" duration="39866000" />
     </task>
     <servers />
   </component>

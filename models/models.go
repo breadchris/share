@@ -20,6 +20,7 @@ type User struct {
 	Identities       []*Identity        `gorm:"foreignKey:UserID"`
 	GroupMemberships []*GroupMembership `gorm:"foreignKey:UserID"`
 	Secrets          []*UserSecret      `gorm:"foreignKey:UserID"`
+	Password         string
 }
 
 type UserSecret struct {
