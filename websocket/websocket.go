@@ -236,6 +236,8 @@ func (c *WebsocketClient) readPump3(w http.ResponseWriter, r *http.Request) {
 			log.Println("JSON Unmarshal error:", err)
 			return
 		}
+
+		fmt.Println("msgMap", msgMap)
 		delete(msgMap, "HEADERS")
 
 		for key, value := range msgMap {
