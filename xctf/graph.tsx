@@ -407,9 +407,10 @@ const schema = BlockNoteSchema.create({
     }
 });
 
+
 export const Editor = ({ props }) => {
     const sendUpdate = (doc) => {
-        fetch(`/xctf/report/`, {
+        fetch(`/report/`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
