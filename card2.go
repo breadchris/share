@@ -588,7 +588,7 @@ func renderViewCard(card Card2, d deps.Deps, cardSections map[string]CardSection
 
 	cardContainer := Div(
 		Id("card-container"),
-		Class("w-full aspect-[2.5/3.5] border-2 border-solid mt-2 p-2"),
+		Class("w-full aspect-[2.5/3.5] border-2 border-solid mt-2 p-2 rounded-lg shadow-lg bg-white text-black"),
 	)
 
 	cardContainer.Children = append(cardContainer.Children, sections.Children...)
