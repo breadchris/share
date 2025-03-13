@@ -29,9 +29,9 @@ func createImageSection() CardSection {
 	viewFunction := func(imageSrc string, id string) *Node {
 		return Div(
 			Id(id),
-			Class("w-full h-full bg-gray-200 rounded-t-lg overflow-hidden relative"),
+			Class("w-full h-full rounded-t-lg overflow-hidden relative"),
 			Img(
-				Class("max-w-full w-full h-full object-cover"),
+				Class("w-full h-full object-contain object-top"),
 				Attr("src", imageSrc),
 				Attr("alt", "Card Image"),
 			),
@@ -108,12 +108,16 @@ func createImageSection() CardSection {
 			card.Sections = append(card.Sections, sectionId)
 			db.Set(cardId, card)
 
-			hub.Broadcast <- []byte(Div(
-				Id("card-container"),
-				Attr("hx-swap", "innerHTML"),
-				Attr("hx-swap-oob", "beforeend"),
-				editFunction(cardId, sectionId),
-			).Render())
+			hub.Broadcast <- websocket.Message{
+				Room: cardId,
+				Content: []byte(Div(
+					Id("card-container"),
+					Attr("hx-swap", "innerHTML"),
+					Attr("hx-swap-oob", "beforeend"),
+					editFunction(cardId, sectionId),
+				).Render()),
+			}
+
 		}
 	}
 
@@ -176,7 +180,7 @@ func createTextSection() CardSection {
 
 		return Div(
 			Id(textSectionId),
-			Class("relative grid grid-cols-3"),
+			Class("relative mt-4 flex justify-center text-[2rem]"),
 			Attr("data-id", fmt.Sprintf("%d", sectionNum)),
 			Form(
 				Class("grid grid-cols-2 "),
@@ -210,7 +214,7 @@ func createTextSection() CardSection {
 			),
 			Span(
 				Id(textSectionId+"-content"),
-				Class("flex justify-center text-[1rem]"),
+				Class("flex justify-center text-[2rem]"),
 				T(textContent),
 				Attr("contenteditable", "true"),
 			),
@@ -267,7 +271,10 @@ func createTextSection() CardSection {
 				editFunction(sectionId, card, d),
 			)
 
-			hub.Broadcast <- []byte(textEditSection.Render())
+			hub.Broadcast <- websocket.Message{
+				Room:    cardId,
+				Content: []byte(textEditSection.Render()),
+			}
 		}
 	}
 
@@ -307,7 +314,7 @@ func createHeadingSection() CardSection {
 
 		return Div(
 			Id(textSectionId),
-			Class("relative grid grid-cols-3"),
+			Class("relative text-4xl font-medium tracking-tight"),
 			Form(
 				Id(textSectionId+"-form"),
 				Attr("ws-send", "submit"),
@@ -396,7 +403,10 @@ func createHeadingSection() CardSection {
 				editFunction(sectionId, card, d),
 			)
 
-			hub.Broadcast <- []byte(headingEditSection.Render())
+			hub.Broadcast <- websocket.Message{
+				Room:    cardId,
+				Content: []byte(headingEditSection.Render()),
+			}
 		}
 	}
 

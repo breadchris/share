@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"reflect"
 	"sync"
 
@@ -77,19 +78,27 @@ type WebsocketClient struct {
 	conn     *websocket.Conn
 	send     chan []byte
 	registry *CommandRegistry
+	room     string
+}
+
+type Message struct {
+	Room    string
+	Content []byte
 }
 
 type Hub struct {
+	rooms      map[string]map[*WebsocketClient]bool
 	clients    map[*WebsocketClient]bool
-	Broadcast  chan []byte
+	Broadcast  chan Message
 	register   chan *WebsocketClient
 	unregister chan *WebsocketClient
 	mu         sync.Mutex
 }
 
 var hub = Hub{
+	rooms:      make(map[string]map[*WebsocketClient]bool),
 	clients:    make(map[*WebsocketClient]bool),
-	Broadcast:  make(chan []byte),
+	Broadcast:  make(chan Message),
 	register:   make(chan *WebsocketClient),
 	unregister: make(chan *WebsocketClient),
 }
@@ -193,23 +202,35 @@ func (h *Hub) run() {
 		select {
 		case client := <-h.register:
 			h.mu.Lock()
-			h.clients[client] = true
+			if _, ok := h.rooms[client.room]; !ok {
+				h.rooms[client.room] = make(map[*WebsocketClient]bool)
+			}
+			h.rooms[client.room][client] = true
 			h.mu.Unlock()
+
 		case client := <-h.unregister:
 			h.mu.Lock()
-			if _, ok := h.clients[client]; ok {
-				delete(h.clients, client)
-				close(client.send)
+			if clients, ok := h.rooms[client.room]; ok {
+				if _, exists := clients[client]; exists {
+					delete(clients, client)
+					close(client.send)
+					if len(clients) == 0 {
+						delete(h.rooms, client.room)
+					}
+				}
 			}
 			h.mu.Unlock()
-		case message := <-h.Broadcast:
+
+		case msg := <-h.Broadcast:
 			h.mu.Lock()
-			for client := range h.clients {
-				select {
-				case client.send <- message:
-				default:
-					close(client.send)
-					delete(h.clients, client)
+			if clients, ok := h.rooms[msg.Room]; ok {
+				for client := range clients {
+					select {
+					case client.send <- msg.Content:
+					default:
+						close(client.send)
+						delete(clients, client)
+					}
 				}
 			}
 			h.mu.Unlock()
@@ -229,13 +250,15 @@ func (c *WebsocketClient) readPump3(w http.ResponseWriter, r *http.Request) {
 			log.Println("ReadMessage error:", err)
 			break
 		}
-		var msgMap map[string]interface{}
 
+		var msgMap map[string]interface{}
 		err = json.Unmarshal(message, &msgMap)
 		if err != nil {
 			log.Println("JSON Unmarshal error:", err)
 			return
 		}
+
+		fmt.Println("msgMap", msgMap)
 		delete(msgMap, "HEADERS")
 
 		for key, value := range msgMap {
@@ -270,7 +293,21 @@ func (c *WebsocketClient) writePump() {
 
 func websocketHandler2(registry *CommandRegistry) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("Websocket connection")
+		// Extract room from query parameters
+		queryParams, err := url.ParseQuery(r.URL.RawQuery)
+		if err != nil {
+			log.Println("Error parsing query parameters:", err)
+			return
+		}
+
+		room := queryParams.Get("room")
+		if room == "" {
+			room = "default" // Fallback room if none is provided
+		}
+
+		fmt.Println("Websocket connection to room:", room)
+
+		fmt.Println("Websocket connection to room:", room)
 		conn, err := websockerUpgrader.Upgrade(w, r, nil)
 		if err != nil {
 			log.Println("Upgrade error:", err)
@@ -281,12 +318,11 @@ func websocketHandler2(registry *CommandRegistry) http.HandlerFunc {
 			conn:     conn,
 			send:     make(chan []byte, 256),
 			registry: registry,
+			room:     room,
 		}
 		hub.register <- client
 
 		go client.writePump()
-		// client.readPump(w, r)
-		// client.readPump2(w, r)
 		client.readPump3(w, r)
 	}
 }

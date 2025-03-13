@@ -148,40 +148,50 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 			))
 		}
 
-		hub.Broadcast <- []byte(
-			Nav(
-				Id("navbar"),
-				Class("flex justify-center space-x-4 mb-4"),
-				Ch(navButtons),
-			).Render())
+		fmt.Println("Sending edit view to:", cardId)
 
-		hub.Broadcast <- []byte(
-			Form(
-				Id("edit-button"),
-				Attr("ws-send", "submit"),
-				Class("fixed top-4 right-4 rounded-full"),
-				Input(
-					Type("hidden"),
-					Name("id"),
-					Value(card.Id),
-				),
-				Input(
-					Type("hidden"),
-					Name("view"),
-					Value("view"),
-				),
-				Div(Input(
-					Id("edit-button-input"),
-					Type("submit"),
-					Value("View"),
-					Class("btn btn-primary btn-circle"),
-				)),
-			).Render(),
-		)
-		hub.Broadcast <- []byte(
-			Button(
-				Id("save-all-button"),
-				OnClick(`
+		hub.Broadcast <- websocket.Message{
+			Room: cardId,
+			Content: []byte(
+				Nav(
+					Id("navbar"),
+					Class("flex justify-center space-x-4 mb-4"),
+					Ch(navButtons),
+				).Render()),
+		}
+
+		hub.Broadcast <- websocket.Message{
+			Room: cardId,
+			Content: []byte(
+				Form(
+					Id("edit-button"),
+					Attr("ws-send", "submit"),
+					Class("fixed top-4 right-4 rounded-full"),
+					Input(
+						Type("hidden"),
+						Name("id"),
+						Value(card.Id),
+					),
+					Input(
+						Type("hidden"),
+						Name("view"),
+						Value("view"),
+					),
+					Div(Input(
+						Id("edit-button-input"),
+						Type("submit"),
+						Value("View"),
+						Class("btn btn-primary btn-circle"),
+					)),
+				).Render(),
+			),
+		}
+		hub.Broadcast <- websocket.Message{
+			Room: cardId,
+			Content: []byte(
+				Button(
+					Id("save-all-button"),
+					OnClick(`
 					const updatedSectionsJson = sessionStorage.getItem('updatedSections');
 					const updatedSections = JSON.parse(updatedSectionsJson);;
 					if (updatedSections) {
@@ -198,14 +208,18 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 					sessionStorage.removeItem('updatedSections');
 					document.getElementById('edit-button-input').click();
 					`),
-				T("Save"),
-				Class("btn btn-primary btn-circle fixed top-4 right-4 rounded-full"),
-			).Render(),
-		)
+					T("Save"),
+					Class("btn btn-primary btn-circle fixed top-4 right-4 rounded-full"),
+				).Render(),
+			),
+		}
 
 		sections := renderSections(card, true, d, cardSections)
 		for _, section := range sections.Children {
-			hub.Broadcast <- []byte(section.Render())
+			hub.Broadcast <- websocket.Message{
+				Room:    cardId,
+				Content: []byte(section.Render()),
+			}
 		}
 	})
 
@@ -224,11 +238,17 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 			return
 		}
 
-		hub.Broadcast <- []byte(navbar().Render())
+		hub.Broadcast <- websocket.Message{
+			Room:    cardId,
+			Content: []byte(navbar().Render()),
+		}
 
 		cardView := renderViewCard(card, d, cardSections)
 		for _, section := range cardView.Children {
-			hub.Broadcast <- []byte(section.Render())
+			hub.Broadcast <- websocket.Message{
+				Room:    cardId,
+				Content: []byte(section.Render()),
+			}
 		}
 
 	})
@@ -296,7 +316,7 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 		db.Set(cardId, card)
 	})
 
-	d.WebsocketRegistry.Register2("delete", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
+	d.WebsocketRegistry.Register2("removesection", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
 		fmt.Println("Delete Text Section WebSocket Endpoint")
 		textSectionId, ok := msgMap["textSectionId"].(string)
 		if !ok || textSectionId == "" {
@@ -332,14 +352,18 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 			fmt.Println("Error deleting section:", err)
 		}
 
-		hub.Broadcast <- []byte(Div(
-			Attr("hx-swap", "delete"),
-			Id(textSectionId),
-		).Render())
+		hub.Broadcast <- websocket.Message{
+			Room: cardId,
+			Content: []byte(Div(
+				Attr("hx-swap", "delete"),
+				Id(textSectionId),
+			).Render()),
+		}
 	})
 
 	d.WebsocketRegistry.Register2("sheet", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
 		fmt.Println("Sheet WebSocket Endpoint")
+
 		displayCards := []CardDisplay{}
 		displayCardDb := d.Docs.WithCollection("display_cards")
 		keys := msgMap["1"]
@@ -365,8 +389,14 @@ func NewCard2(d deps.Deps) *http.ServeMux {
 			)
 		}
 
-		hub.Broadcast <- []byte(sheetFront.Render())
-		hub.Broadcast <- []byte(makeQRCodeSheet(displayCards).Render())
+		hub.Broadcast <- websocket.Message{
+			Room:    "sheet",
+			Content: []byte(sheetFront.Render()),
+		}
+		hub.Broadcast <- websocket.Message{
+			Room:    "sheet",
+			Content: []byte(makeQRCodeSheet(displayCards).Render()),
+		}
 
 	})
 
@@ -423,26 +453,26 @@ func getCardHandler(d deps.Deps, w http.ResponseWriter, r *http.Request, cardSec
 	}
 
 	buildPage(
+		id,
 		Div(
-			navbar(),
 			renderViewCard(card, d, cardSections),
+			navbar(),
 		),
 		card.Title,
 	).RenderPage(w, r)
 }
 
-func buildPage(content *Node, title string) *Node {
+func buildPage(id string, content *Node, title string) *Node {
 	// Wrap the content in a responsive flex container that starts at the top and is centered horizontally.
-	return DefaultLayout(
+	return ThemedLayout("dark",
 		Body(
-			Attr("data-theme", "dracula"),
 			Script(
 				Src("https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"),
 			),
 			Class("min-h-screen"),
 			Div(
 				Attr("hx-ext", "ws"),
-				Attr("ws-connect", "/websocket/ws"),
+				Attr("ws-connect", "/websocket/ws?room="+id),
 				Class("flex flex-col items-center justify-start min-h-screen pt-8"),
 				Style(T("touch-action: manipulation;")),
 				Div(
@@ -477,6 +507,57 @@ func renderViewCard(card Card2, d deps.Deps, cardSections map[string]CardSection
 		)),
 	)
 
+	themeButton := Label(
+		Class("swap swap-rotate flex justify-center fixed top-4"),
+		Input(
+			Type("checkbox"),
+			Class("theme-controller"),
+			Attr("value", "light"),
+			OnClick("toggleTheme()"),
+		),
+		Svg(
+			Class("swap-off h-10 w-10 fill-current"),
+			Attr("xmlns", "http://www.w3.org/2000/svg"),
+			Attr("viewBox", "0 0 24 24"),
+			Path(
+				Attr("d", "M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"),
+			),
+		),
+		Svg(
+			Class("swap-on h-10 w-10 fill-current"),
+			Attr("xmlns", "http://www.w3.org/2000/svg"),
+			Attr("viewBox", "0 0 24 24"),
+			Path(
+				Attr("d", "M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"),
+			),
+		),
+		Style(Raw(`
+			html {
+				transition: background-color 0.75s ease, color 0.75s ease;
+			}
+		`)),
+		Script(Raw(`
+			function toggleTheme() {
+				const isChecked = document.querySelector('.theme-controller').checked;
+        		const newTheme = isChecked ? 'light' : 'dark';
+
+				localStorage.setItem('theme', newTheme);
+				document.documentElement.setAttribute('data-theme', newTheme);
+			}
+
+			document.addEventListener("DOMContentLoaded", function() {
+				theme = localStorage.getItem('theme');
+				if (theme) {
+					document.documentElement.setAttribute('data-theme', theme);
+					document.querySelector('.theme-controller').checked = theme === 'light';
+				}
+				else {
+					document.documentElement.setAttribute('data-theme', 'dark');
+				}
+			});
+			`)),
+	)
+
 	saveAllButton := Button(
 		Id("save-all-button"),
 	)
@@ -507,7 +588,7 @@ func renderViewCard(card Card2, d deps.Deps, cardSections map[string]CardSection
 
 	cardContainer := Div(
 		Id("card-container"),
-		Class("w-full aspect-[2.5/3.5] border-2 border-solid"),
+		Class("w-full aspect-[2.5/3.5] border-2 border-solid mt-2 p-2 rounded-lg shadow-lg bg-white text-black"),
 	)
 
 	cardContainer.Children = append(cardContainer.Children, sections.Children...)
@@ -517,6 +598,7 @@ func renderViewCard(card Card2, d deps.Deps, cardSections map[string]CardSection
 		cardContainer,
 		editButton,
 		saveAllButton,
+		themeButton,
 		Chl(shareSection.Children...),
 	)
 }
@@ -568,7 +650,7 @@ func getSection(sectionId string, d deps.Deps) Section2 {
 
 func deleteButton(cardId, textSectionId string) *Node {
 	return Form(
-		// Class("absolute top-0 right-0"),
+		Class("absolute top-0 right-0"),
 		Attr("ws-send", "submit"),
 		Input(
 			Type("hidden"),
@@ -582,7 +664,7 @@ func deleteButton(cardId, textSectionId string) *Node {
 		),
 		Input(
 			Type("hidden"),
-			Name("delete"),
+			Name("removesection"),
 			Value("delete"),
 		),
 		Input(
@@ -695,6 +777,7 @@ func getSheetHandler(d deps.Deps, w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	buildPage(
+		"sheet",
 		Div(
 			allCards,
 			Div(Id("sheet-front")),
@@ -748,4 +831,24 @@ func makeQRCodeSheet(displayCards []CardDisplay) *Node {
 	}
 
 	return qrSheet
+}
+
+func ThemedLayout(theme string, n ...*Node) *Node {
+	return Html(
+		Head(
+			Meta(Charset("UTF-8")),
+			Meta(Attrs(map[string]string{
+				"name":    "viewport",
+				"content": "width=device-width, initial-scale=1.0",
+			})),
+			DaisyUI,
+			Script(Src("https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4")),
+			//TailwindCSS,
+			HTMX,
+		),
+		Attr("data-theme", theme),
+		Body(
+			Ch(n),
+		),
+	)
 }
