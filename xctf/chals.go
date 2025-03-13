@@ -259,12 +259,13 @@ func New(d deps.Deps) *http.ServeMux {
 			tabs  []*Node
 			group mmodels.Group
 		)
-		if err := db.First(&group, "id = ?", gs.GroupID).Error; err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
 
 		if gs.ID != "" {
+			if err := db.First(&group, "id = ?", gs.GroupID).Error; err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
 			var (
 				g  Graph
 				ps posts.Post
