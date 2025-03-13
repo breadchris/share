@@ -75,12 +75,15 @@ func New(d deps.Deps) *http.ServeMux {
 		page.RenderPageCtx(ctx, w, r)
 	}
 
-	groupState := d.Docs.WithCollection("group_state")
-
 	groupM := NewGroup(d)
 	m.Handle("/group/", http.StripPrefix("/group", groupM))
 
 	m.HandleFunc("/report/", func(w http.ResponseWriter, r *http.Request) {
+		var c models.Competition
+		if err := db.First(&c, "active = true").Error; err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		switch r.Method {
 		case http.MethodPut:
 			u, err := d.Session.GetUserID(r.Context())
@@ -105,16 +108,14 @@ func New(d deps.Deps) *http.ServeMux {
 				return
 			}
 
-			var gs GroupState
-			if err := groupState.Get(groupId, &gs); err != nil {
+			var cr models.CompetitionGroup
+			if err := db.First(&cr, "group_id = ?", groupId, "competition_id", c.ID).Error; err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			gs.Report = posts.Post{
-				Blocknote: string(g),
-			}
 
-			if err := groupState.Set(groupId, gs); err != nil {
+			cr.Report = string(g)
+			if err := db.Save(&cr).Error; err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -123,16 +124,21 @@ func New(d deps.Deps) *http.ServeMux {
 	})
 
 	m.HandleFunc("/graph/", func(w http.ResponseWriter, r *http.Request) {
+		var c models.Competition
+		if err := db.First(&c, "active = true").Error; err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		switch r.Method {
 		case http.MethodPut:
 			u, err := d.Session.GetUserID(r.Context())
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusUnauthorized)
+				http.Error(w, fmt.Errorf("unable to get user id: %w", err).Error(), http.StatusUnauthorized)
 				return
 			}
 			user := mmodels.User{}
 			if err := db.Preload("GroupMemberships").First(&user, "id = ?", u).Error; err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				http.Error(w, fmt.Errorf("unable to find user: %w", err).Error(), http.StatusInternalServerError)
 				return
 			}
 			if len(user.GroupMemberships) == 0 {
@@ -143,18 +149,23 @@ func New(d deps.Deps) *http.ServeMux {
 			groupId := user.GroupMemberships[0].GroupID
 			var g Graph
 			if err := json.NewDecoder(r.Body).Decode(&g); err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, fmt.Errorf("unable to decode graph: %w", err).Error(), http.StatusBadRequest)
 				return
 			}
 
-			var gs GroupState
-			if err := groupState.Get(groupId, &gs); err != nil {
+			var cr models.CompetitionGroup
+			if err := db.First(&cr, "group_id = ?", groupId, "competition_id", c.ID).Error; err != nil {
+				http.Error(w, fmt.Errorf("unable to find competition submission: %w", err).Error(), http.StatusInternalServerError)
+				return
+			}
+
+			cg, err := json.Marshal(g)
+			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			gs.Graph = g
-
-			if err := groupState.Set(groupId, gs); err != nil {
+			cr.Graph = string(cg)
+			if err := db.Save(&cr).Error; err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -176,10 +187,49 @@ func New(d deps.Deps) *http.ServeMux {
 		//	handler.ServeHTTP(w, r)
 		//	return
 		//}
+		inviteCode := r.URL.Query().Get("invite")
+		u, err := d.Session.GetUserID(r.Context())
+		if err != nil {
+			ru := "/login?next="
+			if inviteCode != "" {
+				ru += url.QueryEscape(d.BaseURL + "?invite=" + inviteCode)
+			}
+			http.Redirect(w, r, ru, http.StatusFound)
+			return
+		}
+
 		var comp models.Competition
 		res := d.DB.Where("active = true").First(&comp)
 		if res.Error != nil {
 			http.NotFound(w, r)
+			return
+		}
+
+		var (
+			gs models.CompetitionGroup
+		)
+		db.Preload("Group.Members", "user_id = ?", u).First(&gs, "competition_id = ?", comp.ID)
+
+		authorized := inviteCode == comp.ID
+
+		now := time.Now().UTC()
+		if gs.ID == "" && (!comp.Active || !authorized) && (now.Before(comp.Start) || now.After(comp.End)) {
+			render(
+				w, r, DefaultLayout(
+					Div(
+						Class("flex items-center"),
+						Div(Class("text-xl text-center m-10"), T("competition starts:")),
+						Input(
+							Class("input"),
+							Type("datetime-local"),
+							Name("start"),
+							Placeholder("Start"),
+							Attr("disabled", "true"),
+							Value(comp.Start.Format("2006-01-02T15:04")),
+						),
+					),
+				),
+			)
 			return
 		}
 
@@ -199,13 +249,8 @@ func New(d deps.Deps) *http.ServeMux {
 			return ""
 		})()
 
-		u, err := d.Session.GetUserID(r.Context())
-		if err != nil {
-			http.Redirect(w, r, "/login?next="+d.BaseURL, http.StatusFound)
-			return
-		}
 		user := mmodels.User{}
-		if err := db.Preload("GroupMemberships").First(&user, "id = ?", u).Error; err != nil {
+		if err := db.First(&user, "id = ?", u).Error; err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -214,24 +259,23 @@ func New(d deps.Deps) *http.ServeMux {
 			tabs  []*Node
 			group mmodels.Group
 		)
-		if len(user.GroupMemberships) > 0 {
-			groupId := user.GroupMemberships[0].GroupID
+		if err := db.First(&group, "id = ?", gs.GroupID).Error; err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-			if err := db.Preload("Members.User").First(&group, "id = ?", groupId).Error; err != nil {
+		if gs.ID != "" {
+			var (
+				g  Graph
+				ps posts.Post
+			)
+			if err := json.Unmarshal([]byte(gs.Graph), &g); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-
-			var gs GroupState
-			err = groupState.Get(groupId, &gs)
-			if err != nil {
-				gs.Graph = Graph{
-					Nodes: []GraphNode{},
-					Edges: []GraphEdge{},
-				}
-				if err := groupState.Set(groupId, gs); err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-				}
+			if err := json.Unmarshal([]byte(gs.Report), &ps); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
 			}
 
 			type Props struct {
@@ -241,8 +285,8 @@ func New(d deps.Deps) *http.ServeMux {
 			}
 
 			p := Props{
-				Id:      groupId,
-				Graph:   gs.Graph,
+				Id:      group.ID,
+				Graph:   g,
 				SaveURL: d.BaseURL + "/graph/",
 			}
 			sg, err := json.Marshal(p)
@@ -261,7 +305,7 @@ func New(d deps.Deps) *http.ServeMux {
 				ProviderURL: d.Config.Blog.YJSURL,
 				Room:        "blog",
 				Username:    u,
-				Post:        gs.Report,
+				Post:        ps,
 			}
 			editorProps, err := json.Marshal(props)
 			if err != nil {
@@ -302,7 +346,7 @@ func New(d deps.Deps) *http.ServeMux {
 				Class("p-5 max-w-7xl mx-auto"),
 				Div(Class("flex items-center justify-between gap-x-6 py-5"),
 					Div(Class("text-sm text-center m-10"), T("hello, "+user.Username)),
-					A(Class("btn btn-ghost"), Href("/logout"), Text("logout")),
+					A(Class("btn btn-ghost"), Attr("href", "/logout"), Text("logout")),
 				),
 				Div(Class("divider")),
 				If(entrypointURL != "", Div(
@@ -320,8 +364,8 @@ func New(d deps.Deps) *http.ServeMux {
 					Div(
 						Class("tab-content border-base-300 bg-base-100 p-10"),
 						groupComponent(GroupCompState{
-							Group: group,
-							User:  user,
+							Group:         group,
+							CompetitionID: comp.ID,
 						}),
 					),
 				),
@@ -536,7 +580,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			}
 
 			// TODO https
-			w.Write([]byte(fmt.Sprintf("/%s", name)))
+			http.Redirect(w, r, d.BaseURL+"/competition/"+id, http.StatusFound)
 			return
 		}
 		w.Write([]byte("invalid method"))
@@ -639,9 +683,9 @@ document.addEventListener('DOMContentLoaded', function() {
 			}
 
 			props := map[string]string{
-				"fileName":  "chal.yaml",
-				"code":      competition.Graph,
-				"serverURL": fmt.Sprintf("%s/code/ws", d.Config.ExternalURL),
+				"fileName": "chal.yaml",
+				"code":     competition.Graph,
+				//"serverURL": fmt.Sprintf("%s/code/ws", d.Config.ExternalURL),
 			}
 			mp, err := json.Marshal(props)
 			if err != nil {
@@ -668,6 +712,16 @@ document.addEventListener('DOMContentLoaded', function() {
 					Div(Class("divider")),
 					Div(Class("text-lg"), Text("competitions")),
 					Div(Id("error"), Class("alert alert-error hidden")),
+					Div(Class("divider")),
+					Form(
+						Class("flex flex-col space-y-4"),
+						Div(Text("new competition")),
+						HxPost("/"),
+						HxTarget("#competition-list"),
+						Input(Class("input"), Type("text"), Value(competition.Name), Name("name"), Placeholder("Name")),
+						Button(Class("btn"), Type("submit"), Text("Save")),
+					),
+					Div(Class("divider")),
 					getGroupList(),
 					Div(Class("divider")),
 					Div(
@@ -681,6 +735,9 @@ document.addEventListener('DOMContentLoaded', function() {
 							//	Name:             "competition",
 							//}, competition),
 							Input(Class("input"), Type("text"), Value(competition.Name), Name("name"), Placeholder("Name")),
+							P(T("times in UTC, est is UTC-4, pst is UTC-7")),
+							Input(Class("input"), Type("datetime-local"), Value(competition.Start.Format("2006-01-02T15:04")), Name("start"), Placeholder("Start")),
+							Input(Class("input"), Type("datetime-local"), Value(competition.End.Format("2006-01-02T15:04")), Name("end"), Placeholder("End")),
 							Div(
 								Class("form-control"),
 								Label(
@@ -727,13 +784,15 @@ document.addEventListener('DOMContentLoaded', function() {
 							Input(Type("file"), Id("file"), Name("file"), Attr("required", "true")),
 							Button(Type("submit"), T("Submit")),
 						),
-						func() *Node {
-							var nodes []*Node
-							for _, f := range files {
-								nodes = append(nodes, A(Attr("href", "/data/xctf/"+id+"/"+f.Name()), Text(f.Name())))
-							}
-							return Ch(nodes)
-						}(),
+						Ul(
+							func() *Node {
+								var nodes []*Node
+								for _, f := range files {
+									nodes = append(nodes, Li(A(Attr("href", "/data/xctf/"+id+"/"+f.Name()), Text(f.Name()))))
+								}
+								return Ch(nodes)
+							}(),
+						),
 					),
 				),
 			).RenderPageCtx(ctx, w, r)
@@ -791,12 +850,24 @@ document.addEventListener('DOMContentLoaded', function() {
 				competition.Active = false
 			}
 
-			if competition.ID == "" {
+			if id == "" {
+				competition.Start = time.Now().Add(time.Hour * 24)
+				competition.End = time.Now().Add(time.Hour * 24 * 2)
 				if err := db.Create(&competition).Error; err != nil {
 					http.Error(w, "Error creating competition: "+err.Error(), http.StatusInternalServerError)
 					return
 				}
 			} else {
+				competition.Start, err = time.Parse("2006-01-02T15:04", r.FormValue("start"))
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				competition.End, err = time.Parse("2006-01-02T15:04", r.FormValue("end"))
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
 				if err := db.Save(&competition).Error; err != nil {
 					http.Error(w, "Error updating competition: "+err.Error(), http.StatusInternalServerError)
 					return
@@ -936,7 +1007,8 @@ func Handle(d deps.Deps) http.HandlerFunc {
 			return
 		}
 
-		if !comp.Active {
+		now := time.Now().UTC()
+		if !comp.Active || now.Before(comp.Start) || now.After(comp.End) {
 			http.Error(w, "competition is not active", http.StatusNotFound)
 			return
 		}

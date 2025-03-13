@@ -2,10 +2,14 @@ package xctf
 
 import (
 	"context"
+	"encoding/json"
+	"github.com/breadchris/share/breadchris/posts"
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/models"
+	xmodels "github.com/breadchris/share/xctf/models"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 	"net/http"
 	"path"
 	"strings"
@@ -16,14 +20,14 @@ func generateJoinCode() string {
 }
 
 type GroupCompState struct {
-	Group models.Group
-	User  models.User
+	Group         models.Group
+	User          models.User
+	CompetitionID string
 }
 
 func groupComponent(s GroupCompState) *Node {
-	user := s.User
 	group := s.Group
-	if len(user.GroupMemberships) == 0 {
+	if group.ID == "" {
 		return Div(
 			Class("p-5 max-w-lg mx-auto"),
 			Div(Class("text-lg"), Text("Join or Create a Group")),
@@ -36,6 +40,7 @@ func groupComponent(s GroupCompState) *Node {
 					Div(Text("Create a New Group")),
 					Input(Class("input"), Type("text"), Name("name"), Placeholder("Group Name")),
 					Input(Type("hidden"), Name("action"), Value("create")),
+					Input(Type("hidden"), Name("compid"), Value(s.CompetitionID)),
 					Button(Class("btn"), Type("submit"), Text("Create")),
 				),
 				Form(
@@ -45,6 +50,7 @@ func groupComponent(s GroupCompState) *Node {
 					Div(Text("Join an Existing Group")),
 					Input(Class("input"), Type("text"), Name("join_code"), Placeholder("Join Code")),
 					Input(Type("hidden"), Name("action"), Value("join")),
+					Input(Type("hidden"), Name("compid"), Value(s.CompetitionID)),
 					Button(Class("btn"), Type("submit"), Text("Join")),
 				),
 			),
@@ -87,6 +93,35 @@ func renderGroup(d deps.Deps, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	newCompGroup := func(db *gorm.DB, compid, groupid string) error {
+		g := Graph{
+			Nodes: []GraphNode{},
+			Edges: []GraphEdge{},
+		}
+		ps := posts.Post{}
+		gb, err := json.Marshal(g)
+		if err != nil {
+			return err
+		}
+		pb, err := json.Marshal(ps)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return err
+		}
+		gs := xmodels.CompetitionGroup{
+			ID:            uuid.NewString(),
+			Graph:         string(gb),
+			Report:        string(pb),
+			GroupID:       groupid,
+			CompetitionID: compid,
+		}
+		if err := db.Save(&gs).Error; err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return err
+		}
+		return nil
+	}
+
 	switch r.Method {
 	case http.MethodGet:
 		var group models.Group
@@ -109,6 +144,11 @@ func renderGroup(d deps.Deps, w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		action := r.FormValue("action")
+		compid := r.FormValue("compid")
+		if compid == "" {
+			http.Error(w, "Competition ID is required", http.StatusBadRequest)
+			return
+		}
 		switch action {
 		case "create":
 			name := r.FormValue("name")
@@ -136,6 +176,11 @@ func renderGroup(d deps.Deps, w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "Error updating user: "+err.Error(), http.StatusInternalServerError)
 				return
 			}
+
+			if err := newCompGroup(db, compid, group.ID); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 			//DefaultLayout(
 			//	Div(
 			//		Class("p-5 max-w-lg mx-auto"),
@@ -147,6 +192,7 @@ func renderGroup(d deps.Deps, w http.ResponseWriter, r *http.Request) {
 			//	),
 			//).RenderPageCtx(ctx, w, r)
 			http.Redirect(w, r, d.BaseURL, http.StatusFound)
+			return
 		case "join":
 			joinCode := r.FormValue("join_code")
 			if joinCode == "" {
@@ -167,6 +213,11 @@ func renderGroup(d deps.Deps, w http.ResponseWriter, r *http.Request) {
 			}
 			if err := db.Save(&gm).Error; err != nil {
 				http.Error(w, "Error updating user: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			if err := newCompGroup(db, compid, group.ID); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			//DefaultLayout(

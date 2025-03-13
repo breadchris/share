@@ -13,6 +13,7 @@ func init() {
 		"Challenge":          reflect.ValueOf((*models.Challenge)(nil)),
 		"Comment":            reflect.ValueOf((*models.Comment)(nil)),
 		"Competition":        reflect.ValueOf((*models.Competition)(nil)),
+		"CompetitionGroup":   reflect.ValueOf((*models.CompetitionGroup)(nil)),
 		"Evidence":           reflect.ValueOf((*models.Evidence)(nil)),
 		"EvidenceConnection": reflect.ValueOf((*models.EvidenceConnection)(nil)),
 		"EvidenceReport":     reflect.ValueOf((*models.EvidenceReport)(nil)),

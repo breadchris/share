@@ -1,20 +1,34 @@
 package models
 
 import (
+	"github.com/breadchris/share/models"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"time"
 )
 
 type Competition struct {
-	ID         string `gorm:"primarykey"`
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
-	DeletedAt  gorm.DeletedAt `gorm:"index"`
-	Name       string
-	Graph      string
-	Active     bool
-	Challenges []Challenge
+	ID                string `gorm:"primarykey"`
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	DeletedAt         gorm.DeletedAt `gorm:"index"`
+	Name              string
+	Graph             string
+	Active            bool
+	Challenges        []Challenge
+	Start             time.Time
+	End               time.Time
+	CompetitionGroups []CompetitionGroup
+}
+
+type CompetitionGroup struct {
+	ID            string `gorm:"primarykey"`
+	Graph         string
+	Report        string
+	GroupID       string
+	Group         models.Group `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	CompetitionID string
+	Competition   Competition `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 }
 
 type Challenge struct {

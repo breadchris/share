@@ -179,6 +179,10 @@ func (s *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 		}
 		f := r.FormValue("email")
 		p := r.FormValue("password")
+		n := r.FormValue("next")
+		if n == "" {
+			n = "/"
+		}
 
 		var user models.User
 		if err := s.db.Where("username = ?", f).First(&user).Error; err != nil {
@@ -192,7 +196,7 @@ func (s *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {
 		}
 
 		s.s.SetUserID(r.Context(), user.ID)
-		http.Redirect(w, r, "/", http.StatusFound)
+		http.Redirect(w, r, n, http.StatusFound)
 		return
 
 		//if f != "" {
@@ -228,6 +232,10 @@ func (s *Auth) handleRegister(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		email := r.FormValue("email")
 		password := r.FormValue("password")
+		n := r.FormValue("next")
+		if n == "" {
+			n = "/"
+		}
 
 		var existingUser models.User
 		if err := s.db.Where("username = ?", email).First(&existingUser).Error; err == nil {
@@ -244,7 +252,7 @@ func (s *Auth) handleRegister(w http.ResponseWriter, r *http.Request) {
 		}
 		s.db.Create(&user)
 		s.s.SetUserID(r.Context(), id)
-		http.Redirect(w, r, "/", http.StatusFound)
+		http.Redirect(w, r, n, http.StatusFound)
 	}
 }
 
@@ -338,6 +346,7 @@ func LoginPage(s AuthState) *Node {
 							Div(Class("mb-4 space-y-4"),
 								Input(Type("email"), Id("email"), Name("email"), Placeholder("email"), Class("input")),
 								Input(Type("password"), Id("password"), Name("password"), Placeholder("password"), Class("input")),
+								Input(Type("hidden"), Name("next"), Value(s.Next)),
 							),
 							Div(Class("flex items-center justify-between"),
 								Button(Class("btn"), Type("submit"), T("submit")),
@@ -351,6 +360,7 @@ func LoginPage(s AuthState) *Node {
 							Div(Class("mb-4 space-y-4"),
 								Input(Type("email"), Id("email"), Name("email"), Placeholder("email"), Class("input")),
 								Input(Type("password"), Id("password"), Name("password"), Placeholder("password"), Class("input")),
+								Input(Type("hidden"), Name("next"), Value(s.Next)),
 							),
 							Div(Class("flex items-center justify-between"),
 								Button(Class("btn"), Type("submit"), T("submit")),

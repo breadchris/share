@@ -75,7 +75,7 @@ const CodeEditor = ({ props }) => {
     );
     const client = useRef();
 
-    console.log(initialCode, fileName)
+    // console.log(initialCode, fileName)
 
     useEffect(() => {
         disposables.current = registerGoLanguageProviders();
