@@ -9,6 +9,7 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/breadchris/share/breadchris/posts"
 	"github.com/breadchris/share/deps"
@@ -26,6 +27,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 	"github.com/sashabaranov/go-openai/jsonschema"
 	"github.com/yeka/zip"
+	"gorm.io/gorm"
 	"html/template"
 	"io"
 	"log"
@@ -208,7 +210,20 @@ func New(d deps.Deps) *http.ServeMux {
 		var (
 			gs models.CompetitionGroup
 		)
-		db.Preload("Group.Members", "user_id = ?", u).First(&gs, "competition_id = ?", comp.ID)
+		er := db.
+			Model(&models.CompetitionGroup{}).
+			// Join the groups table via the CompetitionGroup.GroupID relation.
+			Joins("JOIN groups ON groups.id = competition_groups.group_id").
+			// Join the group_memberships table to filter on userID.
+			Joins("JOIN group_memberships ON group_memberships.group_id = groups.id").
+			Where("competition_groups.competition_id = ? AND group_memberships.user_id = ?", comp.ID, u).
+			First(&gs).Error
+		if er != nil {
+			if !errors.Is(er, gorm.ErrRecordNotFound) {
+				http.Error(w, er.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
 
 		authorized := inviteCode == comp.ID
 
@@ -259,9 +274,8 @@ func New(d deps.Deps) *http.ServeMux {
 			tabs  []*Node
 			group mmodels.Group
 		)
-
 		if gs.ID != "" {
-			if err := db.First(&group, "id = ?", gs.GroupID).Error; err != nil {
+			if err := db.Preload("Members.User").First(&group, "id = ?", gs.GroupID).Error; err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
