@@ -1015,7 +1015,7 @@ func Handle(d deps.Deps) http.HandlerFunc {
 			return
 		}
 
-		_, err := d.Session.GetUserID(r.Context())
+		u, err := d.Session.GetUserID(r.Context())
 		if err != nil {
 			slog.Debug("user not logged in", "err", err)
 			http.Error(w, "user not logged in", http.StatusUnauthorized)
@@ -1024,8 +1024,28 @@ func Handle(d deps.Deps) http.HandlerFunc {
 
 		now := time.Now().UTC()
 		if !comp.Active || now.Before(comp.Start) || now.After(comp.End) {
-			http.Error(w, "competition is not active", http.StatusNotFound)
-			return
+			var (
+				gs models.CompetitionGroup
+			)
+			er := d.DB.
+				Model(&models.CompetitionGroup{}).
+				Joins("JOIN groups ON groups.id = competition_groups.group_id").
+				Joins("JOIN group_memberships ON group_memberships.group_id = groups.id").
+				Where("competition_groups.competition_id = ? AND group_memberships.user_id = ?", comp.ID, u).
+				First(&gs).Error
+			if er != nil {
+				if !errors.Is(er, gorm.ErrRecordNotFound) {
+					http.Error(w, er.Error(), http.StatusInternalServerError)
+					return
+				}
+				http.Error(w, "competition is not active", http.StatusNotFound)
+				return
+			} else {
+				if gs.ID == "" {
+					http.Error(w, "competition is not active", http.StatusNotFound)
+					return
+				}
+			}
 		}
 
 		var graph chalgen.Graph
