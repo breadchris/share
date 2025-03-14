@@ -180,15 +180,15 @@ func New(d deps.Deps) *http.ServeMux {
 	})
 
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		//routingMap := map[string]http.Handler{
-		//	"shell.mcpshsf.com": CreateReverseProxy("http://localhost:8080/"),
-		//}
-		//
-		//host := r.Host
-		//if handler, found := routingMap[host]; found {
-		//	handler.ServeHTTP(w, r)
-		//	return
-		//}
+		routingMap := map[string]http.Handler{
+			"g3tl0st.2025.mcpshsf.com": CreateReverseProxy("http://localhost:9000/"),
+		}
+
+		host := r.Host
+		if handler, found := routingMap[host]; found {
+			handler.ServeHTTP(w, r)
+			return
+		}
 		inviteCode := r.URL.Query().Get("invite")
 		u, err := d.Session.GetUserID(r.Context())
 		if err != nil {
@@ -745,6 +745,7 @@ document.addEventListener('DOMContentLoaded', function() {
 							Div(Text("update competition")),
 							HxPost("/"+id),
 							HxTarget("#competition-list"),
+							A(Href(d.BaseURL+"/?invite="+competition.ID), T("invite")),
 							//BuildFormCtx(BuildCtx{
 							//	CurrentFieldPath: "",
 							//	Name:             "competition",

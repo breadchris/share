@@ -6,7 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/xctf/chals.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/chals.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -227,7 +226,7 @@
       <workItem from="1740074470826" duration="6031000" />
       <workItem from="1740170419615" duration="33363000" />
       <workItem from="1740795290145" duration="5557000" />
-      <workItem from="1740941407379" duration="65345000" />
+      <workItem from="1740941407379" duration="69270000" />
     </task>
     <servers />
   </component>
@@ -244,11 +243,6 @@
           <url>file://$PROJECT_DIR$/html/patchpath_test.go</url>
           <line>32</line>
           <option name="timeStamp" value="22" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/xctf/chals.go</url>
-          <line>277</line>
-          <option name="timeStamp" value="35" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
