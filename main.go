@@ -206,8 +206,8 @@ func startServer(useTLS bool, port int) {
 	interpreted := func(f func(d deps2.Deps) *http.ServeMux, files ...string) *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			//code.DynamicHTTPMux(f, files...)(deps).ServeHTTP(w, r)
-			f(deps).ServeHTTP(w, r)
+			code.DynamicHTTPMux(f, files...)(deps).ServeHTTP(w, r)
+			//f(deps).ServeHTTP(w, r)
 		})
 		return m
 	}
@@ -494,8 +494,20 @@ func startServer(useTLS bool, port int) {
 	}
 }
 
+func neuter(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/") {
+			http.NotFound(w, r)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func serveFiles(dir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		//http.StripPrefix("/"+dir, neuter(http.FileServer(http.Dir(dir)))).ServeHTTP(w, r)
 		http.StripPrefix("/"+dir, http.FileServer(http.Dir(dir))).ServeHTTP(w, r)
 	}
 }

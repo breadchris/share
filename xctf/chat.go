@@ -74,7 +74,7 @@ func Chat(slack *chalgen.Slack, state ChatState) *Node {
 			Div(Class("flex-1 flex items-center justify-center"),
 				H1(Class("text-3xl font-semibold"), T("Login to view chat messages!")),
 			),
-			Div(Class("flex bg-gray-900"),
+			Div(Class("flex bg-gray-900 h-full"),
 				Div(Class("w-48 bg-gray-800 text-white flex flex-col"),
 					Div(Class("px-4 py-6"),
 						H2(Class("text-xl font-semibold"), T("Channels")),

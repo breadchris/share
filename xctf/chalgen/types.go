@@ -192,7 +192,9 @@ type (
 		Value string
 	}
 	Site struct {
+		Path   string
 		Routes []SiteRoute
+		Game   string
 	}
 	ImageMap struct {
 		EntryImage   string

@@ -985,6 +985,17 @@ You will generate cyber forensic evidence based on a provided story line and typ
 	return m
 }
 
+func neuter(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/") {
+			http.NotFound(w, r)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func Handle(d deps.Deps) http.HandlerFunc {
 	ChalURL := func(scheme, compId, chalID, host string) string {
 		path := fmt.Sprintf("%s/competition/%s/%s", d.BaseURL, compId, chalID)
@@ -1116,6 +1127,25 @@ func Handle(d deps.Deps) http.HandlerFunc {
 		}
 		defer db.Close()
 
+		// TODO breadchris challenge can have code scripts
+		fillers := defaultFillerContent()
+		logEntries := generateAccessLogEntries(10000, fillers)
+		ae := AccessLogEntry{
+			Timestamp:      time.Now().Format(time.RFC3339),
+			UserID:         "g3tl0st",
+			IPAddress:      "g3tl0st.2025.mcpshsf.com",
+			Method:         "GET",
+			URL:            "/cms?search=SELECT%20title,%20content,%20author,%20fees_owed%20FROM%20books%20WHERE%20deleted%20=%20false",
+			Status:         "200",
+			ResponseTimeMs: "100",
+			Referrer:       "ZmxhZ3tpbl90aGVfbG9nc30=",
+			UserAgent:      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Safari/605.1.15",
+		}
+
+		// insert ae into random position in logEntries
+		re := rand.Intn(len(logEntries))
+		logEntries = append(logEntries[:re], append([]AccessLogEntry{ae}, logEntries[re:]...)...)
+
 		for _, n := range graph.Nodes {
 			if n.ID == chalId {
 				switch u := n.Challenge.Value.(type) {
@@ -1135,6 +1165,92 @@ func Handle(d deps.Deps) http.HandlerFunc {
 					).RenderPageCtx(ctx, w, r)
 					return
 				case *chalgen.Site:
+					if u.Game == "http" {
+						renderLevel := func(level int) *Node {
+							instructions := map[int]string{
+								1: "Make a GET request to /level?num=1",
+								2: "Change URL path to /level?num=2",
+								3: "Add query parameter: /level?num=3&item=book",
+								4: "Make a POST request to /level?num=4",
+								5: "Add header Authorization: Token123 to request to /level?num=5",
+							}
+
+							return Div(Class("space-y-4"),
+								P(Class("text-xl"), T(fmt.Sprintf("Level %d Instructions:", level))),
+								P(Class("text-lg font-medium"), T(instructions[level])),
+								Button(Class("btn btn-primary"), Attr("hx-get", fmt.Sprintf("/level?num=%d", level)), Attr("hx-target", "#response"), T("Send Request")),
+								Div(Id("response"), Class("p-4 bg-gray-100 rounded")),
+							)
+						}
+						if p == "level" {
+							level := r.URL.Query().Get("num")
+							switch level {
+							case "1":
+								fmt.Fprint(w, "You've completed Level 1! Next: Change the URL path to /level2")
+							case "2":
+								fmt.Fprint(w, "Good! Level 2 done. Now add a query parameter ?item=book")
+							case "3":
+								item := r.URL.Query().Get("item")
+								if item == "book" {
+									fmt.Fprint(w, "Great! Level 3 complete. Next: use POST method to /level4")
+								} else {
+									fmt.Fprint(w, "Oops! You need to use item=book")
+								}
+							case "4":
+								if r.Method == http.MethodPost {
+									fmt.Fprint(w, "Awesome! Level 4 done. Set header Authorization: Token123 on /level5")
+								} else {
+									fmt.Fprint(w, "Wrong method! Please use POST.")
+								}
+							case "5":
+								auth := r.Header.Get("Authorization")
+								if auth == "Token123" {
+									fmt.Fprint(w, "Nice! Level 5 complete. You've mastered headers!")
+								} else {
+									fmt.Fprint(w, "Missing or incorrect Authorization header.")
+								}
+							default:
+								fmt.Fprint(w, "Unknown level")
+							}
+							return
+						}
+						DefaultLayout(
+							Script(Src("https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.6/ace.js")),
+							Script(Src("/worker.js"), Attr("type", "module")),
+							Div(Class("container mx-auto p-4 text-center space-y-4"),
+								H1(Class("text-3xl font-bold"), T("HTTP Request Game")),
+								Div(Id("game-area"), renderLevel(1)),
+								Div(Class("mt-6"),
+									Div(Id("editor"), Style_("height: 200px; width: 100%; border: 1px solid #ccc;")),
+									Button(Class("btn btn-secondary mt-2"), Attr("onclick", "runCode()"), T("Run Fetch Request")),
+								),
+								Div(Id("fetch-output"), Class("p-4 bg-gray-100 rounded mt-4")),
+							),
+							Script(T(`
+				const editor = ace.edit("editor", { mode: "ace/mode/javascript", theme: "ace/theme/monokai" });
+				const worker = new Worker('/request-interceptor.js');
+
+				function runCode() {
+					const code = editor.getValue();
+					worker.postMessage({ code });
+				}
+
+				worker.onmessage = (e) => {
+					const output = document.getElementById("fetch-output");
+					output.textContent = JSON.stringify(e.data, null, 2);
+				};
+			`)),
+						).RenderPageCtx(ctx, w, r)
+					}
+					if u.Path != "" {
+						println(r.URL.Path)
+						//pa := path.Join("data/xctf", compId, u.Path)
+
+						//println(r.URL.Path)
+						//http.StripPrefix(r.URL.Path, http.FileServer(http.Dir(pa))).ServeHTTP(w, r)
+						http.ServeFile(w, r, path.Join("data/xctf", compId, u.Path, p))
+						return
+					}
 					for _, ro := range u.Routes {
 						if ro.Route == p {
 							DefaultLayout(
@@ -1148,20 +1264,6 @@ func Handle(d deps.Deps) http.HandlerFunc {
 					}
 				case *chalgen.CMS:
 					if p == "log" {
-						fillers := defaultFillerContent()
-						logEntries := generateAccessLogEntries(100, fillers)
-						logEntries = append(logEntries, AccessLogEntry{
-							Timestamp:      time.Now().Format(time.RFC3339),
-							UserID:         "g3tl0st",
-							IPAddress:      "localhost:9000",
-							Method:         "GET",
-							URL:            "/backups",
-							Status:         "200",
-							ResponseTimeMs: "100",
-							Referrer:       "",
-							UserAgent:      "",
-						})
-
 						if err := writeAccessLogCSV(w, logEntries); err != nil {
 							http.Error(w, err.Error(), http.StatusInternalServerError)
 							return
