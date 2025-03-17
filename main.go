@@ -507,8 +507,8 @@ func neuter(next http.Handler) http.Handler {
 
 func serveFiles(dir string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		//http.StripPrefix("/"+dir, neuter(http.FileServer(http.Dir(dir)))).ServeHTTP(w, r)
-		http.StripPrefix("/"+dir, http.FileServer(http.Dir(dir))).ServeHTTP(w, r)
+		http.StripPrefix("/"+dir, neuter(http.FileServer(http.Dir(dir)))).ServeHTTP(w, r)
+		//http.StripPrefix("/"+dir, http.FileServer(http.Dir(dir))).ServeHTTP(w, r)
 	}
 }
 
