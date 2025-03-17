@@ -5,4 +5,4 @@ COPY --chown=user:user files /home/user/files
 WORKDIR /home/user/files
 USER user
 
-CMD ["--credential", "user:pass", "--reconnect", "/bin/sh"]
+CMD ["--credential", "user:pass", "--permit-write", "--reconnect", "/bin/sh"]

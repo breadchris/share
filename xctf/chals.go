@@ -397,6 +397,11 @@ func New(d deps.Deps) *http.ServeMux {
 							CompetitionID: comp.ID,
 						}),
 					),
+					Input(AriaLabel("chat"), Class("tab"), Type("radio"), Id("tab4"), Name("tabs")),
+					Div(
+						Class("tab-content border-base-300 bg-base-100 p-10"),
+						Iframe(Src("https://irc.mcpshsf.com"), Attr("style", "width: 100%; height: 600px;")),
+					),
 				),
 			),
 		))
