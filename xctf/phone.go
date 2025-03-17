@@ -104,10 +104,10 @@ func App(state PhoneState, i int, a *chalgen.PhoneApp) *Node {
 }
 
 func RenderPhone(state PhoneState, phone *chalgen.Phone) *Node {
-	return Div(Class("flex h-screen flex-col space-y-4"),
+	return Div(Class("w-96 m-auto h-screen space-y-4"),
 		Div(Class("mockup-phone overflow-y-scroll h-fit"),
-			Div(Class("camera")),
-			Div(Class("display overflow-y-scroll"),
+			Div(Class("mockup-phone-camera")),
+			Div(Class("mockup-phone-display overflow-y-scroll"),
 				Div(Class("artboard artboard-demo phone-1 overflow-y-scroll"),
 					Div(Class("flex flex-col items-center space-y-12"),
 						H1(Class("text-2xl font-bold"), T(phone.Name)),

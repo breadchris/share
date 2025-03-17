@@ -23,6 +23,11 @@ type Message struct {
 func Chat(slack *chalgen.Slack, state ChatState) *Node {
 	user, ok := state.UserLookup[state.Username]
 	return Div(Class("flex flex-col h-screen"),
+		Style(Attr("type", "text/tailwindcss"), T(`
+a {
+   @apply underline text-blue-600 hover:text-blue-800 visited:text-purple-600
+}
+`)),
 		Div(Class("navbar bg-base-100"),
 			Div(Class("flex-1"),
 				A(Href("#"), Class("btn btn-ghost text-xl"), T("slick"))),
@@ -121,7 +126,7 @@ func Chat(slack *chalgen.Slack, state ChatState) *Node {
 														Button(T("close")),
 													),
 												),
-												Div(Class("mt-1 text-sm font-medium"), T(m.Content)),
+												Div(Class("mt-1 text-sm font-medium"), Raw(m.Content)),
 												Div(Class("text-sm text-gray-700"), T(time.Unix(m.Timestamp, 0).Format(time.ANSIC))),
 											),
 										),

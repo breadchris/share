@@ -93,27 +93,27 @@ func New(d deps.Deps) *http.ServeMux {
 				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}
-			user := mmodels.User{}
-			if err := db.Preload("GroupMemberships").First(&user, "id = ?", u).Error; err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			if len(user.GroupMemberships) == 0 {
-				http.Error(w, "user not in group", http.StatusForbidden)
-				return
-			}
 
-			groupId := user.GroupMemberships[0].GroupID
 			g, err := io.ReadAll(r.Body)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 
-			var cr models.CompetitionGroup
-			if err := db.First(&cr, "group_id = ?", groupId, "competition_id", c.ID).Error; err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
+			var (
+				cr models.CompetitionGroup
+			)
+			er := db.
+				Model(&models.CompetitionGroup{}).
+				Joins("JOIN groups ON groups.id = competition_groups.group_id").
+				Joins("JOIN group_memberships ON group_memberships.group_id = groups.id").
+				Where("competition_groups.competition_id = ? AND group_memberships.user_id = ?", c.ID, u).
+				First(&cr).Error
+			if er != nil {
+				if !errors.Is(er, gorm.ErrRecordNotFound) {
+					http.Error(w, er.Error(), http.StatusInternalServerError)
+					return
+				}
 			}
 
 			cr.Report = string(g)
@@ -131,6 +131,11 @@ func New(d deps.Deps) *http.ServeMux {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		var gr chalgen.Graph
+		if err := json.Unmarshal([]byte(c.Graph), &gr); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 		switch r.Method {
 		case http.MethodPut:
 			u, err := d.Session.GetUserID(r.Context())
@@ -138,27 +143,35 @@ func New(d deps.Deps) *http.ServeMux {
 				http.Error(w, fmt.Errorf("unable to get user id: %w", err).Error(), http.StatusUnauthorized)
 				return
 			}
-			user := mmodels.User{}
-			if err := db.Preload("GroupMemberships").First(&user, "id = ?", u).Error; err != nil {
-				http.Error(w, fmt.Errorf("unable to find user: %w", err).Error(), http.StatusInternalServerError)
-				return
-			}
-			if len(user.GroupMemberships) == 0 {
-				http.Error(w, "user not in group", http.StatusForbidden)
-				return
-			}
 
-			groupId := user.GroupMemberships[0].GroupID
 			var g Graph
 			if err := json.NewDecoder(r.Body).Decode(&g); err != nil {
 				http.Error(w, fmt.Errorf("unable to decode graph: %w", err).Error(), http.StatusBadRequest)
 				return
 			}
 
-			var cr models.CompetitionGroup
-			if err := db.First(&cr, "group_id = ?", groupId, "competition_id", c.ID).Error; err != nil {
-				http.Error(w, fmt.Errorf("unable to find competition submission: %w", err).Error(), http.StatusInternalServerError)
-				return
+			for i, n := range g.Nodes {
+				for _, gn := range gr.Nodes {
+					if gn.Flag == n.Data["label"] {
+						g.Nodes[i].Data["flag"] = gn.Flag
+					}
+				}
+			}
+
+			var (
+				cr models.CompetitionGroup
+			)
+			er := db.
+				Model(&models.CompetitionGroup{}).
+				Joins("JOIN groups ON groups.id = competition_groups.group_id").
+				Joins("JOIN group_memberships ON group_memberships.group_id = groups.id").
+				Where("competition_groups.competition_id = ? AND group_memberships.user_id = ?", c.ID, u).
+				First(&cr).Error
+			if er != nil {
+				if !errors.Is(er, gorm.ErrRecordNotFound) {
+					http.Error(w, er.Error(), http.StatusInternalServerError)
+					return
+				}
 			}
 
 			cg, err := json.Marshal(g)
@@ -171,7 +184,8 @@ func New(d deps.Deps) *http.ServeMux {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			w.WriteHeader(http.StatusNoContent)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(cg)
 		}
 	})
 
@@ -1287,7 +1301,7 @@ self.addEventListener('fetch', event => {
 				//};
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('intercept-worker.js').then(reg => {
+      navigator.serviceWorker.register("intercept-worker.js").then(reg => {
         console.log('Service Worker registered', reg);
       }).catch(err => {
         console.error('Service Worker registration failed:', err);
@@ -1359,7 +1373,7 @@ self.addEventListener('fetch', event => {
 										Class("flex-none"),
 										Ul(
 											Class("menu menu-horizontal px-1"),
-											Li(A(Href("/backups"), Text("backups"))),
+											Li(A(Href("/backups"), Text(""))),
 										),
 									),
 								),
@@ -1449,8 +1463,8 @@ self.addEventListener('fetch', event => {
 								Div(
 									Class("flex-none"),
 									Ul(
-										Class("menu menu-horizontal px-1"),
-										Li(A(Href("/backups"), Text("backups"))),
+										//Class("menu menu-horizontal px-1"),
+										Li(A(Href("/backups"), Text(""))),
 									),
 								),
 							),
@@ -1627,6 +1641,9 @@ self.addEventListener('fetch', event => {
 								http.Error(w, err.Error(), http.StatusInternalServerError)
 								return
 							}
+							renderer := blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{})
+							b := blackfriday.Run([]byte(p.Messages[i].Content), blackfriday.WithRenderer(renderer))
+							p.Messages[i].Content = string(b)
 						}
 					}
 

@@ -76,7 +76,7 @@ function EvidenceNode({ data }) {
     return (
         <>
             <Handle type="target" position={Position.Top} />
-            <div className={"p-6"}>
+            <div className={`p-6 ${data.flag && "alert alert-success"}`}>
                 {data.label}
             </div>
             <Handle type="source" position={Position.Bottom} id="a" />
@@ -169,10 +169,14 @@ export default function GraphApp({ props }) {
             body: JSON.stringify({ nodes, edges }),
         }).then((response) => {
             if (!response.ok) {
-                console.error('Failed to update graph');
+                alert('Failed to update graph');
             }
+            return response.json();
+        }).then((data) => {
+            setNodes(data.nodes);
+            setEdges(data.edges);
         }).catch((error) => {
-            console.error('Failed to update graph:', error);
+            alert('Failed to update graph:' + error);
         });
         // if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
         //     socketRef.current.send(JSON.stringify({

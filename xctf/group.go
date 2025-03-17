@@ -77,6 +77,33 @@ func groupComponent(s GroupCompState) *Node {
 	)
 }
 
+func newCompGroup(db *gorm.DB, compid, groupid string) (*xmodels.CompetitionGroup, error) {
+	g := Graph{
+		Nodes: []GraphNode{},
+		Edges: []GraphEdge{},
+	}
+	ps := posts.Post{}
+	gb, err := json.Marshal(g)
+	if err != nil {
+		return nil, err
+	}
+	pb, err := json.Marshal(ps)
+	if err != nil {
+		return nil, err
+	}
+	gs := xmodels.CompetitionGroup{
+		ID:            uuid.NewString(),
+		Graph:         string(gb),
+		Report:        string(pb),
+		GroupID:       groupid,
+		CompetitionID: compid,
+	}
+	if err := db.Save(&gs).Error; err != nil {
+		return nil, err
+	}
+	return &gs, nil
+}
+
 func renderGroup(d deps.Deps, w http.ResponseWriter, r *http.Request) {
 	db := d.DB
 	ctx := context.WithValue(r.Context(), "baseURL", path.Join(d.BaseURL, "group"))
@@ -91,35 +118,6 @@ func renderGroup(d deps.Deps, w http.ResponseWriter, r *http.Request) {
 	if err := db.Preload("GroupMemberships").First(&user, "id = ?", u).Error; err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
-	}
-
-	newCompGroup := func(db *gorm.DB, compid, groupid string) error {
-		g := Graph{
-			Nodes: []GraphNode{},
-			Edges: []GraphEdge{},
-		}
-		ps := posts.Post{}
-		gb, err := json.Marshal(g)
-		if err != nil {
-			return err
-		}
-		pb, err := json.Marshal(ps)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return err
-		}
-		gs := xmodels.CompetitionGroup{
-			ID:            uuid.NewString(),
-			Graph:         string(gb),
-			Report:        string(pb),
-			GroupID:       groupid,
-			CompetitionID: compid,
-		}
-		if err := db.Save(&gs).Error; err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return err
-		}
-		return nil
 	}
 
 	switch r.Method {
@@ -177,7 +175,7 @@ func renderGroup(d deps.Deps, w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			if err := newCompGroup(db, compid, group.ID); err != nil {
+			if _, err := newCompGroup(db, compid, group.ID); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -216,7 +214,7 @@ func renderGroup(d deps.Deps, w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			if err := newCompGroup(db, compid, group.ID); err != nil {
+			if _, err := newCompGroup(db, compid, group.ID); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
