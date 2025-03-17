@@ -82,8 +82,8 @@ func createMaze(root string, currentDepth, maxDepth, maxFolders int, wordlist []
 
 func CreateMaze(maxDepth, maxFolders int, wordlist []string) error {
 	rand.Seed(time.Now().UnixNano())
-	root := "maze"
-	if err := os.Mkdir(root, 0755); err != nil && !os.IsExist(err) {
+	root := "data/xctf/maze"
+	if err := os.MkdirAll(root, 0755); err != nil && !os.IsExist(err) {
 		return err
 	}
 	return createMaze(root, 1, maxDepth, maxFolders, wordlist)
@@ -91,7 +91,7 @@ func CreateMaze(maxDepth, maxFolders int, wordlist []string) error {
 
 func TestFolderMaze(t *testing.T) {
 	wordlist := []string{"alpha", "bravo", "charlie", "delta", "echo", "foxtrot", "golf", "hotel"}
-	if err := CreateMaze(4, 3, wordlist); err != nil {
+	if err := CreateMaze(20, 10, wordlist); err != nil {
 		fmt.Println("Error creating maze:", err)
 	} else {
 		fmt.Println("Maze created successfully!")

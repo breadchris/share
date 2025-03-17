@@ -386,7 +386,7 @@ func PCAPLogin(chalDir, username, password, outFile, flag, flagTransform string)
 	}
 	time.Sleep(10 * time.Second)
 	// Stop tcpdump by sending a control character (simulate Ctrl-C).
-	tcpdump.Run(string(3), true, 600*time.Second, true)
+	tcpdump.Run(string(""), true, 600*time.Second, true)
 
 	fmt.Println("Finished PCAPLogin challenge generation.")
 	return nil
@@ -448,7 +448,7 @@ func PingPCAP(chalDir, text, flag string) error {
 		}
 	}
 	time.Sleep(10 * time.Second)
-	tcpdump.Run(string(3), true, 600*time.Second, true)
+	tcpdump.Run(string(""), true, 600*time.Second, true)
 
 	fmt.Println("Finished PingPCAP challenge generation.")
 	return nil

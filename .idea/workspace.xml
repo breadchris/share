@@ -5,14 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2/storage_v2/_src_/schema/main.uQUzAA.meta" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2/storage_v2/_src_/schema/main.uQUzAA.meta" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/chals.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/chals.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/chat.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/chat.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/docker/files/backup" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/docker/files/backup" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/graph.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/graph.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/group.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/group.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xctf/chals_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/chals_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/xctf/docker.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/docker.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/xctf/phone.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/phone.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -120,7 +115,7 @@
       <output_directory value="$PROJECT_DIR$/data" />
       <method v="2" />
     </configuration>
-    <configuration name="TestEncryptZip in github.com/breadchris/share/xctf" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestFolderMaze in github.com/breadchris/share/xctf" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="share" />
       <working_directory value="$PROJECT_DIR$/xctf" />
       <root_directory value="$PROJECT_DIR$" />
@@ -129,7 +124,7 @@
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
-      <pattern value="^\QTestEncryptZip\E$" />
+      <pattern value="^\QTestFolderMaze\E$" />
       <method v="2" />
     </configuration>
     <configuration name="TestGenerate in github.com/breadchris/share/breadchris" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
@@ -193,19 +188,19 @@
     <list>
       <item itemvalue="Go Build.share" />
       <item itemvalue="Go Build.xctf" />
+      <item itemvalue="Go Test.TestFolderMaze in github.com/breadchris/share/xctf" />
       <item itemvalue="Go Test.TestRSA in github.com/breadchris/share/xctf" />
       <item itemvalue="Go Test.TestXor in github.com/breadchris/share/xctf" />
       <item itemvalue="Go Test.TestGenerate in github.com/breadchris/share/breadchris" />
       <item itemvalue="Go Test.TestImage in github.com/breadchris/share/xctf" />
-      <item itemvalue="Go Test.TestEncryptZip in github.com/breadchris/share/xctf" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Test.TestFolderMaze in github.com/breadchris/share/xctf" />
         <item itemvalue="Go Test.TestXor in github.com/breadchris/share/xctf" />
         <item itemvalue="Go Test.TestImage in github.com/breadchris/share/xctf" />
         <item itemvalue="Go Test.TestRSA in github.com/breadchris/share/xctf" />
         <item itemvalue="Go Test.TestGenerate in github.com/breadchris/share/breadchris" />
-        <item itemvalue="Go Test.TestEncryptZip in github.com/breadchris/share/xctf" />
       </list>
     </recent_temporary>
   </component>
@@ -236,7 +231,7 @@
       <workItem from="1740941407379" duration="75301000" />
       <workItem from="1742078833464" duration="3367000" />
       <workItem from="1742087064900" duration="2736000" />
-      <workItem from="1742090021663" duration="15102000" />
+      <workItem from="1742090021663" duration="16241000" />
     </task>
     <servers />
   </component>

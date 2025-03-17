@@ -45,7 +45,7 @@ func App(state PhoneState, i int, a *chalgen.PhoneApp) *Node {
 							Class("carousel-item relative w-64 h-96 overflow-hidden"),
 							Attr("onclick", fmt.Sprintf("document.getElementById('photo_%d_%d').classList.toggle('w-full');", i, j)),
 							Id(fmt.Sprintf("photo_%d_%d", i, j)),
-							Img(Src(p), Class("rounded-box min-w-full min-h-full object-cover top-1/2 transform")),
+							Img(Attr("src", p), Class("rounded-box min-w-full min-h-full object-cover top-1/2 transform")),
 						))
 					}
 					return Ch(photos)
