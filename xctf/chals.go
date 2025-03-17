@@ -1166,84 +1166,162 @@ func Handle(d deps.Deps) http.HandlerFunc {
 					return
 				case *chalgen.Site:
 					if u.Game == "http" {
-						renderLevel := func(level int) *Node {
-							instructions := map[int]string{
-								1: "Make a GET request to /level?num=1",
-								2: "Change URL path to /level?num=2",
-								3: "Add query parameter: /level?num=3&item=book",
-								4: "Make a POST request to /level?num=4",
-								5: "Add header Authorization: Token123 to request to /level?num=5",
-							}
-
-							return Div(Class("space-y-4"),
-								P(Class("text-xl"), T(fmt.Sprintf("Level %d Instructions:", level))),
-								P(Class("text-lg font-medium"), T(instructions[level])),
-								Button(Class("btn btn-primary"), Attr("hx-get", fmt.Sprintf("/level?num=%d", level)), Attr("hx-target", "#response"), T("Send Request")),
-								Div(Id("response"), Class("p-4 bg-gray-100 rounded")),
-							)
+						var levels map[string]struct {
+							Instructions string
+							Handler      http.HandlerFunc
 						}
-						if p == "level" {
-							level := r.URL.Query().Get("num")
-							switch level {
-							case "1":
-								fmt.Fprint(w, "You've completed Level 1! Next: Change the URL path to /level2")
-							case "2":
-								fmt.Fprint(w, "Good! Level 2 done. Now add a query parameter ?item=book")
-							case "3":
-								item := r.URL.Query().Get("item")
-								if item == "book" {
-									fmt.Fprint(w, "Great! Level 3 complete. Next: use POST method to /level4")
-								} else {
-									fmt.Fprint(w, "Oops! You need to use item=book")
-								}
-							case "4":
-								if r.Method == http.MethodPost {
-									fmt.Fprint(w, "Awesome! Level 4 done. Set header Authorization: Token123 on /level5")
-								} else {
-									fmt.Fprint(w, "Wrong method! Please use POST.")
-								}
-							case "5":
-								auth := r.Header.Get("Authorization")
-								if auth == "Token123" {
-									fmt.Fprint(w, "Nice! Level 5 complete. You've mastered headers!")
-								} else {
-									fmt.Fprint(w, "Missing or incorrect Authorization header.")
-								}
-							default:
-								fmt.Fprint(w, "Unknown level")
-							}
+
+						levels = map[string]struct {
+							Instructions string
+							Handler      http.HandlerFunc
+						}{
+							"thefirstlevel": {
+								Instructions: fmt.Sprintf("Run this js fetch code: fetch(\"%s/nicejobnowdothis\") in the code editor below.", baseURL),
+								Handler: func(writer http.ResponseWriter, r *http.Request) {
+									Div(T("You've completed Level 1! Next: "+levels["nicejobnowdothis"].Instructions)).RenderPageCtx(ctx, writer, r)
+								},
+							},
+							"nicejobnowdothis": {
+								Instructions: fmt.Sprintf("Change URL path to \"%s/tooeasywhataboutthisone\"", baseURL),
+								Handler: func(writer http.ResponseWriter, r *http.Request) {
+									Div(T("You've completed Level 2! Next: "+levels["tooeasywhataboutthisone"].Instructions)).RenderPageCtx(ctx, writer, r)
+								},
+							},
+							"tooeasywhataboutthisone": {
+								Instructions: fmt.Sprintf("Make a request to \"%s/tooeasywhataboutthisone\" and add the query parameter \"item\" and set its value to \"book\" to the URL path", baseURL),
+								Handler: func(writer http.ResponseWriter, r *http.Request) {
+									if r.URL.Query().Get("item") == "book" {
+										Div(T("You've completed Level 3! Next: "+levels["surelytherearenomore"].Instructions)).RenderPageCtx(ctx, writer, r)
+									} else {
+										Div(T("Oops! You need that query parameter set!")).RenderPageCtx(ctx, writer, r)
+									}
+								},
+							},
+							"surelytherearenomore": {
+								Instructions: fmt.Sprintf("Make a POST request to \"%s/surelytherearenomore\"", baseURL),
+								Handler: func(writer http.ResponseWriter, r *http.Request) {
+									if r.Method == http.MethodPost {
+										Div(T("You've completed Level 4! Next: "+levels["oklastoneipromise"].Instructions)).RenderPageCtx(ctx, writer, r)
+									} else {
+										Div(T("Wrong method! Please use POST.")).RenderPageCtx(ctx, writer, r)
+									}
+								},
+							},
+							"oklastoneipromise": {
+								Instructions: fmt.Sprintf("Make a POST request to \"%s/oklastoneipromise\" with the \"Authorization\" header set to \"Token123\"", baseURL),
+								Handler: func(w http.ResponseWriter, r *http.Request) {
+									if r.Header.Get("Authorization") == "Token123" {
+										Div(T("You've completed Level 5! You've mastered headers! flag{http_is_neat}")).RenderPageCtx(ctx, w, r)
+									} else {
+										Div(T("Missing or incorrect Authorization header.")).RenderPageCtx(ctx, w, r)
+									}
+								},
+							},
+						}
+						if level, ok := levels[p]; ok {
+							level.Handler(w, r)
+							return
+						}
+						if p == "intercept-worker.js" {
+							c := `
+self.addEventListener('fetch', event => {
+  const requestClone = event.request.clone();
+
+  event.respondWith(
+    fetch(event.request).then(response => {
+      const responseClone = response.clone();
+
+      Promise.all([
+        requestClone.text(),
+        responseClone.text()
+      ]).then(([reqBody, resBody]) => {
+        self.clients.matchAll().then(clients => {
+          clients.forEach(client => {
+            client.postMessage({
+              url: requestClone.url,
+              method: requestClone.method,
+              requestHeaders: [...requestClone.headers],
+              requestBody: reqBody,
+              responseStatus: responseClone.status,
+              responseHeaders: [...responseClone.headers],
+              responseBody: resBody
+            });
+          });
+        });
+      });
+
+      return response;
+    })
+  );
+});
+`
+							w.Header().Set("Content-Type", "application/javascript")
+							w.Write([]byte(c))
 							return
 						}
 						DefaultLayout(
 							Script(Src("https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.6/ace.js")),
-							Script(Src("/worker.js"), Attr("type", "module")),
-							Div(Class("container mx-auto p-4 text-center space-y-4"),
+							//Script(Src("/worker.js"), Attr("type", "module")),
+							Div(Class("container mx-auto p-4 space-y-4"),
 								H1(Class("text-3xl font-bold"), T("HTTP Request Game")),
-								Div(Id("game-area"), renderLevel(1)),
+								Div(Id("game-area text-lg"), T(levels["thefirstlevel"].Instructions)),
 								Div(Class("mt-6"),
 									Div(Id("editor"), Style_("height: 200px; width: 100%; border: 1px solid #ccc;")),
 									Button(Class("btn btn-secondary mt-2"), Attr("onclick", "runCode()"), T("Run Fetch Request")),
 								),
-								Div(Id("fetch-output"), Class("p-4 bg-gray-100 rounded mt-4")),
+								Div(Id("logs"), Class("p-4 bg-gray-100 rounded mt-4")),
 							),
-							Script(T(`
+							Script(Raw(`
 				const editor = ace.edit("editor", { mode: "ace/mode/javascript", theme: "ace/theme/monokai" });
-				const worker = new Worker('/request-interceptor.js');
+				//const worker = new Worker('./request-interceptor.js');
 
 				function runCode() {
 					const code = editor.getValue();
-					worker.postMessage({ code });
+					eval(code);
+					//worker.postMessage({ code });
 				}
 
-				worker.onmessage = (e) => {
-					const output = document.getElementById("fetch-output");
-					output.textContent = JSON.stringify(e.data, null, 2);
-				};
+				//worker.onmessage = (e) => {
+				//	const output = document.getElementById("fetch-output");
+				//	output.textContent = JSON.stringify(e.data, null, 2);
+				//};
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('intercept-worker.js').then(reg => {
+        console.log('Service Worker registered', reg);
+      }).catch(err => {
+        console.error('Service Worker registration failed:', err);
+      });
+
+      navigator.serviceWorker.addEventListener('message', event => {
+        const logContainer = document.getElementById('logs');
+        const { url, method, requestHeaders, requestBody, responseStatus, responseHeaders, responseBody } = event.data;
+
+        const entry = document.createElement('div');
+        entry.style.overflowX = 'scroll';
+        entry.style.marginBottom = '1rem';
+        entry.style.padding = '0.5rem';
+        entry.style.border = '1px solid #ccc';
+
+        entry.innerHTML = `+"`"+`
+						<strong>URL:</strong> ${url}<br>
+						<strong>Method:</strong> ${method}<br>
+						<strong>Status:</strong> ${responseStatus}<br>
+						<details><summary><strong>Request Headers</strong></summary><pre>${JSON.stringify(requestHeaders, null, 2)}</pre></details>
+						<details><summary><strong>Request Body</strong></summary><pre>${requestBody}</pre></details>
+						<details><summary><strong>Response Headers</strong></summary><pre>${JSON.stringify(responseHeaders, null, 2)}</pre></details>
+						<details><summary><strong>Response Body</strong></summary><pre>${responseBody}</pre></details>
+							`+"`"+`
+
+        logContainer.prepend(entry);
+      });
+    } else {
+      console.error('Service Workers are not supported in this browser.');
+    }
 			`)),
 						).RenderPageCtx(ctx, w, r)
 					}
 					if u.Path != "" {
-						println(r.URL.Path)
 						//pa := path.Join("data/xctf", compId, u.Path)
 
 						//println(r.URL.Path)
