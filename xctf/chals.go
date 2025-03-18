@@ -81,6 +81,7 @@ func New(d deps.Deps) *http.ServeMux {
 	m.Handle("/group/", http.StripPrefix("/group", groupM))
 
 	m.HandleFunc("/report/", func(w http.ResponseWriter, r *http.Request) {
+		println("report")
 		var c models.Competition
 		if err := db.First(&c, "active = true").Error; err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -116,7 +117,17 @@ func New(d deps.Deps) *http.ServeMux {
 				}
 			}
 
-			cr.Report = string(g)
+			report := posts.Post{
+				Blocknote: string(g),
+			}
+
+			b, err := json.Marshal(report)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			cr.Report = string(b)
 			if err := db.Save(&cr).Error; err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -299,12 +310,17 @@ func New(d deps.Deps) *http.ServeMux {
 				ps posts.Post
 			)
 			if err := json.Unmarshal([]byte(gs.Graph), &g); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
+				println("could not load graph", err)
+				//http.Error(w, err.Error(), http.StatusInternalServerError)
+				g = Graph{
+					Nodes: []GraphNode{},
+					Edges: []GraphEdge{},
+				}
 			}
 			if err := json.Unmarshal([]byte(gs.Report), &ps); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
+				println("could not load report", err)
+				//http.Error(w, err.Error(), http.StatusInternalServerError)
+				ps = posts.Post{}
 			}
 
 			type Props struct {

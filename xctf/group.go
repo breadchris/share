@@ -214,10 +214,10 @@ func renderGroup(d deps.Deps, w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			if _, err := newCompGroup(db, compid, group.ID); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
+			//if _, err := newCompGroup(db, compid, group.ID); err != nil {
+			//	http.Error(w, err.Error(), http.StatusInternalServerError)
+			//	return
+			//}
 			//DefaultLayout(
 			//	Div(
 			//		Class("p-5 max-w-lg mx-auto"),

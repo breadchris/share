@@ -27,5 +27,20 @@
         </introspection-scope>
       </schema-mapping>
     </data-source>
+    <data-source name="defaultdb@db-postgresql-nyc1-38874-do-user-16849045-0.e.db.ondigitalocean.com" uuid="703d2825-3ed4-4e92-96c3-68496e883ddf">
+      <database-info product="PostgreSQL" version="17.3" jdbc-version="4.2" driver-name="PostgreSQL JDBC Driver" driver-version="42.6.0" dbms="POSTGRES" exact-version="17.3" exact-driver-version="42.6">
+        <identifier-quote-string>&quot;</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="lower" quoted-identifiers="exact" />
+      <secret-storage>master_key</secret-storage>
+      <user-name>doadmin</user-name>
+      <schema-mapping>
+        <introspection-scope>
+          <node kind="database" qname="@">
+            <node kind="schema" qname="@" />
+          </node>
+        </introspection-scope>
+      </schema-mapping>
+    </data-source>
   </component>
 </project>
