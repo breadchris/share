@@ -135,8 +135,8 @@ func RenderPhone(state PhoneState, phone *chalgen.Phone) *Node {
 				),
 			),
 		),
-		Div(Class("text-center"),
-			P(T(state.Flag)),
-		),
+		//Div(Class("text-center"),
+		//	P(T(state.Flag)),
+		//),
 	)
 }

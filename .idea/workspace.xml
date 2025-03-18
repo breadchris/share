@@ -6,8 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/chals.go" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/chals.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/xctf/docker/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/xctf/docker/Dockerfile" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -75,11 +73,11 @@
       <recent name="$PROJECT_DIR$/static" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/data/xctf/02d3d626-c37b-483f-9da1-5de9e03440bf/birbs" />
       <recent name="$PROJECT_DIR$/xctf/docker/files/maze/delta_9424/charlie_3756/foxtrot_1762/delta_3752/alpha_233/charlie_4617/alpha_3547/delta_8625/charlie_7808/echo_2332/golf_5241/foxtrot_6344/foxtrot_8781/alpha_6515/foxtrot_3975/alpha_6910/bravo_3232/echo_7743/echo_1503/foxtrot_9473" />
       <recent name="$PROJECT_DIR$/xctf/docker/files" />
       <recent name="$PROJECT_DIR$/card" />
       <recent name="$PROJECT_DIR$/xctf" />
-      <recent name="$PROJECT_DIR$/tarot" />
     </key>
   </component>
   <component name="RunManager" selected="Go Build.share">
@@ -230,7 +228,7 @@
       <workItem from="1740941407379" duration="75301000" />
       <workItem from="1742078833464" duration="3367000" />
       <workItem from="1742087064900" duration="2736000" />
-      <workItem from="1742090021663" duration="22042000" />
+      <workItem from="1742090021663" duration="28848000" />
     </task>
     <servers />
   </component>
