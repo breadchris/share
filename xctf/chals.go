@@ -402,6 +402,11 @@ func New(d deps.Deps) *http.ServeMux {
 						Class("tab-content border-base-300 bg-base-100 p-10"),
 						Iframe(Src("https://irc.mcpshsf.com"), Attr("style", "width: 100%; height: 600px;")),
 					),
+					Input(AriaLabel("music"), Class("tab"), Type("radio"), Id("tab5"), Name("tabs")),
+					Div(
+						Class("tab-content border-base-300 bg-base-100 p-10"),
+						Iframe(Src("https://music.mcpshsf.com"), Attr("style", "width: 100%; height: 600px;")),
+					),
 				),
 			),
 		))
@@ -1040,7 +1045,7 @@ func Handle(d deps.Deps) http.HandlerFunc {
 		//baseURL := fmt.Sprintf("/play/%s/%s", compId, chalId)
 
 		var comp models.Competition
-		res := d.DB.Where("id = ?", compId).First(&comp)
+		res := d.DB.Where("id = ?", compId).Take(&comp)
 		if res.Error != nil {
 			http.NotFound(w, r)
 			return
