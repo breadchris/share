@@ -511,7 +511,7 @@ func serveFiles(dir string) http.HandlerFunc {
 	fileServer := neuter(http.FileServer(http.Dir(dir)))
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		filePath := filepath.Join(dir, r.URL.Path)
+		filePath := filepath.Join(".", r.URL.Path)
 
 		if filepath.Ext(filePath) == ".jpg" || filepath.Ext(filePath) == ".jpeg" || filepath.Ext(filePath) == ".png" {
 			f, err := os.Open(filePath)
