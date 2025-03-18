@@ -1345,7 +1345,33 @@ self.addEventListener('fetch', event => {
 
 						//println(r.URL.Path)
 						//http.StripPrefix(r.URL.Path, http.FileServer(http.Dir(pa))).ServeHTTP(w, r)
-						http.ServeFile(w, r, path.Join("data/xctf", compId, u.Path, p))
+
+						filePath := path.Join("data/xctf", compId, u.Path, p)
+
+						if filepath.Ext(filePath) == ".jpg" || filepath.Ext(filePath) == ".jpeg" || filepath.Ext(filePath) == ".png" {
+							f, err := os.Open(filePath)
+							if err != nil {
+								http.NotFound(w, r)
+								return
+							}
+							defer f.Close()
+
+							stat, err := f.Stat()
+							if err != nil || stat.IsDir() {
+								http.NotFound(w, r)
+								return
+							}
+
+							etag := generateETag(stat)
+
+							if match := r.Header.Get("If-None-Match"); match == etag {
+								w.WriteHeader(http.StatusNotModified)
+								return
+							}
+
+							w.Header().Set("ETag", etag)
+						}
+						http.ServeFile(w, r, filePath)
 						return
 					}
 					for _, ro := range u.Routes {
@@ -1769,6 +1795,48 @@ self.addEventListener('fetch', event => {
 		slog.Error("challenge not found", "compId", compId, "chalId", chalId)
 		http.NotFound(w, r)
 	}
+}
+
+func serveFiles(dir string) http.HandlerFunc {
+	fileServer := neuter(http.FileServer(http.Dir(dir)))
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		filePath := filepath.Join(dir, r.URL.Path)
+
+		if filepath.Ext(filePath) == ".jpg" || filepath.Ext(filePath) == ".jpeg" || filepath.Ext(filePath) == ".png" {
+			f, err := os.Open(filePath)
+			if err != nil {
+				http.NotFound(w, r)
+				return
+			}
+			defer f.Close()
+
+			stat, err := f.Stat()
+			if err != nil || stat.IsDir() {
+				http.NotFound(w, r)
+				return
+			}
+
+			etag := generateETag(stat)
+
+			if match := r.Header.Get("If-None-Match"); match == etag {
+				w.WriteHeader(http.StatusNotModified)
+				return
+			}
+
+			w.Header().Set("ETag", etag)
+		}
+
+		http.StripPrefix("/"+dir, fileServer).ServeHTTP(w, r)
+	}
+}
+
+func generateETag(info os.FileInfo) string {
+	h := md5.New()
+	io.WriteString(h, info.Name())
+	io.WriteString(h, strconv.FormatInt(info.Size(), 10))
+	io.WriteString(h, info.ModTime().String())
+	return `"` + hex.EncodeToString(h.Sum(nil)) + `"`
 }
 
 func setupDatabase(db *sql.DB) {
