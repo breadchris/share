@@ -29,9 +29,13 @@ func TestPatchPath(t *testing.T) {
 		t.Fatalf("Expected /b, got %s", p)
 	}
 
-	// TODO breadchris recursive
 	p = lookupPatchPath(a, &a.C.D)
 	if p != "/c/d" {
 		t.Fatalf("Expected /c/d, got %s", p)
+	}
+
+	p = lookupPatchPath(a, &a.C.E)
+	if p != "/c/e" {
+		t.Fatalf("Expected /c/e, got %s", p)
 	}
 }

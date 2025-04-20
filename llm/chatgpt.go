@@ -13,11 +13,9 @@ import (
 	"time"
 
 	"github.com/breadchris/share/deps"
-	"github.com/gorilla/websocket"
-	"github.com/samber/lo"
-
 	. "github.com/breadchris/share/html"
 	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -73,9 +71,13 @@ func (s *OpenAIService) homeHandler(w http.ResponseWriter, r *http.Request) {
 		DefaultLayout(
 			Div(
 				Ul(
-					Ch(lo.Map(chats, func(c ChatState, i int) *Node {
-						return Li(A(Href("/llm/"+c.ID), Class("block p-4 border-b"), T(c.Name)))
-					})),
+					Ch(func() []*Node {
+						var nodes []*Node
+						for _, c := range chats {
+							nodes = append(nodes, Li(A(Href("/llm/"+c.ID), Class("block p-4 border-b"), T(c.Name))))
+						}
+						return nodes
+					}()),
 				),
 				A(Class("btn"), Href("/llm/"+uuid.NewString()), T("new")),
 			),
@@ -85,17 +87,21 @@ func (s *OpenAIService) homeHandler(w http.ResponseWriter, r *http.Request) {
 
 	cs = loadChatState(i)
 	DefaultLayout(
-		Ch(lo.Map(cs.Messages, func(m ChatMessage, i int) *Node {
+		Ch(func() []*Node {
+			var nodes []*Node
 			b := "mb-2"
 			bs := "inline-block px-4 py-2 rounded "
-			return Div(
-				If(m.Role == "user", Class("text-right "+b), Class("text-left "+b)),
-				Div(
-					If(m.Role == "user", Class(bs+"bg-blue"), Class(bs+"bg-gray")),
-					T(m.Content),
-				),
-			)
-		})),
+			for _, m := range cs.Messages {
+				nodes = append(nodes, Div(
+					If(m.Role == "user", Class("text-right "+b), Class("text-left "+b)),
+					Div(
+						If(m.Role == "user", Class(bs+"bg-blue"), Class(bs+"bg-gray")),
+						T(m.Content),
+					),
+				))
+			}
+			return nodes
+		}()),
 	).RenderPage(w, r)
 }
 

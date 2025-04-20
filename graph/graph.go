@@ -253,8 +253,7 @@ func New(d deps.Deps) *http.ServeMux {
 				return
 			}
 
-			Html(
-				Title(T("Graph")),
+			DefaultLayout(
 				Link(Attr("rel", "stylesheet"), Attr("type", "text/css"), Attr("href", "/static/graph/graph.css")),
 				Style(Text(style)),
 				Div(Id("graph"), Attr("data-props", string(sg))),

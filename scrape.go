@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -92,7 +93,7 @@ func (c *crawler) linksParse(purl *url.URL) func(g *geziyor.Geziyor, r *client.R
 
 		selection.Each(func(i int, s *goquery.Selection) {
 			val, _ := s.Attr("href")
-			u, err := url.Parse(val)
+			u, err := url.Parse(strings.TrimSpace(val))
 			if err != nil {
 				slog.Error("unable to parse url", "error", err)
 				return

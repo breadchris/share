@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<dataSource name="defaultdb@db-postgresql-nyc1-38874-do-user-16849045-0.e.db.ondigitalocean.com">
+  <database-model serializer="dbm" dbms="POSTGRES" family-id="POSTGRES" format-version="4.49">
+    <root id="1">
+      <DateStyle>mdy</DateStyle>
+      <ServerVersion>17.3</ServerVersion>
+      <StartupTime>1741158837</StartupTime>
+    </root>
+    <database id="2" parent="1" name="defaultdb">
+      <Current>1</Current>
+      <ObjectId>16434</ObjectId>
+      <OwnerName>doadmin</OwnerName>
+    </database>
+    <database id="3" parent="1" name="_dodb">
+      <ObjectId>14647</ObjectId>
+      <OwnerName>postgres</OwnerName>
+    </database>
+    <schema id="4" parent="2" name="information_schema">
+      <ObjectId>14284</ObjectId>
+      <StateNumber>537</StateNumber>
+      <OwnerName>postgres</OwnerName>
+    </schema>
+    <schema id="5" parent="2" name="pg_catalog">
+      <Comment>system catalog schema</Comment>
+      <ObjectId>11</ObjectId>
+      <StateNumber>531</StateNumber>
+      <OwnerName>postgres</OwnerName>
+    </schema>
+    <schema id="6" parent="2" name="public">
+      <Comment>standard public schema</Comment>
+      <Current>1</Current>
+      <ObjectId>2200</ObjectId>
+      <StateNumber>531</StateNumber>
+      <OwnerName>pg_database_owner</OwnerName>
+    </schema>
+  </database-model>
+</dataSource>

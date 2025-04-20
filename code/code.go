@@ -12,6 +12,7 @@ import (
 	"github.com/breadchris/share/yaegi"
 	"github.com/breadchris/yaegi/interp"
 	"github.com/breadchris/yaegi/stdlib"
+	"github.com/sashabaranov/go-openai"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -21,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"runtime"
 	"strings"
 )
@@ -417,4 +419,82 @@ func WriteImports(filename string, imports []string) error {
 	}
 
 	return ioutil.WriteFile(filename, buffer.Bytes(), 0644)
+}
+
+func RewriteFiles(ctx context.Context, srcDir, destDir, pattern string, aiClient *openai.Client) error {
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return fmt.Errorf("failed to compile regex: %w", err)
+	}
+
+	err = filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		if !re.MatchString(info.Name()) {
+			return nil
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("failed to read file %s: %w", path, err)
+		}
+
+		prompt := fmt.Sprintf("Please rewrite the following js file to Go:\n%s", string(content))
+
+		resp, err := aiClient.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
+			Model: openai.GPT4o20240513,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role: openai.ChatMessageRoleSystem,
+					Content: `
+You are a go developer who rewrites code. When asked to rewrite code, you will only rewrite code and not respond with
+any other content. When writing the output code, do not include markdown or any other formatting, only the raw text of the code.
+When rewriting code, you should aim to produce code that is idiomatic and follows best practices.
+You should aim to produce code that is as close to the original code as possible, while still being idiomatic Go code.
+Do not include a main function in the output code if the original code does not include a main function.
+`,
+				},
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: prompt,
+				},
+			},
+		})
+		if err != nil {
+			fmt.Printf("Error rewriting file %s: %v\n", path, err)
+			return nil
+		}
+
+		msg := resp.Choices[0].Message
+
+		relPath, err := filepath.Rel(srcDir, path)
+		if err != nil {
+			return fmt.Errorf("failed to compute relative path for %s: %w", path, err)
+		}
+
+		ext := filepath.Ext(relPath)
+		baseName := strings.TrimSuffix(relPath, ext)
+		newRelPath := baseName + ".go"
+
+		destPath := filepath.Join(destDir, newRelPath)
+
+		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+			return fmt.Errorf("failed to create directory for %s: %w", destPath, err)
+		}
+
+		if err := os.WriteFile(destPath, []byte(msg.Content), 0644); err != nil {
+			fmt.Printf("Error writing file %s: %v\n", destPath, err)
+		} else {
+			fmt.Printf("Successfully wrote rewritten file to %s\n", destPath)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("error walking the directory %s: %w", srcDir, err)
+	}
+	return nil
 }

@@ -57,6 +57,7 @@ func init() {
 		"Div":                     reflect.ValueOf(html.Div),
 		"Dl":                      reflect.ValueOf(html.Dl),
 		"Dt":                      reflect.ValueOf(html.Dt),
+		"Figure":                  reflect.ValueOf(html.Figure),
 		"FileRule":                reflect.ValueOf(html.FileRule),
 		"Fill":                    reflect.ValueOf(html.Fill),
 		"FillRule":                reflect.ValueOf(html.FillRule),

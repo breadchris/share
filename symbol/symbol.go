@@ -38,6 +38,7 @@
 //go:generate yaegi extract github.com/markbates/goth/gothic
 //go:generate yaegi extract golang.org/x/oauth2
 //go:generate yaegi extract gorm.io/gorm
+//go:generate yaegi extract gorm.io/gorm/clause
 //go:generate yaegi extract github.com/breadchris/share/models
 //go:generate yaegi extract github.com/pkg/errors
 //go:generate yaegi extract github.com/kkdai/youtube/v2
@@ -52,6 +53,7 @@
 //go:generate yaegi extract github.com/dsoprea/go-exif/v2/common
 //go:generate yaegi extract github.com/dsoprea/go-exif/v3
 //go:generate yaegi extract github.com/dsoprea/go-jpeg-image-structure/v2
+//go:generate yaegi extract github.com/breadchris/share/db
 
 package symbol
 

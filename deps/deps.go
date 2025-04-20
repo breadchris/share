@@ -19,4 +19,9 @@ type Deps struct {
 	Config            config.AppConfig
 	WebsocketRegistry *websocket.CommandRegistry
 	BaseURL           string
+	Search            SearchIndex
+}
+
+type SearchIndex struct {
+	Recipe *db.SearchIndex
 }

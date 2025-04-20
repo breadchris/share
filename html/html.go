@@ -663,6 +663,10 @@ func Div(o ...*Node) *Node {
 	return NewNode("div", o)
 }
 
+func Figure(o ...*Node) *Node {
+	return NewNode("figure", o)
+}
+
 func Header(o ...*Node) *Node {
 	return NewNode("header", o)
 }

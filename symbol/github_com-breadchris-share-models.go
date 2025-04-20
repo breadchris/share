@@ -10,12 +10,19 @@ import (
 func init() {
 	Symbols["github.com/breadchris/share/models/models"] = map[string]reflect.Value{
 		// type definitions
+		"Direction":       reflect.ValueOf((*models.Direction)(nil)),
+		"Equipment":       reflect.ValueOf((*models.Equipment)(nil)),
 		"Food":            reflect.ValueOf((*models.Food)(nil)),
 		"FoodName":        reflect.ValueOf((*models.FoodName)(nil)),
 		"Group":           reflect.ValueOf((*models.Group)(nil)),
 		"GroupMembership": reflect.ValueOf((*models.GroupMembership)(nil)),
 		"Identity":        reflect.ValueOf((*models.Identity)(nil)),
+		"Ingredient":      reflect.ValueOf((*models.Ingredient)(nil)),
 		"Model":           reflect.ValueOf((*models.Model)(nil)),
+		"Page":            reflect.ValueOf((*models.Page)(nil)),
+		"Prompt":          reflect.ValueOf((*models.Prompt)(nil)),
+		"PromptRun":       reflect.ValueOf((*models.PromptRun)(nil)),
+		"Recipe":          reflect.ValueOf((*models.Recipe)(nil)),
 		"User":            reflect.ValueOf((*models.User)(nil)),
 		"UserSecret":      reflect.ValueOf((*models.UserSecret)(nil)),
 	}

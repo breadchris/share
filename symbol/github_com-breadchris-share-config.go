@@ -10,7 +10,8 @@ import (
 func init() {
 	Symbols["github.com/breadchris/share/config/config"] = map[string]reflect.Value{
 		// function, constant and variable definitions
-		"New": reflect.ValueOf(config.New),
+		"New":         reflect.ValueOf(config.New),
+		"NewFromFile": reflect.ValueOf(config.NewFromFile),
 
 		// type definitions
 		"AppConfig":     reflect.ValueOf((*config.AppConfig)(nil)),

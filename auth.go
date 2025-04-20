@@ -377,7 +377,7 @@ func LoginPage(s AuthState) *Node {
 					),
 				),
 
-				//A(Href("/auth/google"), Class("btn"), T("Login with Google")),
+				A(Href("/auth/google"), Class("btn"), T("Login with Google")),
 
 				Div(Id("result"), Class("mt-4")),
 			),

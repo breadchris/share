@@ -8,8 +8,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/breadchris/share/list"
+	"github.com/breadchris/share/op"
+	"github.com/breadchris/share/registry"
 	"github.com/breadchris/share/sqlnotebook"
-	"gorm.io/driver/postgres"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -27,15 +28,6 @@ import (
 	"github.com/breadchris/share/xctf"
 	"github.com/evanw/esbuild/pkg/api"
 
-	"github.com/breadchris/share/graph"
-	"github.com/breadchris/share/paint"
-	"github.com/breadchris/share/test"
-	"github.com/breadchris/share/user"
-	socket "github.com/breadchris/share/websocket"
-	"github.com/fsnotify/fsnotify"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
-
 	"github.com/breadchris/share/breadchris"
 	"github.com/breadchris/share/code"
 	config2 "github.com/breadchris/share/config"
@@ -44,10 +36,16 @@ import (
 	"github.com/breadchris/share/editor/config"
 	"github.com/breadchris/share/editor/leaps"
 	"github.com/breadchris/share/editor/playground"
+	"github.com/breadchris/share/graph"
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/llm"
+	"github.com/breadchris/share/paint"
 	"github.com/breadchris/share/session"
+	"github.com/breadchris/share/test"
+	"github.com/breadchris/share/user"
 	"github.com/breadchris/share/wasmcode"
+	socket "github.com/breadchris/share/websocket"
+	"github.com/fsnotify/fsnotify"
 	"github.com/gomarkdown/markdown"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -64,43 +62,6 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func loadDB(dsn string) *gorm.DB {
-	var (
-		db  *gorm.DB
-		err error
-	)
-	if strings.HasPrefix(dsn, "postgres://") {
-		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
-		if err != nil {
-			log.Fatalf("Failed to create db: %v", err)
-		}
-	} else if strings.HasPrefix(dsn, "sqlite://") {
-		dsn = strings.TrimPrefix(dsn, "sqlite://")
-		db, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{})
-		if err != nil {
-			log.Fatalf("Failed to create db: %v", err)
-		}
-	} else {
-		log.Fatalf("Unknown db: %s", dsn)
-	}
-
-	//if err := db.AutoMigrate(
-	//	&models.User{},
-	//	&models.Identity{},
-	//	&models.Group{},
-	//	&models.GroupMembership{},
-	//	&models.Food{},
-	//	&models.FoodName{},
-	//
-	//	// xctf models
-	//	&xmodels.Competition{},
-	//	&xmodels.CompetitionGroup{},
-	//); err != nil {
-	//	log.Fatalf("Failed to migrate db: %v", err)
-	//}
-	return db
-}
-
 func startXCTF(port int) error {
 	appConfig := config2.New()
 
@@ -108,7 +69,7 @@ func startXCTF(port int) error {
 	if err != nil {
 		log.Fatalf("Failed to create session store: %v", err)
 	}
-	db := loadDB(appConfig.DB)
+	db := LoadDB(appConfig.DB)
 	e := NewSMTPEmail(&appConfig)
 	a := NewAuth(s, e, appConfig, db)
 
@@ -175,7 +136,7 @@ func startServer(useTLS bool, port int) {
 	if err != nil {
 		log.Fatalf("Failed to create session store: %v", err)
 	}
-	db := loadDB(appConfig.DB)
+	db := LoadDB(appConfig.DB)
 	e := NewSMTPEmail(&appConfig)
 	a := NewAuth(s, e, appConfig, db)
 
@@ -190,7 +151,12 @@ func startServer(useTLS bool, port int) {
 
 	// TODO breadchris enable this
 	//go scheduleScraping()
-	registry := socket.NewCommandRegistry()
+	reg := socket.NewCommandRegistry()
+
+	recipeIdx, err := NewSearchIndex(smittenIndex)
+	if err != nil {
+		panic(err)
+	}
 
 	oai := openai.NewClient(appConfig.OpenAIKey)
 	lm := leaps.RegisterRoutes(leaps.NewLogger())
@@ -202,19 +168,27 @@ func startServer(useTLS bool, port int) {
 		Leaps:             lm,
 		AI:                oai,
 		Config:            appConfig,
-		WebsocketRegistry: registry,
+		WebsocketRegistry: reg,
+		Search: deps2.SearchIndex{
+			Recipe: recipeIdx,
+		},
 	}
 
+	shouldInterpret := true
+	//shouldInterpret := false
 	interpreted := func(f func(d deps2.Deps) *http.ServeMux, files ...string) *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			code.DynamicHTTPMux(f, files...)(deps).ServeHTTP(w, r)
-			//f(deps).ServeHTTP(w, r)
+			if shouldInterpret {
+				code.DynamicHTTPMux(f, files...)(deps).ServeHTTP(w, r)
+			} else {
+				f(deps).ServeHTTP(w, r)
+			}
 		})
 		return m
 	}
 
-	socket.SetupHandlers(registry)
+	socket.SetupHandlers(reg)
 
 	//discord.NewConfig
 	//discord.NewDiscordSession
@@ -222,6 +196,31 @@ func startServer(useTLS bool, port int) {
 	//discord.NewHandler
 	//discord.NewSession
 
+	p("/debug", interpreted(func(d deps2.Deps) *http.ServeMux {
+		m := http.NewServeMux()
+		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			shouldInterpret = !shouldInterpret
+			switch r.Method {
+			case http.MethodPost:
+				shouldInterpret = r.FormValue("debug") == "on"
+			case http.MethodGet:
+				DefaultLayout(
+					Div(T("debug")),
+					Form(
+						HxPost("/debug"),
+						Input(Type("checkbox"), Value(func() string {
+							if shouldInterpret {
+								return "on"
+							}
+							return "off"
+						}()), T("debug")),
+						Input(Type("submit"), Value("Submit")),
+					),
+				).RenderPage(w, r)
+			}
+		})
+		return m
+	}))
 	p("/dungeon", interpreted(xctf.NewDungeon))
 	p("/sqlnotebook", interpreted(sqlnotebook.New))
 	p("/list", interpreted(list.New))
@@ -232,8 +231,9 @@ func startServer(useTLS bool, port int) {
 	// p("/card", interpreted(NewCard))
 	p("/ai", interpreted(NewAI))
 	p("/card", interpreted(NewCard2))
+	p("/op", interpreted(op.New))
 	p("/websocket", interpreted(func(deps deps2.Deps) *http.ServeMux {
-		return socket.WebsocketUI(registry)
+		return socket.WebsocketUI(reg)
 	}))
 	p("/test", interpreted(test.New))
 	p("/user", interpreted(user.New))
@@ -258,6 +258,7 @@ func startServer(useTLS bool, port int) {
 	p("/nolanisslow", interpreted(NewNolan))
 	//p("/calendar", interpreted(calendar.NewCalendar))
 	p("/calendar", interpreted(NewCalendar))
+	p("/registry", interpreted(registry.New))
 	g := NewGithub(deps)
 	p("/github", interpreted(g.Routes))
 	p("/filecode", func() *http.ServeMux {
@@ -384,6 +385,7 @@ func startServer(useTLS bool, port int) {
 					".ttf":   api.LoaderFile,
 					".eot":   api.LoaderFile,
 					".css":   api.LoaderCSS,
+					".png":   api.LoaderFile,
 				},
 				Outdir:            "static/",
 				Format:            api.FormatESModule,
@@ -596,7 +598,7 @@ func main() {
 			{
 				Name: "food",
 				Action: func(c *cli.Context) error {
-					db := loadDB("sqlite://data/db.sqlite")
+					db := LoadDB("sqlite://data/db.sqlite")
 
 					println("loading food data")
 					//f, err := loadBrandedFoodData()

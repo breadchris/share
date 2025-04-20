@@ -22,6 +22,7 @@ func init() {
 		"FieldDetail":        reflect.ValueOf((*websocket.FieldDetail)(nil)),
 		"GenericCommandFunc": reflect.ValueOf((*websocket.GenericCommandFunc)(nil)),
 		"Hub":                reflect.ValueOf((*websocket.Hub)(nil)),
+		"Message":            reflect.ValueOf((*websocket.Message)(nil)),
 		"WebsocketClient":    reflect.ValueOf((*websocket.WebsocketClient)(nil)),
 	}
 }

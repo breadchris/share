@@ -3,10 +3,17 @@ package db
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/models"
+	xmodels "github.com/breadchris/share/xctf/models"
 	"github.com/tidwall/gjson"
+	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -165,4 +172,47 @@ func (s *DB[T]) watchFiles() {
 		}
 		s.mu.RUnlock()
 	}
+}
+
+func LoadDB(dsn string) *gorm.DB {
+	var (
+		db  *gorm.DB
+		err error
+	)
+	if strings.HasPrefix(dsn, "postgres://") {
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		if err != nil {
+			log.Fatalf("Failed to create db: %v", err)
+		}
+	} else if strings.HasPrefix(dsn, "sqlite://") {
+		dsn = strings.TrimPrefix(dsn, "sqlite://")
+		db, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{})
+		if err != nil {
+			log.Fatalf("Failed to create db: %v", err)
+		}
+	} else {
+		log.Fatalf("Unknown db: %s", dsn)
+	}
+
+	if err := db.AutoMigrate(
+		&models.User{},
+		&models.Identity{},
+		&models.Group{},
+		&models.GroupMembership{},
+		&models.Food{},
+		&models.FoodName{},
+		&models.Prompt{},
+		&models.PromptRun{},
+		&models.Recipe{},
+		&models.Ingredient{},
+		&models.Equipment{},
+		&models.Direction{},
+
+		// xctf models
+		&xmodels.Competition{},
+		&xmodels.CompetitionGroup{},
+	); err != nil {
+		log.Fatalf("Failed to migrate db: %v", err)
+	}
+	return db
 }

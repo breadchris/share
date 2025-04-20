@@ -46,12 +46,23 @@ func NewExtension(d deps.Deps) *http.ServeMux {
 
 	m.HandleFunc("/save", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
-			var pageInfo PageInfo
-			err := json.NewDecoder(r.Body).Decode(&pageInfo)
-			if err != nil {
+			if err := r.ParseForm(); err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+
+			var pageInfo PageInfo
+			ur := r.FormValue("url")
+			if ur != "" {
+				err := json.NewDecoder(r.Body).Decode(&pageInfo)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+			} else {
+				pageInfo.URL = ur
+			}
+
 			pageInfo.CreatedAt = time.Now().Unix()
 
 			getArticle := func(pageInfo PageInfo) (*readability.Article, error) {
@@ -130,7 +141,26 @@ func NewExtension(d deps.Deps) *http.ServeMux {
 			}
 
 			DefaultLayout(
-				RenderMasonry(state),
+				Div(
+					Class("mx-auto mt-16 w-3/4 pt-6 space-y-6"),
+					Form(
+						Class("space-y-2"),
+						HxPost("/save"),
+						Input(
+							Class("input w-full"),
+							Name("url"),
+							Placeholder("url"),
+						),
+						Div(
+							Input(
+								Type("submit"),
+								Value("Submit"),
+								Class("btn btn-primary"),
+							),
+						),
+					),
+					RenderMasonry(state),
+				),
 			).RenderPageCtx(ctx, w, r)
 			return
 		}
@@ -149,27 +179,40 @@ func RenderMasonry(state State) *Node {
 		return pi[i].CreatedAt > pi[j].CreatedAt
 	})
 	for _, pageInfo := range pi {
+		ur, err := url.Parse(pageInfo.URL)
+		if err != nil {
+			slog.Error("failed to parse URL", "error", err)
+			continue
+		}
 		card := Div(
-			Class("bg-white rounded-lg shadow-md hover:shadow-lg card"),
 			Div(
 				Class("flex flex-col"),
+				A(Href(pageInfo.URL), Class("text-md font-bold leading-6"), T(pageInfo.Title)),
 				Div(
-					Class("w-full aspect-video p-4"),
-					A(Href("/"+pageInfo.ID), T(shortText(200, pageInfo.Article))),
+					Class("text-sm text-gray-500 ml-2 "),
+					T(fmt.Sprintf("%s %s", time.Unix(pageInfo.CreatedAt, 0).Format("2006-01-02"), ur.Hostname())),
 				),
-				Div(
-					Class("text-gray-800 p-2 basis-14"),
+				If(pageInfo.Article != "",
 					Div(
-						Class("flex justify-between"),
-						A(Href(pageInfo.URL), Class("text-md font-bold leading-6"), Text(pageInfo.Title)),
+						Class("w-full p-4"),
+						A(Href("/"+pageInfo.ID), T(shortText(200, pageInfo.Article))),
 					),
+					Nil(),
 				),
 			),
+			//Class(""),
+			//	Div(
+			//		Class("text-gray-800 p-2 basis-14"),
+			//		Div(
+			//			Class("flex justify-between"),
+			//		),
+			//	),
+			//),
 		)
 		cards = append(cards, card)
 	}
 	return Div(
-		Class("board-grid justify-center mt-6"),
+		Class("board-grid justify-center mt-6 space-y-6"),
 		Ch(cards),
 	)
 }

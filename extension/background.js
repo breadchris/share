@@ -1,3 +1,4 @@
+// let BASE_ROUTE = 'https://justshare.io';
 let BASE_ROUTE = 'http://localhost:8080';
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -88,7 +89,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const { element, name } = message;
 
         // Send the data to the server
-        fetch('http://localhost:8080/extension/', {
+        fetch('https://justshare.io/extension/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

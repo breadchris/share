@@ -55,6 +55,25 @@ type AppConfig struct {
 	DB                 string        `json:"db"`
 }
 
+func NewFromFile(path string) AppConfig {
+	appConfig := AppConfig{
+		SessionSecret: "secret",
+		DB:            "sqlite://data/db.sqlite",
+	}
+
+	configFile, err := os.Open(path)
+	if err != nil {
+		log.Fatalf("Failed to open dbconfig file: %v", err)
+	}
+	defer configFile.Close()
+
+	err = json.NewDecoder(configFile).Decode(&appConfig)
+	if err != nil {
+		log.Fatalf("Failed to decode dbconfig file: %v", err)
+	}
+	return appConfig
+}
+
 func New() AppConfig {
 	appConfig := AppConfig{
 		SessionSecret: "secret",

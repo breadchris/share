@@ -69,3 +69,64 @@ type FoodName struct {
 	Food  *Food `gorm:"foreignKey:FDCID"`
 	Name  string
 }
+
+type Direction struct {
+	Model
+	Text      string `json:"text" description:"The direction text."`
+	StartTime int    `json:"start_time" description:"The time in seconds when direction starts in the transcript."`
+	EndTime   int    `json:"end_time" description:"The time in seconds when direction ends in the transcript."`
+	RecipeID  string `json:"recipe_id" description:"The ID of the recipe."`
+}
+
+type Ingredient struct {
+	Model
+	Name     string `json:"name" description:"The name of the ingredient."`
+	Amount   string `json:"amount" description:"The amount of the ingredient."`
+	Unit     string `json:"unit" description:"The unit of the ingredient."`
+	Comment  string `json:"comment" description:"The comment of the ingredient."`
+	RecipeID string `json:"recipe_id" description:"The ID of the recipe."`
+}
+
+type Equipment struct {
+	Model
+	Name     string `json:"name" description:"The name of the equipment."`
+	Comment  string `json:"comment" description:"The comment of the equipment."`
+	RecipeID string `json:"recipe_id" description:"The ID of the recipe."`
+}
+
+type Recipe struct {
+	Model
+	Domain      string        `json:"domain" description:"The domain of the recipe."`
+	URL         string        `json:"url" description:"The url of the recipe."`
+	Name        string        `json:"name"`
+	Ingredients []*Ingredient `json:"ingredients" gorm:"foreignKey:RecipeID"`
+	Directions  []*Direction  `json:"directions" gorm:"foreignKey:RecipeID"`
+	Equipment   []*Equipment  `json:"equipment" description:"The equipment used while making the recipe."`
+}
+
+type Prompt struct {
+	Model
+	Title    string
+	Content  string `gorm:"type:text"`
+	UserID   string
+	ParentID string
+	Forks    []Prompt `gorm:"foreignKey:ParentID"`
+	Runs     []PromptRun
+}
+
+type PromptRun struct {
+	Model
+	PromptID string
+	Input    string `gorm:"type:text"`
+	Output   string `gorm:"type:text"`
+}
+
+type Page struct {
+	Model
+	URL       string `json:"url"`
+	Title     string `json:"title"`
+	HTML      string `json:"html"`
+	CreatedAt int64  `json:"created_at"`
+	Article   string `json:"article"`
+	HitCount  int    `json:"hit_count"`
+}

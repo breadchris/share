@@ -87,6 +87,8 @@ func ApplyJSONPatch(original, new any, patch []JSONPatch) error {
 func NewVote(d deps.Deps) *http.ServeMux {
 	r := http.NewServeMux()
 
+	polls := d.Docs.WithCollection("poll")
+
 	r.HandleFunc("/new/ai", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			var recipe VoteRecipe
@@ -156,7 +158,7 @@ func NewVote(d deps.Deps) *http.ServeMux {
 		id := r.PathValue("id")
 		if id == "" {
 			poll.ID = uuid.NewString()
-			err = d.Docs.Set(poll.ID, poll)
+			err = polls.Set(poll.ID, poll)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -167,7 +169,7 @@ func NewVote(d deps.Deps) *http.ServeMux {
 			if strings.HasSuffix(id, "/") {
 				id = id[:len(id)-1]
 			}
-			err = d.Docs.Get(id, &poll)
+			err = polls.Get(id, &poll)
 			if err != nil {
 				http.Error(w, "Poll not found", http.StatusNotFound)
 				return
@@ -193,7 +195,7 @@ func NewVote(d deps.Deps) *http.ServeMux {
 				return
 			}
 			poll = newPoll
-			err = d.Docs.Set(poll.ID, poll)
+			err = polls.Set(poll.ID, poll)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -228,7 +230,7 @@ func NewVote(d deps.Deps) *http.ServeMux {
 				return
 			}
 			poll = newPoll
-			err = d.Docs.Set(poll.ID, poll)
+			err = polls.Set(poll.ID, poll)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -240,7 +242,7 @@ func NewVote(d deps.Deps) *http.ServeMux {
 		f := BuildForm("", &poll)
 
 		if fieldName != "" {
-			err := d.Docs.Set(poll.ID, poll)
+			err := polls.Set(poll.ID, poll)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
@@ -268,6 +270,24 @@ func NewVote(d deps.Deps) *http.ServeMux {
 		return
 	})
 
+	/*
+		TODO breadchris ideas
+		- factor out common functionality like path values and user auth
+			- probably should be a context value?
+		- default handler has an error value as a return value?
+
+		//handle := func(w http.ResponseWriter, r *http.Request, f func(w http.ResponseWriter, r *http.Request) error) http.HandlerFunc {
+		//	if err := f(w, r); err != nil {
+		//		http.Error(w, err.Error(), http.???)
+		//	}
+		//}
+	*/
+
+	render := func(w http.ResponseWriter, r *http.Request, page *Node) {
+		ctx := context.WithValue(r.Context(), "baseURL", "/vote")
+		page.RenderPageCtx(ctx, w, r)
+	}
+
 	r.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		user, err := d.Session.GetUserID(r.Context())
 		if err != nil {
@@ -277,26 +297,49 @@ func NewVote(d deps.Deps) *http.ServeMux {
 
 		id := r.PathValue("id")
 		if id == "" {
-			ctx := context.WithValue(r.Context(), "baseURL", "/vote")
-			DefaultLayout(
+			ps, err := polls.List()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			var pls []Poll
+			for _, p := range ps {
+				var pl Poll
+				if err = json.Unmarshal(p.Data, &pl); err != nil {
+					pl.ID = p.ID
+					pls = append(pls, pl)
+				}
+			}
+			render(w, r, DefaultLayout(
 				Div(
 					Class("container mx-auto mt-10 p-5"),
-					A(T("New Vote"), Class("btn"), Href("/new/")),
+					A(T("New Poll"), Class("btn"), Href("/new/")),
+					Ch(func() []*Node {
+						var pols []*Node
+						for _, p := range pols {
+							pols = append(pols, Div(T(p.Name)))
+						}
+						return pols
+					}()),
 				),
-			).RenderPageCtx(ctx, w, r)
+			))
 			return
 		}
 
 		if strings.HasSuffix(id, "/") {
 			id = id[:len(id)-1]
 		}
+
 		var poll Poll
-		if err := d.Docs.Get(id, &poll); err != nil {
+		if err := polls.Get(id, &poll); err != nil {
 			http.Error(w, "Poll not found", http.StatusNotFound)
 			return
 		}
 
-		if r.Method == http.MethodPost {
+		switch r.Method {
+		case http.MethodGet:
+			render(w, r, vote(poll))
+		case http.MethodPost:
 			var (
 				removed         bool
 				recipeVoteCount int
@@ -319,17 +362,14 @@ func NewVote(d deps.Deps) *http.ServeMux {
 				recipeVoteCount++
 			}
 
-			err := d.Docs.Set(id, poll)
+			err := polls.Set(id, poll)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 
 			w.Write([]byte(fmt.Sprintf("%d", recipeVoteCount)))
-			return
 		}
-		ctx := context.WithValue(r.Context(), "baseURL", "/vote")
-		vote(poll).RenderPageCtx(ctx, w, r)
 	})
 	return r
 }
@@ -392,19 +432,10 @@ func vote(state Poll) *Node {
 		recipeList.Children = append(recipeList.Children, recipeItem)
 	}
 
-	// Form layout
-	return Html(
-		Head(
-			Title(T("Vote")),
-			TailwindCSS,
-			DaisyUI,
-			HTMX,
-		),
-		Body(
-			Div(Class("container mx-auto mt-10 p-5"),
-				H1(Class("text-center text-3xl font-bold mb-4"), T("vote")),
-				recipeList,
-			),
+	return DefaultLayout(
+		Div(Class("container mx-auto mt-10 p-5"),
+			H1(Class("text-center text-3xl font-bold mb-4"), T("vote")),
+			recipeList,
 		),
 	)
 }

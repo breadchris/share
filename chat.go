@@ -301,25 +301,14 @@ func RenderChat(cs chatState) (string, error) {
 		P(Id("result")),
 	)
 
-	head := Head(
-		Meta(Charset("UTF-8")),
-		Meta(Name("viewport"), Content("width=device-width, initial-scale=1.0")),
-		Title(T("Chat")),
-		Link(Href("https://cdn.jsdelivr.net/npm/daisyui@4.12.2/dist/full.min.css"), Rel("stylesheet"), Type("text/css")),
-		Script(Src("https://cdn.tailwindcss.com")),
-		Script(Src("https://unpkg.com/htmx.org@2.0.0/dist/htmx.min.js")),
-		Script(Src("https://unpkg.com/htmx-ext-sse@2.2.1/sse.js")),
-	)
-
 	var n []*Node
 	for _, node := range cs.NodesFrom {
 		n = append(n, A(Href("/chat?id="+node), T(node)))
 	}
 
-	return Html(
-		Attr("lang", "en"),
-		head,
+	return DefaultLayout(
 		Body(Class("bg-gray-100 vsc-initialized"),
+			Script(Src("https://unpkg.com/htmx-ext-sse@2.2.1/sse.js")),
 			Div(Class("container mx-auto p-2"),
 				form,
 				Div(Class("p-4 rounded-lg mb-4"),

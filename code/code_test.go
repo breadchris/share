@@ -1,10 +1,22 @@
 package code
 
 import (
+	"context"
 	"fmt"
+	"github.com/breadchris/share/config"
 	"github.com/evanw/esbuild/pkg/api"
+	"github.com/sashabaranov/go-openai"
 	"testing"
 )
+
+func TestRewriteFiles(t *testing.T) {
+	ac := config.NewFromFile("../data/config.json")
+	ai := openai.NewClient(ac.OpenAIKey)
+	err := RewriteFiles(context.Background(), "/Users/hacked/Documents/GitHub/yjs/src", "/Users/hacked/Documents/Github/share/ygo", ".*\\.js", ai)
+	if err != nil {
+		t.Error(err)
+	}
+}
 
 func TestBuild(t *testing.T) {
 	result := api.Build(api.BuildOptions{

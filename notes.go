@@ -39,7 +39,7 @@ type Reference struct {
 	ID   string
 	Text string
 	URL  string
-}																																																																																																																																																																																																																											
+}
 
 func NewNotes(d deps.Deps) *http.ServeMux {
 	mux := http.NewServeMux()
@@ -142,7 +142,7 @@ func MemoInterface(notesState NotesState) *Node {
 	return DefaultLayout(
 		Div(
 			Link(Href_("/breadchris/static/editor.css"), Rel("stylesheet"), Type("text/css")),
-			Script(Src("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js")),
+			//Script(Src("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js")),
 			Style(T(`
 					 h1 { font-size: 2em; }
 					 h2 { font-size: 1.5em; }
@@ -524,7 +524,6 @@ func RenderTrashSvg() *Node {
 	)
 }
 
-
 func RenderMemo(cal calendar.State, notesState NotesState) *Node {
 	var posts []*Node
 	for _, s := range notesState.Posts {
@@ -536,111 +535,11 @@ func RenderMemo(cal calendar.State, notesState NotesState) *Node {
 			Class(
 				"w-full transition-all mx-auto flex flex-row justify-center items-start sm:pl-56",
 			),
-			Div(
-				Class(
-					"hidden sm:block group flex flex-col justify-start items-start fixed top-0 left-0 select-none border-r dark:border-zinc-800 h-full bg-zinc-50 dark:bg-zinc-800 dark:bg-opacity-40 transition-all hover:shadow-xl z-2 w-56 px-4",
-				),
-				Header(
-					Class(
-						"w-full h-full overflow-auto flex flex-col justify-start items-start py-4 md:pt-6 z-30 hide-scrollbar !h-auto",
-					),
-					Div(
-						Class("relative w-full h-auto px-1 shrink-0"),
-						Div(
-							AriaControls(":r0:"),
-							Tabindex("0"),
-							Class(
-								"MuiMenuButton-root MuiMenuButton-variantOutlined MuiMenuButton-colorNeutral MuiMenuButton-sizeMd",
-							),
-							Role("button"),
-							AriaHaspopup("menu"),
-							AriaExpanded("false"),
-							Div(
-								Class(
-									"py-1 my-1 w-auto flex flex-row justify-start items-center cursor-pointer text-gray-800 dark:text-gray-400 px-3",
-								),
-								//Div(
-								//	Class("w-8 h-8 overflow-clip rounded-xl shrink-0"),
-								//	Img(
-								//		Class(
-								//			"w-full h-auto shadow min-w-full min-h-full object-cover dark:opacity-80",
-								//		),
-								//		Src("/full-logo.webp"),
-								//		Alt(""),
-								//	),
-								//),
-								Span(
-									Class(
-										"ml-2 text-lg font-medium text-slate-800 dark:text-gray-300 shrink truncate",
-									),
-									Text("notes"),
-								),
-							),
-						),
-					),
-					Div(
-						Class(
-							"w-full px-1 py-2 flex flex-col justify-start items-start shrink-0 space-y-2",
-						),
-						A(
-							Id("header-home"),
-							Class(
-								"px-2 py-2 rounded-2xl border flex flex-row items-center text-lg text-gray-800 dark:text-gray-400 hover:bg-white hover:border-gray-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 w-full px-4 bg-white drop-shadow-sm dark:bg-zinc-800 border-gray-200 dark:border-zinc-700",
-							),
-							Href("/"),
-							Svg(
-								Fill("none"),
-								StrokeWidth("2"),
-								StrokeLinejoin("round"),
-								Class("lucide lucide-house w-6 h-auto opacity-70 shrink-0"),
-								Xmlns("http://www.w3.org/2000/svg"),
-								Width("24"),
-								Height("24"),
-								ViewBox("0 0 24 24"),
-								Stroke("currentColor"),
-								StrokeLinecap("round"),
-								Path(D("M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8")),
-								Path(
-									D(
-										"M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
-									),
-								),
-							),
-							Span(Class("ml-3 truncate"), Text("Home")),
-						),
-					),
-				),
-				Div(
-					Class("w-full grow h-auto flex flex-col justify-end items-start"),
-					Div(
-						Class("hidden py-3 group-hover:flex flex-col justify-center items-center"),
-						Button(
-							Class(
-								"border-box inline-flex items-center justify-center text-zinc-900 dark:text-zinc-100 shadow-none text-sm px-3 py-2 h-9 cursor-pointer hover:opacity-80 bg-transparent rounded-xl",
-							),
-							Svg(
-								Height("24"),
-								Stroke("currentColor"),
-								StrokeLinecap("round"),
-								StrokeLinejoin("round"),
-								Width("24"),
-								ViewBox("0 0 24 24"),
-								Fill("none"),
-								StrokeWidth("2"),
-								Class("lucide lucide-chevron-left w-5 h-auto opacity-70 mr-1"),
-								Xmlns("http://www.w3.org/2000/svg"),
-								Path(D("m15 18-6-6 6-6")),
-							),
-							Text("Collapse"),
-						),
-					),
-				),
-			),
 			Main(
 				Class("w-full h-auto flex-grow shrink flex flex-col justify-start items-center"),
 				Section(
 					Class(
-						"@container w-full max-w-5xl min-h-full flex flex-col justify-start items-center sm:pt-3 md:pt-6 pb-8",
+						"w-full max-w-5xl min-h-full flex flex-col justify-start items-center sm:pt-3 md:pt-6 pb-8",
 					),
 					Div(
 						Class("w-full flex flex-row justify-start items-start px-4 sm:px-6 gap-4"),
@@ -656,6 +555,18 @@ func RenderMemo(cal calendar.State, notesState NotesState) *Node {
 									HxPost("/"),
 									HxTarget("#posts"),
 									HxSwap("afterbegin"),
+									//Div(
+									//	Class(
+									//		"flex flex-col justify-start items-start relative w-full h-auto bg-inherit dark:text-gray-300",
+									//	),
+									//	TextArea(
+									//		Class("w-full"),
+									//		Attr("rows", "4"),
+									//		Attr("autofocus", ""),
+									//		Name("save"),
+									//		T("so we meet again..."),
+									//	),
+									//),
 									Div(
 										// editor
 										Class(
@@ -674,7 +585,7 @@ func RenderMemo(cal calendar.State, notesState NotesState) *Node {
 									),
 									Div(
 										Class(
-											"w-full flex flex-row justify-between items-center py-3 dark:border-t-zinc-500",
+											"w-full flex flex-row justify-end items-center py-3 dark:border-t-zinc-500",
 										),
 										Div(
 											Class(
@@ -714,7 +625,7 @@ func RenderMemo(cal calendar.State, notesState NotesState) *Node {
 								Ch(posts),
 							),
 						),
-						RenderSmallCalendar(cal),
+						//RenderSmallCalendar(cal),
 					),
 				),
 			),
@@ -1765,6 +1676,109 @@ func Sidebar() *Node {
 				Circle(R("3"), Cx("12"), Cy("12")),
 			),
 			Span(Class("ml-3 truncate"), Text("Settings")),
+		),
+	)
+}
+
+func header() *Node {
+	return Div(
+		Class(
+			"hidden sm:block group flex flex-col justify-start items-start fixed top-0 left-0 select-none border-r dark:border-zinc-800 h-full bg-zinc-50 dark:bg-zinc-800 dark:bg-opacity-40 transition-all hover:shadow-xl z-2 w-56 px-4",
+		),
+		Header(
+			Class(
+				"w-full h-full overflow-auto flex flex-col justify-start items-start py-4 md:pt-6 z-30 hide-scrollbar !h-auto",
+			),
+			Div(
+				Class("relative w-full h-auto px-1 shrink-0"),
+				Div(
+					AriaControls(":r0:"),
+					Tabindex("0"),
+					Class(
+						"MuiMenuButton-root MuiMenuButton-variantOutlined MuiMenuButton-colorNeutral MuiMenuButton-sizeMd",
+					),
+					Role("button"),
+					AriaHaspopup("menu"),
+					AriaExpanded("false"),
+					Div(
+						Class(
+							"py-1 my-1 w-auto flex flex-row justify-start items-center cursor-pointer text-gray-800 dark:text-gray-400 px-3",
+						),
+						//Div(
+						//	Class("w-8 h-8 overflow-clip rounded-xl shrink-0"),
+						//	Img(
+						//		Class(
+						//			"w-full h-auto shadow min-w-full min-h-full object-cover dark:opacity-80",
+						//		),
+						//		Src("/full-logo.webp"),
+						//		Alt(""),
+						//	),
+						//),
+						Span(
+							Class(
+								"ml-2 text-lg font-medium text-slate-800 dark:text-gray-300 shrink truncate",
+							),
+							Text("notes"),
+						),
+					),
+				),
+			),
+			Div(
+				Class(
+					"w-full px-1 py-2 flex flex-col justify-start items-start shrink-0 space-y-2",
+				),
+				A(
+					Id("header-home"),
+					Class(
+						"px-2 py-2 rounded-2xl border flex flex-row items-center text-lg text-gray-800 dark:text-gray-400 hover:bg-white hover:border-gray-200 dark:hover:border-zinc-700 dark:hover:bg-zinc-800 w-full px-4 bg-white drop-shadow-sm dark:bg-zinc-800 border-gray-200 dark:border-zinc-700",
+					),
+					Href("/"),
+					Svg(
+						Fill("none"),
+						StrokeWidth("2"),
+						StrokeLinejoin("round"),
+						Class("lucide lucide-house w-6 h-auto opacity-70 shrink-0"),
+						Xmlns("http://www.w3.org/2000/svg"),
+						Width("24"),
+						Height("24"),
+						ViewBox("0 0 24 24"),
+						Stroke("currentColor"),
+						StrokeLinecap("round"),
+						Path(D("M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8")),
+						Path(
+							D(
+								"M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
+							),
+						),
+					),
+					Span(Class("ml-3 truncate"), Text("Home")),
+				),
+			),
+		),
+		Div(
+			Class("w-full grow h-auto flex flex-col justify-end items-start"),
+			Div(
+				Class("hidden py-3 group-hover:flex flex-col justify-center items-center"),
+				Button(
+					Class(
+						"border-box inline-flex items-center justify-center text-zinc-900 dark:text-zinc-100 shadow-none text-sm px-3 py-2 h-9 cursor-pointer hover:opacity-80 bg-transparent rounded-xl",
+					),
+					Svg(
+						Height("24"),
+						Stroke("currentColor"),
+						StrokeLinecap("round"),
+						StrokeLinejoin("round"),
+						Width("24"),
+						ViewBox("0 0 24 24"),
+						Fill("none"),
+						StrokeWidth("2"),
+						Class("lucide lucide-chevron-left w-5 h-auto opacity-70 mr-1"),
+						Xmlns("http://www.w3.org/2000/svg"),
+						Path(D("m15 18-6-6 6-6")),
+					),
+					Text("Collapse"),
+				),
+			),
 		),
 	)
 }
