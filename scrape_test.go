@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -14,6 +15,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 	"github.com/sashabaranov/go-openai/jsonschema"
 	"io/fs"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -218,6 +220,43 @@ func TestRecipeIndexSmitten(t *testing.T) {
 		fmt.Println("Error:", err)
 	}
 	fmt.Println(r.String())
+}
+
+func TestRecipes(t *testing.T) {
+	c := config.New()
+	newDB := db.LoadDB(c.DB)
+
+	de := deps.Deps{
+		DB: newDB,
+	}
+
+	var recipes models.Recipe
+	res := de.DB.Preload("Ingredients").Preload("Equipment").Preload("Directions").Where("domain = ?", "smittenkitchen.com").First(&recipes)
+	if res.Error != nil {
+		fmt.Println("Error:", res.Error)
+	}
+
+	rs := []models.Recipe{
+		recipes,
+	}
+	b, err := json.Marshal(rs)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPut, "http://localhost:8080/recipe/source/upload", bytes.NewReader(b))
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("%v", err)
+	}
 }
 
 func TestLoadAllRecipesSmitten(t *testing.T) {

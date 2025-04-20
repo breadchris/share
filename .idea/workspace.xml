@@ -5,56 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/cookwherever/ingest_test.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/graph/nodes.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/op/op.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/registry/registry.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2/storage_v2/_src_/schema/main.uQUzAA.meta" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2/storage_v2/_src_/schema/main.uQUzAA.meta" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/auth.go" beforeDir="false" afterPath="$PROJECT_DIR$/auth.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/editor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/editor.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/static/CodeBlock.js" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/CodeBlock.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/static/CodeBlock.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/CodeBlock.js.map" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/static/editor.css" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/editor.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/static/editor.css.map" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/editor.css.map" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/static/editor.js" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/editor.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/static/editor.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/editor.js.map" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chat.go" beforeDir="false" afterPath="$PROJECT_DIR$/chat.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/code.go" beforeDir="false" afterPath="$PROJECT_DIR$/code/code.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/code/code_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/code/code_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/db.go" beforeDir="false" afterPath="$PROJECT_DIR$/db/db.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/deps/deps.go" beforeDir="false" afterPath="$PROJECT_DIR$/deps/deps.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension.go" beforeDir="false" afterPath="$PROJECT_DIR$/extension.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/background.js" beforeDir="false" afterPath="$PROJECT_DIR$/extension/background.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/extension/manifest.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graph/graph.go" beforeDir="false" afterPath="$PROJECT_DIR$/graph/graph.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graph/graph.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/graph/graph.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/html.go" beforeDir="false" afterPath="$PROJECT_DIR$/html/html.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/html/patchpath_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/html/patchpath_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/llm/chatgpt.go" beforeDir="false" afterPath="$PROJECT_DIR$/llm/chatgpt.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/models.go" beforeDir="false" afterPath="$PROJECT_DIR$/models/models.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notes.go" beforeDir="false" afterPath="$PROJECT_DIR$/notes.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/recipe.go" beforeDir="false" afterPath="$PROJECT_DIR$/recipe.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scrape.go" beforeDir="false" afterPath="$PROJECT_DIR$/scrape.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scrape_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/scrape_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/share/share.xcodeproj/project.xcworkspace/xcuserdata/hacked.xcuserdatad/UserInterfaceState.xcuserstate" beforeDir="false" afterPath="$PROJECT_DIR$/share/share.xcodeproj/project.xcworkspace/xcuserdata/hacked.xcuserdatad/UserInterfaceState.xcuserstate" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/graph/graph.css" beforeDir="false" afterPath="$PROJECT_DIR$/static/graph/graph.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/graph/graph.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/graph/graph.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/xctf/graph.css" beforeDir="false" afterPath="$PROJECT_DIR$/static/xctf/graph.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/xctf/graph.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/xctf/graph.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-config.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-config.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-html.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-html.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-models.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-models.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-websocket.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-websocket.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/symbol.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/symbol.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vote.go" beforeDir="false" afterPath="$PROJECT_DIR$/vote.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -133,7 +86,7 @@
       <recent name="$PROJECT_DIR$/xctf" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Build.share">
+  <component name="RunManager" selected="Go Test.TestRecipes in github.com/breadchris/share">
     <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
       <module name="share" />
       <working_directory value="$PROJECT_DIR$" />
@@ -198,7 +151,7 @@
       <pattern value="^\QTestRecipeIndexSmitten\E$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestScrape in github.com/breadchris/share" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestRecipes in github.com/breadchris/share" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="share" />
       <working_directory value="$PROJECT_DIR$" />
       <kind value="PACKAGE" />
@@ -206,7 +159,7 @@
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
-      <pattern value="^\QTestScrape\E$" />
+      <pattern value="^\QTestRecipes\E$" />
       <method v="2" />
     </configuration>
     <configuration default="true" type="GoTestRunConfiguration" factoryName="Go Test">
@@ -234,16 +187,16 @@
       <item itemvalue="Go Test.TestLoadAllRecipesSmitten in github.com/breadchris/share" />
       <item itemvalue="Go Test.TestParse in github.com/breadchris/share" />
       <item itemvalue="Go Test.TestRecipeIndexSmitten in github.com/breadchris/share" />
-      <item itemvalue="Go Test.TestScrape in github.com/breadchris/share" />
+      <item itemvalue="Go Test.TestRecipes in github.com/breadchris/share" />
       <item itemvalue="Go Test.scrape_test.go" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Test.TestRecipes in github.com/breadchris/share" />
         <item itemvalue="Go Test.TestRecipeIndexSmitten in github.com/breadchris/share" />
         <item itemvalue="Go Test.TestLoadAllRecipesSmitten in github.com/breadchris/share" />
         <item itemvalue="Go Test.TestParse in github.com/breadchris/share" />
         <item itemvalue="Go Test.scrape_test.go" />
-        <item itemvalue="Go Test.TestScrape in github.com/breadchris/share" />
       </list>
     </recent_temporary>
   </component>
@@ -277,7 +230,7 @@
       <workItem from="1742090021663" duration="70290000" />
       <workItem from="1744341285248" duration="26046000" />
       <workItem from="1744774454094" duration="2182000" />
-      <workItem from="1744863579423" duration="18850000" />
+      <workItem from="1744863579423" duration="23274000" />
     </task>
     <servers />
   </component>

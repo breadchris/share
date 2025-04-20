@@ -646,6 +646,52 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 		}
 		renderSource(w, r, DefaultLayout(renderRecipe(re)))
 	})
+	m.HandleFunc("/source/upload", func(w http.ResponseWriter, r *http.Request) {
+		id := r.PathValue("id")
+		if id == "" {
+			id = "smittenkitchen.com"
+		}
+		switch r.Method {
+		case http.MethodPut:
+			var re []models.Recipe
+			if err := json.NewDecoder(r.Body).Decode(&re); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+
+			err = d.DB.Transaction(func(tx *gorm.DB) error {
+				for _, rc := range re {
+					if err := tx.Save(&rc).Error; err != nil {
+						return err
+					}
+
+					for _, in := range rc.Ingredients {
+						if err := tx.Save(&in).Error; err != nil {
+							return err
+						}
+					}
+
+					for _, eq := range rc.Equipment {
+						if err := tx.Save(&eq).Error; err != nil {
+							return err
+						}
+					}
+
+					for _, di := range rc.Directions {
+						if err := tx.Save(&di).Error; err != nil {
+							return err
+						}
+					}
+				}
+				return nil
+			})
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		}
+	})
 	m.HandleFunc("/source/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 		if id == "" {
