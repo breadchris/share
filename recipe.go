@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -605,11 +606,20 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 
 			servings := 4.0
 
+			ur, err := url.Parse(rs.URL)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return nil
+			}
+			ur.Scheme = "https"
+			ur.Path = filepath.Dir(ur.Path)
+
 			id := rs.ID
 			return Div(
 				Class("md:w-1/2 mx-auto p-8 space-y-4"),
 				ytScript(id),
 				P(Class("text-4xl font-semibold mb-4"), T(rs.Name)),
+				A(Class("text-sm text-gray-500 mb-4"), Attr("href", ur.String()), T("Source: "+rs.Domain)),
 				Div(
 					P(Class("text-2xl font-semibold mb-4"), T("Ingredients")),
 					Ul(Class("space-y-4"), Ch(ingredients)),

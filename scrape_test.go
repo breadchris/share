@@ -230,21 +230,18 @@ func TestRecipes(t *testing.T) {
 		DB: newDB,
 	}
 
-	var recipes models.Recipe
-	res := de.DB.Preload("Ingredients").Preload("Equipment").Preload("Directions").Where("domain = ?", "smittenkitchen.com").First(&recipes)
+	var recipes []models.Recipe
+	res := de.DB.Preload("Ingredients").Preload("Equipment").Preload("Directions").Where("domain = ?", "smittenkitchen.com").Find(&recipes)
 	if res.Error != nil {
 		fmt.Println("Error:", res.Error)
 	}
 
-	rs := []models.Recipe{
-		recipes,
-	}
-	b, err := json.Marshal(rs)
+	b, err := json.Marshal(recipes)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPut, "http://localhost:8080/recipe/source/upload", bytes.NewReader(b))
+	req, err := http.NewRequest(http.MethodPut, "https://justshare.io/recipe/source/upload", bytes.NewReader(b))
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
