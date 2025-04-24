@@ -484,7 +484,7 @@ export const Editor: FC<EditorProps> = ({ props }) => {
     const insertAI = (editor: typeof schema.BlockNoteEditor): DefaultReactSuggestionItem => ({
         title: "Ask AI",
         onItemClick: async () => {
-            const text = await editor.blocksToMarkdownLossy(editor.getSelection().blocks);
+            const text = await editor.blocksToMarkdownLossy(editor.document);
             void inferFromSelectedText(text);
         },
         aliases: ["ai"],

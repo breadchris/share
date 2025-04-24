@@ -9,6 +9,7 @@ import (
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	jsonpatch "github.com/evanphx/json-patch/v5"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/sashabaranov/go-openai"
 	"github.com/yuin/goldmark"
@@ -212,22 +213,17 @@ func New(d deps.Deps) *http.ServeMux {
 				}
 
 				DefaultLayout(
+					Form(
+						Method(http.MethodPost),
+						Action("/graph"),
+						Button(Class("btn"), Type("submit"), T("Create new graph")),
+					),
 					Div(
 						Class("container mx-auto space-y-4"),
 						Ch(gs),
 					),
 				).RenderPage(w, r)
 
-				//id = uuid.NewString()
-				//graph := Graph{
-				//	Nodes: []GraphNode{},
-				//	Edges: []GraphEdge{},
-				//}
-				//if err := graphs.Set(id, graph); err != nil {
-				//	http.Error(w, err.Error(), http.StatusInternalServerError)
-				//	return
-				//}
-				//http.Redirect(w, r, "/graph/"+id, http.StatusFound)
 				return
 			}
 
@@ -258,6 +254,18 @@ func New(d deps.Deps) *http.ServeMux {
 				Div(Id("graph"), Attr("data-props", string(sg))),
 				Script(Src("/static/graph/graph.js"), Attr("type", "module")),
 			).RenderPage(w, r)
+		case http.MethodPost:
+			id = uuid.NewString()
+			graph := Graph{
+				Nodes: []GraphNode{},
+				Edges: []GraphEdge{},
+			}
+			if err := graphs.Set(id, graph); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			http.Redirect(w, r, "/graph/"+id, http.StatusFound)
+
 		case http.MethodPut:
 			var g Graph
 			if err := json.NewDecoder(r.Body).Decode(&g); err != nil {
