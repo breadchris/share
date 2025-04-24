@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package node;
+
+message Node {
+  string id = 1;
+  string name = 2;
+  oneof type {
+    string text = 3;
+    string url = 4;
+  }
+}

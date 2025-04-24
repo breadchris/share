@@ -44,8 +44,14 @@ func dataToRecipe(ctx context.Context, d deps.Deps, data string) (models.Recipe,
 		Model: openai.GPT4o20240513,
 		Messages: []openai.ChatCompletionMessage{
 			{
-				Role:    openai.ChatMessageRoleSystem,
-				Content: `You are a helpful assistant that generates recipes from text data.`,
+				Role: openai.ChatMessageRoleSystem,
+				Content: `
+You will take content and generate a recipe from it by calling the generateRecipe function. The generateRecipe function will take the data as input and return a recipe object. The recipe object will have the following structure:
+Use the following data to extract the recipe into the described format.
+Replace casual dialogue and narrative with clear and direct recipe language.
+Include inferred ingredients and ensure proper structuring of directions.
+Each direction should only contain one action. For example, "Whisk egg whites" is one action. "Place a heaping teaspoon of the meat mixture in the center of a dumpling wrapper. Wet the perimeter with water, close it like a taco, pinching it in the middle at the top and pleat both sides three to four times." contains multiple actions.
+`,
 			},
 			{
 				Role:    openai.ChatMessageRoleUser,

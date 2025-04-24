@@ -1,5 +1,7 @@
 package main
 
+//go:generate npx buf generate proto
+
 import (
 	"crypto/md5"
 	"crypto/tls"
@@ -351,13 +353,13 @@ func startServer(useTLS bool, port int) {
 	go func() {
 		entrypoints := []string{
 			"./graph/graph.tsx",
-			"./xctf/graph.tsx",
-			"./code/monaco.tsx",
+			//"./xctf/graph.tsx",
+			//"./code/monaco.tsx",
 			//"./code/playground.ts",
 			"./music.tsx",
-			"./wasmcode/monaco.tsx",
-			"./wasmcode/analyzer/analyzer.worker.ts",
-			"./wasmcode/language/language.worker.ts",
+			//"./wasmcode/monaco.tsx",
+			//"./wasmcode/analyzer/analyzer.worker.ts",
+			//"./wasmcode/language/language.worker.ts",
 		}
 		paths := make([]string, len(entrypoints))
 		copy(paths, entrypoints)
@@ -387,16 +389,16 @@ func startServer(useTLS bool, port int) {
 					".css":   api.LoaderCSS,
 					".png":   api.LoaderFile,
 				},
-				Outdir:            "static/",
-				Format:            api.FormatESModule,
-				Bundle:            true,
-				Write:             true,
-				TreeShaking:       api.TreeShakingTrue,
-				MinifyWhitespace:  true,
-				MinifyIdentifiers: true,
-				MinifySyntax:      true,
-				//Sourcemap: api.SourceMapInline,
-				LogLevel: api.LogLevelInfo,
+				Outdir:      "static/",
+				Format:      api.FormatESModule,
+				Bundle:      true,
+				Write:       true,
+				TreeShaking: api.TreeShakingTrue,
+				//MinifyWhitespace:  true,
+				//MinifyIdentifiers: true,
+				//MinifySyntax:      true,
+				Sourcemap: api.SourceMapInline,
+				LogLevel:  api.LogLevelInfo,
 			})
 
 			for _, warning := range result.Warnings {

@@ -9,7 +9,6 @@ import (
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	jsonpatch "github.com/evanphx/json-patch/v5"
-	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/sashabaranov/go-openai"
 	"github.com/yuin/goldmark"
@@ -39,43 +38,6 @@ func New(d deps.Deps) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	graphs := d.Docs.WithCollection("graphs")
-
-	//g := Graph{
-	//	Nodes: []GraphNode{},
-	//	Edges: []GraphEdge{},
-	//}
-	//bg, err := json.Marshal(g)
-	//if err != nil {
-	//	log.Println("Failed to marshal graph", err)
-	//	return mux
-	//}
-	//bgs := string(bg)
-	//doc := yjs.NewComplexDocument(&bgs)
-
-	//mux.HandleFunc("/yjs/{id...}", func(w http.ResponseWriter, r *http.Request) {
-	//	_ = r.PathValue("id")
-	//
-	//	conn, err := upgrader.Upgrade(w, r, nil)
-	//	if err != nil {
-	//		log.Println("Failed to set websocket upgrade", err)
-	//		return
-	//	}
-	//	defer conn.Close()
-	//
-	//	for {
-	//		_, msg, err := conn.ReadMessage()
-	//		if err != nil {
-	//			log.Println("Failed to read message", err)
-	//			return
-	//		}
-	//		// to base64
-	//		base := base64.StdEncoding.EncodeToString(msg)
-	//		if err = doc.ApplyUpdate(base); err != nil {
-	//			log.Println("Failed to apply update", err)
-	//			return
-	//		}
-	//	}
-	//})
 
 	mux.HandleFunc("/ws/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
@@ -219,16 +181,53 @@ func New(d deps.Deps) *http.ServeMux {
 		switch r.Method {
 		case http.MethodGet:
 			if id == "" {
-				id = uuid.NewString()
-				graph := Graph{
-					Nodes: []GraphNode{},
-					Edges: []GraphEdge{},
-				}
-				if err := graphs.Set(id, graph); err != nil {
+				d, err := graphs.List()
+				if err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
-				http.Redirect(w, r, "/graph/"+id, http.StatusFound)
+
+				var gs []*Node
+				for _, g := range d {
+					var graph Graph
+					if err := json.Unmarshal(g.Data, &graph); err != nil {
+						http.Error(w, err.Error(), http.StatusInternalServerError)
+						return
+					}
+
+					gs = append(gs, Div(
+						Class("card"),
+						Div(
+							Class("card-body"),
+							Div(
+								Class("card-title"),
+								A(
+									Class("text-2xl font-bold"),
+									Href("/graph/"+g.ID),
+									T(g.ID),
+								),
+							),
+						),
+					))
+				}
+
+				DefaultLayout(
+					Div(
+						Class("container mx-auto space-y-4"),
+						Ch(gs),
+					),
+				).RenderPage(w, r)
+
+				//id = uuid.NewString()
+				//graph := Graph{
+				//	Nodes: []GraphNode{},
+				//	Edges: []GraphEdge{},
+				//}
+				//if err := graphs.Set(id, graph); err != nil {
+				//	http.Error(w, err.Error(), http.StatusInternalServerError)
+				//	return
+				//}
+				//http.Redirect(w, r, "/graph/"+id, http.StatusFound)
 				return
 			}
 

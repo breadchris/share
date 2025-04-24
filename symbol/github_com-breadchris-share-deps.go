@@ -10,6 +10,7 @@ import (
 func init() {
 	Symbols["github.com/breadchris/share/deps/deps"] = map[string]reflect.Value{
 		// type definitions
-		"Deps": reflect.ValueOf((*deps.Deps)(nil)),
+		"Deps":        reflect.ValueOf((*deps.Deps)(nil)),
+		"SearchIndex": reflect.ValueOf((*deps.SearchIndex)(nil)),
 	}
 }

@@ -5,11 +5,46 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/proto/node.proto" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2/storage_v2/_src_/schema/main.uQUzAA.meta" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2/storage_v2/_src_/schema/main.uQUzAA.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/recipe.go" beforeDir="false" afterPath="$PROJECT_DIR$/recipe.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/static/wasmcode/analyzer/analyzer.worker.js" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/wasmcode/analyzer/analyzer.worker.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/static/wasmcode/language/language.worker.js" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/wasmcode/language/language.worker.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/static/wasmcode/monaco.css" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/wasmcode/monaco.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/static/wasmcode/monaco.js" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/wasmcode/monaco.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/graph/graph.go" beforeDir="false" afterPath="$PROJECT_DIR$/graph/graph.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/graph/graph.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/graph/graph.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/graph/nodes.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/graph/nodes.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hmr/client/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/hmr/client/index.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hmr/client/sub.ts" beforeDir="false" afterPath="$PROJECT_DIR$/hmr/client/sub.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hmr/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/hmr/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hmr/preview.gif" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/hmr/server.ts" beforeDir="false" afterPath="$PROJECT_DIR$/hmr/server.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hmr/tsconfig.json" beforeDir="false" afterPath="$PROJECT_DIR$/hmr/tsconfig.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hmr/yarn.lock" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scrape_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/scrape_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/code/monaco.css" beforeDir="false" afterPath="$PROJECT_DIR$/static/code/monaco.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/code/monaco.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/code/monaco.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/graph.css" beforeDir="false" afterPath="$PROJECT_DIR$/static/graph.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/graph.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/graph.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/graph/graph.css" beforeDir="false" afterPath="$PROJECT_DIR$/static/graph/graph.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/graph/graph.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/graph/graph.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/music.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/music.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/wasmcode/analyzer/analyzer.worker.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/wasmcode/analyzer/analyzer.worker.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/wasmcode/language/language.worker.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/wasmcode/language/language.worker.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/wasmcode/monaco.css" beforeDir="false" afterPath="$PROJECT_DIR$/static/wasmcode/monaco.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/wasmcode/monaco.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/wasmcode/monaco.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/xctf/graph.css" beforeDir="false" afterPath="$PROJECT_DIR$/static/xctf/graph.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/xctf/graph.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/xctf/graph.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-deps.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-deps.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wasmcode/wasm/symbol/github_com-breadchris-share-config.go" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/wasm/symbol/github_com-breadchris-share-config.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/wasmcode/wasm/symbol/github_com-breadchris-share-html.go" beforeDir="false" afterPath="$PROJECT_DIR$/wasmcode/wasm/symbol/github_com-breadchris-share-html.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -41,41 +76,42 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "DefaultGoTemplateProperty": "Go File",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.go.formatter.settings.were.checked": "true",
-    "RunOnceActivity.go.migrated.go.modules.settings": "true",
-    "RunOnceActivity.go.modules.automatic.dependencies.download": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "git-widget-placeholder": "master",
-    "go.import.settings.migrated": "true",
-    "go.sdk.automatically.set": "true",
-    "last_opened_file_path": "/Users/hacked/Documents/GitHub/share",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "project.structure.last.edited": "Modules",
-    "project.structure.proportion": "0.15",
-    "project.structure.side.proportion": "0.2",
-    "settings.editor.selected.configurable": "preferences.lookFeel",
-    "ts.external.directory.path": "/Users/hacked/Documents/GitHub/share/screenshare/ui/node_modules/typescript/lib",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultGoTemplateProperty&quot;: &quot;Go File&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.modules.automatic.dependencies.download&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
+    &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/hacked/Documents/GitHub/share/hmr/client&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;/Users/hacked/Documents/GitHub/share/node_modules/typescript/lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
-  "keyToStringList": {
-    "DatabaseDriversLRU": [
-      "sqlite",
-      "postgresql"
+  &quot;keyToStringList&quot;: {
+    &quot;DatabaseDriversLRU&quot;: [
+      &quot;sqlite&quot;,
+      &quot;postgresql&quot;
     ]
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/hmr/client" />
       <recent name="$PROJECT_DIR$/xctf" />
       <recent name="$PROJECT_DIR$/xctf/models" />
       <recent name="$PROJECT_DIR$/static" />
@@ -88,7 +124,7 @@
       <recent name="$PROJECT_DIR$/xctf" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Test.TestRecipes in github.com/breadchris/share">
+  <component name="RunManager" selected="Go Build.share">
     <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
       <module name="share" />
       <working_directory value="$PROJECT_DIR$" />
@@ -232,7 +268,8 @@
       <workItem from="1742090021663" duration="70290000" />
       <workItem from="1744341285248" duration="26046000" />
       <workItem from="1744774454094" duration="2182000" />
-      <workItem from="1744863579423" duration="24405000" />
+      <workItem from="1744863579423" duration="36456000" />
+      <workItem from="1745464029344" duration="6023000" />
     </task>
     <servers />
   </component>
