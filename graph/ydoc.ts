@@ -7,6 +7,6 @@ import {WebsocketProvider} from "y-websocket";
 
 const ydoc = new Doc();
 //new WebrtcProvider('REACTFLOW-COLLAB-EXAMPLE', ydoc);
-new WebsocketProvider('ws://localhost:8080/graph/yjs', 'reactflow-collab-example', ydoc);
+export const yprovider = new WebsocketProvider('ws://localhost:1234/', 'reactflow-collab-example', ydoc);
 
 export default ydoc;

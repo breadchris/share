@@ -30,54 +30,64 @@ func New(d deps.Deps) *http.ServeMux {
 	}
 
 	mux.HandleFunc("/print", func(w http.ResponseWriter, r *http.Request) {
-		type Cheese struct {
-			Name, Description, Image string
+		type MusicCard struct {
+			Name, Description, Image, GameMechanic string
 		}
-		cheeses := []Cheese{
+
+		cheeses := []MusicCard{
 			{
-				Name:        "brie",
-				Description: "This French cow's milk cheese is rich, mild, and creamy, and it's soft enough to spread easily on crackers or bread. Look for French Bries. The rind is edible. For best flavor, wait until it's perfectly ripe and warmed to room temperature before serving it.",
-				Image:       "https://files.foodsubs.com/photos/Photos/brie.jpg",
+				Name:         "Brass Band",
+				Description:  "This vibrant ensemble brings together bold and brassy tones, perfect for energizing the game. It's loud, it's proud, and it fills the room with a rich, full sound.",
+				Image:        "https://upload.wikimedia.org/wikipedia/commons/f/f0/Kyrgyz_Military_Band.jpg",
+				GameMechanic: "Can be used to increase the tempo of a song or overpower a slow-paced melody, boosting the intensity of your team's rhythm.",
 			},
 			{
-				Name:        "cheddar",
-				Description: "The curds of many English cow's milk cheeses are \"cheddared\" or cut them into slabs and stacked to allow whey to drain off. Some cheddars have more lactose in them, making them \"sharp\" or acidic. England supplies many fine Cheddars, as does Vermont and Tillamook, Oregon.",
-				Image:       "https://files.foodsubs.com/photos/Photos/cheddar.jpg",
+				Name:         "Electric Guitar",
+				Description:  "The electric guitar is a powerful instrument that can unleash a range of emotions, from the raw intensity of rock to the smooth rhythms of blues. It can influence the tempo and mood of any musical piece.",
+				Image:        "https://news.iu.edu/live/image/gid/2/width/500/height/452/crop/1/src_region/268,557,3180,3189/20003_Jimi_Hendrix_-_GettyImages-84894709.jpg",
+				GameMechanic: "Can change the mood of the song, either by adding sharp, edgy riffs or by calming down the intensity, affecting your opponents’ gameplay.",
 			},
 			{
-				Name:        "gouda",
-				Description: "This Dutch cow's milk cheese has a mild, nutty flavor. Varieties include smoked Gouda, the diminutive baby Gouda, and Goudas flavored with garlic and spices. Goudas are also classed by age. A young Gouda is mild, an aged Gouda is more assertive, and an old Gouda is downright pungent.",
-				Image:       "https://files.foodsubs.com/photos/Photos/goudacheese.jpg",
+				Name:         "Synthesizer",
+				Description:  "A key to modern music, the synthesizer provides a wide range of sounds, from atmospheric pads to sharp leads. It adds texture and futuristic vibes to the gameplay.",
+				Image:        "https://upload.wikimedia.org/wikipedia/commons/6/60/Minimoog-Synthesizer.jpg",
+				GameMechanic: "Adds an unexpected twist to the game, either creating a futuristic vibe or altering the soundscape to throw off the opponent.",
 			},
 			{
-				Name:        "swiss",
-				Description: "This popular cow's milk cheese is an American knock-off of Switzerland's Emmentaler cheese. This difference is that our domestic version usually has smaller eyes (making it easier to slice) and is made from pasteurized milk. Emmentaler has a richer, nuttier flavor.",
-				Image:       "https://files.foodsubs.com/photos/Photos/swisscheese.jpg",
+				Name:         "Drum Kit",
+				Description:  "A foundational part of rhythm, the drum kit drives the tempo of any musical genre. Its beats set the pace and keep everything in sync.",
+				Image:        "https://upload.wikimedia.org/wikipedia/commons/3/3d/Drum_kit_1.jpg",
+				GameMechanic: "Determines the pace of a round. The faster the beats, the more actions the player can take within a turn.",
 			},
 			{
-				Name:        "blue cheese",
-				Description: "Cheese was left to age in some moldy cave and became streaked with bluish-green mold. The mold gave it a pungent and distinctive flavor, and blue cheese was born. Since then, cheese-makers learned to inject or stir mold spores into different cheeses, and many still use caves to age them.",
-				Image:       "https://files.foodsubs.com/photos/Photos/roquefortcheese.jpg",
+				Name:         "Orchestra Strings",
+				Description:  "This ensemble brings elegance and depth with rich string arrangements. Perfect for adding grandeur and emotion to any game scenario.",
+				Image:        "https://upload.wikimedia.org/wikipedia/commons/2/2b/Orchestra_strings.jpg",
+				GameMechanic: "Alters the game’s emotional setting, giving players a chance to dramatically change the tone of their current piece.",
 			},
 			{
-				Name:        "parmesan",
-				Description: "This firm cow's milk cheese is pungent, nutty, and salty, and it's terrific grated on salads, pasta, or pizzas, or served simply with figs, pears, or crusty bread. The best parmesan is the Northern Italian Parmigiano-Reggiano, but less pricy domestic parmesans are also well regarded. Aging increases the price and flavor.",
-				Image:       "https://files.foodsubs.com/photos/Photos/parmesan3.jpg",
+				Name:         "Piano",
+				Description:  "The piano is one of the most versatile instruments in music, capable of both melody and harmony. It sets the emotional tone, from delicate ballads to dramatic pieces.",
+				Image:        "https://upload.wikimedia.org/wikipedia/commons/1/15/Grand_Piano.jpg",
+				GameMechanic: "A versatile tool that can either harmonize or introduce a melody, depending on the situation in the game. It can help players gain control of more than one aspect of the round.",
 			},
 			{
-				Name:        "camembert",
-				Description: "This popular soft-ripened cow's milk cheese is buttery rich and wonderful to spread on hot French bread. Try to get a French raw milk Camembert--our pasteurized domestic versions are bland in comparison. Use within a few days after purchasing. For best flavor, serve at room temperature.",
-				Image:       "https://files.foodsubs.com/photos/Photos/camembertcheese.jpg",
+				Name:         "Vocals",
+				Description:  "The human voice is the most expressive instrument of all. It can sing words, tell a story, and convey deep emotions that resonate with the heart.",
+				Image:        "https://upload.wikimedia.org/wikipedia/commons/9/9b/Singer_mic.jpg",
+				GameMechanic: "Influences the lyrics or the theme of a song, enabling players to guide the direction of their performance or control the narrative.",
 			},
 			{
-				Name:        "feta",
-				Description: "This salty, crumbly cheese is common in Greek cuisine. It is made from sheep's milk sometimes combined with goat's milk. It's often stored in brine; if so, you might want to rinse it before using to remove some of the saltiness. Use within a few days after purchasing. For best flavor, serve at room temperature.",
-				Image:       "https://files.foodsubs.com/photos/Photos/greekfetacheese.jpg",
+				Name:         "Acoustic Guitar",
+				Description:  "This instrument evokes warmth and intimacy. It’s perfect for soothing melodies or lively folk music, providing a rich foundation for storytelling.",
+				Image:        "https://upload.wikimedia.org/wikipedia/commons/3/3f/Acoustic_Guitar.jpg",
+				GameMechanic: "Used for building harmony or enhancing melodies in a laid-back, classic fashion, bringing calm to tense moments.",
 			},
 			{
-				Name:        "mozzarella",
-				Description: "Soft, white Italian cheese. The most common type is low-moisture mozzarella, which is often sold in bricks or firm balls, or is shredded and sold in bags. Don't confuse it with fresh mozzarella = high-moisture mozzarella, which is a fresh cheese used for salads and appetizers, and is often sold in tubs of water",
-				Image:       "https://files.foodsubs.com/photos/j8ZY69xFaVZVi9T2",
+				Name:         "Percussion Instruments",
+				Description:  "From maracas to tambourines, percussion instruments add rhythm and fun to the music. They're the life of the party, driving movement and energy.",
+				Image:        "https://upload.wikimedia.org/wikipedia/commons/7/74/Percussion_instruments.jpg",
+				GameMechanic: "Introduces a spontaneous and fun element, encouraging players to act quickly, disrupting their opponents’ strategies.",
 			},
 		}
 
@@ -109,7 +119,7 @@ func New(d deps.Deps) *http.ServeMux {
 					Div(
 						Class("card-body"),
 						//H2(Class("card-title text-center"), Text(cheese.Name)),
-						P(Class("card-text text-center"), Text(cheese.Description)),
+						P(Class("card-text text-center"), Text(cheese.GameMechanic)),
 					),
 				),
 			)

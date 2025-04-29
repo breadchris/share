@@ -20,7 +20,7 @@ import {
 import {
     Block,
     BlockNoteEditor,
-    BlockNoteSchema,
+    BlockNoteSchema, blockToNode,
     defaultBlockSpecs, defaultInlineContentSpecs,
     filterSuggestionItems, insertOrUpdateBlock,
     PartialBlock
@@ -51,27 +51,69 @@ import {
 } from "@blocknote/react";
 import {BlockNoteView} from "@blocknote/mantine";
 import {Node} from './rpc/node_pb';
+import Flow from "./App";
+import useNodesStateSynced, {docsMap, nodesMap} from "./useNodesStateSynced";
+import useEdgesStateSynced, {edgesMap} from "./useEdgesStateSynced";
+import ydoc, {yprovider} from "./ydoc";
+import {
+    prosemirrorToYXmlFragment,
+} from "y-prosemirror";
+import {EpubReader} from "./nodes";
+import {App} from "./awareness";
 
-export const doc = new Y.Doc();
+function blocksToProsemirrorNode(
+    editor: BlockNoteEditor,
+    blocks: PartialBlock[]
+) {
+    const pmSchema = editor.pmSchema;
+    const pmNodes = blocks.map((b) => blockToNode(b, pmSchema, undefined));
 
-function EditorNode({ id, data }) {
+    const doc = pmSchema.topNodeType.create(
+        null,
+        pmSchema.nodes["blockGroup"].create(null, pmNodes)
+    );
+    return doc;
+}
+
+
+export function EditorNode({ id, data }) {
     const d = Node.fromJson(data);
     const rf = useReactFlow();
     switch (d.type.case) {
         case "url":
-            return (
-                <>
-                    <Handle type="target" position={Position.Top} />
-                    <div className={"p-6 bg-green-100 overflow-y-scroll"} style={{width: "100%", maxHeight: "700px"}}>
-                        <img style={{maxWidth: "400px"}} src={d.type.value} alt="Image Node" />
-                    </div>
-                    <Handle type="source" position={Position.Bottom} />
-                </>
-            );
+            const url = d.type.value;
+            const extension = url.split('.').pop();
+            switch (extension) {
+                case "epub":
+                    return (
+                        <div style={{
+                            width: '600px',
+                        }}>
+                            <EpubReader id={id} url={url} />
+                        </div>
+                    );
+                case "png":
+                case "jpg":
+                case "jpeg":
+                case "gif":
+                    return (
+                        <>
+                            <div className={"p-6 bg-green-100 overflow-y-scroll"} style={{width: "100%", maxHeight: "700px"}}>
+                                <img style={{maxWidth: "400px"}} src={d.type.value} alt="Image Node" />
+                            </div>
+                        </>
+                    );
+                default:
+                    return (
+                        <div className={"p-6 bg-red-100 overflow-y-scroll"} style={{width: "100%", maxHeight: "700px"}}>
+                            <h1>Unsupported image type</h1>
+                            <p>{extension}</p>
+                        </div>
+                    );
+            }
         case "text":
             return (
                 <>
-                    <Handle type="target" position={Position.Top} />
                     <div className={"p-6 bg-green-100 overflow-y-scroll"} style={{width: "700px", maxHeight: "700px"}}>
                         <div className={"nodrag"}>
                             <Editor props={{
@@ -79,6 +121,7 @@ function EditorNode({ id, data }) {
                                 room: "",
                                 post: undefined,
                                 text: d.type.value,
+                                node: d,
                                 username: "Anonymous",
                                 onChange: (s: string) => {
                                     const nodes = rf.getNodes();
@@ -99,7 +142,6 @@ function EditorNode({ id, data }) {
                             }} />
                         </div>
                     </div>
-                    <Handle type="source" position={Position.Bottom} />
                 </>
             );
     }
@@ -107,62 +149,64 @@ function EditorNode({ id, data }) {
 
 export default function GraphApp({ props }) {
     const { id, graph } = props;
-    const [nodes, setNodes] = useState([]);
-    const [edges, setEdges] = useState([]);
+    // const [nodes, setNodes] = useState([]);
+    // const [edges, setEdges] = useState([]);
+    const [nodes, onNodesChange] = useNodesStateSynced();
+    const [edges, onEdgesChange, onConnect] = useEdgesStateSynced();
 
-    useEffect(() => {
-        if (!graph) {
-            return;
-        }
-        setNodes(graph.nodes || []);
-        setEdges(graph.edges || []);
-    }, [graph]);
+    // useEffect(() => {
+    //     if (!graph) {
+    //         return;
+    //     }
+    //     setNodes(graph.nodes || []);
+    //     setEdges(graph.edges || []);
+    // }, [graph]);
 
-    const sendGraphUpdate = (nodes, edges) => {
-        fetch(`/graph/${id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ nodes, edges }),
-        }).then((response) => {
-            if (!response.ok) {
-                console.error('Failed to update graph');
-            }
-        }).catch((error) => {
-            console.error('Failed to update graph:', error);
-        });
-    }
-
-    const debouncedUpdate = useDebounce(sendGraphUpdate, 500);
-
-    const setSyncedNodes = useCallback((nodes) => {
-        setNodes(nodes);
-        debouncedUpdate(nodes, edges);
-    }, [edges]);
-
-    const setSyncedEdges = useCallback((ed) => {
-        setEdges(ed);
-        debouncedUpdate(nodes, ed);
-    }, [nodes]);
-
-    const onNodesChange: OnNodesChange = useCallback(
-        (changes) => {
-            const newNodes = applyNodeChanges(changes, nodes);
-            setSyncedNodes(newNodes);
-        },[nodes, setSyncedNodes]
-    );
-    const onEdgesChange: OnEdgesChange = useCallback(
-        (changes) => {
-            const newEdges = applyEdgeChanges(changes, edges);
-            setSyncedEdges(newEdges);
-        }, [edges, setSyncedEdges]
-    );
-    const onConnect: OnConnect = useCallback(
-        (connection) => {
-            setSyncedEdges(addEdge(connection, edges));
-        }, [setSyncedEdges, edges]
-    );
+    // const sendGraphUpdate = (nodes, edges) => {
+    //     fetch(`/graph/${id}`, {
+    //         method: 'PUT',
+    //         headers: {
+    //             'Content-Type': 'application/json',
+    //         },
+    //         body: JSON.stringify({ nodes, edges }),
+    //     }).then((response) => {
+    //         if (!response.ok) {
+    //             console.error('Failed to update graph');
+    //         }
+    //     }).catch((error) => {
+    //         console.error('Failed to update graph:', error);
+    //     });
+    // }
+    //
+    // const debouncedUpdate = useDebounce(sendGraphUpdate, 500);
+    //
+    // const setSyncedNodes = useCallback((nodes) => {
+    //     setNodes(nodes);
+    //     debouncedUpdate(nodes, edges);
+    // }, [edges]);
+    //
+    // const setSyncedEdges = useCallback((ed) => {
+    //     setEdges(ed);
+    //     debouncedUpdate(nodes, ed);
+    // }, [nodes]);
+    //
+    // const onNodesChange: OnNodesChange = useCallback(
+    //     (changes) => {
+    //         const newNodes = applyNodeChanges(changes, nodes);
+    //         setSyncedNodes(newNodes);
+    //     },[nodes, setSyncedNodes]
+    // );
+    // const onEdgesChange: OnEdgesChange = useCallback(
+    //     (changes) => {
+    //         const newEdges = applyEdgeChanges(changes, edges);
+    //         setSyncedEdges(newEdges);
+    //     }, [edges, setSyncedEdges]
+    // );
+    // const onConnect: OnConnect = useCallback(
+    //     (connection) => {
+    //         setSyncedEdges(addEdge(connection, edges));
+    //     }, [setSyncedEdges, edges]
+    // );
 
     const cmdAndNPressed = useKeyPress(['Meta+i', 'Strg+i']);
 
@@ -187,7 +231,10 @@ export default function GraphApp({ props }) {
                 }
             }).toJson(),
         };
-        setSyncedNodes(nodes.concat(newNode));
+        Y.transact(ydoc, () => {
+            nodesMap.set(id, newNode);
+            docsMap.set(id, new Y.XmlFragment());
+        });
     }, [cmdAndNPressed]);
 
     const rf = useReactFlow();
@@ -236,8 +283,10 @@ const root = createRoot(g);
 root.render((
     <ReactFlowProvider>
         <GraphApp props={props} />
+        {/*<App />*/}
     </ReactFlowProvider>
 ));
+
 
 async function saveToStorage(jsonBlocks: Block[]) {
     // Save contents to local storage. You might want to debounce this or replace
@@ -291,6 +340,7 @@ interface EditorProps {
             Blocknote: string;
         } | undefined;
         initialContent: string;
+        node: Node;
         username: string;
         text: string;
         onChange: (s: string) => void;
@@ -308,9 +358,9 @@ function ClipItem(props: DragHandleMenuProps) {
         <Components.Generic.Menu.Item
             onClick={async () => {
                 const b = editor.getBlock(props.block);
-                const c = await editor.blocksToMarkdownLossy([b]);
+
                 const id = generateUUID();
-                rf.addNodes([{
+                const node = {
                     id: id,
                     position: {
                         x: 100,
@@ -322,17 +372,14 @@ function ClipItem(props: DragHandleMenuProps) {
                         name: "asdf",
                         type: {
                             case: "text",
-                            value: c
+                            value: ""
                         }
                     }).toJson(),
-                }])
-                rf.addEdges([
-                    {
-                        id: generateUUID(),
-                        source: props.block.id,
-                        target: id,
-                    },
-                ])
+                };
+                Y.transact(ydoc, () => {
+                    nodesMap.set(id, node);
+                    docsMap.set(id, prosemirrorToYXmlFragment(blocksToProsemirrorNode(editor, [b])));
+                });
             }}>
             Clip
         </Components.Generic.Menu.Item>
@@ -341,7 +388,6 @@ function ClipItem(props: DragHandleMenuProps) {
 
 export const Editor: FC<EditorProps> = ({ props }) => {
     const abortControllerRef = useRef<AbortController|undefined>(undefined);
-    const providerRef = useRef<WebsocketProvider|undefined>(undefined);
     const initialContent = props.initialContent ? JSON.parse(props.initialContent) : undefined;
 
     const rf = useReactFlow();
@@ -360,14 +406,14 @@ export const Editor: FC<EditorProps> = ({ props }) => {
             });
             return await ret.text();
         },
-        // TODO breadchris collaboration ID is node id
-        // collaboration: {
-        //     provider: providerRef.current,
-        //     fragment: doc.getXmlFragment("blocknote"),
-        //     user: {
-        //         name: props?.username || "Anonymous",
-        //     }
-        // },
+
+        collaboration: {
+            provider: yprovider,
+            fragment: props.node ? docsMap.get(props.node.id) || ydoc.getXmlFragment("scratch") : ydoc.getXmlFragment("scratch"),
+            user: {
+                name: props?.username || "Anonymous",
+            }
+        },
         schema: schema,
     });
 
@@ -401,21 +447,6 @@ export const Editor: FC<EditorProps> = ({ props }) => {
             })()
         }
     }, [ctrlAndC]);
-
-    // TODO breadchris this will become problematic with multiple forms on the page, need provider
-    useEffect(() => {
-        if (props?.provider_url) {
-            providerRef.current = new WebsocketProvider(props.provider_url, props.room, doc);
-        }
-        return () => {
-            if (abortControllerRef.current) {
-                abortControllerRef.current.abort();
-            }
-            if (providerRef.current) {
-                providerRef.current.disconnect();
-            }
-        };
-    }, []);
 
     const onStop = () => {
         abortControllerRef.current?.abort();
@@ -503,14 +534,14 @@ export const Editor: FC<EditorProps> = ({ props }) => {
     }, []);
 
     useEffect(() => {
-        if (props.text !== '') {
-            (async () => {
-                console.log('parsing markdown', props.text)
-                const blocks = await editor.tryParseMarkdownToBlocks(props.text);
-                console.log("done parsing markdown", blocks)
-                editor.replaceBlocks(editor.document, blocks);
-            })()
-        }
+        // if (props.text !== '') {
+        //     (async () => {
+        //         console.log('parsing markdown', props.text)
+        //         const blocks = await editor.tryParseMarkdownToBlocks(props.text);
+        //         console.log("done parsing markdown", blocks)
+        //         editor.replaceBlocks(editor.document, blocks);
+        //     })()
+        // }
     }, [editor]);
 
     if (editor === undefined) {
@@ -523,10 +554,10 @@ export const Editor: FC<EditorProps> = ({ props }) => {
         <BlockNoteView
             editor={editor}
             sideMenu={false}
-            onChange={async () => {
-                debouncedUpdate(await editor.blocksToMarkdownLossy(editor.document));
-                //saveToStorage(editor.document);
-            }}
+            // onChange={async () => {
+            //     debouncedUpdate(await editor.blocksToMarkdownLossy(editor.document));
+            //     //saveToStorage(editor.document);
+            // }}
             slashMenu={false}
         >
 
@@ -632,24 +663,23 @@ export const useCopyPaste = (
             event.preventDefault();
 
             const text = event.clipboardData?.getData('Text');
-            if (text.match(/\.(jpeg|jpg|gif|png)$/) != null) {
+            console.log("paste", text);
+            if (text.match(/\.(jpeg|jpg|gif|png|epub)$/) != null) {
                 const id = generateUUID();
                 const vp = rfInstance.getViewport();
-                rfInstance?.addNodes([
-                    {
-                        id: id,
-                        type: 'node',
-                        position: { x: vp.x, y: vp.y },
-                        data: new Node({
-                            id,
-                            name: "asdf",
-                            type: {
-                                case: "url",
-                                value: text
-                            }
-                        }).toJson(),
-                    },
-                ]);
+                nodesMap.set(id, {
+                    id: id,
+                    type: 'node',
+                    position: { x: vp.x, y: vp.y },
+                    data: new Node({
+                        id,
+                        name: "asdf",
+                        type: {
+                            case: "url",
+                            value: text
+                        }
+                    }).toJson(),
+                })
                 return;
             }
 

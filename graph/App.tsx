@@ -1,8 +1,10 @@
-import React, { DragEvent, useCallback, useRef } from 'react';
-import { ReactFlow, Node, ReactFlowProvider, Controls, useReactFlow, NodeMouseHandler } from '@xyflow/react';
+import React, {DragEvent, useCallback, useEffect, useMemo, useRef} from 'react';
+import {ReactFlow, Node, ReactFlowProvider, Controls, useReactFlow, NodeMouseHandler, useKeyPress} from '@xyflow/react';
 
 import useNodesStateSynced, { nodesMap } from './useNodesStateSynced';
 import useEdgesStateSynced from './useEdgesStateSynced';
+import {Node as NodePB} from './rpc/node_pb';
+import {EditorNode} from "./graph";
 
 /**
  * This example shows how you can use yjs to sync the nodes and edges between multiple users.
@@ -25,6 +27,40 @@ function ReactFlowPro() {
   const [nodes, onNodesChange] = useNodesStateSynced();
   const [edges, onEdgesChange, onConnect] = useEdgesStateSynced();
   const { screenToFlowPosition } = useReactFlow();
+
+  const nodeTypes = useMemo(() => {
+    return {
+      node: EditorNode,
+    }
+  }, []);
+
+  const cmdAndNPressed = useKeyPress(['Meta+i', 'Strg+i']);
+
+  useEffect(() => {
+    if (!cmdAndNPressed) {
+      return;
+    }
+    
+    const type = 'node';
+    const position = screenToFlowPosition({ x: 100, y: 100 });
+    const id = getId();
+    const newNode: Node = {
+      id: id,
+      type,
+      position,
+      data: new NodePB({
+        id: id,
+        name: "asdf",
+        type: {
+          case: "text",
+          value: "text"
+        }
+      }).toJson(),
+    };
+
+    nodesMap.set(newNode.id, newNode);
+  }, [cmdAndNPressed]);
+
 
   const onDrop = (event: DragEvent) => {
     event.preventDefault();
@@ -73,6 +109,7 @@ function ReactFlowPro() {
         <ReactFlow
           nodes={nodes}
           edges={edges}
+          nodeTypes={nodeTypes}
           onEdgesChange={onEdgesChange}
           onNodesChange={onNodesChange}
           onNodeClick={onNodeClick}

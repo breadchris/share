@@ -10,11 +10,13 @@ import {
 
 import ydoc from './ydoc';
 import { edgesMap } from './useEdgesStateSynced';
+import {XmlFragment} from "yjs";
 
 // We are using nodesMap as the one source of truth for the nodes.
 // This means that we are doing all changes to the nodes in the map object.
 // Whenever the map changes, we update the nodes state.
 export const nodesMap = ydoc.getMap<Node>('nodes');
+export const docsMap = ydoc.getMap<XmlFragment>('docs');
 
 const isNodeAddChange = (change: NodeChange): change is NodeAddChange => change.type === 'add';
 const isNodeResetChange = (change: NodeChange): change is NodeReplaceChange => change.type === 'replace';

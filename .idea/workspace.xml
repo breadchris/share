@@ -5,8 +5,20 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/graph/awareness.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/graph/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/graph/App.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/graph/graph.go" beforeDir="false" afterPath="$PROJECT_DIR$/graph/graph.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/graph/graph.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/graph/graph.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/graph/nodes.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/graph/nodes.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/graph/styles.css" beforeDir="false" afterPath="$PROJECT_DIR$/graph/styles.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/graph/useNodesStateSynced.ts" beforeDir="false" afterPath="$PROJECT_DIR$/graph/useNodesStateSynced.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/graph/ydoc.ts" beforeDir="false" afterPath="$PROJECT_DIR$/graph/ydoc.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/op/op.go" beforeDir="false" afterPath="$PROJECT_DIR$/op/op.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/graph/graph.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/graph/graph.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -231,7 +243,7 @@
       <workItem from="1744341285248" duration="26046000" />
       <workItem from="1744774454094" duration="2182000" />
       <workItem from="1744863579423" duration="36456000" />
-      <workItem from="1745464029344" duration="6536000" />
+      <workItem from="1745464029344" duration="29396000" />
     </task>
     <servers />
   </component>

@@ -1,4 +1,4 @@
-import {Handle, Position, useReactFlow} from "@xyflow/react";
+import {Handle, Position, useKeyPress, useReactFlow} from "@xyflow/react";
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import ReactPlayer from "react-player/youtube";
 import {defaultLayoutPlugin} from "@react-pdf-viewer/default-layout";
@@ -6,6 +6,13 @@ import {ScrollMode, Viewer, Worker} from "@react-pdf-viewer/core";
 import {EpubReader} from "./graph";
 import {Contents, Rendition} from "epubjs";
 import {ReactReader} from "react-reader";
+import {Node} from "./rpc/node_pb";
+import * as Y from "yjs";
+import ydoc from "./ydoc";
+import {docsMap, nodesMap} from "./useNodesStateSynced";
+import {prosemirrorToYXmlFragment} from "y-prosemirror";
+import {useBlockNoteEditor} from "@blocknote/react";
+import {BlockNoteEditor, blockToNode, PartialBlock} from "@blocknote/core";
 
 function generateUUID() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (char) {
@@ -14,6 +21,21 @@ function generateUUID() {
         return value.toString(16);
     });
 }
+
+function blocksToProsemirrorNode(
+    editor: BlockNoteEditor,
+    blocks: PartialBlock[]
+) {
+    const pmSchema = editor.pmSchema;
+    const pmNodes = blocks.map((b) => blockToNode(b, pmSchema, undefined));
+
+    const doc = pmSchema.topNodeType.create(
+        null,
+        pmSchema.nodes["blockGroup"].create(null, pmNodes)
+    );
+    return doc;
+}
+
 
 function EvidenceNode({ data }) {
     return (
@@ -128,31 +150,29 @@ type ITextSelection = {
     cfiRange: string
 }
 
-export const EpubReader: React.FC<{url: string}> = ({url}) => {
+export const EpubReader: React.FC<{id: string, url: string}> = ({id, url}) => {
     const [selections, setSelections] = useState<ITextSelection[]>([])
     const [rendition, setRendition] = useState<Rendition | undefined>(undefined)
     const [location, setLocation] = useState<string | number>(0)
+    const cmdAndNPressed = useKeyPress(['Meta+g']);
+    const [current, setCurrent] = useState<ITextSelection | null>(null);
+
+    useEffect(() => {
+        if (!cmdAndNPressed) {
+            return;
+        }
+        console.log("cmd+g pressed");
+    }, [cmdAndNPressed]);
     useEffect(() => {
         if (rendition) {
             function setRenderSelection(cfiRange: string, contents: Contents) {
                 if (rendition) {
-                    console.log(contents)
-                    setSelections((list) =>
-                        list.concat({
-                            text: rendition.getRange(cfiRange).toString(),
-                            cfiRange,
-                        })
-                    )
-                    rendition.annotations.add(
-                        'highlight',
+                    setCurrent({
+                        text: rendition.getRange(cfiRange).toString(),
                         cfiRange,
-                        {},
-                        undefined,
-                        'hl',
-                        { fill: 'red', 'fill-opacity': '0.5', 'mix-blend-mode': 'multiply' }
-                    )
-                    const selection = contents.window.getSelection()
-                    selection?.removeAllRanges()
+                    });
+                    // const selection = contents.window.getSelection()
+                    // selection?.removeAllRanges()
                 }
             }
             rendition.on('selected', setRenderSelection)
@@ -161,21 +181,61 @@ export const EpubReader: React.FC<{url: string}> = ({url}) => {
             }
         }
     }, [setSelections, rendition])
+    const editor = BlockNoteEditor.create();
+
     return (
         <div style={{ height: '100vh' }}>
             <div className="border border-stone-400 bg-white min-h-[100px] p-2 rounded">
                 <h2 className="font-bold mb-1">Selections</h2>
+                <button className={"btn"} onClick={() => {
+                    setSelections((list) =>
+                        list.concat(current)
+                    )
+
+                    rendition.annotations.add(
+                        'highlight',
+                        current.cfiRange,
+                        {},
+                        undefined,
+                        'hl',
+                        { fill: 'red', 'fill-opacity': '0.5', 'mix-blend-mode': 'multiply' }
+                    )
+                    // const selection = contents.window.getSelection()
+                    // selection?.removeAllRanges()
+                }}>Select</button>
                 <ul className="grid grid-cols-1 divide-y divide-stone-400 border-t border-stone-400 -mx-2">
                     {selections.map(({ text, cfiRange }, i) => (
                         <li key={i} className="p-2">
                             <span>{text}</span>
                             <button
                                 className="underline hover:no-underline text-sm mx-1"
-                                onClick={() => {
-                                    rendition?.display(cfiRange)
+                                onClick={async () => {
+                                    const blocks = await editor.tryParseMarkdownToBlocks(text);
+                                    // rendition?.display(cfiRange)
+                                    const id = generateUUID();
+                                    const node = {
+                                        id: id,
+                                        position: {
+                                            x: 100,
+                                            y: 100,
+                                        },
+                                        type: 'node',
+                                        data: new Node({
+                                            id,
+                                            name: "asdf",
+                                            type: {
+                                                case: "text",
+                                                value: ""
+                                            }
+                                        }).toJson(),
+                                    };
+                                    Y.transact(ydoc, () => {
+                                        nodesMap.set(id, node);
+                                        docsMap.set(id, prosemirrorToYXmlFragment(blocksToProsemirrorNode(editor, blocks)));
+                                    });
                                 }}
                             >
-                                Show
+                                Clip
                             </button>
 
                             <button

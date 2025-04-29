@@ -353,6 +353,8 @@ func startServer(useTLS bool, port int) {
 	go func() {
 		entrypoints := []string{
 			"./graph/graph.tsx",
+			"./graph/App.tsx",
+			"./graph/nodes.tsx",
 			//"./xctf/graph.tsx",
 			//"./code/monaco.tsx",
 			//"./code/playground.ts",
