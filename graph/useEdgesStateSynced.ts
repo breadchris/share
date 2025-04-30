@@ -12,16 +12,17 @@ import {
 } from '@xyflow/react';
 
 import ydoc from './ydoc';
+import {YMap} from "yjs/dist/src/types/YMap";
 
 // Please see the comments in useNodesStateSynced.ts.
 // This is the same thing but for edges.
-export const edgesMap = ydoc.getMap<Edge>('edges');
+// export const edgesMap = ydoc.getMap<Edge>('edges');
 
 const isEdgeAddChange = (change: EdgeChange): change is EdgeAddChange => change.type === 'add';
 const isEdgeResetChange = (change: EdgeChange): change is EdgeReplaceChange => change.type === 'replace';
 const isEdgeRemoveChange = (change: EdgeChange): change is EdgeRemoveChange => change.type === 'remove';
 
-function useNodesStateSynced(): [Edge[], OnEdgesChange, OnConnect] {
+function useNodesStateSynced(edgesMap: YMap<Edge>): [Edge[], OnEdgesChange, OnConnect] {
   const [edges, setEdges] = useState<Edge[]>([]);
 
   const onEdgesChange: OnEdgesChange = useCallback((changes) => {

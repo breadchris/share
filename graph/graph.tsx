@@ -1,18 +1,16 @@
 import React, {FC, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
-    addEdge,
     Background,
-    Handle,
-    Position,
     ReactFlow,
     ReactFlowProvider,
     useReactFlow,
     useKeyPress,
     ReactFlowInstance,
+    Edge,
+    Node as XYNode
 } from '@xyflow/react';
 
 import {
-    Block,
     BlockNoteEditor,
     BlockNoteSchema, blockToNode,
     defaultBlockSpecs, defaultInlineContentSpecs,
@@ -20,6 +18,7 @@ import {
     PartialBlock
 } from "@blocknote/core";
 import {MdCode} from "react-icons/md";
+import {ReactReader} from "react-reader";
 
 import '@xyflow/react/dist/style.css';
 import "@blocknote/core/fonts/inter.css";
@@ -28,7 +27,6 @@ import "@blocknote/mantine/style.css";
 import {Panel, PanelGroup, PanelResizeHandle} from "react-resizable-panels";
 import {createRoot} from 'react-dom/client';
 import * as Y from 'yjs';
-import {contentService} from "../breadchris/ContentService";
 import {
     createReactInlineContentSpec,
     DefaultReactSuggestionItem,
@@ -44,13 +42,16 @@ import {
 } from "@blocknote/react";
 import {BlockNoteView} from "@blocknote/mantine";
 import {Node} from './rpc/node_pb';
-import useNodesStateSynced, {docsMap, nodesMap} from "./useNodesStateSynced";
-import useEdgesStateSynced, {edgesMap} from "./useEdgesStateSynced";
-import ydoc, {yprovider} from "./ydoc";
+import useNodesStateSynced from "./useNodesStateSynced";
+import useEdgesStateSynced from "./useEdgesStateSynced";
 import {
     prosemirrorToYXmlFragment,
 } from "y-prosemirror";
-import {EpubReader} from "./nodes";
+import {Contents, Rendition} from "epubjs";
+import {useMap, useYDoc, useYjsProvider, YDocProvider} from "@y-sweet/react";
+import {XmlFragment} from "yjs";
+import {YMap} from "yjs/dist/src/types/YMap";
+import {JsonValue} from "@bufbuild/protobuf";
 
 function blocksToProsemirrorNode(
     editor: BlockNoteEditor,
@@ -66,7 +67,13 @@ function blocksToProsemirrorNode(
     return doc;
 }
 
-export function EditorNode({ id, data }) {
+interface EditorProps {
+    id: string;
+    data: JsonValue;
+}
+
+const EditorNode:FC<EditorProps> = (props) => {
+    const { id, data } = props;
     const d = Node.fromJson(data);
     const rf = useReactFlow();
     switch (d.type.case) {
@@ -137,10 +144,17 @@ export function EditorNode({ id, data }) {
     }
 }
 
-export default function GraphApp({ props }) {
-    const { id, graph } = props;
-    const [nodes, onNodesChange] = useNodesStateSynced();
-    const [edges, onEdgesChange, onConnect] = useEdgesStateSynced();
+let docsMap: YMap<XmlFragment>;
+let nodesMap: YMap<XYNode>;
+
+export default function GraphApp() {
+    const doc = useYDoc();
+    docsMap = useMap<XmlFragment>('docs');
+
+    nodesMap = useMap<XYNode>('nodes');
+    const edgesMap = useMap<Edge>('edges');
+    const [nodes, onNodesChange] = useNodesStateSynced(nodesMap, edgesMap);
+    const [edges, onEdgesChange, onConnect] = useEdgesStateSynced(edgesMap);
 
     const cmdAndNPressed = useKeyPress(['Meta+i', 'Strg+i']);
 
@@ -163,9 +177,9 @@ export default function GraphApp({ props }) {
                     case: "text",
                     value: "text"
                 }
-            }).toJson(),
+            }).toJson().valueOf() || {},
         };
-        Y.transact(ydoc, () => {
+        Y.transact(doc, () => {
             nodesMap.set(id, newNode);
             docsMap.set(id, new Y.XmlFragment());
         });
@@ -173,7 +187,7 @@ export default function GraphApp({ props }) {
 
     const rf = useReactFlow();
 
-    useCopyPaste(rf);
+    useCopyPaste(rf, nodesMap);
 
     const nodeTypes = useMemo(() => {
         return {
@@ -186,7 +200,17 @@ export default function GraphApp({ props }) {
             <PanelGroup direction="vertical">
                 <Panel defaultSize={20}>
                     <div className={"h-full overflow-y-scroll"}>
-                        <Editor props={props} />
+                        <Editor props={{
+                            provider_url: "",
+                            room: "",
+                            post: undefined,
+                            text: "",
+                            node: undefined,
+                            username: "Anonymous",
+                            onChange: (s: string) => {
+                                console.log("onChange", s);
+                            }
+                        }} />
                     </div>
                 </Panel>
                 <PanelResizeHandle className="h-2 bg-gray-300"/>
@@ -210,16 +234,6 @@ export default function GraphApp({ props }) {
     );
 }
 
-const g = document.getElementById('graph');
-const p = g.getAttribute('data-props');
-const props = JSON.parse(p);
-const root = createRoot(g);
-root.render((
-    <ReactFlowProvider>
-        <GraphApp props={props} />
-        {/*<App />*/}
-    </ReactFlowProvider>
-));
 
 export const Mention = createReactInlineContentSpec(
     {
@@ -251,14 +265,13 @@ const schema = BlockNoteSchema.create({
     }
 });
 
-interface EditorProps {
+interface EditorPropsF {
     props: {
         provider_url: string;
         room: string;
         post: {
             Blocknote: string;
         } | undefined;
-        initialContent: string;
         node: Node;
         username: string;
         text: string;
@@ -269,6 +282,7 @@ interface EditorProps {
 
 function ClipItem(props: DragHandleMenuProps) {
     const editor = useBlockNoteEditor();
+    const doc = useYDoc();
 
     const Components = useComponentsContext()!;
     const rf = useReactFlow();
@@ -295,7 +309,7 @@ function ClipItem(props: DragHandleMenuProps) {
                         }
                     }).toJson(),
                 };
-                Y.transact(ydoc, () => {
+                Y.transact(doc, () => {
                     nodesMap.set(id, node);
                     docsMap.set(id, prosemirrorToYXmlFragment(blocksToProsemirrorNode(editor, [b])));
                 });
@@ -305,16 +319,16 @@ function ClipItem(props: DragHandleMenuProps) {
     );
 }
 
-export const Editor: FC<EditorProps> = ({ props }) => {
+export const Editor: FC<EditorPropsF> = ({ props }) => {
     const abortControllerRef = useRef<AbortController|undefined>(undefined);
-    const initialContent = props.initialContent ? JSON.parse(props.initialContent) : undefined;
+    const provider = useYjsProvider();
+    const doc = useYDoc();
 
     const rf = useReactFlow();
 
     const ctrlAndC = useKeyPress(['Meta+g']);
 
     const editor = useCreateBlockNote({
-        initialContent: initialContent || undefined,
         uploadFile: async (file: File) => {
             const body = new FormData();
             body.append("file", file);
@@ -327,8 +341,8 @@ export const Editor: FC<EditorProps> = ({ props }) => {
         },
 
         collaboration: {
-            provider: yprovider,
-            fragment: props.node ? docsMap.get(props.node.id) || ydoc.getXmlFragment("scratch") : ydoc.getXmlFragment("scratch"),
+            provider: provider,
+            fragment: props.node ? docsMap.get(props.node.id) : doc.getXmlFragment('scratch'),
             user: {
                 name: props?.username || "Anonymous",
             }
@@ -410,20 +424,21 @@ export const Editor: FC<EditorProps> = ({ props }) => {
         }
 
         try {
-            const res = contentService.infer({
-                prompt,
-            }, {
-                timeoutMs: undefined,
-                signal: controller.signal,
-            })
-            let content = '';
-            let lastBlock = aiBlocks;
-
-            for await (const exec of res) {
-                content += exec;
-                const blocks = await editor.tryParseMarkdownToBlocks(content);
-                lastBlock = editor.replaceBlocks(lastBlock, blocks).insertedBlocks;
-            }
+            // TODO breadchris add ai features
+            // const res = contentService.infer({
+            //     prompt,
+            // }, {
+            //     timeoutMs: undefined,
+            //     signal: controller.signal,
+            // })
+            // let content = '';
+            // let lastBlock = aiBlocks;
+            //
+            // for await (const exec of res) {
+            //     content += exec;
+            //     const blocks = await editor.tryParseMarkdownToBlocks(content);
+            //     lastBlock = editor.replaceBlocks(lastBlock, blocks).insertedBlocks;
+            // }
         } catch (e: any) {
             console.log(e);
         } finally {
@@ -536,8 +551,8 @@ function useDebounce<T extends (...args: any[]) => void>(callback: T, delay: num
 
 export const useCopyPaste = (
     rfInstance: ReactFlowInstance | null,
+    nodesMap: YMap<XYNode>
 ) => {
-
     const onCopyCapture = useCallback(
         (event: ClipboardEvent) => {
             event.preventDefault();
@@ -617,3 +632,142 @@ function generateUUID() {
         return value.toString(16);
     });
 }
+
+type ITextSelection = {
+    text: string
+    cfiRange: string
+}
+
+export const EpubReader: React.FC<{id: string, url: string}> = ({id, url}) => {
+    const [selections, setSelections] = useState<ITextSelection[]>([])
+    const [rendition, setRendition] = useState<Rendition | undefined>(undefined)
+    const [location, setLocation] = useState<string | number>(0)
+    const cmdAndNPressed = useKeyPress(['Meta+g']);
+    const [current, setCurrent] = useState<ITextSelection | null>(null);
+    const doc = useYDoc();
+
+    useEffect(() => {
+        if (!cmdAndNPressed) {
+            return;
+        }
+        console.log("cmd+g pressed");
+    }, [cmdAndNPressed]);
+    useEffect(() => {
+        if (rendition) {
+            function setRenderSelection(cfiRange: string, contents: Contents) {
+                if (rendition) {
+                    setCurrent({
+                        text: rendition.getRange(cfiRange).toString(),
+                        cfiRange,
+                    });
+                    // const selection = contents.window.getSelection()
+                    // selection?.removeAllRanges()
+                }
+            }
+            rendition.on('selected', setRenderSelection)
+            return () => {
+                rendition?.off('selected', setRenderSelection)
+            }
+        }
+    }, [setSelections, rendition])
+    const editor = BlockNoteEditor.create();
+
+    return (
+        <div style={{ height: '100vh' }}>
+            <div className="border border-stone-400 bg-white min-h-[100px] p-2 rounded">
+                <h2 className="font-bold mb-1">Selections</h2>
+                <button className={"btn"} onClick={() => {
+                    setSelections((list) =>
+                        list.concat(current)
+                    )
+
+                    rendition.annotations.add(
+                        'highlight',
+                        current.cfiRange,
+                        {},
+                        undefined,
+                        'hl',
+                        { fill: 'red', 'fill-opacity': '0.5', 'mix-blend-mode': 'multiply' }
+                    )
+                    // const selection = contents.window.getSelection()
+                    // selection?.removeAllRanges()
+                }}>Select</button>
+                <ul className="grid grid-cols-1 divide-y divide-stone-400 border-t border-stone-400 -mx-2">
+                    {selections.map(({ text, cfiRange }, i) => (
+                        <li key={i} className="p-2">
+                            <span>{text}</span>
+                            <button
+                                className="underline hover:no-underline text-sm mx-1"
+                                onClick={async () => {
+                                    const blocks = await editor.tryParseMarkdownToBlocks(text);
+                                    // rendition?.display(cfiRange)
+                                    const id = generateUUID();
+                                    const node = {
+                                        id: id,
+                                        position: {
+                                            x: 100,
+                                            y: 100,
+                                        },
+                                        type: 'node',
+                                        data: new Node({
+                                            id,
+                                            name: "asdf",
+                                            type: {
+                                                case: "text",
+                                                value: ""
+                                            }
+                                        }).toJson(),
+                                    };
+                                    Y.transact(doc, () => {
+                                        // TODO sync
+                                        // nodesMap.set(id, node);
+                                        // docsMap.set(id, prosemirrorToYXmlFragment(blocksToProsemirrorNode(editor, blocks)));
+                                    });
+                                }}
+                            >
+                                Clip
+                            </button>
+
+                            <button
+                                className="underline hover:no-underline text-sm mx-1"
+                                onClick={() => {
+                                    rendition?.annotations.remove(cfiRange, 'highlight')
+                                    setSelections(selections.filter((item, j) => j !== i))
+                                }}
+                            >
+                                Remove
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+            <ReactReader
+                url={url}
+                epubInitOptions={{ openAs: 'epub' }}
+                location={location}
+                locationChanged={(epubcfi: string) => setLocation(epubcfi)}
+                getRendition={(_rendition: Rendition) => {
+                    setRendition(_rendition)
+                }}
+            />
+        </div>
+    )
+}
+
+const g = document.getElementById('graph');
+const p = g.getAttribute('data-props');
+const props = JSON.parse(p);
+const root = createRoot(g);
+root.render((
+    <YDocProvider docId={"my-doc-id"} authEndpoint={async (): Promise<any> => {
+        const res = await fetch("/graph/auth", {
+            method: "GET",
+        })
+        return await res.json();
+    }}>
+        <ReactFlowProvider>
+            <GraphApp props={props} />
+            {/*<App />*/}
+        </ReactFlowProvider>
+    </YDocProvider>
+));

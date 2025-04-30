@@ -17,6 +17,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"os/exec"
 )
 
 var upgrader = websocket.Upgrader{
@@ -39,48 +41,17 @@ func New(d deps.Deps) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	graphs := d.Docs.WithCollection("graphs")
-	mux.HandleFunc("/proxy", func(w http.ResponseWriter, r *http.Request) {
-		clientConn, err := upgrader.Upgrade(w, r, nil)
+	mux.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) {
+		cmd := exec.Command("node", "static/graph/code.js")
+
+		cmd.Env = append(os.Environ(), "CONNECTION_STRING=yss://yNNQ0uquJuFXAn1Y.FuMRT7iAl4QQaZXmGzXKnjOEs4YsTK@api.jamsocket.com/v2/y-sweet/ct4321/justshare/")
+
+		output, err := cmd.CombinedOutput()
 		if err != nil {
-			log.Println("Upgrade error:", err)
+			fmt.Printf("Error: %s\n", err)
 			return
 		}
-		defer clientConn.Close()
-
-		targetConn, _, err := websocket.DefaultDialer.Dial("ws://localhost:1234", nil)
-		if err != nil {
-			log.Println("Dial error:", err)
-			return
-		}
-		defer targetConn.Close()
-
-		go func() {
-			for {
-				messageType, msg, err := clientConn.ReadMessage()
-				if err != nil {
-					log.Println("Client read error:", err)
-					return
-				}
-				err = targetConn.WriteMessage(messageType, msg)
-				if err != nil {
-					log.Println("Target write error:", err)
-					return
-				}
-			}
-		}()
-
-		for {
-			messageType, msg, err := targetConn.ReadMessage()
-			if err != nil {
-				log.Println("Target read error:", err)
-				return
-			}
-			err = clientConn.WriteMessage(messageType, msg)
-			if err != nil {
-				log.Println("Client write error:", err)
-				return
-			}
-		}
+		w.Write(output)
 	})
 
 	mux.HandleFunc("/ws/{id...}", func(w http.ResponseWriter, r *http.Request) {

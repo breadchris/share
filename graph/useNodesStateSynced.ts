@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  applyNodeChanges,
+  applyNodeChanges, Edge,
   getConnectedEdges,
   Node,
   NodeAddChange,
@@ -8,20 +8,18 @@ import {
   OnNodesChange,
 } from '@xyflow/react';
 
-import ydoc from './ydoc';
-import { edgesMap } from './useEdgesStateSynced';
 import {XmlFragment} from "yjs";
+import {YMap} from "yjs/dist/src/types/YMap";
 
 // We are using nodesMap as the one source of truth for the nodes.
 // This means that we are doing all changes to the nodes in the map object.
 // Whenever the map changes, we update the nodes state.
-export const nodesMap = ydoc.getMap<Node>('nodes');
-export const docsMap = ydoc.getMap<XmlFragment>('docs');
+// export const nodesMap = ydoc.getMap<Node>('nodes');
 
 const isNodeAddChange = (change: NodeChange): change is NodeAddChange => change.type === 'add';
 const isNodeResetChange = (change: NodeChange): change is NodeReplaceChange => change.type === 'replace';
 
-function useNodesStateSynced(): [Node[], OnNodesChange] {
+function useNodesStateSynced(nodesMap: YMap<Node>, edgesMap: YMap<Edge>): [Node[], OnNodesChange] {
   const [nodes, setNodes] = useState<Node[]>([]);
 
   // The onNodesChange callback updates nodesMap.
