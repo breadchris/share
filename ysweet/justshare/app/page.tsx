@@ -19,7 +19,7 @@ export default async function Home() {
 
   return (
     <YDocProvider docId={docId} authEndpoint={getClientToken}>
-      <App />
+        <App />
     </YDocProvider>
   );
 }

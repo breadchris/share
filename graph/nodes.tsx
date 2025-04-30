@@ -3,7 +3,6 @@ import React, {useCallback, useEffect, useRef, useState} from "react";
 import ReactPlayer from "react-player/youtube";
 import {defaultLayoutPlugin} from "@react-pdf-viewer/default-layout";
 import {ScrollMode, Viewer, Worker} from "@react-pdf-viewer/core";
-import {EpubReader} from "./graph";
 import {Contents, Rendition} from "epubjs";
 import {ReactReader} from "react-reader";
 import {Node} from "./rpc/node_pb";
@@ -123,27 +122,6 @@ function PDFNode({ data }) {
         </Worker>
     )
 }
-
-
-function EpubNode({ data }) {
-    const onChange = useCallback((evt) => {
-        console.log(evt.target.value);
-    }, []);
-
-
-    return (
-        <>
-            <Handle type="target" position={Position.Top} />
-            <div style={{
-                width: '600px',
-            }}>
-                <EpubReader url={"http://localhost:8080/data/uploads/8b595048-889b-4d45-9d75-2b7ec0f27a5a.epub"} />
-            </div>
-            <Handle type="source" position={Position.Bottom} id="a" />
-        </>
-    );
-}
-
 
 type ITextSelection = {
     text: string

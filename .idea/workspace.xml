@@ -5,20 +5,32 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/graph/awareness.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ysweet/justshare/components/graph.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ysweet/justshare/components/rpc/node_pb.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ysweet/justshare/components/useEdgesStateSynced.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ysweet/justshare/components/useNodesStateSynced.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graph/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/graph/App.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graph/graph.go" beforeDir="false" afterPath="$PROJECT_DIR$/graph/graph.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/graph/App.tsx" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/graph/graph.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/graph/graph.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/graph/nodes.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/graph/nodes.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graph/styles.css" beforeDir="false" afterPath="$PROJECT_DIR$/graph/styles.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graph/useNodesStateSynced.ts" beforeDir="false" afterPath="$PROJECT_DIR$/graph/useNodesStateSynced.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graph/ydoc.ts" beforeDir="false" afterPath="$PROJECT_DIR$/graph/ydoc.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/op/op.go" beforeDir="false" afterPath="$PROJECT_DIR$/op/op.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/graph/graph.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/graph/graph.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ysweet/justshare/.env.local" beforeDir="false" afterPath="$PROJECT_DIR$/ysweet/justshare/.env.local" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ysweet/justshare/.next/app-build-manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/ysweet/justshare/.next/app-build-manifest.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ysweet/justshare/.next/build-manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/ysweet/justshare/.next/build-manifest.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ysweet/justshare/.next/fallback-build-manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/ysweet/justshare/.next/fallback-build-manifest.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ysweet/justshare/.next/server/app/page/app-build-manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/ysweet/justshare/.next/server/app/page/app-build-manifest.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ysweet/justshare/.next/server/app/page_client-reference-manifest.js" beforeDir="false" afterPath="$PROJECT_DIR$/ysweet/justshare/.next/server/app/page_client-reference-manifest.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ysweet/justshare/.next/server/middleware-build-manifest.js" beforeDir="false" afterPath="$PROJECT_DIR$/ysweet/justshare/.next/server/middleware-build-manifest.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ysweet/justshare/.next/server/server-reference-manifest.js" beforeDir="false" afterPath="$PROJECT_DIR$/ysweet/justshare/.next/server/server-reference-manifest.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ysweet/justshare/.next/static/chunks/[root-of-the-server]__8581a166._.css" beforeDir="false" afterPath="$PROJECT_DIR$/ysweet/justshare/.next/static/chunks/[root-of-the-server]__8581a166._.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ysweet/justshare/.next/static/chunks/[root-of-the-server]__8581a166._.css.map" beforeDir="false" afterPath="$PROJECT_DIR$/ysweet/justshare/.next/static/chunks/[root-of-the-server]__8581a166._.css.map" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ysweet/justshare/.next/static/chunks/app_globals_css_f9ee138c._.single.css" beforeDir="false" afterPath="$PROJECT_DIR$/ysweet/justshare/.next/static/chunks/app_globals_css_f9ee138c._.single.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ysweet/justshare/.next/static/chunks/app_globals_css_f9ee138c._.single.css.map" beforeDir="false" afterPath="$PROJECT_DIR$/ysweet/justshare/.next/static/chunks/app_globals_css_f9ee138c._.single.css.map" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ysweet/justshare/.next/static/chunks/app_page_tsx_ce8c25eb._.js" beforeDir="false" afterPath="$PROJECT_DIR$/ysweet/justshare/.next/static/chunks/app_page_tsx_ce8c25eb._.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ysweet/justshare/.next/trace" beforeDir="false" afterPath="$PROJECT_DIR$/ysweet/justshare/.next/trace" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ysweet/justshare/app/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ysweet/justshare/app/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ysweet/justshare/components/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/ysweet/justshare/components/App.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ysweet/justshare/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/ysweet/justshare/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ysweet/justshare/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/ysweet/justshare/package.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -63,7 +75,7 @@
     &quot;git-widget-placeholder&quot;: &quot;master&quot;,
     &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
     &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/hacked/Documents/GitHub/share/hmr/client&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/hacked/Documents/GitHub/share/ysweet/justshare/components&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -85,6 +97,7 @@
 }</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/ysweet/justshare/components" />
       <recent name="$PROJECT_DIR$/hmr/client" />
       <recent name="$PROJECT_DIR$/xctf" />
       <recent name="$PROJECT_DIR$/xctf/models" />
@@ -243,7 +256,8 @@
       <workItem from="1744341285248" duration="26046000" />
       <workItem from="1744774454094" duration="2182000" />
       <workItem from="1744863579423" duration="36456000" />
-      <workItem from="1745464029344" duration="29396000" />
+      <workItem from="1745464029344" duration="33447000" />
+      <workItem from="1745987094315" duration="3351000" />
     </task>
     <servers />
   </component>

@@ -5,10 +5,14 @@ import { useEffect, useState } from "react";
 import { randomColor } from "@/lib/colors";
 import { Todos } from "./Todos";
 import Image from "next/image";
+import GraphApp from "@/components/graph";
+import {ReactFlowProvider} from "@xyflow/react";
 
 export function App() {
     return (
-        <Todos />
+        <ReactFlowProvider>
+            <GraphApp />
+        </ReactFlowProvider>
     )
   // return (
     // <div className="min-h-screen flex flex-col justify-between max-w-[60rem] mx-auto before:content-[''] before:block before:absolute before:top-0 before:left-0 before:right-0 before:border-t-4 before:border-[#fc5c86]">
