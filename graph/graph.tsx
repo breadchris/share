@@ -989,8 +989,8 @@ export const EpubReader: React.FC<{id: string, url: string}> = ({id, url}) => {
                                     };
                                     Y.transact(doc, () => {
                                         // TODO sync
-                                        // nodesMap.set(id, node);
-                                        // docsMap.set(id, prosemirrorToYXmlFragment(blocksToProsemirrorNode(editor, blocks)));
+                                        nodesMap.set(id, node);
+                                        docsMap.set(id, prosemirrorToYXmlFragment(blocksToProsemirrorNode(editor, blocks)));
                                     });
                                 }}
                             >
