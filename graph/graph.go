@@ -17,6 +17,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 )
@@ -242,18 +243,21 @@ func New(d deps.Deps) *http.ServeMux {
 			}
 
 			type Props struct {
-				Id    string `json:"id"`
-				Graph Graph  `json:"graph"`
+				Id  string `json:"id"`
+				URL string `json:"url"`
 			}
+
+			u, err := url.Parse(d.Config.ExternalURL)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			u.Scheme = "ws"
 
 			p := Props{
-				Id: id,
-			}
-
-			err := graphs.Get(id, &p.Graph)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusNotFound)
-				return
+				Id:  id,
+				URL: u.String(),
 			}
 
 			sg, err := json.Marshal(p)

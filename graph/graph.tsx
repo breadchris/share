@@ -1,4 +1,4 @@
-import React, {FC, useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React, {createContext, FC, useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {
     Background,
     ReactFlow,
@@ -52,6 +52,38 @@ import {useMap, useYDoc, useYjsProvider, YDocProvider} from "@y-sweet/react";
 import {XmlFragment} from "yjs";
 import {YMap} from "yjs/dist/src/types/YMap";
 import {JsonValue} from "@bufbuild/protobuf";
+import {ContentService} from "../breadchris/ContentService";
+
+const contentService = new ContentService();
+
+const ContentServiceContext = createContext<ContentService | null>(null);
+
+interface ContentServiceProviderProps {
+    url: string;  // URL will come as a prop
+    children: React.ReactNode;
+}
+
+export const ContentServiceProvider: React.FC<ContentServiceProviderProps> = ({ url, children }) => {
+    const [contentService, setContentService] = useState<ContentService | null>(null);
+
+    useEffect(() => {
+        const service = new ContentService(url+"/llm/stream");
+        setContentService(service);
+        return () => {
+            service.close();
+        };
+    }, [url]);
+
+    return (
+        <ContentServiceContext.Provider value={contentService}>
+            {children}
+        </ContentServiceContext.Provider>
+    );
+};
+
+export const useContentService = (): ContentService | null => {
+    return useContext(ContentServiceContext);
+};
 
 function blocksToProsemirrorNode(
     editor: BlockNoteEditor,
@@ -323,6 +355,7 @@ export const Editor: FC<EditorPropsF> = ({ props }) => {
     const abortControllerRef = useRef<AbortController|undefined>(undefined);
     const provider = useYjsProvider();
     const doc = useYDoc();
+    const contentService = useContentService();
 
     const rf = useReactFlow();
 
@@ -425,20 +458,20 @@ export const Editor: FC<EditorPropsF> = ({ props }) => {
 
         try {
             // TODO breadchris add ai features
-            // const res = contentService.infer({
-            //     prompt,
-            // }, {
-            //     timeoutMs: undefined,
-            //     signal: controller.signal,
-            // })
-            // let content = '';
-            // let lastBlock = aiBlocks;
-            //
-            // for await (const exec of res) {
-            //     content += exec;
-            //     const blocks = await editor.tryParseMarkdownToBlocks(content);
-            //     lastBlock = editor.replaceBlocks(lastBlock, blocks).insertedBlocks;
-            // }
+            const res = contentService.infer({
+                prompt,
+            }, {
+                timeoutMs: undefined,
+                signal: controller.signal,
+            })
+            let content = '';
+            let lastBlock = aiBlocks;
+
+            for await (const exec of res) {
+                content += exec;
+                const blocks = await editor.tryParseMarkdownToBlocks(content);
+                lastBlock = editor.replaceBlocks(lastBlock, blocks).insertedBlocks;
+            }
         } catch (e: any) {
             console.log(e);
         } finally {
@@ -759,15 +792,17 @@ const p = g.getAttribute('data-props');
 const props = JSON.parse(p);
 const root = createRoot(g);
 root.render((
-    <YDocProvider docId={"my-doc-id"} authEndpoint={async (): Promise<any> => {
-        const res = await fetch("/graph/auth", {
-            method: "GET",
-        })
-        return await res.json();
-    }}>
-        <ReactFlowProvider>
-            <GraphApp props={props} />
-            {/*<App />*/}
-        </ReactFlowProvider>
-    </YDocProvider>
+    <ContentServiceProvider url={props.url}>
+        <YDocProvider docId={"my-doc-id"} authEndpoint={async (): Promise<any> => {
+            const res = await fetch("/graph/auth", {
+                method: "GET",
+            })
+            return await res.json();
+        }}>
+            <ReactFlowProvider>
+                <GraphApp props={props} />
+                {/*<App />*/}
+            </ReactFlowProvider>
+        </YDocProvider>
+    </ContentServiceProvider>
 ));
