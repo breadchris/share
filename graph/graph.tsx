@@ -53,11 +53,20 @@ import {XmlFragment} from "yjs";
 import {YMap} from "yjs/dist/src/types/YMap";
 import {JsonValue} from "@bufbuild/protobuf";
 import {ContentService} from "../breadchris/ContentService";
-import {FileText, Link2, Image} from "lucide-react";
+import {FileText, Link2, Image, Network, UploadCloud, X, Sparkles} from "lucide-react";
+import {setState} from "reveal.js";
 
-const contentService = new ContentService();
+interface AppState {
+    runningAI: boolean;
+    contentService: ContentService | null;
+}
 
-const ContentServiceContext = createContext<ContentService | null>(null);
+interface StateCtx {
+    state: AppState;
+    setState: React.Dispatch<React.SetStateAction<AppState>>;
+}
+
+const ContentServiceContext = createContext<StateCtx>(null);
 
 interface ContentServiceProviderProps {
     url: string;  // URL will come as a prop
@@ -65,24 +74,30 @@ interface ContentServiceProviderProps {
 }
 
 export const ContentServiceProvider: React.FC<ContentServiceProviderProps> = ({ url, children }) => {
-    const [contentService, setContentService] = useState<ContentService | null>(null);
+    const [state, setState] = useState<AppState>({
+        runningAI: false,
+        contentService: null,
+    });
 
     useEffect(() => {
         const service = new ContentService(url+"/llm/stream");
-        setContentService(service);
+        setState((prev) => ({
+            ...prev,
+            contentService: service,
+        }));
         return () => {
             service.close();
         };
     }, [url]);
 
     return (
-        <ContentServiceContext.Provider value={contentService}>
+        <ContentServiceContext.Provider value={{state, setState}}>
             {children}
         </ContentServiceContext.Provider>
     );
 };
 
-export const useContentService = (): ContentService | null => {
+export const useContentService = (): StateCtx => {
     return useContext(ContentServiceContext);
 };
 
@@ -183,11 +198,17 @@ let nodesMap: YMap<XYNode>;
 export default function GraphApp() {
     const doc = useYDoc();
     docsMap = useMap<XmlFragment>('docs');
-
     nodesMap = useMap<XYNode>('nodes');
     const edgesMap = useMap<Edge>('edges');
     const [nodes, onNodesChange] = useNodesStateSynced(nodesMap, edgesMap);
     const [edges, onEdgesChange, onConnect] = useEdgesStateSynced(edgesMap);
+    const [state, setState] = useState<{
+        view: 'text' | 'image' | 'url' | 'graph';
+    }>({
+        view: 'graph',
+    });
+    const abortControllerRef = useRef<AbortController|undefined>(undefined);
+    const {state: {contentService}, setState: setAppState} = useContentService();
 
     const cmdAndNPressed = useKeyPress(['Meta+i', 'Strg+i']);
 
@@ -228,11 +249,11 @@ export default function GraphApp() {
         }
     }, []);
 
-    return (
-        <div style={{ width: '100vw', height: '100vh' }}>
-            <PanelGroup direction="vertical">
-                <Panel defaultSize={20}>
-                    <div className={"h-full overflow-y-scroll"}>
+    const view = () => {
+        switch (state.view) {
+            case 'text':
+                return (
+                    <div className={"container mx-auto md:mt-32 overflow-y-scroll"} style={{width: "100%", maxHeight: "700px"}}>
                         <Editor props={{
                             provider_url: "",
                             room: "",
@@ -242,12 +263,46 @@ export default function GraphApp() {
                             username: "Anonymous",
                             onChange: (s: string) => {
                                 console.log("onChange", s);
-                            }
+                            },
                         }} />
                     </div>
-                </Panel>
-                <PanelResizeHandle className="h-2 bg-gray-300"/>
-                <Panel>
+                );
+            case 'image':
+                return <ImageUploader onUpload={(async (files) => {
+                    const uploaded = await Promise.all(files.map(async (file) => {
+                        const body = new FormData();
+                        body.append("file", file);
+
+                        const ret = await fetch("/upload", {
+                            method: "POST",
+                            body: body,
+                        });
+                        return await ret.text();
+                    }));
+
+                    console.log("upload", uploaded);
+                    uploaded.forEach((url) => {
+                        const id = generateUUID();
+                        const vp = rf.getViewport();
+                        nodesMap.set(id, {
+                            id: id,
+                            type: 'node',
+                            position: { x: vp.x, y: vp.y },
+                            data: new Node({
+                                id,
+                                name: "asdf",
+                                type: {
+                                    case: "url",
+                                    value: url
+                                }
+                            }).toJson(),
+                        })
+                    })
+                })} />;
+            case 'url':
+                return <div>URL</div>;
+            case 'graph':
+                return (
                     <ReactFlow
                         nodes={nodes}
                         edges={edges}
@@ -261,13 +316,173 @@ export default function GraphApp() {
                     >
                         <Background variant="dots" gap={12} size={1} />
                     </ReactFlow>
-                </Panel>
-            </PanelGroup>
-            <InputDock onTextClick={() => {}} onImageClick={() => {}} onUrlClick={() => {}} />
+                );
+        }
+    }
+
+    return (
+        <div style={{ width: '100vw', height: '100vh' }}>
+            {view()}
+            <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-lg px-4 pb-4 pointer-events-none">
+                <div className="flex items-end justify-center space-x-8 px-6 py-3 bg-white bg-opacity-30 backdrop-blur-md rounded-full shadow-lg pointer-events-auto">
+                    <button
+                        onClick={() => {
+                            setState((prev) => ({
+                                ...prev,
+                                view: 'graph',
+                            }));
+                        }}
+                        className="group focus:outline-none"
+                        aria-label="Network"
+                    >
+                        <Network className="w-8 h-8 transition-transform duration-150 group-hover:scale-125" />
+                    </button>
+                    <button
+                        onClick={() => {
+                            setState((prev) => ({
+                                ...prev,
+                                view: 'text',
+                            }));
+                        }}
+                        className="group focus:outline-none"
+                        aria-label="Insert text"
+                    >
+                        <FileText className="w-8 h-8 transition-transform duration-150 group-hover:scale-125" />
+                    </button>
+                    <button
+                        onClick={() => {
+                            setState((prev) => ({
+                                ...prev,
+                                view: 'image',
+                            }));
+                        }}
+                        className="group focus:outline-none"
+                        aria-label="Insert image"
+                    >
+                        <Image className="w-8 h-8 transition-transform duration-150 group-hover:scale-125" />
+                    </button>
+                    <button
+                        onClick={() => {
+                            setState((prev) => ({
+                                ...prev,
+                                view: 'url',
+                            }));
+                        }}
+                        className="group focus:outline-none"
+                        aria-label="Insert URL"
+                    >
+                        <Link2 className="w-8 h-8 transition-transform duration-150 group-hover:scale-125" />
+                    </button>
+                    <button
+                        onClick={() => {
+                            setAppState((prev) => ({
+                                ...prev,
+                                runningAI: !prev.runningAI,
+                            }));
+                        }}
+                        className="group focus:outline-none"
+                        aria-label="AI"
+                    >
+                        <Sparkles className="w-8 h-8 transition-transform duration-150 group-hover:scale-125" />
+                    </button>
+                </div>
+            </div>
         </div>
     );
 }
 
+interface ImageUploadProps {
+    /** Called when the user clicks “Upload” */
+    onUpload: (files: File[]) => void
+    /** Optional cancel action */
+    onCancel?: () => void
+}
+
+const ImageUploader: FC<ImageUploadProps> = ({ onUpload, onCancel }) => {
+    const inputRef = useRef<HTMLInputElement>(null)
+    const [files, setFiles] = useState<File[]>([])
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files) return
+        setFiles(prev => [...prev, ...Array.from(e.target.files)])
+        e.target.value = '' // allow re-selecting same file
+    }
+
+    const removeFile = (i: number) =>
+        setFiles(prev => prev.filter((_, idx) => idx !== i))
+
+    const triggerFileSelect = () => inputRef.current?.click()
+
+    return (
+        <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 flex flex-col space-y-4">
+                <h2 className="text-xl font-semibold text-gray-800">Select Images</h2>
+
+                {/* hidden native file input */}
+                <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    ref={inputRef}
+                    onChange={handleFileChange}
+                />
+
+                <button
+                    onClick={triggerFileSelect}
+                    className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow"
+                >
+                    <UploadCloud className="w-5 h-5" />
+                    <span>Select Images</span>
+                </button>
+
+                {/* preview grid */}
+                {files.length > 0 && (
+                    <div className="grid grid-cols-3 gap-4">
+                        {files.map((file, idx) => (
+                            <div key={idx} className="relative group">
+                                <img
+                                    src={URL.createObjectURL(file)}
+                                    alt={file.name}
+                                    className="w-full h-24 object-cover rounded"
+                                />
+                                <button
+                                    onClick={() => removeFile(idx)}
+                                    className="absolute top-1 right-1 bg-white bg-opacity-70 rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
+                                >
+                                    <X className="w-4 h-4 text-red-600" />
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* action buttons */}
+                <div className="mt-auto flex justify-end space-x-3">
+                    {onCancel && (
+                        <button
+                            onClick={onCancel}
+                            className="px-4 py-2 text-gray-700 hover:text-gray-900"
+                        >
+                            Cancel
+                        </button>
+                    )}
+                    <button
+                        onClick={() => onUpload(files)}
+                        disabled={files.length === 0}
+                        className={`px-4 py-2 rounded-lg font-medium ${
+                            files.length === 0
+                                ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                                : 'bg-green-600 hover:bg-green-700 text-white'
+                        }`}
+                    >
+                        Upload{files.length > 0 && ` (${files.length})`}
+                    </button>
+                </div>
+            </div>
+        </div>
+    )
+}
 
 export const Mention = createReactInlineContentSpec(
     {
@@ -310,6 +525,7 @@ interface EditorPropsF {
         username: string;
         text: string;
         onChange: (s: string) => void;
+        footer?: (editor: BlockNoteEditor) => React.ReactNode;
     };
 }
 
@@ -357,7 +573,7 @@ export const Editor: FC<EditorPropsF> = ({ props }) => {
     const abortControllerRef = useRef<AbortController|undefined>(undefined);
     const provider = useYjsProvider();
     const doc = useYDoc();
-    const contentService = useContentService();
+    const {state: {contentService, runningAI}, setState} = useContentService();
 
     const rf = useReactFlow();
 
@@ -384,6 +600,19 @@ export const Editor: FC<EditorPropsF> = ({ props }) => {
         },
         schema: schema,
     });
+
+    useEffect(() => {
+        if (runningAI) {
+            (async () => {
+                const text = await editor.blocksToMarkdownLossy(editor.document);
+                await inferFromSelectedText(editor, contentService, abortControllerRef, text);
+                setState((prev) => ({
+                    ...prev,
+                    runningAI: false,
+                }));
+            })();
+        }
+    }, [runningAI]);
 
     useEffect(() => {
         if (ctrlAndC) {
@@ -416,76 +645,12 @@ export const Editor: FC<EditorPropsF> = ({ props }) => {
         }
     }, [ctrlAndC]);
 
-    const onStop = () => {
-        abortControllerRef.current?.abort();
-    }
-
-    const inferFromSelectedText = async (prompt: string) => {
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-        }
-        const controller = new AbortController();
-        abortControllerRef.current = controller;
-
-        let aiBlocks = editor.insertBlocks(
-            [
-                {
-                    content: "let me think...",
-                },
-            ],
-            editor.getTextCursorPosition().block,
-            "after"
-        );
-
-        aiBlocks = editor.insertBlocks(
-            [
-                {
-                    content: "thinking...",
-                },
-            ],
-            aiBlocks[0],
-            "after"
-        );
-        editor.setTextCursorPosition(aiBlocks[0], "start");
-        editor.nestBlock()
-
-        function countIndentationDepth(inputString: string): number {
-            const match = inputString.match(/^( {4}|\t)*/);
-            if (!match) {
-                return 0;
-            }
-            const matchedString = match[0];
-            return matchedString.split(/( {4}|\t)/).filter(Boolean).length;
-        }
-
-        try {
-            // TODO breadchris add ai features
-            const res = contentService.infer({
-                prompt,
-            }, {
-                timeoutMs: undefined,
-                signal: controller.signal,
-            })
-            let content = '';
-            let lastBlock = aiBlocks;
-
-            for await (const exec of res) {
-                content += exec;
-                const blocks = await editor.tryParseMarkdownToBlocks(content);
-                lastBlock = editor.replaceBlocks(lastBlock, blocks).insertedBlocks;
-            }
-        } catch (e: any) {
-            console.log(e);
-        } finally {
-            abortControllerRef.current = undefined;
-        }
-    }
 
     const insertAI = (editor: typeof schema.BlockNoteEditor): DefaultReactSuggestionItem => ({
         title: "Ask AI",
         onItemClick: async () => {
             const text = await editor.blocksToMarkdownLossy(editor.document);
-            void inferFromSelectedText(text);
+            void inferFromSelectedText(editor, contentService, abortControllerRef, text);
         },
         aliases: ["ai"],
         group: "Other",
@@ -497,47 +662,116 @@ export const Editor: FC<EditorPropsF> = ({ props }) => {
     }
 
     return (
-        <BlockNoteView
-            editor={editor}
-            sideMenu={false}
-            slashMenu={false}
-        >
+        <div>
+            <BlockNoteView
+                editor={editor}
+                sideMenu={false}
+                slashMenu={false}
+            >
 
-            <SideMenuController
-                sideMenu={(props) => (
-                    <SideMenu
-                        {...props}
-                        dragHandleMenu={(props) => (
-                            <DragHandleMenu {...props}>
-                                <RemoveBlockItem {...props}>Delete</RemoveBlockItem>
-                                <ClipItem {...props}>Clip</ClipItem>
-                            </DragHandleMenu>
-                        )}
-                    />
-                )}
-            />
+                <SideMenuController
+                    sideMenu={(props) => (
+                        <SideMenu
+                            {...props}
+                            dragHandleMenu={(props) => (
+                                <DragHandleMenu {...props}>
+                                    <RemoveBlockItem {...props}>Delete</RemoveBlockItem>
+                                    <ClipItem {...props}>Clip</ClipItem>
+                                </DragHandleMenu>
+                            )}
+                        />
+                    )}
+                />
 
-            <SuggestionMenuController
-                triggerCharacter={"/"}
-                getItems={async (query) =>
-                    filterSuggestionItems(
-                        [
-                            ...getDefaultReactSlashMenuItems(editor),
-                            insertAI(editor),
-                        ],
-                        query
-                    )
-                }
-            />
-            <SuggestionMenuController
-                triggerCharacter={"#"}
-                getItems={async (query) =>
-                    // Gets the mentions menu items
-                    filterSuggestionItems(getMentionMenuItems(editor), query)
-                }
-            />
-        </BlockNoteView>
+                <SuggestionMenuController
+                    triggerCharacter={"/"}
+                    getItems={async (query) =>
+                        filterSuggestionItems(
+                            [
+                                ...getDefaultReactSlashMenuItems(editor),
+                                insertAI(editor),
+                            ],
+                            query
+                        )
+                    }
+                />
+                <SuggestionMenuController
+                    triggerCharacter={"#"}
+                    getItems={async (query) =>
+                        // Gets the mentions menu items
+                        filterSuggestionItems(getMentionMenuItems(editor), query)
+                    }
+                />
+            </BlockNoteView>
+            {props.footer && props.footer(editor)}
+        </div>
     );
+}
+
+const inferFromSelectedText = async (
+    editor: BlockNoteEditor,
+    contentService: ContentService,
+    abortControllerRef: React.RefObject<AbortController | undefined>,
+    prompt: string,
+) => {
+    if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    let aiBlocks = editor.insertBlocks(
+        [
+            {
+                content: "let me think...",
+            },
+        ],
+        editor.getTextCursorPosition().block,
+        "after"
+    );
+
+    aiBlocks = editor.insertBlocks(
+        [
+            {
+                content: "thinking...",
+            },
+        ],
+        aiBlocks[0],
+        "after"
+    );
+    editor.setTextCursorPosition(aiBlocks[0], "start");
+    editor.nestBlock()
+
+    function countIndentationDepth(inputString: string): number {
+        const match = inputString.match(/^( {4}|\t)*/);
+        if (!match) {
+            return 0;
+        }
+        const matchedString = match[0];
+        return matchedString.split(/( {4}|\t)/).filter(Boolean).length;
+    }
+
+    try {
+        // TODO breadchris add ai features
+        const res = contentService.infer({
+            prompt,
+        }, {
+            timeoutMs: undefined,
+            signal: controller.signal,
+        })
+        let content = '';
+        let lastBlock = aiBlocks;
+
+        for await (const exec of res) {
+            content += exec;
+            const blocks = await editor.tryParseMarkdownToBlocks(content);
+            lastBlock = editor.replaceBlocks(lastBlock, blocks).insertedBlocks;
+        }
+    } catch (e: any) {
+        console.log(e);
+    } finally {
+        abortControllerRef.current = undefined;
+    }
 }
 
 const getMentionMenuItems = (
@@ -788,44 +1022,6 @@ export const EpubReader: React.FC<{id: string, url: string}> = ({id, url}) => {
         </div>
     )
 }
-
-interface InputDockProps {
-    onTextClick: () => void
-    onImageClick: () => void
-    onUrlClick: () => void
-}
-
-const InputDock: React.FC<InputDockProps> = ({
-                                                 onTextClick,
-                                                 onImageClick,
-                                                 onUrlClick,
-                                             }) => (
-    <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-lg px-4 pb-4 pointer-events-none">
-        <div className="flex items-end justify-center space-x-8 px-6 py-3 bg-white bg-opacity-30 backdrop-blur-md rounded-full shadow-lg pointer-events-auto">
-            <button
-                onClick={onTextClick}
-                className="group focus:outline-none"
-                aria-label="Insert text"
-            >
-                <FileText className="w-8 h-8 transition-transform duration-150 group-hover:scale-125" />
-            </button>
-            <button
-                onClick={onImageClick}
-                className="group focus:outline-none"
-                aria-label="Insert image"
-            >
-                <Image className="w-8 h-8 transition-transform duration-150 group-hover:scale-125" />
-            </button>
-            <button
-                onClick={onUrlClick}
-                className="group focus:outline-none"
-                aria-label="Insert URL"
-            >
-                <Link2 className="w-8 h-8 transition-transform duration-150 group-hover:scale-125" />
-            </button>
-        </div>
-    </div>
-)
 
 new EventSource('/esbuild').addEventListener('message', (event) => {
     if (event.data === 'change') {
