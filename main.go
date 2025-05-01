@@ -300,6 +300,30 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/static/", serveFiles("static"))
 	http.HandleFunc("/data/", serveFiles("data"))
 
+	rel := make(chan struct{})
+	http.HandleFunc("/esbuild", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+		w.Header().Set("Transfer-Encoding", "chunked")
+
+		flusher, ok := w.(http.Flusher)
+		if !ok {
+			http.Error(w, "Streaming not supported", http.StatusInternalServerError)
+			return
+		}
+
+		for {
+			select {
+			case <-rel:
+				fmt.Fprintf(w, "data: change\n\n")
+				flusher.Flush()
+			case <-r.Context().Done():
+				return
+			}
+		}
+	})
+
 	p("", interpreted(Index))
 
 	go func() {
@@ -424,6 +448,8 @@ func startServer(useTLS bool, port int) {
 			}, "breadchris/static"); err != nil {
 				log.Fatalf("Failed to copy paths: %v", err)
 			}
+
+			rel <- struct{}{}
 		}); err != nil {
 			log.Fatalf("Failed to watch files: %v", err)
 		}

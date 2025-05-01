@@ -53,6 +53,7 @@ import {XmlFragment} from "yjs";
 import {YMap} from "yjs/dist/src/types/YMap";
 import {JsonValue} from "@bufbuild/protobuf";
 import {ContentService} from "../breadchris/ContentService";
+import {FileText, Link2, Image} from "lucide-react";
 
 const contentService = new ContentService();
 
@@ -262,6 +263,7 @@ export default function GraphApp() {
                     </ReactFlow>
                 </Panel>
             </PanelGroup>
+            <InputDock onTextClick={() => {}} onImageClick={() => {}} onUrlClick={() => {}} />
         </div>
     );
 }
@@ -787,15 +789,61 @@ export const EpubReader: React.FC<{id: string, url: string}> = ({id, url}) => {
     )
 }
 
+interface InputDockProps {
+    onTextClick: () => void
+    onImageClick: () => void
+    onUrlClick: () => void
+}
+
+const InputDock: React.FC<InputDockProps> = ({
+                                                 onTextClick,
+                                                 onImageClick,
+                                                 onUrlClick,
+                                             }) => (
+    <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-lg px-4 pb-4 pointer-events-none">
+        <div className="flex items-end justify-center space-x-8 px-6 py-3 bg-white bg-opacity-30 backdrop-blur-md rounded-full shadow-lg pointer-events-auto">
+            <button
+                onClick={onTextClick}
+                className="group focus:outline-none"
+                aria-label="Insert text"
+            >
+                <FileText className="w-8 h-8 transition-transform duration-150 group-hover:scale-125" />
+            </button>
+            <button
+                onClick={onImageClick}
+                className="group focus:outline-none"
+                aria-label="Insert image"
+            >
+                <Image className="w-8 h-8 transition-transform duration-150 group-hover:scale-125" />
+            </button>
+            <button
+                onClick={onUrlClick}
+                className="group focus:outline-none"
+                aria-label="Insert URL"
+            >
+                <Link2 className="w-8 h-8 transition-transform duration-150 group-hover:scale-125" />
+            </button>
+        </div>
+    </div>
+)
+
+new EventSource('/esbuild').addEventListener('message', (event) => {
+    if (event.data === 'change') {
+        location.reload()
+    }
+})
 const g = document.getElementById('graph');
 const p = g.getAttribute('data-props');
 const props = JSON.parse(p);
 const root = createRoot(g);
 root.render((
     <ContentServiceProvider url={props.url}>
-        <YDocProvider docId={"my-doc-id"} authEndpoint={async (): Promise<any> => {
+        <YDocProvider docId={props.id} authEndpoint={async (): Promise<any> => {
             const res = await fetch("/graph/auth", {
-                method: "GET",
+                method: "POST",
+                body: JSON.stringify({
+                    id: props.id,
+                }),
             })
             return await res.json();
         }}>

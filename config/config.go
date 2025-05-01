@@ -53,6 +53,7 @@ type AppConfig struct {
 	Proxy              ProxyConfig   `json:"proxy"`
 	Admins             []string      `json:"admins"`
 	DB                 string        `json:"db"`
+	JamsocketURL       string        `json:"jamsocket_url"`
 }
 
 func NewFromFile(path string) AppConfig {

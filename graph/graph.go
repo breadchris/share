@@ -43,16 +43,27 @@ func New(d deps.Deps) *http.ServeMux {
 
 	graphs := d.Docs.WithCollection("graphs")
 	mux.HandleFunc("/auth", func(w http.ResponseWriter, r *http.Request) {
-		cmd := exec.Command("node", "static/graph/code.js")
+		switch r.Method {
+		case http.MethodPost:
+			type Req struct {
+				ID string `json:"id"`
+			}
+			var req Req
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			cmd := exec.Command("node", "static/graph/code.js", req.ID)
 
-		cmd.Env = append(os.Environ(), "CONNECTION_STRING=yss://yNNQ0uquJuFXAn1Y.FuMRT7iAl4QQaZXmGzXKnjOEs4YsTK@api.jamsocket.com/v2/y-sweet/ct4321/justshare/")
+			cmd.Env = append(os.Environ(), "CONNECTION_STRING="+d.Config.JamsocketURL)
 
-		output, err := cmd.CombinedOutput()
-		if err != nil {
-			fmt.Printf("Error: %s\n", err)
-			return
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				fmt.Printf("Error: %s %s\n", err, output)
+				return
+			}
+			w.Write(output)
 		}
-		w.Write(output)
 	})
 
 	mux.HandleFunc("/ws/{id...}", func(w http.ResponseWriter, r *http.Request) {
