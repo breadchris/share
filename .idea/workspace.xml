@@ -5,10 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/ContentService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/ContentService.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/graph/graph.go" beforeDir="false" afterPath="$PROJECT_DIR$/graph/graph.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graph/graph.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/graph/graph.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -235,7 +232,7 @@
       <workItem from="1744774454094" duration="2182000" />
       <workItem from="1744863579423" duration="36456000" />
       <workItem from="1745464029344" duration="33447000" />
-      <workItem from="1745987094315" duration="9725000" />
+      <workItem from="1745987094315" duration="9940000" />
     </task>
     <servers />
   </component>

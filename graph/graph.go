@@ -253,7 +253,11 @@ func New(d deps.Deps) *http.ServeMux {
 				return
 			}
 
-			u.Scheme = "ws"
+			if u.Scheme == "http" {
+				u.Scheme = "ws"
+			} else {
+				u.Scheme = "wss"
+			}
 
 			p := Props{
 				Id:  id,
