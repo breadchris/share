@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -769,22 +770,41 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 
 	m.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		getRecipe := func(rs RecipeState) {
-			video, err := client.GetVideoContext(ctx, rs.Recipe.ID)
+			//video, err := client.GetVideoContext(ctx, rs.Recipe.ID)
+			//if err != nil {
+			//	http.Error(w, err.Error(), http.StatusInternalServerError)
+			//	return
+			//}
+			//
+			//println("loading transcript")
+			//ts, err := getYTTranscript(ctx, client, video)
+			//if err != nil {
+			//	http.Error(w, err.Error(), http.StatusInternalServerError)
+			//	return
+			//}
+			cmd := exec.Command("python", "yt_transcript.py", Fmt("https://www.youtube.com/watch?v=%s", rs.Recipe.ID))
+
+			output, err := cmd.CombinedOutput()
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				fmt.Printf("Error: %s %s\n", err, output)
 				return
 			}
 
-			println("loading transcript")
-			ts, err := getYTTranscript(ctx, client, video)
-			if err != nil {
+			type Video struct {
+				Title      string                  `json:"title"`
+				Transcript youtube.VideoTranscript `json:"transcript"`
+			}
+			println("unmarshalling transcript", string(output[:100]))
+			var video Video
+			if err := json.Unmarshal(output, &video); err != nil {
+				println("failed to unmarshal transcript", err.Error())
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			rs.Transcript = ts
+			rs.Transcript = video.Transcript
 
 			println("generating recipe")
-			nr, err := transcriptToRecipe(ctx, d, ts)
+			nr, err := transcriptToRecipe(ctx, d, video.Transcript)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return

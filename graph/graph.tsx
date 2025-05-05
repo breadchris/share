@@ -561,7 +561,13 @@ function ClipItem(props: DragHandleMenuProps) {
                 };
                 Y.transact(doc, () => {
                     nodesMap.set(id, node);
-                    docsMap.set(id, prosemirrorToYXmlFragment(blocksToProsemirrorNode(editor, [b])));
+                    try {
+                        docsMap.set(id, prosemirrorToYXmlFragment(blocksToProsemirrorNode(editor, [b])));
+                    } catch (e) {
+                        // may be causing error
+                        console.error(e);
+                        docsMap.set(id, prosemirrorToYXmlFragment(blocksToProsemirrorNode(editor, [])));
+                    }
                 });
             }}>
             Clip
