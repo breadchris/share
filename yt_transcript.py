@@ -28,6 +28,7 @@ def download_vtt(url: str, lang: str = "en"):
         "no_warnings": True,
         "no_progress":      True,
         "logger":        SilentLogger(),
+        "proxy":       os.environ.get("PROXY"),
     }
     with YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)

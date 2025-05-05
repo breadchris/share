@@ -6,11 +6,9 @@
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graph/graph.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/graph/graph.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/recipe.go" beforeDir="false" afterPath="$PROJECT_DIR$/recipe.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/graph/graph.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/graph/graph.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/yt_transcript.py" beforeDir="false" afterPath="$PROJECT_DIR$/yt_transcript.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -237,7 +235,7 @@
       <workItem from="1744774454094" duration="2182000" />
       <workItem from="1744863579423" duration="36456000" />
       <workItem from="1745464029344" duration="33447000" />
-      <workItem from="1745987094315" duration="26177000" />
+      <workItem from="1745987094315" duration="27657000" />
     </task>
     <servers />
   </component>

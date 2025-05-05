@@ -36,6 +36,7 @@ type ProxyConfig struct {
 	URL      string `json:"url"`
 	Username string `json:"username"`
 	Password string `json:"password"`
+	SocksURL string `json:"socks_url"`
 }
 
 type AppConfig struct {

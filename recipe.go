@@ -783,6 +783,14 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 			//	return
 			//}
 			cmd := exec.Command("python", "yt_transcript.py", Fmt("https://www.youtube.com/watch?v=%s", rs.Recipe.ID))
+			parsedURL, err := url.Parse(d.Config.Proxy.URL)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			parsedURL.User = url.UserPassword(d.Config.Proxy.Username, d.Config.Proxy.Password)
+			println("setting proxy", parsedURL.String())
+			cmd.Env = append(os.Environ(), "PROXY="+d.Config.Proxy.SocksURL)
 
 			output, err := cmd.CombinedOutput()
 			if err != nil {
