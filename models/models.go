@@ -1,10 +1,62 @@
 package models
 
 import (
+	"bytes"
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
+	"github.com/kkdai/youtube/v2"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"time"
 )
+
+type JSONField[T any] struct {
+	Data T
+}
+
+func MakeJSONField[T any](data T) *JSONField[T] {
+	return &JSONField[T]{
+		Data: data,
+	}
+}
+
+func (j *JSONField[T]) Scan(src any) error {
+	if src == nil {
+		var empty T
+		j.Data = empty
+		return nil
+	}
+	srcByte, ok := src.([]byte)
+	if !ok {
+		return errors.New("JSONField underlying type must be []byte (some kind of Blob/JSON/JSONB field)")
+	}
+	if err := json.Unmarshal(srcByte, &j.Data); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (j JSONField[T]) Value() (driver.Value, error) {
+	return json.Marshal(j.Data)
+}
+
+func (j JSONField[T]) MarshalJSON() ([]byte, error) {
+	return json.Marshal(j.Data)
+}
+
+func (j *JSONField[T]) UnmarshalJSON(b []byte) error {
+	if bytes.Equal(b, []byte("null")) {
+		// According to docs, this is a no-op by convention
+		//var empty T
+		//j.Data = empty
+		return nil
+	}
+	if err := json.Unmarshal(b, &j.Data); err != nil {
+		return err
+	}
+	return nil
+}
 
 type Model struct {
 	ID        string `gorm:"primaryKey"`
@@ -102,6 +154,7 @@ type Recipe struct {
 	Ingredients []*Ingredient `json:"ingredients" gorm:"foreignKey:RecipeID"`
 	Directions  []*Direction  `json:"directions" gorm:"foreignKey:RecipeID"`
 	Equipment   []*Equipment  `json:"equipment" description:"The equipment used while making the recipe."`
+	Transcript  *JSONField[youtube.VideoTranscript]
 }
 
 type Prompt struct {

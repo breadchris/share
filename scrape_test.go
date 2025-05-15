@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/breadchris/share/config"
@@ -13,7 +12,6 @@ import (
 	"github.com/breadchris/share/models"
 	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
-	"github.com/sashabaranov/go-openai/jsonschema"
 	"io/fs"
 	"net/http"
 	"os"
@@ -30,63 +28,6 @@ func TestScrape(t *testing.T) {
 		t.Error(err)
 	}
 }
-func dataToRecipe(ctx context.Context, d deps.Deps, data string) (models.Recipe, error) {
-	var rec models.Recipe
-
-	prompt := data
-
-	schema, err := jsonschema.GenerateSchemaForType(rec)
-	if err != nil {
-		return rec, err
-	}
-
-	resp, err := d.AI.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
-		Model: openai.GPT4o20240513,
-		Messages: []openai.ChatCompletionMessage{
-			{
-				Role: openai.ChatMessageRoleSystem,
-				Content: `
-You will take content and generate a recipe from it by calling the generateRecipe function. The generateRecipe function will take the data as input and return a recipe object. The recipe object will have the following structure:
-Use the following data to extract the recipe into the described format.
-Replace casual dialogue and narrative with clear and direct recipe language.
-Include inferred ingredients and ensure proper structuring of directions.
-Each direction should only contain one action. For example, "Whisk egg whites" is one action. "Place a heaping teaspoon of the meat mixture in the center of a dumpling wrapper. Wet the perimeter with water, close it like a taco, pinching it in the middle at the top and pleat both sides three to four times." contains multiple actions.
-`,
-			},
-			{
-				Role:    openai.ChatMessageRoleUser,
-				Content: prompt,
-			},
-		},
-		Tools: []openai.Tool{
-			{
-				Type: "function",
-				Function: &openai.FunctionDefinition{
-					Name:        "createRecipe",
-					Description: "",
-					Parameters:  schema,
-				},
-			},
-		},
-	})
-	if err != nil {
-		return rec, err
-	}
-
-	for _, tc := range resp.Choices[0].Message.ToolCalls {
-		if ok := tc.Function.Name == "createRecipe"; ok {
-			println("found function")
-			err = json.Unmarshal([]byte(tc.Function.Arguments), &rec)
-			if err != nil {
-				return rec, err
-			}
-			return rec, nil
-		}
-	}
-	println(resp.Choices[0].Message.Content)
-	return rec, errors.New("failed to generate recipe")
-}
-
 func parseRecipe(d deps.Deps, path string) (*models.Recipe, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -100,7 +41,6 @@ func parseRecipe(d deps.Deps, path string) (*models.Recipe, error) {
 	}
 
 	var (
-		r models.Recipe
 		t string
 	)
 
@@ -118,9 +58,16 @@ func parseRecipe(d deps.Deps, path string) (*models.Recipe, error) {
 		}
 	}
 
-	r, err = dataToRecipe(context.Background(), d, t)
+	dr, err := dataToRecipe(context.Background(), d, t)
 	if err != nil {
 		return nil, err
+	}
+
+	r := models.Recipe{
+		Name:        dr.Name,
+		Ingredients: dr.Ingredients,
+		Directions:  dr.Directions,
+		Equipment:   dr.Equipment,
 	}
 	return &r, nil
 }

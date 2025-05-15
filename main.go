@@ -324,7 +324,7 @@ func startServer(useTLS bool, port int) {
 		}
 	})
 
-	p("", interpreted(Index))
+	p("", interpreted(NewRecipe))
 
 	go func() {
 		paths := []string{

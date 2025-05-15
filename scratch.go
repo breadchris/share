@@ -4744,3 +4744,81 @@ func RenderCMS() *Node {
 		),
 	)
 }
+
+func RenderFAB() *Node {
+	return Div(
+		Class("fixed bottom-5 right-5"),
+		Div(
+			Class("relative"),
+			Button(
+				Class("btn btn-primary rounded-full p-5 shadow-lg"),
+				Span(Class("text-2xl"), Text("+")),
+			),
+			Div(
+				Class("absolute right-0 mt-2 space-y-2 hidden group-hover:block"),
+				Div(
+					Class("dropdown dropdown-end"),
+					Button(Class("btn btn-sm btn-secondary"), Text("Save Recipe")),
+				),
+				Div(
+					Class("dropdown dropdown-end"),
+					Button(Class("btn btn-sm btn-accent"), Text("Report Issue")),
+				),
+			),
+		),
+	)
+}
+
+func RenderFAB2() *Node {
+	return Div(
+		Class("toast"),
+		Div(
+			Class("dropdown dropdown-top dropdown-end"),
+			Label(
+				Tabindex("0"),
+				Class("btn btn-primary btn-circle"),
+				Svg(
+					Stroke("currentColor"),
+					Xmlns("http://www.w3.org/2000/svg"),
+					Class("h-6 w-6"),
+					Fill("none"),
+					ViewBox("0 0 24 24"),
+					Path(
+						StrokeLinecap("round"),
+						StrokeLinejoin("round"),
+						StrokeWidth("2"),
+						D("M6 18L18 6M6 6l12 12"),
+					),
+				),
+			),
+			Div(
+				Tabindex("0"),
+				Class("dropdown-content my-2 gap-2 flex flex-col"),
+				Button(Class("btn btn-circle"), Span(Class("text-sm"), Text("Save Recipe"))),
+				Button(Class("btn btn-circle"), Span(Class("text-sm"), Text("Report Issue"))),
+			),
+		),
+	)
+}
+
+func PigSvg() *Node {
+	return Svg(
+		StrokeLinecap("round"),
+		StrokeLinejoin("round"),
+		Class("lucide lucide-piggy-bank-icon lucide-piggy-bank"),
+		Xmlns("http://www.w3.org/2000/svg"),
+		Height("24"),
+		ViewBox("0 0 24 24"),
+		Stroke("currentColor"),
+		Width("24"),
+		Fill("none"),
+		StrokeWidth("2"),
+		Path(
+			D(
+				"M11 17h3v2a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-3a3.16 3.16 0 0 0 2-2h1a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1h-1a5 5 0 0 0-2-4V3a4 4 0 0 0-3.2 1.6l-.3.4H11a6 6 0 0 0-6 6v1a5 5 0 0 0 2 4v3a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1z",
+			),
+		),
+		Path(D("M16 10h.01")),
+		Path(D("M2 8v1a2 2 0 0 0 2 2h1")),
+	)
+}

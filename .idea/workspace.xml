@@ -6,9 +6,12 @@
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/models.go" beforeDir="false" afterPath="$PROJECT_DIR$/models/models.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/recipe.go" beforeDir="false" afterPath="$PROJECT_DIR$/recipe.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yt_transcript.py" beforeDir="false" afterPath="$PROJECT_DIR$/yt_transcript.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/recipe_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/recipe_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scrape_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/scrape_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scratch.go" beforeDir="false" afterPath="$PROJECT_DIR$/scratch.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,39 +43,39 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "DefaultGoTemplateProperty": "Go File",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.go.formatter.settings.were.checked": "true",
-    "RunOnceActivity.go.migrated.go.modules.settings": "true",
-    "RunOnceActivity.go.modules.automatic.dependencies.download": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "git-widget-placeholder": "master",
-    "go.import.settings.migrated": "true",
-    "go.sdk.automatically.set": "true",
-    "last_opened_file_path": "/Users/hacked/Documents/GitHub/share/graph",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "project.structure.last.edited": "Modules",
-    "project.structure.proportion": "0.15",
-    "project.structure.side.proportion": "0.2",
-    "settings.editor.selected.configurable": "preferences.lookFeel",
-    "ts.external.directory.path": "/Users/hacked/Documents/GitHub/share/node_modules/typescript/lib",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultGoTemplateProperty&quot;: &quot;Go File&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.modules.automatic.dependencies.download&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
+    &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/hacked/Documents/GitHub/share/graph&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;/Users/hacked/Documents/GitHub/share/node_modules/typescript/lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   },
-  "keyToStringList": {
-    "DatabaseDriversLRU": [
-      "sqlite",
-      "postgresql"
+  &quot;keyToStringList&quot;: {
+    &quot;DatabaseDriversLRU&quot;: [
+      &quot;sqlite&quot;,
+      &quot;postgresql&quot;
     ]
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/graph" />
@@ -82,14 +85,14 @@
       <recent name="$PROJECT_DIR$/xctf/models" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/data/recipes" />
       <recent name="$PROJECT_DIR$/data/xctf/02d3d626-c37b-483f-9da1-5de9e03440bf/birbs" />
       <recent name="$PROJECT_DIR$/xctf/docker/files/maze/delta_9424/charlie_3756/foxtrot_1762/delta_3752/alpha_233/charlie_4617/alpha_3547/delta_8625/charlie_7808/echo_2332/golf_5241/foxtrot_6344/foxtrot_8781/alpha_6515/foxtrot_3975/alpha_6910/bravo_3232/echo_7743/echo_1503/foxtrot_9473" />
       <recent name="$PROJECT_DIR$/xctf/docker/files" />
       <recent name="$PROJECT_DIR$/card" />
-      <recent name="$PROJECT_DIR$/xctf" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Build.share">
+  <component name="RunManager" selected="Go Test.TestIngestChannels in github.com/breadchris/share">
     <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
       <module name="share" />
       <working_directory value="$PROJECT_DIR$" />
@@ -119,6 +122,17 @@
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <output_directory value="$PROJECT_DIR$/data" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestIngestChannels in github.com/breadchris/share" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="share" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/breadchris/share" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestIngestChannels\E$" />
       <method v="2" />
     </configuration>
     <configuration name="TestLoadAllRecipesSmitten in github.com/breadchris/share" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
@@ -175,31 +189,22 @@
       <framework value="gotest" />
       <method v="2" />
     </configuration>
-    <configuration name="scrape_test.go" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
-      <module name="share" />
-      <working_directory value="$PROJECT_DIR$" />
-      <kind value="FILE" />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$/scrape_test.go" />
-      <framework value="gotest" />
-      <method v="2" />
-    </configuration>
     <list>
       <item itemvalue="Go Build.share" />
       <item itemvalue="Go Build.xctf" />
+      <item itemvalue="Go Test.TestIngestChannels in github.com/breadchris/share" />
       <item itemvalue="Go Test.TestLoadAllRecipesSmitten in github.com/breadchris/share" />
       <item itemvalue="Go Test.TestParse in github.com/breadchris/share" />
       <item itemvalue="Go Test.TestRecipeIndexSmitten in github.com/breadchris/share" />
       <item itemvalue="Go Test.TestRecipes in github.com/breadchris/share" />
-      <item itemvalue="Go Test.scrape_test.go" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Test.TestIngestChannels in github.com/breadchris/share" />
         <item itemvalue="Go Test.TestRecipes in github.com/breadchris/share" />
         <item itemvalue="Go Test.TestRecipeIndexSmitten in github.com/breadchris/share" />
         <item itemvalue="Go Test.TestLoadAllRecipesSmitten in github.com/breadchris/share" />
         <item itemvalue="Go Test.TestParse in github.com/breadchris/share" />
-        <item itemvalue="Go Test.scrape_test.go" />
       </list>
     </recent_temporary>
   </component>
@@ -236,6 +241,7 @@
       <workItem from="1744863579423" duration="36456000" />
       <workItem from="1745464029344" duration="33447000" />
       <workItem from="1745987094315" duration="27657000" />
+      <workItem from="1747107407914" duration="14328000" />
     </task>
     <servers />
   </component>
