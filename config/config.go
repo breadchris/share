@@ -55,6 +55,7 @@ type AppConfig struct {
 	Admins             []string      `json:"admins"`
 	DB                 string        `json:"db"`
 	JamsocketURL       string        `json:"jamsocket_url"`
+	SupabaseURL        string        `json:"supabase_url"`
 }
 
 func NewFromFile(path string) AppConfig {

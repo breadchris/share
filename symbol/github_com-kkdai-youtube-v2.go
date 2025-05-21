@@ -13,6 +13,7 @@ func init() {
 	Symbols["github.com/kkdai/youtube/v2/youtube"] = map[string]reflect.Value{
 		// function, constant and variable definitions
 		"AndroidClient":                 reflect.ValueOf(&youtube.AndroidClient).Elem(),
+		"ContentPlaybackNonceAlphabet":  reflect.ValueOf(constant.MakeFromLiteral("\"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_\"", token.STRING, 0)),
 		"DefaultClient":                 reflect.ValueOf(&youtube.DefaultClient).Elem(),
 		"EmbeddedClient":                reflect.ValueOf(&youtube.EmbeddedClient).Elem(),
 		"ErrCipherNotFound":             reflect.ValueOf(youtube.ErrCipherNotFound),
@@ -27,6 +28,7 @@ func init() {
 		"ErrVideoIDMinLength":           reflect.ValueOf(youtube.ErrVideoIDMinLength),
 		"ErrVideoPrivate":               reflect.ValueOf(youtube.ErrVideoPrivate),
 		"ExtractVideoID":                reflect.ValueOf(youtube.ExtractVideoID),
+		"IOSClient":                     reflect.ValueOf(&youtube.IOSClient).Elem(),
 		"Logger":                        reflect.ValueOf(&youtube.Logger).Elem(),
 		"SetLogLevel":                   reflect.ValueOf(youtube.SetLogLevel),
 		"Size10Mb":                      reflect.ValueOf(constant.MakeFromLiteral("10485760", token.INT, 0)),
@@ -45,6 +47,7 @@ func init() {
 		"FormatList":              reflect.ValueOf((*youtube.FormatList)(nil)),
 		"Playlist":                reflect.ValueOf((*youtube.Playlist)(nil)),
 		"PlaylistEntry":           reflect.ValueOf((*youtube.PlaylistEntry)(nil)),
+		"ProtoBuilder":            reflect.ValueOf((*youtube.ProtoBuilder)(nil)),
 		"Thumbnail":               reflect.ValueOf((*youtube.Thumbnail)(nil)),
 		"Thumbnails":              reflect.ValueOf((*youtube.Thumbnails)(nil)),
 		"TranscriptSegment":       reflect.ValueOf((*youtube.TranscriptSegment)(nil)),

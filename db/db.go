@@ -3,8 +3,6 @@ package db
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/breadchris/share/models"
-	xmodels "github.com/breadchris/share/xctf/models"
 	"github.com/tidwall/gjson"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
@@ -194,25 +192,26 @@ func LoadDB(dsn string) *gorm.DB {
 		log.Fatalf("Unknown db: %s", dsn)
 	}
 
-	if err := db.AutoMigrate(
-		&models.User{},
-		&models.Identity{},
-		&models.Group{},
-		&models.GroupMembership{},
-		&models.Food{},
-		&models.FoodName{},
-		&models.Prompt{},
-		&models.PromptRun{},
-		&models.Recipe{},
-		&models.Ingredient{},
-		&models.Equipment{},
-		&models.Direction{},
-
-		// xctf models
-		&xmodels.Competition{},
-		&xmodels.CompetitionGroup{},
-	); err != nil {
-		log.Fatalf("Failed to migrate db: %v", err)
-	}
+	//if err := db.AutoMigrate(
+	//	&models.User{},
+	//	&models.Identity{},
+	//	&models.Group{},
+	//	&models.GroupMembership{},
+	//	&models.Food{},
+	//	&models.FoodName{},
+	//	&models.Prompt{},
+	//	&models.PromptRun{},
+	//	&models.Recipe{},
+	//	&models.Ingredient{},
+	//	&models.Equipment{},
+	//	&models.Direction{},
+	//	&models.PromptContext{},
+	//
+	//	// xctf models
+	//	&xmodels.Competition{},
+	//	&xmodels.CompetitionGroup{},
+	//); err != nil {
+	//	log.Fatalf("Failed to migrate db: %v", err)
+	//}
 	return db
 }

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/kkdai/youtube/v2"
+	"github.com/sashabaranov/go-openai"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"time"
@@ -155,6 +156,14 @@ type Recipe struct {
 	Directions  []*Direction  `json:"directions" gorm:"foreignKey:RecipeID"`
 	Equipment   []*Equipment  `json:"equipment" description:"The equipment used while making the recipe."`
 	Transcript  *JSONField[youtube.VideoTranscript]
+}
+
+type PromptContext struct {
+	Model
+	ID        string `gorm:"primaryKey"`
+	ContextID string
+	Request   *JSONField[openai.ChatCompletionRequest]
+	Response  *JSONField[openai.ChatCompletionResponse]
 }
 
 type Prompt struct {

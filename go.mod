@@ -106,7 +106,7 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/samber/lo v1.46.0
-	github.com/sashabaranov/go-openai v1.32.2
+	github.com/sashabaranov/go-openai v1.40.0
 	github.com/snabb/sitemap v1.0.4
 	github.com/spf13/cast v1.7.1
 	github.com/spf13/cobra v1.9.1

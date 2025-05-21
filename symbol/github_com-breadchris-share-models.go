@@ -21,6 +21,7 @@ func init() {
 		"Model":           reflect.ValueOf((*models.Model)(nil)),
 		"Page":            reflect.ValueOf((*models.Page)(nil)),
 		"Prompt":          reflect.ValueOf((*models.Prompt)(nil)),
+		"PromptContext":   reflect.ValueOf((*models.PromptContext)(nil)),
 		"PromptRun":       reflect.ValueOf((*models.PromptRun)(nil)),
 		"Recipe":          reflect.ValueOf((*models.Recipe)(nil)),
 		"User":            reflect.ValueOf((*models.User)(nil)),

@@ -4,21 +4,22 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/ai"
 	"github.com/breadchris/share/config"
 	"github.com/breadchris/share/db"
 	"github.com/breadchris/share/deps"
 	"github.com/breadchris/share/models"
 	"github.com/google/uuid"
 	"github.com/kkdai/youtube/v2"
+	"github.com/samber/lo"
 	"github.com/sashabaranov/go-openai"
+	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 	"io"
 	"io/fs"
-	"net/http"
 	"os"
 	"path"
 	"testing"
-	"time"
 )
 
 func TestRecipeIndex(t *testing.T) {
@@ -242,32 +243,36 @@ func TestIngestChannels(t *testing.T) {
 	docs := db.NewSqliteDocumentStore("data/docs.db")
 	newDB := db.LoadDB(c.DB)
 	d := deps.Deps{
-		AI:     openai.NewClient(c.OpenAIKey),
-		Config: c,
-		Docs:   docs,
-		DB:     newDB,
+		AIProxy: ai.New(c, newDB),
+		AI:      openai.NewClient(c.OpenAIKey),
+		Config:  c,
+		Docs:    docs,
+		DB:      newDB,
 	}
 	//yt := docs.WithCollection("youtube")
 
-	for _, channel := range channels[:1] {
+	for _, channel := range channels {
+		if channel.Name != "Kenji" {
+			continue
+		}
 		fmt.Printf("Name: %s\nDescription: %s\nURL: %s\n\n", channel.Name, channel.Description, channel.URL)
-		proxyFunc, err := CreateProxyFunction(d.Config.Proxy.URL, d.Config.Proxy.Username, d.Config.Proxy.Password)
-		if err != nil {
-			panic(err)
-		}
-
-		httpTransport := &http.Transport{
-			Proxy:                 proxyFunc,
-			IdleConnTimeout:       60 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-			ForceAttemptHTTP2:     true,
-		}
+		//proxyFunc, err := CreateProxyFunction(d.Config.Proxy.URL, d.Config.Proxy.Username, d.Config.Proxy.Password)
+		//if err != nil {
+		//	panic(err)
+		//}
+		//
+		//httpTransport := &http.Transport{
+		//	Proxy:                 proxyFunc,
+		//	IdleConnTimeout:       60 * time.Second,
+		//	TLSHandshakeTimeout:   10 * time.Second,
+		//	ExpectContinueTimeout: 1 * time.Second,
+		//	ForceAttemptHTTP2:     true,
+		//}
 
 		client := youtube.Client{
-			HTTPClient: &http.Client{
-				Transport: httpTransport,
-			},
+			//HTTPClient: &http.Client{
+			//	Transport: httpTransport,
+			//},
 		}
 
 		ctx := context.Background()
@@ -277,7 +282,35 @@ func TestIngestChannels(t *testing.T) {
 			continue
 		}
 
-		for _, v := range playlist.Videos[:1] {
+		for _, v := range playlist.Videos[:] {
+			if v.ID != "-Ud2cqoB7gE" {
+				continue
+			}
+			var existingRecipe models.Recipe
+			err = d.DB.Where("id = ?", v.ID).First(&existingRecipe).Error
+			if err == nil {
+				//continue
+				err := d.DB.Transaction(func(tx *gorm.DB) error {
+					if err := tx.Where("recipe_id = ?", v.ID).Unscoped().Delete(&models.Ingredient{}).Error; err != nil {
+						return err
+					}
+					if err := tx.Where("recipe_id = ?", v.ID).Unscoped().Delete(&models.Direction{}).Error; err != nil {
+						return err
+					}
+					if err := tx.Where("recipe_id = ?", v.ID).Unscoped().Delete(&models.Equipment{}).Error; err != nil {
+						return err
+					}
+					if err := tx.Where("id = ?", v.ID).Unscoped().Delete(&models.Recipe{}).Error; err != nil {
+						return err
+					}
+					return nil
+				})
+				if err != nil {
+					fmt.Printf("Error during transaction: %v\n", err)
+					return
+				}
+			}
+
 			rs := RecipeState{
 				Recipe: Recipe{
 					ID: v.ID,
@@ -289,6 +322,7 @@ func TestIngestChannels(t *testing.T) {
 				fmt.Printf("Error: %v\n", err)
 				continue
 			}
+			println("Recipe Name:", vd.Title)
 
 			var prompt string
 			for _, tr := range vd.Transcript {
@@ -298,7 +332,9 @@ func TestIngestChannels(t *testing.T) {
 			var (
 				ar AIRecipe
 			)
-			ar, err = dataToRecipe(context.Background(), d, prompt)
+
+			ct := ai.WithContextID(ctx, v.ID)
+			ar, err = dataToRecipe(ct, d, prompt)
 			if err != nil {
 				fmt.Printf("Error: %v\n", err)
 				continue
@@ -308,30 +344,6 @@ func TestIngestChannels(t *testing.T) {
 			r.Model.ID = v.ID
 			r.Name = ar.Name
 			r.URL = fmt.Sprintf("https://www.youtube.com/watch?v=%s", v.ID)
-
-			var existingRecipe models.Recipe
-			err = d.DB.First(&existingRecipe, "id = ?", v.ID).Error
-			if err == nil {
-				err := d.DB.Transaction(func(tx *gorm.DB) error {
-					if err := tx.Where("recipe_id = ?", v.ID).Delete(&models.Ingredient{}).Error; err != nil {
-						return err
-					}
-					if err := tx.Where("recipe_id = ?", v.ID).Delete(&models.Direction{}).Error; err != nil {
-						return err
-					}
-					if err := tx.Where("recipe_id = ?", v.ID).Delete(&models.Equipment{}).Error; err != nil {
-						return err
-					}
-					if err := tx.Delete(&models.Recipe{}, v.ID).Error; err != nil {
-						return err
-					}
-					return nil
-				})
-				if err != nil {
-					fmt.Printf("Error during transaction: %v\n", err)
-					return
-				}
-			}
 
 			for i, ing := range ar.Ingredients {
 				r.Ingredients = append(r.Ingredients, ing)
@@ -361,4 +373,76 @@ func TestIngestChannels(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestPrompt(t *testing.T) {
+	id := "rdvm9M4I__E"
+
+	c := config.New()
+	docs := db.NewSqliteDocumentStore("data/docs.db")
+	newDB := db.LoadDB(c.DB)
+	d := deps.Deps{
+		AIProxy: ai.New(c, newDB),
+		AI:      openai.NewClient(c.OpenAIKey),
+		Config:  c,
+		Docs:    docs,
+		DB:      newDB,
+	}
+	ctx := context.Background()
+
+	var existingRecipe models.Recipe
+	err := d.DB.Where("id = ?", id).First(&existingRecipe).Error
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return
+	}
+
+	var prompt string
+	for _, tr := range existingRecipe.Transcript.Data {
+		prompt += fmt.Sprintf("[%d - %d] %s\n", tr.StartMs/1000, (tr.StartMs+tr.Duration)/1000, tr.Text)
+	}
+
+	ct := ai.WithContextID(ctx, id)
+	ar, err := dataToRecipe(ct, d, prompt)
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return
+	}
+
+	fmt.Println("Recipe Name:", ar.Name)
+	fmt.Println("Ingredients:", ar.Ingredients)
+	fmt.Println("Directions:", lo.Map(ar.Directions, func(d *models.Direction, _ int) string {
+		return fmt.Sprintf("[%d - %d] %s", d.StartTime, d.EndTime, d.Text)
+	}))
+}
+
+func TestCopyRecipesBetweenDatabases(t *testing.T) {
+	// Assuming db.LoadDB takes a config or connection string and returns a gorm.DB instance
+	c := config.New()
+	db1 := db.LoadDB(c.DB)
+	db2 := db.LoadDB(c.SupabaseURL)
+
+	// Ensure both database connections are established
+	assert.NotNil(t, db1)
+	assert.NotNil(t, db2)
+
+	// Query all rows from the 'recipes' table in the first database
+	var recipes []models.Direction
+	err := db1.Find(&recipes).Error
+	assert.NoError(t, err)
+	assert.NotEmpty(t, recipes)
+
+	// Insert the queried rows into the second database
+	for _, recipe := range recipes {
+		// It's assumed that the Recipe struct has the same structure in both databases
+		// Insert the recipe into db2
+		err := db2.Create(&recipe).Error
+		assert.NoError(t, err, "Failed to insert recipe into the second database")
+	}
+
+	// Verify that the rows were successfully copied
+	var count int64
+	err = db2.Model(&models.Direction{}).Count(&count).Error
+	assert.NoError(t, err)
+	assert.Equal(t, int64(len(recipes)), count, "Recipe count mismatch between databases")
 }

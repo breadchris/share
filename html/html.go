@@ -31,6 +31,7 @@ func DefaultLayout(n ...*Node) *Node {
 			})),
 			DaisyUI,
 			Script(Src("https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4")),
+			Link(Rel("icon"), Attr("href", "/favicon.ico"), Type("image/x-icon")),
 			//TailwindCSS,
 			HTMX,
 		),

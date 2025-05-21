@@ -88,13 +88,14 @@ func getVideo(d deps.Deps, rs RecipeState) (*Video, error) {
 	//	http.Error(w, err.Error(), http.StatusInternalServerError)
 	//	return
 	//}
-	cmd := exec.Command("python", "yt_transcript.py", Fmt("https://www.youtube.com/watch?v=%s", rs.Recipe.ID))
-	parsedURL, err := url.Parse(d.Config.Proxy.URL)
-	if err != nil {
-		return nil, err
-	}
-	parsedURL.User = url.UserPassword(d.Config.Proxy.Username, d.Config.Proxy.Password)
-	cmd.Env = append(os.Environ(), "PROXY="+d.Config.Proxy.SocksURL)
+	cmd := exec.Command("python", "yt_transcript2.py", Fmt("https://www.youtube.com/watch?v=%s", rs.Recipe.ID))
+	//parsedURL, err := url.Parse(d.Config.Proxy.URL)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//parsedURL.User = url.UserPassword(d.Config.Proxy.Username, d.Config.Proxy.Password)
+	//cmd.Env = append(os.Environ(), "PROXY="+d.Config.Proxy.SocksURL)
+	cmd.Env = os.Environ()
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -102,7 +103,7 @@ func getVideo(d deps.Deps, rs RecipeState) (*Video, error) {
 		return nil, err
 	}
 
-	println("unmarshalling transcript", string(output[:100]))
+	println("unmarshalling transcript", string(output[:200]))
 	var video Video
 	if err := json.Unmarshal(output, &video); err != nil {
 		return nil, err
@@ -146,7 +147,7 @@ func transcriptToRecipe(ctx context.Context, d deps.Deps, ts youtube.VideoTransc
 	}
 
 	resp, err := d.AI.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
-		Model: openai.GPT4o20240513,
+		Model: openai.GPT4Dot1Nano,
 		Messages: []openai.ChatCompletionMessage{
 			{
 				Role:    openai.ChatMessageRoleSystem,
@@ -162,7 +163,7 @@ func transcriptToRecipe(ctx context.Context, d deps.Deps, ts youtube.VideoTransc
 				Type: "function",
 				Function: &openai.FunctionDefinition{
 					Name:        "createRecipe",
-					Description: "",
+					Description: "Function to call when creating a recipe.",
 					Parameters:  schema,
 				},
 			},
@@ -892,24 +893,16 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 	})
 
 	m.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
-		renderRecipe := func(rs RecipeState, w http.ResponseWriter, r *http.Request) {
-			var items []*Node
-			for _, t := range rs.Transcript {
-				items = append(items, Div(
-					Class("flex items-center"),
-					OnClick("seekToTime("+strconv.Itoa(t.StartMs/1000)+")"),
-					Span(Class("text-gray-500"), T(strconv.Itoa(t.StartMs))),
-					Span(Class("ml-2"), T(t.Text)),
-				))
-			}
+		id := r.PathValue("id")
 
+		renderRecipe := func(rs models.Recipe, w http.ResponseWriter, r *http.Request) {
 			var (
 				ingredients []*Node
 				protein     float64
 				fat         float64
 				carbs       float64
 			)
-			for _, i := range rs.Recipe.Ingredients {
+			for _, i := range rs.Ingredients {
 				var food []models.FoodName
 				if err := d.DB.Preload("Food").Where("name = ?", strings.ToLower(i.Name)).Find(&food).Error; err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -963,7 +956,7 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 			}
 
 			var directions []*Node
-			for _, d := range rs.Recipe.Directions {
+			for _, d := range rs.Directions {
 				directions = append(directions, Div(
 					Class("py-2 flex"),
 					OnClick("seekToTime("+strconv.Itoa(d.StartTime)+")"),
@@ -981,12 +974,12 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 
 			//servings := 4.0
 
-			id := rs.Recipe.ID
 			DefaultLayout(
 				Div(
 					Class("md:w-1/2 mx-auto p-8 space-y-4"),
 					ytScript(id),
-					P(Class("text-4xl font-semibold mb-4"), T(rs.Recipe.Name)),
+					P(Class("text-4xl font-semibold mb-4"), T(rs.Name)),
+					A(Class("text-sm"), Href(fmt.Sprintf("/%s?debug=true", id)), T("debug")),
 					Div(Id("player-container"),
 						Div(Id("player"), Class("w-full")),
 					),
@@ -1013,8 +1006,8 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 							Class("flex text-center my-4 items-center space-x-4 flex-wrap space-y-4"),
 							Ch(func() []*Node {
 								var equipment []*Node
-								for _, e := range rs.Recipe.Equipment {
-									equipment = append(equipment, Div(Class("p-2 px-4 bg-gray-200 text-black rounded h-full"), T(e)))
+								for _, e := range rs.Equipment {
+									equipment = append(equipment, Div(Class("p-2 px-4 bg-gray-200 text-black rounded h-full"), T(e.Name)))
 								}
 								return equipment
 							}()),
@@ -1025,12 +1018,10 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 						P(Class("text-2xl font-semibold mb-4"), T("Directions")),
 						Div(Class(""), Ch(directions)),
 					),
-					Div(Class("space-x-2"),
-						A(Class("btn"), HxTarget("body"), HxPut(fmt.Sprintf("/%s", id)), T("Regenerate")),
-						A(Class("btn"), HxTarget("body"), HxDelete(fmt.Sprintf("/%s", id)), T("Delete")),
-					),
-					//Ch(items),
-
+					//Div(Class("space-x-2"),
+					//	A(Class("btn"), HxTarget("body"), HxPut(fmt.Sprintf("/%s", id)), T("Regenerate")),
+					//	A(Class("btn"), HxTarget("body"), HxDelete(fmt.Sprintf("/%s", id)), T("Delete")),
+					//),
 					Div(
 						Class("toast"),
 						Div(
@@ -1044,12 +1035,12 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 								Tabindex("0"),
 								Class("dropdown-content my-2 gap-2 flex flex-col"),
 								Button(
-									HxGet(fmt.Sprintf("/modal/save?id=%s", rs.Recipe.ID)),
+									HxGet(fmt.Sprintf("/modal/save?id=%s", rs.ID)),
 									HxTarget("#modal"),
 									HxSwap("innerHTML"),
 									Class("btn p-5"), Span(Class("text-sm"), Text("Save"))),
 								Button(Class("btn p-5"),
-									HxGet(fmt.Sprintf("/modal/comment?id=%s", rs.Recipe.ID)),
+									HxGet(fmt.Sprintf("/modal/comment?id=%s", rs.ID)),
 									HxTarget("#modal"),
 									HxSwap("innerHTML"),
 									Span(Class("text-sm"), Text("Comment"))),
@@ -1061,31 +1052,13 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 			).RenderPageCtx(ctx, w, r)
 		}
 
-		id := r.PathValue("id")
 		switch r.Method {
 		case http.MethodPut:
-			rs := RecipeState{
-				Recipe: Recipe{
-					ID: id,
-				},
-			}
-			err := getRecipe(d, ctx, rs)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			println("saving recipe", rs.Recipe.ID)
-			if err = recipes.Set(rs.Recipe.ID, rs); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			renderRecipe(rs, w, r)
+			// TODO allow for recipe to be updated
+			//renderRecipe(re, w, r)
+			return
 		case http.MethodDelete:
-			if err := recipes.Delete(id); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			Div(T("deleted")).RenderPageCtx(ctx, w, r)
+			// TODO delete recipe
 		case http.MethodPost:
 			u := r.FormValue("url")
 			if u == "" {
@@ -1109,26 +1082,14 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 				http.Error(w, "missing video id", http.StatusBadRequest)
 				return
 			}
-			rs := RecipeState{
-				Recipe: Recipe{
-					ID: vid,
-				},
-			}
-			err = getRecipe(d, ctx, rs)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			println("saving recipe", rs.Recipe.ID)
-			if err = recipes.Set(rs.Recipe.ID, rs); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
+
+			// TODO create recipe when video is submitted
+
 			http.Redirect(w, r, fmt.Sprintf("/recipe/%s", vid), http.StatusSeeOther)
 		case http.MethodGet:
 			if id == "" {
-				docs, err := recipes.List()
-				if err != nil {
+				var docs []models.Recipe
+				if err := d.DB.Order("created_at DESC").Find(&docs).Error; err != nil {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
@@ -1150,16 +1111,12 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 						Div(Class("mt-8 container mx-auto"), Ch(func() []*Node {
 							var recp []*Node
 							for _, v := range docs {
-								var rs RecipeState
-								if err := json.Unmarshal(v.Data, &rs); err != nil {
-									continue
-								}
 								recp = append(recp, Div(
 									Class("flex items-center text-left p-4 space-x-4 border-b border-gray-200"),
 									Img(Class("max-w-32"), Src(fmt.Sprintf("https://img.youtube.com/vi/%s/sddefault.jpg", v.ID))),
 									A(
 										Href(fmt.Sprintf("/%s", v.ID)),
-										T(rs.Recipe.Name),
+										T(v.Name),
 									),
 								))
 							}
@@ -1170,23 +1127,42 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 				return
 			}
 
-			rs := RecipeState{
-				Recipe: Recipe{
-					ID: id,
-				},
+			var re models.Recipe
+			res := d.DB.Preload("Ingredients").Preload("Equipment").Preload("Directions").Where("id = ?", id).First(&re)
+			if res.Error != nil {
+				http.Error(w, res.Error.Error(), http.StatusInternalServerError)
+				return
 			}
-			if err := recipes.Get(id, &rs); err != nil {
-				err = getRecipe(d, ctx, rs)
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
-				if err = recipes.Set(rs.Recipe.ID, rs); err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
+
+			debug := r.URL.Query().Get("debug")
+			if debug == "true" {
+				// TODO debug mode
+				// TODO render recipe in debug mode
+				render(w, r, DefaultLayout(
+					Div(
+						// transcript
+						Class("container mx-auto p-8 flex flex-col"),
+						H1(Class("text-2xl font-semibold"), T("Debug")),
+						Ch(func() []*Node {
+							var items []*Node
+							//prompt += fmt.Sprintf("[%d - %d] %s\n", t.StartMs/1000, (t.StartMs+t.Duration)/1000, t.Text)
+							for _, rc := range re.Transcript.Data {
+								items = append(items, Div(
+									Class("flex items-center"),
+									Div(
+										Class("flex-1"),
+										T(fmt.Sprintf("[%d - %d] %s\n", rc.StartMs/1000, (rc.StartMs+rc.Duration)/1000, rc.Text)),
+									),
+								))
+							}
+							return items
+						}()),
+					),
+				))
+				return
 			}
-			renderRecipe(rs, w, r)
+
+			renderRecipe(re, w, r)
 		}
 	})
 
@@ -2112,6 +2088,7 @@ type AIRecipe struct {
 	Equipment   []*models.Equipment  `json:"equipment" description:"The equipment used while making the recipe."`
 }
 
+// TODO allow multiple recipes
 func dataToRecipe(ctx context.Context, d deps.Deps, data string) (AIRecipe, error) {
 	var rec AIRecipe
 
@@ -2122,18 +2099,12 @@ func dataToRecipe(ctx context.Context, d deps.Deps, data string) (AIRecipe, erro
 		return rec, err
 	}
 
-	resp, err := d.AI.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
-		Model: openai.GPT4o20240513,
+	resp, err := d.AIProxy.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
+		Model: openai.GPT4Dot1Nano,
 		Messages: []openai.ChatCompletionMessage{
 			{
-				Role: openai.ChatMessageRoleSystem,
-				Content: `
-You will take content and generate a recipe from it by calling the generateRecipe function. The generateRecipe function will take the data as input and return a recipe object. The recipe object will have the following structure:
-Use the following data to extract the recipe into the described format.
-Replace casual dialogue and narrative with clear and direct recipe language.
-Include inferred ingredients and ensure proper structuring of directions.
-Each direction should only contain one action. For example, "Whisk egg whites" is one action. "Place a heaping teaspoon of the meat mixture in the center of a dumpling wrapper. Wet the perimeter with water, close it like a taco, pinching it in the middle at the top and pleat both sides three to four times." contains multiple actions.
-`,
+				Role:    openai.ChatMessageRoleSystem,
+				Content: transcriptPrompt,
 			},
 			{
 				Role:    openai.ChatMessageRoleUser,
@@ -2145,7 +2116,7 @@ Each direction should only contain one action. For example, "Whisk egg whites" i
 				Type: "function",
 				Function: &openai.FunctionDefinition{
 					Name:        "createRecipe",
-					Description: "",
+					Description: "function to call when creating a recipe",
 					Parameters:  schema,
 				},
 			},
