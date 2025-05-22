@@ -108,6 +108,11 @@ type TestPlaylist struct {
 func TestIngestChannels(t *testing.T) {
 	channels := []TestPlaylist{
 		{
+			Name:        "Mr. Make It Happen",
+			Description: "Pasta/Italian cooking videos",
+			URL:         "https://www.youtube.com/watch?v=KDfWgcJRzMM&list=PLAWoAwc-OTEXpBhr_e3ip49KdyZBw5a16",
+		},
+		{
 			Name:        "Joshua Weisman but cheaper",
 			Description: "Video on YouTube",
 			URL:         "https://www.youtube.com/watch?v=Hg_zVEuYP_Y&list=PL4WiRZw8bmXt9q1_5MhZWqfhIdFg3eINH",
@@ -252,7 +257,7 @@ func TestIngestChannels(t *testing.T) {
 	//yt := docs.WithCollection("youtube")
 
 	for _, channel := range channels {
-		if channel.Name != "Kenji" {
+		if channel.Name != "Mr. Make It Happen" {
 			continue
 		}
 		fmt.Printf("Name: %s\nDescription: %s\nURL: %s\n\n", channel.Name, channel.Description, channel.URL)
@@ -282,14 +287,13 @@ func TestIngestChannels(t *testing.T) {
 			continue
 		}
 
-		for _, v := range playlist.Videos[:] {
-			if v.ID != "-Ud2cqoB7gE" {
-				continue
-			}
+		for _, v := range playlist.Videos[:1] {
+			//if v.ID != "-Ud2cqoB7gE" {
+			//	continue
+			//}
 			var existingRecipe models.Recipe
 			err = d.DB.Where("id = ?", v.ID).First(&existingRecipe).Error
 			if err == nil {
-				//continue
 				err := d.DB.Transaction(func(tx *gorm.DB) error {
 					if err := tx.Where("recipe_id = ?", v.ID).Unscoped().Delete(&models.Ingredient{}).Error; err != nil {
 						return err
@@ -427,7 +431,7 @@ func TestCopyRecipesBetweenDatabases(t *testing.T) {
 	assert.NotNil(t, db2)
 
 	// Query all rows from the 'recipes' table in the first database
-	var recipes []models.Direction
+	var recipes []models.Equipment
 	err := db1.Find(&recipes).Error
 	assert.NoError(t, err)
 	assert.NotEmpty(t, recipes)
@@ -442,7 +446,7 @@ func TestCopyRecipesBetweenDatabases(t *testing.T) {
 
 	// Verify that the rows were successfully copied
 	var count int64
-	err = db2.Model(&models.Direction{}).Count(&count).Error
+	err = db2.Model(&models.Equipment{}).Count(&count).Error
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(recipes)), count, "Recipe count mismatch between databases")
 }

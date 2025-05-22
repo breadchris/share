@@ -43,7 +43,7 @@ func (c *AI) CreateChatCompletion(
 		ID:        uuid.NewString(),
 		ContextID: ctxID,
 		Request:   &models.JSONField[openai.ChatCompletionRequest]{Data: request},
-		Response:  &models.JSONField[openai.ChatCompletionResponse]{Data: response},
+		Response:  &models.JSONField[openai.ChatCompletionResponse]{Data: resp},
 	}).Error; err != nil {
 		return response, err
 	}

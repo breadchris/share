@@ -21,7 +21,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -104,6 +103,16 @@ func getVideo(d deps.Deps, rs RecipeState) (*Video, error) {
 	}
 
 	println("unmarshalling transcript", string(output[:200]))
+
+	// look for the { character
+	start := bytes.IndexByte(output, '{')
+	if start == -1 {
+		return nil, errors.New("failed to find JSON in output")
+	}
+
+	// trim the output to only include the JSON
+	output = output[start:]
+
 	var video Video
 	if err := json.Unmarshal(output, &video); err != nil {
 		return nil, err
@@ -574,156 +583,6 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 			).RenderPageCtx(ctx, w, r)
 		}
 	})
-	m.HandleFunc("/source/{id}/recipe/{rid...}", func(w http.ResponseWriter, r *http.Request) {
-		id := r.PathValue("id")
-		rid := r.PathValue("rid")
-
-		renderSource := func(w http.ResponseWriter, r *http.Request, page *Node) {
-			ctx := context.WithValue(r.Context(), "baseURL", "/recipe/source/"+id+"/recipe/"+rid)
-			page.RenderPageCtx(ctx, w, r)
-		}
-
-		var re models.Recipe
-		res := d.DB.Preload("Ingredients").Preload("Equipment").Preload("Directions").Where("id = ?", rid).First(&re)
-		if res.Error != nil {
-			http.Error(w, res.Error.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		renderRecipe := func(rs models.Recipe) *Node {
-			var equipment []*Node
-			for _, e := range rs.Equipment {
-				equipment = append(equipment, Div(Class("p-2 bg-gray-500 text-white"), T(e.Name)))
-			}
-
-			var (
-				ingredients []*Node
-				protein     float64
-				fat         float64
-				carbs       float64
-			)
-			for _, i := range rs.Ingredients {
-				var food []models.FoodName
-				if err := d.DB.Preload("Food").Where("name = ?", strings.ToLower(i.Name)).Find(&food).Error; err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return nil
-				}
-				var foodItems []*Node
-				for _, f := range food {
-					foodItems = append(foodItems, Div(Class("p-2 bg-gray-500 text-white"), T(f.Name)))
-				}
-
-				var nuts *Node
-
-				a, err := strconv.Atoi(i.Amount)
-				if err == nil {
-					var grams float64
-					switch i.Unit {
-					case "pound":
-						grams = float64(a) * 453.592
-					}
-
-					if len(food) > 0 {
-						n, err := usdaFoodToNutrients(*food[0].Food)
-						if err != nil {
-							http.Error(w, err.Error(), http.StatusInternalServerError)
-							return nil
-						}
-						pg := grams * (n.Protein / 100)
-						fg := grams * (n.Fat / 100)
-						cg := grams * (n.Carbs / 100)
-
-						protein += pg
-						fat += fg
-						carbs += cg
-
-						nuts = Div(
-							Class("flex flex-row space-x-2 text-gray-500"),
-							Div(T(Fmt("%.2fg protein", pg))),
-							Div(T(Fmt("%.2fg fat", fg))),
-							Div(T(Fmt("%.2fg carbs", cg))),
-						)
-					}
-				}
-
-				ingredients = append(ingredients, Div(
-					Class("flex flex-col"),
-					Div(T(fmt.Sprintf("%s %s %s %s", i.Amount, i.Unit, i.Name, i.Comment))),
-					//Span(Class("text-gray-500"), T(i.Name)),
-					nuts,
-					//Ch(foodItems),
-				))
-			}
-
-			var directions []*Node
-			for _, d := range rs.Directions {
-				directions = append(directions, Div(
-					Class("py-2 flex"),
-					OnClick("seekToTime("+strconv.Itoa(d.StartTime)+")"),
-					Div(
-						Class("flex flex-row space-x-2"),
-						Div(
-							RenderPlay(),
-						),
-						Div(
-							T(fmt.Sprintf("%s", d.Text)),
-						),
-					),
-				))
-			}
-
-			//servings := 4.0
-
-			ur, err := url.Parse(rs.URL)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return nil
-			}
-			ur.Scheme = "https"
-			ur.Path = filepath.Dir(ur.Path)
-
-			id := rs.ID
-			return Div(
-				Class("md:w-1/2 mx-auto p-8 space-y-4"),
-				ytScript(id),
-				P(Class("text-4xl font-semibold mb-4"), T(rs.Name)),
-				A(Class("text-sm text-gray-500 mb-4"), Attr("href", ur.String()), T("Source: "+rs.Domain)),
-				Div(
-					P(Class("text-2xl font-semibold mb-4"), T("Ingredients")),
-					Ul(Class("space-y-4"), Ch(ingredients)),
-				),
-				//Div(
-				//	Class("flex flex-row space-x-2 text-gray-500"),
-				//	Div(T(Fmt("servings: %.1f", servings))),
-				//),
-				//Div(
-				//	Class("flex flex-row space-x-2 text-gray-500"),
-				//	Div(T(Fmt("per serving: "))),
-				//	Div(T(Fmt("%.2fg protein", protein/servings))),
-				//	Div(T(Fmt("%.2fg fat", fat/servings))),
-				//	Div(T(Fmt("%.2fg carbs", carbs/servings))),
-				//),
-				Div(Class("divider")),
-				Div(
-					Class(""),
-					P(Class("text-2xl font-semibold mb-4"), T("Equipment")),
-					Div(Class("grid grid-cols-4 gap-4 text-center my-4"), Ch(equipment)),
-				),
-				Div(Class("divider")),
-				//Div(Id("player"), Class("w-full")),
-				Div(
-					P(Class("text-2xl font-semibold mb-4"), T("Directions")),
-					Div(Class(""), Ch(directions)),
-				),
-				//Div(Class("space-x-2"),
-				//	A(Class("btn"), HxTarget("body"), HxPut(fmt.Sprintf("/%s", id)), T("Regenerate")),
-				//	A(Class("btn"), HxTarget("body"), HxDelete(fmt.Sprintf("/%s", id)), T("Delete")),
-				//),
-				//Ch(items),
-			)
-		}
-		renderSource(w, r, DefaultLayout(renderRecipe(re)))
-	})
 	m.HandleFunc("/source/upload", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 		if id == "" {
@@ -947,7 +806,7 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 				}
 
 				ingredients = append(ingredients, Div(
-					Class("flex flex-col"),
+					Class("flex flex-col checkable"),
 					Div(T(fmt.Sprintf("%s %s %s %s", i.Amount, i.Unit, i.Name, i.Comment))),
 					//Span(Class("text-gray-500"), T(i.Name)),
 					nuts,
@@ -966,6 +825,7 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 							RenderPlay(),
 						),
 						Div(
+							Class("checkable"),
 							T(fmt.Sprintf("%s", d.Text)),
 						),
 					),
@@ -1007,7 +867,7 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 							Ch(func() []*Node {
 								var equipment []*Node
 								for _, e := range rs.Equipment {
-									equipment = append(equipment, Div(Class("p-2 px-4 bg-gray-200 text-black rounded h-full"), T(e.Name)))
+									equipment = append(equipment, Div(Class("p-2 px-4 bg-gray-200 text-black rounded h-full checkable"), T(e.Name)))
 								}
 								return equipment
 							}()),
@@ -1048,6 +908,16 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 						),
 					),
 					Div(Id("modal")),
+					Script(Raw(`
+const checkables = document.getElementsByClassName("checkable");
+
+Array.from(checkables).forEach((element) => {
+  element.addEventListener('click', (e) => {
+    // Toggle the 'line-through' class when clicked
+    e.target.classList.toggle('line-through');
+  });
+});
+`)),
 				),
 			).RenderPageCtx(ctx, w, r)
 		}
@@ -1324,9 +1194,10 @@ const firstScriptTag = document.getElementsByTagName('script')[0];
 firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
 window.onYouTubeIframeAPIReady = function() {
+	// TODO breadchris figure out aspect ratios
     player = new YT.Player('player', {
-        height: '390',
-        width: '640',
+        height: '200',
+        //width: '640',
         videoId: '`+id+`',
         events: {
             onReady: onPlayerReady
