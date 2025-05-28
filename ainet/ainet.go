@@ -123,12 +123,12 @@ func New(d deps.Deps) *http.ServeMux {
 				),
 			)
 		case http.MethodPost:
+			if page.ID == "" {
+				page.ID = uuid.NewString()
+			}
 			if err := d.DB.Where("group_id = ? and url = ?", page.GroupID, page.URL).FirstOrCreate(&page).Error; err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
-			}
-			if page.ID == "" {
-				page.ID = uuid.NewString()
 			}
 			page.URL = r.PathValue("id")
 			page.HTML = r.FormValue("html")
