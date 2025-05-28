@@ -9,7 +9,11 @@ import (
 
 func init() {
 	Symbols["github.com/breadchris/share/models/models"] = map[string]reflect.Value{
+		// function, constant and variable definitions
+		"AIRecipeToModel": reflect.ValueOf(models.AIRecipeToModel),
+
 		// type definitions
+		"AIRecipe":        reflect.ValueOf((*models.AIRecipe)(nil)),
 		"Direction":       reflect.ValueOf((*models.Direction)(nil)),
 		"Equipment":       reflect.ValueOf((*models.Equipment)(nil)),
 		"Food":            reflect.ValueOf((*models.Food)(nil)),

@@ -5,6 +5,8 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/google/uuid"
 	"github.com/kkdai/youtube/v2"
 	"github.com/sashabaranov/go-openai"
 	"gorm.io/datatypes"
@@ -98,6 +100,7 @@ type Group struct {
 	Name      string             `gorm:"unique;not null"`
 	JoinCode  string             `gorm:"unique"`
 	Members   []*GroupMembership `gorm:"foreignKey:GroupID"`
+	Pages     []*Page            `gorm:"foreignKey:GroupID"`
 }
 
 type GroupMembership struct {
@@ -156,6 +159,14 @@ type Recipe struct {
 	Directions  []*Direction  `json:"directions" gorm:"foreignKey:RecipeID"`
 	Equipment   []*Equipment  `json:"equipment" description:"The equipment used while making the recipe."`
 	Transcript  *JSONField[youtube.VideoTranscript]
+	Tags        []Tag `gorm:"many2many:recipe_tags;"`
+}
+
+type Tag struct {
+	Model
+	Name        string `gorm:"unique;not null"`
+	Description string
+	Recipes     []Recipe `gorm:"many2many:recipe_tags;"`
 }
 
 type PromptContext struct {
@@ -191,4 +202,41 @@ type Page struct {
 	CreatedAt int64  `json:"created_at"`
 	Article   string `json:"article"`
 	HitCount  int    `json:"hit_count"`
+	GroupID   string `json:"group_id"`
+}
+
+type AIRecipe struct {
+	Name        string        `json:"name" description:"The name of the recipe."`
+	Ingredients []*Ingredient `json:"ingredients" description:"The ingredients used in the recipe."`
+	Directions  []*Direction  `json:"directions" description:"The steps to make the recipe."`
+	Equipment   []*Equipment  `json:"equipment" description:"The equipment used while making the recipe."`
+}
+
+func AIRecipeToModel(ar AIRecipe, id, domain string, ts youtube.VideoTranscript) Recipe {
+	var r Recipe
+	r.Model.ID = id
+	r.Name = ar.Name
+	r.URL = fmt.Sprintf("https://www.youtube.com/watch?v=%s", id)
+
+	for i, ing := range ar.Ingredients {
+		r.Ingredients = append(r.Ingredients, ing)
+		r.Ingredients[i].ID = uuid.NewString()
+		r.Ingredients[i].RecipeID = r.Model.ID
+	}
+
+	for i, dir := range ar.Directions {
+		r.Directions = append(r.Directions, dir)
+		r.Directions[i].ID = uuid.NewString()
+		r.Directions[i].RecipeID = r.Model.ID
+	}
+
+	for i, eq := range ar.Equipment {
+		r.Equipment = append(r.Equipment, eq)
+		r.Equipment[i].ID = uuid.NewString()
+		r.Equipment[i].RecipeID = r.Model.ID
+	}
+
+	r.Domain = domain
+	r.Transcript = MakeJSONField(ts)
+	return r
 }

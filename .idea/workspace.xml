@@ -5,13 +5,24 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/ainet/ainet.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2/storage_v2/_src_/schema/main.uQUzAA.meta" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2/storage_v2/_src_/schema/main.uQUzAA.meta" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ai/ai.go" beforeDir="false" afterPath="$PROJECT_DIR$/ai/ai.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai.go" beforeDir="false" afterPath="$PROJECT_DIR$/ai.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/editor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/editor.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/static/CodeBlock.js" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/CodeBlock.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/static/CodeBlock.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/CodeBlock.js.map" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/static/editor.js" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/editor.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/breadchris/static/editor.js.map" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/static/editor.js.map" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/db.go" beforeDir="false" afterPath="$PROJECT_DIR$/db/db.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/models.go" beforeDir="false" afterPath="$PROJECT_DIR$/models/models.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/recipe.go" beforeDir="false" afterPath="$PROJECT_DIR$/recipe.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/recipe_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/recipe_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-models.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-models.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/symbol.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/symbol.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/yt_transcript2.py" beforeDir="false" afterPath="$PROJECT_DIR$/yt_transcript2.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -92,7 +103,7 @@
       <recent name="$PROJECT_DIR$/card" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Test.TestIngestChannels in github.com/breadchris/share">
+  <component name="RunManager" selected="Go Build.share">
     <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
       <module name="share" />
       <working_directory value="$PROJECT_DIR$" />
@@ -199,8 +210,8 @@
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Go Test.TestIngestChannels in github.com/breadchris/share" />
         <item itemvalue="Go Test.TestCopyRecipesBetweenDatabases in github.com/breadchris/share" />
+        <item itemvalue="Go Test.TestIngestChannels in github.com/breadchris/share" />
         <item itemvalue="Go Test.TestPrompt in github.com/breadchris/share" />
         <item itemvalue="Go Test.TestRecipes in github.com/breadchris/share" />
         <item itemvalue="Go Test.TestRecipeIndexSmitten in github.com/breadchris/share" />
@@ -242,6 +253,7 @@
       <workItem from="1745987094315" duration="27657000" />
       <workItem from="1747107407914" duration="36007000" />
       <workItem from="1747887531471" duration="1725000" />
+      <workItem from="1747973023098" duration="22201000" />
     </task>
     <servers />
   </component>
@@ -250,5 +262,16 @@
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/main.go</url>
+          <line>82</line>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

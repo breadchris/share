@@ -9,12 +9,10 @@ import (
 	"github.com/breadchris/share/db"
 	"github.com/breadchris/share/deps"
 	"github.com/breadchris/share/models"
-	"github.com/google/uuid"
 	"github.com/kkdai/youtube/v2"
 	"github.com/samber/lo"
 	"github.com/sashabaranov/go-openai"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 	"io"
 	"io/fs"
 	"os"
@@ -257,9 +255,6 @@ func TestIngestChannels(t *testing.T) {
 	//yt := docs.WithCollection("youtube")
 
 	for _, channel := range channels {
-		if channel.Name != "Mr. Make It Happen" {
-			continue
-		}
 		fmt.Printf("Name: %s\nDescription: %s\nURL: %s\n\n", channel.Name, channel.Description, channel.URL)
 		//proxyFunc, err := CreateProxyFunction(d.Config.Proxy.URL, d.Config.Proxy.Username, d.Config.Proxy.Password)
 		//if err != nil {
@@ -287,32 +282,33 @@ func TestIngestChannels(t *testing.T) {
 			continue
 		}
 
-		for _, v := range playlist.Videos[:1] {
+		for _, v := range playlist.Videos {
 			//if v.ID != "-Ud2cqoB7gE" {
 			//	continue
 			//}
 			var existingRecipe models.Recipe
 			err = d.DB.Where("id = ?", v.ID).First(&existingRecipe).Error
 			if err == nil {
-				err := d.DB.Transaction(func(tx *gorm.DB) error {
-					if err := tx.Where("recipe_id = ?", v.ID).Unscoped().Delete(&models.Ingredient{}).Error; err != nil {
-						return err
-					}
-					if err := tx.Where("recipe_id = ?", v.ID).Unscoped().Delete(&models.Direction{}).Error; err != nil {
-						return err
-					}
-					if err := tx.Where("recipe_id = ?", v.ID).Unscoped().Delete(&models.Equipment{}).Error; err != nil {
-						return err
-					}
-					if err := tx.Where("id = ?", v.ID).Unscoped().Delete(&models.Recipe{}).Error; err != nil {
-						return err
-					}
-					return nil
-				})
-				if err != nil {
-					fmt.Printf("Error during transaction: %v\n", err)
-					return
-				}
+				continue
+				//err := d.DB.Transaction(func(tx *gorm.DB) error {
+				//	if err := tx.Where("recipe_id = ?", v.ID).Unscoped().Delete(&models.Ingredient{}).Error; err != nil {
+				//		return err
+				//	}
+				//	if err := tx.Where("recipe_id = ?", v.ID).Unscoped().Delete(&models.Direction{}).Error; err != nil {
+				//		return err
+				//	}
+				//	if err := tx.Where("recipe_id = ?", v.ID).Unscoped().Delete(&models.Equipment{}).Error; err != nil {
+				//		return err
+				//	}
+				//	if err := tx.Where("id = ?", v.ID).Unscoped().Delete(&models.Recipe{}).Error; err != nil {
+				//		return err
+				//	}
+				//	return nil
+				//})
+				//if err != nil {
+				//	fmt.Printf("Error during transaction: %v\n", err)
+				//	return
+				//}
 			}
 
 			rs := RecipeState{
@@ -328,48 +324,29 @@ func TestIngestChannels(t *testing.T) {
 			}
 			println("Recipe Name:", vd.Title)
 
-			var prompt string
-			for _, tr := range vd.Transcript {
-				prompt += fmt.Sprintf("[%d - %d] %s\n", tr.StartMs/1000, (tr.StartMs+tr.Duration)/1000, tr.Text)
+			//var prompt string
+			//for _, tr := range vd.Transcript {
+			//	prompt += fmt.Sprintf("[%d - %d] %s\n", tr.StartMs/1000, (tr.StartMs+tr.Duration)/1000, tr.Text)
+			//}
+			//
+			//ct := ai.WithContextID(ctx, v.ID)
+			//ar, err := dataToRecipe(ct, d, prompt)
+			//if err != nil {
+			//	fmt.Printf("Error: %v\n", err)
+			//	continue
+			//}
+			//
+			//r := models.AIRecipeToModel(ar, v.ID, channel.Name, vd.Transcript)
+
+			r := models.Recipe{
+				Model: models.Model{
+					ID: v.ID,
+				},
+				Name:       vd.Title,
+				Domain:     channel.Name,
+				URL:        fmt.Sprintf("https://www.youtube.com/watch?v=%s", v.ID),
+				Transcript: models.MakeJSONField(vd.Transcript),
 			}
-
-			var (
-				ar AIRecipe
-			)
-
-			ct := ai.WithContextID(ctx, v.ID)
-			ar, err = dataToRecipe(ct, d, prompt)
-			if err != nil {
-				fmt.Printf("Error: %v\n", err)
-				continue
-			}
-
-			var r models.Recipe
-			r.Model.ID = v.ID
-			r.Name = ar.Name
-			r.URL = fmt.Sprintf("https://www.youtube.com/watch?v=%s", v.ID)
-
-			for i, ing := range ar.Ingredients {
-				r.Ingredients = append(r.Ingredients, ing)
-				r.Ingredients[i].ID = uuid.NewString()
-				r.Ingredients[i].RecipeID = r.Model.ID
-			}
-
-			for i, dir := range ar.Directions {
-				r.Directions = append(r.Directions, dir)
-				r.Directions[i].ID = uuid.NewString()
-				r.Directions[i].RecipeID = r.Model.ID
-			}
-
-			for i, eq := range ar.Equipment {
-				r.Equipment = append(r.Equipment, eq)
-				r.Equipment[i].ID = uuid.NewString()
-				r.Equipment[i].RecipeID = r.Model.ID
-			}
-
-			r.Domain = channel.Name
-			r.Transcript = models.MakeJSONField(vd.Transcript)
-
 			err = d.DB.Create(&r).Error
 			if err != nil {
 				fmt.Printf("Error saving recipe: %v\n", err)
@@ -431,7 +408,7 @@ func TestCopyRecipesBetweenDatabases(t *testing.T) {
 	assert.NotNil(t, db2)
 
 	// Query all rows from the 'recipes' table in the first database
-	var recipes []models.Equipment
+	var recipes []models.Recipe
 	err := db1.Find(&recipes).Error
 	assert.NoError(t, err)
 	assert.NotEmpty(t, recipes)
@@ -440,13 +417,13 @@ func TestCopyRecipesBetweenDatabases(t *testing.T) {
 	for _, recipe := range recipes {
 		// It's assumed that the Recipe struct has the same structure in both databases
 		// Insert the recipe into db2
-		err := db2.Create(&recipe).Error
+		err := db2.Where("id = ?", recipe.ID).FirstOrCreate(&recipe).Error
 		assert.NoError(t, err, "Failed to insert recipe into the second database")
 	}
 
 	// Verify that the rows were successfully copied
 	var count int64
-	err = db2.Model(&models.Equipment{}).Count(&count).Error
+	err = db2.Model(&models.Recipe{}).Count(&count).Error
 	assert.NoError(t, err)
 	assert.Equal(t, int64(len(recipes)), count, "Recipe count mismatch between databases")
 }

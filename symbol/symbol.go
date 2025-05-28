@@ -4,6 +4,7 @@
 //go:generate yaegi extract github.com/breadchris/share/calendar
 //go:generate yaegi extract github.com/breadchris/share/config
 //go:generate yaegi extract github.com/breadchris/share/llm
+//go:generate yaegi extract github.com/breadchris/share/ai
 //go:generate yaegi extract github.com/breadchris/share/session
 //go:generate yaegi extract github.com/breadchris/share/breadchris/posts
 //go:generate yaegi extract github.com/gosimple/slug

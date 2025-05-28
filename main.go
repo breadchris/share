@@ -9,6 +9,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/ai"
+	"github.com/breadchris/share/ainet"
 	"github.com/breadchris/share/list"
 	"github.com/breadchris/share/op"
 	"github.com/breadchris/share/registry"
@@ -78,11 +80,14 @@ func startXCTF(port int) error {
 	oai := openai.NewClient(appConfig.OpenAIKey)
 	docs := NewSqliteDocumentStore("data/docs.db")
 
+	aip := ai.New(appConfig, db)
+
 	p := func(p string, f func(d deps2.Deps) *http.ServeMux) {
 		deps := deps2.Deps{
 			DB:      db,
 			Docs:    docs,
 			Session: s,
+			AIProxy: aip,
 			AI:      oai,
 			Config:  appConfig,
 			BaseURL: func() string {
@@ -163,11 +168,13 @@ func startServer(useTLS bool, port int) {
 	oai := openai.NewClient(appConfig.OpenAIKey)
 	lm := leaps.RegisterRoutes(leaps.NewLogger())
 	docs := NewSqliteDocumentStore("data/docs.db")
+	aip := ai.New(appConfig, db)
 	deps := deps2.Deps{
 		DB:                db,
 		Docs:              docs,
 		Session:           s,
 		Leaps:             lm,
+		AIProxy:           aip,
 		AI:                oai,
 		Config:            appConfig,
 		WebsocketRegistry: reg,
@@ -237,6 +244,7 @@ func startServer(useTLS bool, port int) {
 	p("/websocket", interpreted(func(deps deps2.Deps) *http.ServeMux {
 		return socket.WebsocketUI(reg)
 	}))
+	p("/ainet", interpreted(ainet.New))
 	p("/test", interpreted(test.New))
 	p("/user", interpreted(user.New))
 	p("/paint", interpreted(paint.New))

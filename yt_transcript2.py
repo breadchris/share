@@ -25,7 +25,7 @@ def get(url):
             headers=dict(resp.getheaders()),
         )
 
-CACHE_DIR = '/tmp/cache'
+CACHE_DIR = 'data/yt'
 
 def ensure_cache_dir():
     if not os.path.exists(CACHE_DIR):
@@ -385,6 +385,7 @@ def main():
 
     output = {
         "title": video_info.get("title", ""),
+        "channel": video_info.get("channel", ""),
         "transcript": converted_caption_data,
     }
     print(json.dumps(output, ensure_ascii=False, indent=2))

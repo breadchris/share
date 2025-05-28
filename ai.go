@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/breadchris/share/deps"
@@ -52,52 +51,52 @@ func NewAI(d deps.Deps) *http.ServeMux {
 		}
 	})
 
-	d.WebsocketRegistry.Register2("chat", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
-		tools := getTools(d, hub)
-		respMsg := GptToolCall(d, message, hub, tools)
-		respBubble := ""
-		msgs := strings.Split(respMsg, "\n")
-		msgNodes := []*Node{}
-		for _, msg := range msgs {
-			msgNodes = append(msgNodes, Div(T(msg)))
-		}
-
-		if respMsg != "" {
-			respBubble = Div(
-				Id("chat"),
-				Attr("hx-swap-oob", "beforeend"),
-				Div(
-					Class("chat chat-end"),
-					Div(
-						Class("chat-bubble"),
-						Ch(msgNodes),
-					),
-				),
-			).Render()
-		}
-
-		cmdMsgs := []string{
-			respBubble,
-			Div(
-				Id("chat"),
-				Attr("hx-swap-oob", "beforeend"),
-				Div(
-					Class("chat chat-start"),
-					Div(
-						Class("chat-bubble"),
-						T(message),
-					),
-				),
-			).Render(),
-		}
-
-		for _, cmdMsg := range cmdMsgs {
-			hub.Broadcast <- websocket.Message{
-				Room:    "airoom",
-				Content: []byte(cmdMsg),
-			}
-		}
-	})
+	//d.WebsocketRegistry.Register2("chat", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
+	//	tools := getTools(d, hub)
+	//	respMsg := GptToolCall(d, message, hub, tools)
+	//	respBubble := ""
+	//	msgs := strings.Split(respMsg, "\n")
+	//	msgNodes := []*Node{}
+	//	for _, msg := range msgs {
+	//		msgNodes = append(msgNodes, Div(T(msg)))
+	//	}
+	//
+	//	if respMsg != "" {
+	//		respBubble = Div(
+	//			Id("chat"),
+	//			Attr("hx-swap-oob", "beforeend"),
+	//			Div(
+	//				Class("chat chat-end"),
+	//				Div(
+	//					Class("chat-bubble"),
+	//					Ch(msgNodes),
+	//				),
+	//			),
+	//		).Render()
+	//	}
+	//
+	//	cmdMsgs := []string{
+	//		respBubble,
+	//		Div(
+	//			Id("chat"),
+	//			Attr("hx-swap-oob", "beforeend"),
+	//			Div(
+	//				Class("chat chat-start"),
+	//				Div(
+	//					Class("chat-bubble"),
+	//					T(message),
+	//				),
+	//			),
+	//		).Render(),
+	//	}
+	//
+	//	for _, cmdMsg := range cmdMsgs {
+	//		hub.Broadcast <- websocket.Message{
+	//			Room:    "airoom",
+	//			Content: []byte(cmdMsg),
+	//		}
+	//	}
+	//})
 	return mux
 }
 

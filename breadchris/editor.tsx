@@ -340,12 +340,12 @@ export const Editor: FC<EditorProps> = ({ props }) => {
 
     useEffect(() => {
         // TODO breadchris how to handle loading from storage when blocknote is provided
-        if (!props?.post?.Blocknote) {
+        // if (!props?.post?.Blocknote) {
             console.log("loading from storage");
             loadFromStorage().then((content) => {
                 setInitialContent(content);
             });
-        }
+        // }
     }, []);
     // Creates a new editor instance.
     // We use useMemo + createBlockNoteEditor instead of useCreateBlockNote so we
@@ -354,6 +354,8 @@ export const Editor: FC<EditorProps> = ({ props }) => {
         if (initialContent === "loading") { // || (props?.provider_url && providerRef.current === undefined)) {
             return undefined;
         }
+
+        console.log("Creating editor with initial content", initialContent);
 
         // TODO breadchris when content is loaded, set the form inputs
         const e = BlockNoteEditor.create({
@@ -368,22 +370,22 @@ export const Editor: FC<EditorProps> = ({ props }) => {
                 });
                 return await ret.text();
             },
-            collaboration: {
-                provider: providerRef.current,
-                fragment: doc.getXmlFragment("blocknote"),
-                user: {
-                    name: props?.username || "Anonymous",
-                }
-            },
+            // collaboration: {
+            //     provider: providerRef.current,
+            //     fragment: doc.getXmlFragment("blocknote"),
+            //     user: {
+            //         name: props?.username || "Anonymous",
+            //     }
+            // },
             schema: schema,
         });
 
         saveToStorage(e.document);
 
         (async () => {
-            // document.getElementById("html").value = await e.blocksToFullHTML(e.document);
-            // document.getElementById("markdown").value = await e.blocksToMarkdownLossy()
-            // document.getElementById("blocknote").value = JSON.stringify(e.document);
+            document.getElementById("html").value = await e.blocksToFullHTML(e.document);
+            document.getElementById("markdown").value = await e.blocksToMarkdownLossy()
+            document.getElementById("blocknote").value = JSON.stringify(e.document);
         })();
 
         return e;
@@ -398,10 +400,11 @@ export const Editor: FC<EditorProps> = ({ props }) => {
             editor={editor}
             sideMenu={false}
             onChange={async () => {
+                console.log(editor.document)
                 saveToStorage(editor.document);
-                // document.getElementById("html").value = await editor.blocksToFullHTML(editor.document);
-                // document.getElementById("markdown").value = await editor.blocksToMarkdownLossy()
-                // document.getElementById("blocknote").value = JSON.stringify(editor.document);
+                document.getElementById("html").value = await editor.blocksToFullHTML(editor.document);
+                document.getElementById("markdown").value = await editor.blocksToMarkdownLossy()
+                document.getElementById("blocknote").value = JSON.stringify(editor.document);
             }}
             slashMenu={false}
         >
@@ -413,8 +416,6 @@ export const Editor: FC<EditorProps> = ({ props }) => {
                         dragHandleMenu={(props) => (
                             <DragHandleMenu {...props}>
                                 <RemoveBlockItem {...props}>Delete</RemoveBlockItem>
-                                {/* Item which resets the hovered block's type. */}
-                                <ResetBlockTypeItem {...props}>Reset Type</ResetBlockTypeItem>
                             </DragHandleMenu>
                         )}
                     />

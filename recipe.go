@@ -7,16 +7,20 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/breadchris/share/ai"
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/models"
 	"github.com/kkdai/youtube/v2"
 	"github.com/sashabaranov/go-openai"
 	"github.com/sashabaranov/go-openai/jsonschema"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/parser"
 	"golang.org/x/net/html"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -57,6 +61,45 @@ type RecipeState struct {
 	Transcript youtube.VideoTranscript `json:"transcript"`
 }
 
+/*
+Ingredients Complexity (1-5 points)
+
+	1: Common, everyday ingredients found in most kitchens
+	3: A mix of common and a few specialty ingredients
+	5: Requires multiple specialty or hard-to-find ingredients
+
+Preparation Skills (1-5 points)
+
+	1: Basic skills like mixing, spreading, or chopping simple ingredients
+	3: Intermediate skills like sautéing, boiling, or baking with some precision
+	5: Advanced skills like tempering, proofing dough, or using specialized techniques
+
+Equipment Needed (1-5 points)
+
+	1: No special equipment, just basic utensils (e.g., knife, bowl, spoon)
+	3: Requires common kitchen tools like a blender, oven, or stovetop
+	5: Needs specialized equipment like a sous-vide machine, stand mixer, or a food processor
+
+Time Required (1-5 points)
+
+	1: Ready in under 15 minutes with minimal waiting
+	3: Takes between 30 minutes to an hour, including some passive time
+	5: Requires more than an hour, possibly with multiple steps or resting periods
+
+Number of Steps (1-5 points)
+
+	1: Only a few simple steps, like mix and serve
+	3: Moderate number of steps, including some sequential processes
+	5: Many steps, including complex sequences or multi-stage cooking
+*/
+type RecipeComplexity struct {
+	Ingredients int `json:"ingredients"` // 1-5: ingredient accessibility
+	Preparation int `json:"preparation"` // 1-5: required cooking skills
+	Equipment   int `json:"equipment"`   // 1-5: kitchen tools needed
+	Time        int `json:"time"`        // 1-5: estimated time
+	Steps       int `json:"steps"`       // 1-5: number and intricacy of steps
+}
+
 type Playlist struct {
 	ID     string   `json:"id"`
 	Name   string   `json:"name"`
@@ -71,6 +114,7 @@ type Channel struct {
 
 type Video struct {
 	Title      string                  `json:"title"`
+	Channel    string                  `json:"channel"`
 	Transcript youtube.VideoTranscript `json:"transcript"`
 }
 
@@ -118,82 +162,6 @@ func getVideo(d deps.Deps, rs RecipeState) (*Video, error) {
 		return nil, err
 	}
 	return &video, nil
-}
-
-func getRecipe(d deps.Deps, ctx context.Context, rs RecipeState) error {
-	video, err := getVideo(d, rs)
-	if err != nil {
-		return err
-	}
-
-	rs.Transcript = video.Transcript
-
-	println("generating recipe")
-	nr, err := transcriptToRecipe(ctx, d, video.Transcript)
-	if err != nil {
-		return err
-	}
-
-	nr.Name = video.Title
-	// TODO breadchris ID gets overridden by AI call
-	id := rs.Recipe.ID
-	rs.Recipe = nr
-	rs.Recipe.ID = id
-	return nil
-}
-
-func transcriptToRecipe(ctx context.Context, d deps.Deps, ts youtube.VideoTranscript) (Recipe, error) {
-	var rec Recipe
-
-	var prompt string
-	for _, t := range ts {
-		prompt += fmt.Sprintf("[%d - %d] %s\n", t.StartMs/1000, (t.StartMs+t.Duration)/1000, t.Text)
-	}
-
-	schema, err := jsonschema.GenerateSchemaForType(rec)
-	if err != nil {
-		return rec, err
-	}
-
-	resp, err := d.AI.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
-		Model: openai.GPT4Dot1Nano,
-		Messages: []openai.ChatCompletionMessage{
-			{
-				Role:    openai.ChatMessageRoleSystem,
-				Content: transcriptPrompt,
-			},
-			{
-				Role:    openai.ChatMessageRoleUser,
-				Content: prompt,
-			},
-		},
-		Tools: []openai.Tool{
-			{
-				Type: "function",
-				Function: &openai.FunctionDefinition{
-					Name:        "createRecipe",
-					Description: "Function to call when creating a recipe.",
-					Parameters:  schema,
-				},
-			},
-		},
-	})
-	if err != nil {
-		return rec, err
-	}
-
-	for _, tc := range resp.Choices[0].Message.ToolCalls {
-		if ok := tc.Function.Name == "createRecipe"; ok {
-			println("found function")
-			err = json.Unmarshal([]byte(tc.Function.Arguments), &rec)
-			if err != nil {
-				return rec, err
-			}
-			return rec, nil
-		}
-	}
-	println(resp.Choices[0].Message.Content)
-	return rec, errors.New("failed to generate recipe")
 }
 
 type Nutrients struct {
@@ -275,6 +243,53 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 		}
 		return n, nil
 	}
+
+	m.HandleFunc("/ai", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			render(w, r, DefaultLayout(
+				Div(
+					Class("container mx-auto p-8"),
+					H1(Class("text-2xl font-semibold"), T("AI Prompt")),
+					Form(
+						HxPost("/ai"),
+						HxTarget("#results"),
+						Input(Type("text"), Name("prompt"), Class("input"), Placeholder("Enter your prompt here")),
+						Button(Class("btn"), T("Submit")),
+					),
+					Div(Id("results")),
+				),
+			))
+		case http.MethodPost:
+			prompt := r.FormValue("prompt")
+			if prompt == "" {
+				http.Error(w, "missing prompt", http.StatusBadRequest)
+				return
+			}
+
+			resp, err := d.AI.CreateChatCompletion(r.Context(), openai.ChatCompletionRequest{
+				Model: openai.GPT3Dot5Turbo,
+				Messages: []openai.ChatCompletionMessage{
+					{Role: openai.ChatMessageRoleUser, Content: prompt},
+				},
+			})
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			md := goldmark.New()
+			ctx := parser.NewContext()
+
+			var c bytes.Buffer
+			if err := md.Convert([]byte(resp.Choices[0].Message.Content), &c, parser.WithContext(ctx)); err != nil {
+				log.Println("Failed to convert markdown", err)
+				return
+			}
+
+			render(w, r, Div(Raw(c.String())))
+		}
+	})
 
 	m.HandleFunc("/upload", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -753,6 +768,11 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 
 	m.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
+		if id == "favicon.ico" {
+			// TODO breadchris lol
+			//http.ServeFile(w, r, "static/favicon.ico")
+			return
+		}
 
 		renderRecipe := func(rs models.Recipe, w http.ResponseWriter, r *http.Request) {
 			var (
@@ -924,8 +944,71 @@ Array.from(checkables).forEach((element) => {
 
 		switch r.Method {
 		case http.MethodPut:
-			// TODO allow for recipe to be updated
-			//renderRecipe(re, w, r)
+			// TODO breadchris this could be destructive to edits already made to the recipe
+			var (
+				rc         models.Recipe
+				transcript youtube.VideoTranscript
+				channel    string
+			)
+			err = d.DB.Where("id = ?", id).First(&rc).Error
+			if err == nil {
+				println("found recipe in db", id)
+				transcript = rc.Transcript.Data
+				channel = rc.Domain
+				err := d.DB.Transaction(func(tx *gorm.DB) error {
+					if err := tx.Where("recipe_id = ?", id).Unscoped().Delete(&models.Ingredient{}).Error; err != nil {
+						return err
+					}
+					if err := tx.Where("recipe_id = ?", id).Unscoped().Delete(&models.Direction{}).Error; err != nil {
+						return err
+					}
+					if err := tx.Where("recipe_id = ?", id).Unscoped().Delete(&models.Equipment{}).Error; err != nil {
+						return err
+					}
+					if err := tx.Where("id = ?", id).Unscoped().Delete(&models.Recipe{}).Error; err != nil {
+						return err
+					}
+					return nil
+				})
+				if err != nil {
+					fmt.Printf("Error during transaction: %v\n", err)
+					return
+				}
+			} else {
+				// TODO if cache miss, use the video ID to fetch the video and transcript
+			}
+
+			println("getting video for recipe ID:", id)
+			rs := RecipeState{
+				Recipe: Recipe{
+					ID: id,
+				},
+			}
+			vd, err := getVideo(d, rs)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			transcript = vd.Transcript
+			channel = vd.Channel
+
+			var prompt string
+			for _, tr := range transcript {
+				prompt += fmt.Sprintf("[%d - %d] %s\n", tr.StartMs/1000, (tr.StartMs+tr.Duration)/1000, tr.Text)
+			}
+
+			ct := ai.WithContextID(ctx, id)
+			ar, err := dataToRecipe(ct, d, prompt)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			mr := models.AIRecipeToModel(ar, id, channel, transcript)
+			if err := d.DB.Save(&mr).Error; err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 			return
 		case http.MethodDelete:
 			// TODO delete recipe
@@ -966,18 +1049,18 @@ Array.from(checkables).forEach((element) => {
 				DefaultLayout(
 					Div(
 						Class("mt-8 text-center mx-auto flex flex-col items-center"),
-						Div(
-							Class("flex flex-row space-x-4 mb-8 text-gray-500"),
-							A(Href(routes.Playlist), T("playlist")),
-							A(Href(routes.Food), T("food")),
-						),
-						P(Class("text-lg"), T("make a recipe")),
-						Form(
-							Method("POST"),
-							Action("/"),
-							Input(Class("input"), Name("url"), Type("text"), Placeholder("Enter YouTube video")),
-							Button(Class("btn"), T("Generate")),
-						),
+						//Div(
+						//	Class("flex flex-row space-x-4 mb-8 text-gray-500"),
+						//	A(Href(routes.Playlist), T("playlist")),
+						//	A(Href(routes.Food), T("food")),
+						//),
+						//P(Class("text-lg"), T("make a recipe")),
+						//Form(
+						//	Method("POST"),
+						//	Action("/"),
+						//	Input(Class("input"), Name("url"), Type("text"), Placeholder("Enter YouTube video")),
+						//	Button(Class("btn"), T("Generate")),
+						//),
 						Div(Class("mt-8 container mx-auto"), Ch(func() []*Node {
 							var recp []*Node
 							for _, v := range docs {
@@ -1004,6 +1087,12 @@ Array.from(checkables).forEach((element) => {
 				return
 			}
 
+			var cl []models.PromptContext
+			if err := d.DB.Where("context_id = ?", id).Find(&cl).Error; err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
 			debug := r.URL.Query().Get("debug")
 			if debug == "true" {
 				// TODO debug mode
@@ -1013,20 +1102,48 @@ Array.from(checkables).forEach((element) => {
 						// transcript
 						Class("container mx-auto p-8 flex flex-col"),
 						H1(Class("text-2xl font-semibold"), T("Debug")),
-						Ch(func() []*Node {
-							var items []*Node
-							//prompt += fmt.Sprintf("[%d - %d] %s\n", t.StartMs/1000, (t.StartMs+t.Duration)/1000, t.Text)
-							for _, rc := range re.Transcript.Data {
-								items = append(items, Div(
-									Class("flex items-center"),
-									Div(
-										Class("flex-1"),
-										T(fmt.Sprintf("[%d - %d] %s\n", rc.StartMs/1000, (rc.StartMs+rc.Duration)/1000, rc.Text)),
-									),
-								))
-							}
-							return items
-						}()),
+						Button(Class("btn"), T("Re-recipe"), HxPut("/"+id), HxTarget("#status")),
+						Div(Id("status"), Class("text-gray-500")),
+						RenderTabs(
+							Tab{
+								Title: "Transcript",
+								Content: Div(
+									Ch(func() []*Node {
+										var items []*Node
+										//prompt += fmt.Sprintf("[%d - %d] %s\n", t.StartMs/1000, (t.StartMs+t.Duration)/1000, t.Text)
+										for _, rc := range re.Transcript.Data {
+											items = append(items, Div(
+												Class("flex items-center"),
+												Div(
+													Class("flex-1"),
+													T(fmt.Sprintf("[%d - %d] %s\n", rc.StartMs/1000, (rc.StartMs+rc.Duration)/1000, rc.Text)),
+												),
+											))
+										}
+										return items
+									}()),
+								),
+							},
+							Tab{
+								Title: "Prompt",
+								Content: Div(
+									Ch(func() []*Node {
+										var items []*Node
+										//prompt += fmt.Sprintf("[%d - %d] %s\n", t.StartMs/1000, (t.StartMs+t.Duration)/1000, t.Text)
+										for _, rc := range cl {
+											items = append(items, Div(
+												Class("flex items-center"),
+												Div(
+													Class("flex-1"),
+													T(rc.Request.Data.Messages[0].Content),
+												),
+											))
+										}
+										return items
+									}()),
+								),
+							},
+						),
 					),
 				))
 				return
@@ -1952,16 +2069,9 @@ Directions:
 451 Serve with extra grated Parmesan cheese on the side, if desired.
 `
 
-type AIRecipe struct {
-	Name        string               `json:"name" description:"The name of the recipe."`
-	Ingredients []*models.Ingredient `json:"ingredients" description:"The ingredients used in the recipe."`
-	Directions  []*models.Direction  `json:"directions" description:"The steps to make the recipe."`
-	Equipment   []*models.Equipment  `json:"equipment" description:"The equipment used while making the recipe."`
-}
-
 // TODO allow multiple recipes
-func dataToRecipe(ctx context.Context, d deps.Deps, data string) (AIRecipe, error) {
-	var rec AIRecipe
+func dataToRecipe(ctx context.Context, d deps.Deps, data string) (models.AIRecipe, error) {
+	var rec models.AIRecipe
 
 	prompt := data
 
