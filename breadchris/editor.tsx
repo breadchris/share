@@ -242,6 +242,7 @@ export const Editor: FC<EditorProps> = ({ props }) => {
             return matchedString.split(/( {4}|\t)/).filter(Boolean).length;
         }
 
+
         try {
             const res = contentService.infer({
                 prompt,

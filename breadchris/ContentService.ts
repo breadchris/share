@@ -69,6 +69,7 @@ export class ContentService {
                     throw error;
                 }
             }
+
         } catch (err) {
             if (err instanceof DOMException && err.name === "AbortError") {
                 return;
@@ -82,4 +83,4 @@ export class ContentService {
     }
 }
 
-export const contentService = new ContentService("ws://localhost:8080/llm/stream");
+export const contentService = new ContentService("wss://justshare.io/llm/stream");

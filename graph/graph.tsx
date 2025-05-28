@@ -54,7 +54,6 @@ import {YMap} from "yjs/dist/src/types/YMap";
 import {JsonValue} from "@bufbuild/protobuf";
 import {ContentService} from "../breadchris/ContentService";
 import {FileText, Link2, Image, Network, UploadCloud, X, Sparkles} from "lucide-react";
-import {setState} from "reveal.js";
 
 interface AppState {
     runningAI: boolean;
