@@ -43,6 +43,7 @@ func init() {
 		"ScanInitialized":                  reflect.ValueOf(gorm.ScanInitialized),
 		"ScanOnConflictDoNothing":          reflect.ValueOf(gorm.ScanOnConflictDoNothing),
 		"ScanUpdate":                       reflect.ValueOf(gorm.ScanUpdate),
+		"WithResult":                       reflect.ValueOf(gorm.WithResult),
 
 		// type definitions
 		"Association":                   reflect.ValueOf((*gorm.Association)(nil)),
@@ -56,11 +57,13 @@ func init() {
 		"ErrorTranslator":               reflect.ValueOf((*gorm.ErrorTranslator)(nil)),
 		"GetDBConnector":                reflect.ValueOf((*gorm.GetDBConnector)(nil)),
 		"Index":                         reflect.ValueOf((*gorm.Index)(nil)),
+		"JoinBuilder":                   reflect.ValueOf((*gorm.JoinBuilder)(nil)),
 		"Migrator":                      reflect.ValueOf((*gorm.Migrator)(nil)),
 		"Model":                         reflect.ValueOf((*gorm.Model)(nil)),
 		"Option":                        reflect.ValueOf((*gorm.Option)(nil)),
 		"ParamsFilter":                  reflect.ValueOf((*gorm.ParamsFilter)(nil)),
 		"Plugin":                        reflect.ValueOf((*gorm.Plugin)(nil)),
+		"PreloadBuilder":                reflect.ValueOf((*gorm.PreloadBuilder)(nil)),
 		"PreparedStmtDB":                reflect.ValueOf((*gorm.PreparedStmtDB)(nil)),
 		"PreparedStmtTX":                reflect.ValueOf((*gorm.PreparedStmtTX)(nil)),
 		"Rows":                          reflect.ValueOf((*gorm.Rows)(nil)),
@@ -72,7 +75,6 @@ func init() {
 		"SoftDeleteUpdateClause":        reflect.ValueOf((*gorm.SoftDeleteUpdateClause)(nil)),
 		"Statement":                     reflect.ValueOf((*gorm.Statement)(nil)),
 		"StatementModifier":             reflect.ValueOf((*gorm.StatementModifier)(nil)),
-		"Stmt":                          reflect.ValueOf((*gorm.Stmt)(nil)),
 		"TableType":                     reflect.ValueOf((*gorm.TableType)(nil)),
 		"Tx":                            reflect.ValueOf((*gorm.Tx)(nil)),
 		"TxBeginner":                    reflect.ValueOf((*gorm.TxBeginner)(nil)),
@@ -88,10 +90,12 @@ func init() {
 		"_ErrorTranslator":               reflect.ValueOf((*_gorm_io_gorm_ErrorTranslator)(nil)),
 		"_GetDBConnector":                reflect.ValueOf((*_gorm_io_gorm_GetDBConnector)(nil)),
 		"_Index":                         reflect.ValueOf((*_gorm_io_gorm_Index)(nil)),
+		"_JoinBuilder":                   reflect.ValueOf((*_gorm_io_gorm_JoinBuilder)(nil)),
 		"_Migrator":                      reflect.ValueOf((*_gorm_io_gorm_Migrator)(nil)),
 		"_Option":                        reflect.ValueOf((*_gorm_io_gorm_Option)(nil)),
 		"_ParamsFilter":                  reflect.ValueOf((*_gorm_io_gorm_ParamsFilter)(nil)),
 		"_Plugin":                        reflect.ValueOf((*_gorm_io_gorm_Plugin)(nil)),
+		"_PreloadBuilder":                reflect.ValueOf((*_gorm_io_gorm_PreloadBuilder)(nil)),
 		"_Rows":                          reflect.ValueOf((*_gorm_io_gorm_Rows)(nil)),
 		"_SavePointerDialectorInterface": reflect.ValueOf((*_gorm_io_gorm_SavePointerDialectorInterface)(nil)),
 		"_StatementModifier":             reflect.ValueOf((*_gorm_io_gorm_StatementModifier)(nil)),
@@ -231,6 +235,28 @@ func (W _gorm_io_gorm_Index) PrimaryKey() (isPrimaryKey bool, ok bool) { return 
 func (W _gorm_io_gorm_Index) Table() string                            { return W.WTable() }
 func (W _gorm_io_gorm_Index) Unique() (unique bool, ok bool)           { return W.WUnique() }
 
+// _gorm_io_gorm_JoinBuilder is an interface wrapper for JoinBuilder type
+type _gorm_io_gorm_JoinBuilder struct {
+	IValue  interface{}
+	WNot    func(query interface{}, args ...interface{}) gorm.JoinBuilder
+	WOmit   func(a0 ...string) gorm.JoinBuilder
+	WOr     func(query interface{}, args ...interface{}) gorm.JoinBuilder
+	WSelect func(a0 ...string) gorm.JoinBuilder
+	WWhere  func(query interface{}, args ...interface{}) gorm.JoinBuilder
+}
+
+func (W _gorm_io_gorm_JoinBuilder) Not(query interface{}, args ...interface{}) gorm.JoinBuilder {
+	return W.WNot(query, args...)
+}
+func (W _gorm_io_gorm_JoinBuilder) Omit(a0 ...string) gorm.JoinBuilder { return W.WOmit(a0...) }
+func (W _gorm_io_gorm_JoinBuilder) Or(query interface{}, args ...interface{}) gorm.JoinBuilder {
+	return W.WOr(query, args...)
+}
+func (W _gorm_io_gorm_JoinBuilder) Select(a0 ...string) gorm.JoinBuilder { return W.WSelect(a0...) }
+func (W _gorm_io_gorm_JoinBuilder) Where(query interface{}, args ...interface{}) gorm.JoinBuilder {
+	return W.WWhere(query, args...)
+}
+
 // _gorm_io_gorm_Migrator is an interface wrapper for Migrator type
 type _gorm_io_gorm_Migrator struct {
 	IValue               interface{}
@@ -364,6 +390,44 @@ type _gorm_io_gorm_Plugin struct {
 
 func (W _gorm_io_gorm_Plugin) Initialize(a0 *gorm.DB) error { return W.WInitialize(a0) }
 func (W _gorm_io_gorm_Plugin) Name() string                 { return W.WName() }
+
+// _gorm_io_gorm_PreloadBuilder is an interface wrapper for PreloadBuilder type
+type _gorm_io_gorm_PreloadBuilder struct {
+	IValue          interface{}
+	WLimit          func(offset int) gorm.PreloadBuilder
+	WLimitPerRecord func(num int) gorm.PreloadBuilder
+	WNot            func(query interface{}, args ...interface{}) gorm.PreloadBuilder
+	WOffset         func(offset int) gorm.PreloadBuilder
+	WOmit           func(a0 ...string) gorm.PreloadBuilder
+	WOr             func(query interface{}, args ...interface{}) gorm.PreloadBuilder
+	WOrder          func(value interface{}) gorm.PreloadBuilder
+	WSelect         func(a0 ...string) gorm.PreloadBuilder
+	WWhere          func(query interface{}, args ...interface{}) gorm.PreloadBuilder
+}
+
+func (W _gorm_io_gorm_PreloadBuilder) Limit(offset int) gorm.PreloadBuilder { return W.WLimit(offset) }
+func (W _gorm_io_gorm_PreloadBuilder) LimitPerRecord(num int) gorm.PreloadBuilder {
+	return W.WLimitPerRecord(num)
+}
+func (W _gorm_io_gorm_PreloadBuilder) Not(query interface{}, args ...interface{}) gorm.PreloadBuilder {
+	return W.WNot(query, args...)
+}
+func (W _gorm_io_gorm_PreloadBuilder) Offset(offset int) gorm.PreloadBuilder {
+	return W.WOffset(offset)
+}
+func (W _gorm_io_gorm_PreloadBuilder) Omit(a0 ...string) gorm.PreloadBuilder { return W.WOmit(a0...) }
+func (W _gorm_io_gorm_PreloadBuilder) Or(query interface{}, args ...interface{}) gorm.PreloadBuilder {
+	return W.WOr(query, args...)
+}
+func (W _gorm_io_gorm_PreloadBuilder) Order(value interface{}) gorm.PreloadBuilder {
+	return W.WOrder(value)
+}
+func (W _gorm_io_gorm_PreloadBuilder) Select(a0 ...string) gorm.PreloadBuilder {
+	return W.WSelect(a0...)
+}
+func (W _gorm_io_gorm_PreloadBuilder) Where(query interface{}, args ...interface{}) gorm.PreloadBuilder {
+	return W.WWhere(query, args...)
+}
 
 // _gorm_io_gorm_Rows is an interface wrapper for Rows type
 type _gorm_io_gorm_Rows struct {

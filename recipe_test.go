@@ -397,13 +397,16 @@ func TestPrompt(t *testing.T) {
 	}))
 }
 
+func TestLoadDB(t *testing.T) {
+	c := config.New()
+	db.LoadDB(c.SupabaseURL)
+}
+
 func TestCopyRecipesBetweenDatabases(t *testing.T) {
-	// Assuming db.LoadDB takes a config or connection string and returns a gorm.DB instance
 	c := config.New()
 	db1 := db.LoadDB(c.DB)
 	db2 := db.LoadDB(c.SupabaseURL)
 
-	// Ensure both database connections are established
 	assert.NotNil(t, db1)
 	assert.NotNil(t, db2)
 
