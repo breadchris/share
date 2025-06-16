@@ -4,12 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/breadchris/ContentService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/breadchris/ContentService.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graph/graph.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/graph/graph.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/graph/graph.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/graph/graph.js" afterDir="false" />
-    </list>
+    <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -239,7 +234,7 @@
       <workItem from="1745987094315" duration="27657000" />
       <workItem from="1747107407914" duration="36007000" />
       <workItem from="1747887531471" duration="1725000" />
-      <workItem from="1747973023098" duration="26330000" />
+      <workItem from="1747973023098" duration="26954000" />
     </task>
     <servers />
   </component>

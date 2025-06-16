@@ -9,12 +9,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/breadchris/share/ai"
-	"github.com/breadchris/share/ainet"
-	"github.com/breadchris/share/list"
-	"github.com/breadchris/share/op"
-	"github.com/breadchris/share/registry"
-	"github.com/breadchris/share/sqlnotebook"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -28,10 +22,18 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/breadchris/share/ai"
+	"github.com/breadchris/share/ainet"
+	"github.com/breadchris/share/list"
+	"github.com/breadchris/share/op"
+	"github.com/breadchris/share/registry"
+	"github.com/breadchris/share/sqlnotebook"
+
 	"github.com/breadchris/share/x"
 	"github.com/breadchris/share/xctf"
 	"github.com/evanw/esbuild/pkg/api"
 
+	"github.com/breadchris/share/bread"
 	"github.com/breadchris/share/breadchris"
 	"github.com/breadchris/share/code"
 	config2 "github.com/breadchris/share/config"
@@ -332,7 +334,24 @@ func startServer(useTLS bool, port int) {
 		}
 	})
 
-	p("", interpreted(NewRecipe))
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		host := r.Host
+		if strings.Contains(host, ":") {
+			host = strings.Split(host, ":")[0]
+		}
+		if host == "justbread.recipes" || host == "localhost" || host == "127.0.0.1" {
+			if r.URL.Path == "/" {
+				w.Header().Set("Content-Type", "text/html")
+				fmt.Fprint(w, bread.IndexHTML)
+				return
+			}
+			http.FileServer(http.Dir("bread")).ServeHTTP(w, r)
+			return
+		}
+		// fallback to interpreted(NewRecipe)
+		m := NewRecipe(deps)
+		m.ServeHTTP(w, r)
+	})
 
 	go func() {
 		paths := []string{
