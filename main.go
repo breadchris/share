@@ -86,6 +86,7 @@ func startXCTF(port int) error {
 
 	p := func(p string, f func(d deps2.Deps) *http.ServeMux) {
 		deps := deps2.Deps{
+			Dir:     os.Getenv("PWD"),
 			DB:      db,
 			Docs:    docs,
 			Session: s,
@@ -285,6 +286,9 @@ func startServer(useTLS bool, port int) {
 		return m
 	}())
 
+	// go bread.Dev()
+	p("/bread", interpreted(bread.New))
+
 	p("/repl", interpreted(func(d deps2.Deps) *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -334,25 +338,7 @@ func startServer(useTLS bool, port int) {
 		}
 	})
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		host := r.Host
-		if strings.Contains(host, ":") {
-			host = strings.Split(host, ":")[0]
-		}
-		println(host)
-		if host == "justbread.recipes" || host == "localhost" || host == "127.0.0.1" {
-			if r.URL.Path == "/" {
-				w.Header().Set("Content-Type", "text/html")
-				fmt.Fprint(w, bread.IndexHTML)
-				return
-			}
-			http.FileServer(http.Dir("bread")).ServeHTTP(w, r)
-			return
-		}
-		// fallback to interpreted(NewRecipe)
-		m := NewRecipe(deps)
-		m.ServeHTTP(w, r)
-	})
+	p("", interpreted(NewRecipe))
 
 	go func() {
 		paths := []string{

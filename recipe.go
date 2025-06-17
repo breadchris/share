@@ -7,6 +7,16 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"net/url"
+	"os"
+	"os/exec"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/breadchris/share/ai"
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
@@ -19,15 +29,6 @@ import (
 	"golang.org/x/net/html"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
-	"io"
-	"log"
-	"net/http"
-	"net/url"
-	"os"
-	"os/exec"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const (
@@ -766,13 +767,9 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 		}
 	})
 
-	m.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
+	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		println(r.URL.Path)
 		id := r.PathValue("id")
-		if id == "favicon.ico" {
-			// TODO breadchris lol
-			//http.ServeFile(w, r, "static/favicon.ico")
-			return
-		}
 
 		renderRecipe := func(rs models.Recipe, w http.ResponseWriter, r *http.Request) {
 			var (

@@ -12,6 +12,7 @@ import (
 )
 
 type Deps struct {
+	Dir               string
 	DB                *gorm.DB
 	Docs              *db.DocumentStore
 	Session           *session.SessionManager
