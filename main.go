@@ -339,6 +339,7 @@ func startServer(useTLS bool, port int) {
 		if strings.Contains(host, ":") {
 			host = strings.Split(host, ":")[0]
 		}
+		println(host)
 		if host == "justbread.recipes" || host == "localhost" || host == "127.0.0.1" {
 			if r.URL.Path == "/" {
 				w.Header().Set("Content-Type", "text/html")
