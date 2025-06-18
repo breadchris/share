@@ -3,8 +3,8 @@ import { BreadRecipe } from '../components/BreadTypes';
 import { projectId, publicAnonKey } from '../components/supabase/info';
 
 // Use centralized Supabase configuration with fallbacks
-const SUPABASE_URL = projectId ? `https://${projectId}.supabase.co` : 'https://yjqenijobcdjduaeokkd.supabase.co';
-const SUPABASE_ANON_KEY = publicAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlqcWVuaWpvYmNkamR1YWVva2tkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDczNjExNDIsImV4cCI6MjA2MjkzNzE0Mn0.NU_v9dl6dJLhMkxi2Z-Gv_8TR9pYMyddT5yNPnvRcnc';
+const SUPABASE_URL = `https://${projectId}.supabase.co`
+const SUPABASE_ANON_KEY = publicAnonKey;
 
 // Storage bucket name for bread photos
 const STORAGE_BUCKET = 'bread-photos';
@@ -961,7 +961,7 @@ export const signInWithGoogle = async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}`,
+        redirectTo: `${window.location.origin}/bread`,
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',

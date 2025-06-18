@@ -14,6 +14,7 @@ export interface BreadStep {
   title: string;
   description: string;
   duration: number; // in minutes
+  isActiveTime: boolean; // whether this step requires active attention
   temperature?: number; // in celsius
   isOptional?: boolean;
   tips?: string[];

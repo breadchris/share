@@ -23,6 +23,7 @@ import { YouTubeRecipeImporter } from "./components/recipes/YouTubeRecipeImporte
 import { OnboardingWizard } from "./components/OnboardingWizard";
 import { toast } from 'sonner';
 import { saveProgress, SaveResult, getRecipe } from "./lib/supabase";
+import { TimelineView } from "./components/TimelineView";
 import React from "react";
 import ReactDOM from "react-dom/client";
 
@@ -40,7 +41,8 @@ type AppRoute =
   | "create-recipe"
   | "ai-create-recipe"
   | "youtube-create-recipe"
-  | "edit-recipe";
+  | "edit-recipe"
+  | "timeline";
 
 function AppContent() {
   const [selectedBread, setSelectedBread] = useState<BreadRecipe | null>(null);
@@ -180,13 +182,27 @@ function AppContent() {
       }
     }
     
+    // Navigate to timeline view instead of directly to baking
+    setRoute("timeline");
+  };
+  
+  const handleBackToSelection = () => {
+    setSelectedBread(null);
+    setRoute("home");
+  };
+  
+  const handleBackToScheduling = () => {
+    setRoute("scheduling");
+  };
+  
+  const handleProceedToBaking = async () => {
     // Save initial baking progress when user begins baking
     if (user && selectedBread) {
       try {
         console.log('🚀 Beginning baking session - saving initial progress');
         
-        const bakingStartTime = startTimes.size > 0 && selectedBread.steps[0] 
-          ? startTimes.get(selectedBread.steps[0].id) || new Date()
+        const bakingStartTime = stepStartTimes.size > 0 && selectedBread.steps[0] 
+          ? stepStartTimes.get(selectedBread.steps[0].id) || new Date()
           : new Date();
         
         const totalMinutes = selectedBread.steps.reduce((acc, step) => acc + step.duration, 0);
@@ -229,15 +245,6 @@ function AppContent() {
     
     // Navigate to baking view
     setRoute("baking");
-  };
-  
-  const handleBackToSelection = () => {
-    setSelectedBread(null);
-    setRoute("home");
-  };
-  
-  const handleBackToScheduling = () => {
-    setRoute("scheduling");
   };
   
   const handleStepStart = async (stepId: string, stepIndex: number) => {
@@ -1004,6 +1011,31 @@ function AppContent() {
             )}
           </div>
         </div>
+      );
+    }
+
+    if (route === "timeline") {
+      return (
+        <>
+          <Button 
+            variant="ghost" 
+            onClick={handleBackToSelection}
+            className="mb-6 text-soft-brown hover:text-deep-olive hover:bg-dusty-rose/20"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to recipes
+          </Button>
+          
+          {selectedBread && (
+            <TimelineView
+              steps={selectedBread.steps}
+              breadName={selectedBread.name}
+              stepStartTimes={stepStartTimes}
+              onProceedToBaking={handleProceedToBaking}
+              onBackToScheduling={handleBackToScheduling}
+            />
+          )}
+        </>
       );
     }
 
