@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
@@ -56,6 +56,7 @@ export function RecipeForm({
       title: '',
       description: '',
       duration: 15,
+      isActiveTime: true,
       temperature: undefined,
       isOptional: false,
       tips: [],
@@ -73,6 +74,22 @@ export function RecipeForm({
   useEffect(() => {
     if (initialRecipe) {
       console.log('🔄 Loading recipe data for editing:', initialRecipe.name);
+      console.log('📋 Initial recipe ingredients:', initialRecipe.ingredients);
+      console.log('📋 Ingredient count:', initialRecipe.ingredients?.length);
+      
+      // Debug each ingredient in detail
+      if (initialRecipe.ingredients) {
+        initialRecipe.ingredients.forEach((ing, index) => {
+          console.log(`🥖 Ingredient ${index}:`, {
+            id: ing.id,
+            name: ing.name,
+            amount: ing.amount,
+            unit: ing.unit,
+            optional: ing.optional,
+            rawObject: ing
+          });
+        });
+      }
       
       setFormData({
         name: initialRecipe.name || '',
@@ -89,7 +106,13 @@ export function RecipeForm({
       });
 
       if (initialRecipe.ingredients && initialRecipe.ingredients.length > 0) {
+        console.log('🥖 Setting ingredients from initial recipe:', initialRecipe.ingredients);
         setIngredients(initialRecipe.ingredients);
+        
+        // Log the state after setting
+        setTimeout(() => {
+          console.log('🔍 Ingredients state after setting:', ingredients);
+        }, 100);
       }
 
       if (initialRecipe.steps && initialRecipe.steps.length > 0) {
@@ -97,6 +120,11 @@ export function RecipeForm({
       }
     }
   }, [initialRecipe]);
+
+  // Debug ingredients state changes
+  useEffect(() => {
+    console.log('🔄 Ingredients state changed:', ingredients);
+  }, [ingredients]);
 
   const validateCurrentStep = (): string[] => {
     const errors: string[] = [];
@@ -258,6 +286,7 @@ export function RecipeForm({
       title: '',
       description: '',
       duration: 15,
+      isActiveTime: true,
       temperature: undefined,
       isOptional: false,
       tips: [],
@@ -506,7 +535,9 @@ export function RecipeForm({
             </div>
 
             <div className="space-y-4 bg-warm-beige/30 p-4 rounded-lg">
-              {ingredients.map((ingredient, index) => (
+              {ingredients.map((ingredient, index) => {
+                console.log(`🔍 Rendering ingredient ${index}:`, ingredient);
+                return (
                 <div key={ingredient.id} className="flex gap-3 items-start">
                   <Input
                     type="number"
@@ -557,7 +588,8 @@ export function RecipeForm({
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         );

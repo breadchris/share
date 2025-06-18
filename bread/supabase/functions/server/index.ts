@@ -434,7 +434,7 @@ initializeStorageBuckets().then(success => {
 });
 
 // Health check endpoint
-app.get('/make-server-ad72a517/health', (c) => {
+app.get('/server/health', (c) => {
   const healthData = {
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -448,7 +448,7 @@ app.get('/make-server-ad72a517/health', (c) => {
 });
 
 // Upload file endpoint for bread photos
-app.post('/make-server-ad72a517/upload-file', async (c) => {
+app.post('/server/upload-file', async (c) => {
   console.log('📤 File upload request received');
   
   try {
@@ -544,7 +544,7 @@ app.post('/make-server-ad72a517/upload-file', async (c) => {
 });
 
 // AI Recipe Generation from Images Endpoint
-app.post('/make-server-ad72a517/generate-recipe-from-images', async (c) => {
+app.post('/server/generate-recipe-from-images', async (c) => {
   console.log('🤖 AI Recipe Generation from Images - Request received');
   
   const requestStartTime = Date.now();

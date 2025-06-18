@@ -161,7 +161,7 @@ export async function generateRecipeFromImages(request: AIRecipeRequest): Promis
     console.log(`📡 Sending request to backend AI service (${hasImages ? 'with images' : 'text-only'})`);
 
     // Call backend API
-    const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-ad72a517/generate-recipe-from-images`, {
+    const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/generate-recipe-from-images`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${publicAnonKey}`,
@@ -263,7 +263,7 @@ export async function generateRecipeFromText(description: string, breadType?: st
 
     console.log('📡 Sending text-based generation request to backend');
 
-    const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-ad72a517/generate-recipe-from-text`, {
+    const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/generate-recipe-from-text`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${publicAnonKey}`,
@@ -322,7 +322,7 @@ export async function enhanceRecipe(recipe: BreadRecipe, enhancementType: 'impro
 
     console.log('📡 Sending enhancement request to backend');
 
-    const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-ad72a517/enhance-recipe`, {
+    const response = await fetch(`https://${projectId}.supabase.co/functions/v1/server/enhance-recipe`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${publicAnonKey}`,

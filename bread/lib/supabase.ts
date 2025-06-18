@@ -705,23 +705,48 @@ export const getUserRecipes = async (userId: string): Promise<BreadRecipe[]> => 
     }
     
     // Convert database format to BreadRecipe format
-    const recipes: BreadRecipe[] = (data || []).map(dbRecipe => ({
-      id: dbRecipe.id,
-      name: dbRecipe.name,
-      description: dbRecipe.description,
-      difficulty: dbRecipe.difficulty,
-      prepTime: dbRecipe.prep_time,
-      totalTime: dbRecipe.total_time,
-      servings: 4, // Default serving size
-      imageUrl: dbRecipe.image_url,
-      ingredients: dbRecipe.ingredients,
-      steps: dbRecipe.steps,
-      tags: dbRecipe.tags || [],
-      createdBy: dbRecipe.user_id,
-      createdAt: new Date(dbRecipe.created_at),
-      updatedAt: new Date(dbRecipe.updated_at),
-      isUserCreated: true
-    }));
+    const recipes: BreadRecipe[] = (data || []).map(dbRecipe => {
+      console.log('🔍 Converting database recipe:', dbRecipe.name);
+      console.log('📊 Raw ingredients from DB:', dbRecipe.ingredients);
+      
+      // Ensure ingredients have the correct structure
+      const convertedIngredients = Array.isArray(dbRecipe.ingredients) 
+        ? dbRecipe.ingredients.map((ing: any, index: number) => {
+            console.log(`🥖 Processing ingredient ${index}:`, ing);
+            
+            // Handle different possible property names and structures
+            const ingredient = {
+              id: ing.id || `ingredient-${index}`,
+              name: ing.name || ing.item || ing.ingredient || `Ingredient ${index + 1}`,
+              amount: ing.amount || ing.quantity || 0,
+              unit: ing.unit || ing.measurement || '',
+              optional: ing.optional || false,
+              notes: ing.notes || ing.note || ''
+            };
+            
+            console.log(`✅ Converted ingredient ${index}:`, ingredient);
+            return ingredient;
+          })
+        : [];
+      
+      return {
+        id: dbRecipe.id,
+        name: dbRecipe.name,
+        description: dbRecipe.description,
+        difficulty: dbRecipe.difficulty,
+        prepTime: dbRecipe.prep_time,
+        totalTime: dbRecipe.total_time,
+        servings: 4, // Default serving size
+        imageUrl: dbRecipe.image_url,
+        ingredients: convertedIngredients,
+        steps: dbRecipe.steps,
+        tags: dbRecipe.tags || [],
+        createdBy: dbRecipe.user_id,
+        createdAt: new Date(dbRecipe.created_at),
+        updatedAt: new Date(dbRecipe.updated_at),
+        isUserCreated: true
+      };
+    });
     
     logError(LOG_LEVELS.INFO, operation, 'Supabase query successful', {
       recipeCount: recipes.length
@@ -770,7 +795,24 @@ export const getRecipe = async (recipeId: string): Promise<BreadRecipe | null> =
       totalTime: data.total_time,
       servings: 4, // Default serving size
       imageUrl: data.image_url,
-      ingredients: data.ingredients,
+      ingredients: Array.isArray(data.ingredients) 
+        ? data.ingredients.map((ing: any, index: number) => {
+            console.log(`🥖 Converting single recipe ingredient ${index}:`, ing);
+            
+            // Handle different possible property names and structures
+            const ingredient = {
+              id: ing.id || `ingredient-${index}`,
+              name: ing.name || ing.item || ing.ingredient || `Ingredient ${index + 1}`,
+              amount: ing.amount || ing.quantity || 0,
+              unit: ing.unit || ing.measurement || '',
+              optional: ing.optional || false,
+              notes: ing.notes || ing.note || ''
+            };
+            
+            console.log(`✅ Converted single recipe ingredient ${index}:`, ingredient);
+            return ingredient;
+          })
+        : [],
       steps: data.steps,
       tags: data.tags || [],
       createdBy: data.user_id,
