@@ -763,7 +763,7 @@ function AppContent() {
               <div className="text-center max-w-2xl mx-auto">
                 <div className="flex items-center justify-center mb-6">
                   <Coffee className="h-12 w-12 text-deep-olive mr-4" />
-                  <h1>Welcome to Artisan's Hearth</h1>
+                  <h1>Welcome to Just Bread</h1>
                 </div>
                 <p className="text-secondary mb-8 text-lg leading-relaxed">
                   Create, share, and track your bread baking journey. From traditional sourdough to innovative recipes, 
@@ -1019,7 +1019,7 @@ function AppContent() {
             {/* Logo/Brand */}
             <div className="flex items-center">
               <Coffee className="h-6 w-6 text-deep-olive mr-3" />
-              <h4 className="text-deep-olive">Artisan's Hearth</h4>
+              <h4 className="text-deep-olive">Just Bread</h4>
             </div>
             
             {/* Navigation Actions */}

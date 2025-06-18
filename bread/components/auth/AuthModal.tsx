@@ -1,3 +1,4 @@
+import React from "react";
 import { useState } from "react";
 import { 
   Dialog, 
@@ -35,7 +36,7 @@ export function AuthModal() {
           Sign In
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] bg-white">
         <DialogHeader>
           <DialogTitle className="font-serif italic text-center">
             {view === "signin" ? "Welcome Back, Noble Baker" : "Join Our Baking Community"}

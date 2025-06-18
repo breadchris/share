@@ -1,3 +1,4 @@
+import React from "react";
 import { useState } from "react";
 import { Button } from "../ui/button";
 import { 
@@ -61,7 +62,7 @@ export function UserMenu({ onProfileClick, onHistoryClick, onMyRecipesClick }: U
           className="border-amber-300 text-amber-800 hover:bg-amber-50 pl-2 pr-3 h-10 flex items-center gap-2"
         >
           <Avatar className="h-7 w-7 border border-amber-200">
-            <AvatarImage src={user.user_metadata?.avatar_url} />
+            <AvatarImage src={user.avatar_url} />
             <AvatarFallback className="bg-amber-100 text-amber-800 text-xs font-medium">
               {getUserInitials()}
             </AvatarFallback>
@@ -70,10 +71,10 @@ export function UserMenu({ onProfileClick, onHistoryClick, onMyRecipesClick }: U
           <ChevronDown className={`h-4 w-4 text-amber-600 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-60 p-2 border-amber-200 shadow-md bg-cream-50" sideOffset={8}>
+      <DropdownMenuContent align="end" className="w-60 p-2 border-amber-200 shadow-md bg-white" sideOffset={8}>
         <div className="p-2 mb-1 flex items-center gap-3">
           <Avatar className="h-10 w-10 border border-amber-200">
-            <AvatarImage src={user.user_metadata?.avatar_url} />
+            <AvatarImage src={user.avatar_url} />
             <AvatarFallback className="bg-amber-100 text-amber-800 text-sm font-medium">
               {getUserInitials()}
             </AvatarFallback>

@@ -1,3 +1,4 @@
+import React from "react";
 import { useState, useEffect } from "react";
 import { BreadStep, getActiveTime, getTotalTime } from "./bread-recipe";
 import { Button } from "./ui/button";
@@ -156,71 +157,39 @@ export function SchedulingWizard({ steps, onSchedule, breadName }: SchedulingWiz
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Calendar Header */}
-            <div className="flex items-center justify-between mb-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigateMonth('prev')}
-                className="h-8 w-8 p-0"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              
-              <h3 className="text-base font-medium text-soft-brown">
-                {format(currentMonth, 'MMMM yyyy')}
-              </h3>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigateMonth('next')}
-                className="h-8 w-8 p-0"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-
-            {/* Calendar Grid */}
-            <div className="space-y-2">
-              {/* Calendar weekday headers */}
-              <div className="grid grid-cols-7 gap-1 mb-2">
-                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
-                  <div key={day} className="p-2 text-center text-xs text-secondary">
-                    {day}
-                  </div>
-                ))}
-              </div>
-
-              {/* Calendar Days */}
-              <Calendar
-                mode="single"
-                selected={targetDate}
-                onSelect={(date) => date && setTargetDate(date)}
-                month={currentMonth}
-                onMonthChange={setCurrentMonth}
-                disabled={(date) => date < new Date()}
-                className="w-full border-none"
-                classNames={{
-                  months: "w-full",
-                  month: "space-y-0 w-full",
-                  caption: "hidden", // Hide default caption since we have custom header
-                  table: "w-full border-collapse space-y-0",
-                  head_row: "hidden", // Hide default header since we have custom
-                  row: "w-full mt-1",
-                  cell: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-dusty-rose/20 [&:has([aria-selected].day-outside)]:bg-dusty-rose/10 [&:has([aria-selected].day-range-end)]:rounded-r-md",
-                  day: cn(
-                    "h-8 w-8 p-0 font-normal rounded-md hover:bg-dusty-rose/20 aria-selected:opacity-100",
-                    "focus:bg-dusty-rose/20 focus:text-dusty-rose"
-                  ),
-                  day_selected: "bg-deep-olive text-cloud-white hover:bg-deep-olive hover:text-cloud-white focus:bg-deep-olive focus:text-cloud-white",
-                  day_today: "bg-dusty-rose/20 text-dusty-rose font-medium",
-                  day_outside: "text-muted-foreground opacity-50",
-                  day_disabled: "text-muted-foreground opacity-50",
-                  day_hidden: "invisible",
-                }}
-              />
-            </div>
+            {/* Calendar */}
+            <Calendar
+              mode="single"
+              selected={targetDate}
+              onSelect={(date) => date && setTargetDate(date)}
+              month={currentMonth}
+              onMonthChange={setCurrentMonth}
+              disabled={(date) => date < new Date()}
+              className="w-full"
+              classNames={{
+                months: "w-full",
+                month: "w-full space-y-4",
+                caption: "flex justify-center pt-1 relative items-center w-full",
+                caption_label: "text-base font-medium text-soft-brown",
+                nav_button: cn(
+                  "h-8 w-8 bg-transparent p-0 opacity-70 hover:opacity-100 border border-amber-200 text-amber-800 hover:bg-amber-100"
+                ),
+                table: "w-full border-collapse",
+                head_row: "flex w-full",
+                head_cell: "text-center text-xs text-secondary font-normal flex-1 p-2 min-w-0",
+                row: "flex w-full mt-2",
+                cell: "relative p-0 text-center text-sm flex-1 min-w-0",
+                day: cn(
+                  "h-10 w-10 mx-auto p-0 font-normal rounded-md hover:bg-dusty-rose/20 text-deep-olive",
+                  "aria-selected:opacity-100 focus:bg-dusty-rose/20 focus:text-dusty-rose"
+                ),
+                day_selected: "bg-deep-olive text-cloud-white hover:bg-deep-olive hover:text-cloud-white focus:bg-deep-olive focus:text-cloud-white",
+                day_today: "bg-dusty-rose/20 text-dusty-rose font-medium border border-dusty-rose",
+                day_outside: "text-muted-foreground opacity-50",
+                day_disabled: "text-muted-foreground opacity-50",
+                day_hidden: "invisible",
+              }}
+            />
 
             {/* Selected Date Display */}
             {targetDate && (

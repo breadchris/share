@@ -767,8 +767,7 @@ func NewRecipe(d deps.Deps) *http.ServeMux {
 		}
 	})
 
-	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		println(r.URL.Path)
+	m.HandleFunc("/{id...}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 
 		renderRecipe := func(rs models.Recipe, w http.ResponseWriter, r *http.Request) {
@@ -1046,6 +1045,8 @@ Array.from(checkables).forEach((element) => {
 				DefaultLayout(
 					Div(
 						Class("mt-8 text-center mx-auto flex flex-col items-center"),
+						A(Class("text-xl text-center"), Attr("href", "/bread"), T("looking for bread?")),
+
 						//Div(
 						//	Class("flex flex-row space-x-4 mb-8 text-gray-500"),
 						//	A(Href(routes.Playlist), T("playlist")),
