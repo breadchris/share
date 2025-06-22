@@ -37,6 +37,7 @@ import (
 	"github.com/breadchris/share/bread"
 	"github.com/breadchris/share/breadchris"
 	"github.com/breadchris/share/code"
+	"github.com/breadchris/share/coderunner"
 	config2 "github.com/breadchris/share/config"
 	. "github.com/breadchris/share/db"
 	deps2 "github.com/breadchris/share/deps"
@@ -275,6 +276,7 @@ func startServer(useTLS bool, port int) {
 	p("/registry", interpreted(registry.New))
 	g := NewGithub(deps)
 	p("/github", interpreted(g.Routes))
+	p("/coderunner", interpreted(coderunner.New))
 	p("/filecode", func() *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -398,6 +400,7 @@ func startServer(useTLS bool, port int) {
 			//"./code/monaco.tsx",
 			//"./code/playground.ts",
 			"./music.tsx",
+			"./coderunner/CodeRunner.tsx",
 			//"./wasmcode/monaco.tsx",
 			//"./wasmcode/analyzer/analyzer.worker.ts",
 			//"./wasmcode/language/language.worker.ts",

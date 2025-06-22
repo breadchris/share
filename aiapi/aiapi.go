@@ -12,13 +12,13 @@ import (
 
 // JSONSchema represents a JSON schema structure
 type JSONSchema struct {
-	Type                 string                    `json:"type,omitempty"`
-	Properties           map[string]*JSONSchema    `json:"properties,omitempty"`
-	Items                *JSONSchema               `json:"items,omitempty"`
-	Required             []string                  `json:"required,omitempty"`
-	AdditionalProperties *bool                     `json:"additionalProperties,omitempty"`
-	Description          string                    `json:"description,omitempty"`
-	Examples             []interface{}             `json:"examples,omitempty"`
+	Type                 string                 `json:"type,omitempty"`
+	Properties           map[string]*JSONSchema `json:"properties,omitempty"`
+	Items                *JSONSchema            `json:"items,omitempty"`
+	Required             []string               `json:"required,omitempty"`
+	AdditionalProperties *bool                  `json:"additionalProperties,omitempty"`
+	Description          string                 `json:"description,omitempty"`
+	Examples             []interface{}          `json:"examples,omitempty"`
 }
 
 // generateJSONSchema creates a JSON schema from an arbitrary JSON object
@@ -80,17 +80,17 @@ func generateSchemaFromValue(v reflect.Value) *JSONSchema {
 			// Non-string keys, treat as generic object
 			return &JSONSchema{Type: "object"}
 		}
-		
+
 		properties := make(map[string]*JSONSchema)
 		var required []string
-		
+
 		for _, key := range v.MapKeys() {
 			keyStr := key.String()
 			value := v.MapIndex(key)
 			properties[keyStr] = generateSchemaFromValue(value)
 			required = append(required, keyStr)
 		}
-		
+
 		additionalProps := false
 		return &JSONSchema{
 			Type:                 "object",
@@ -101,14 +101,14 @@ func generateSchemaFromValue(v reflect.Value) *JSONSchema {
 	case reflect.Struct:
 		properties := make(map[string]*JSONSchema)
 		var required []string
-		
+
 		t := v.Type()
 		for i := 0; i < v.NumField(); i++ {
 			field := t.Field(i)
 			if !field.IsExported() {
 				continue
 			}
-			
+
 			fieldName := field.Name
 			if tag := field.Tag.Get("json"); tag != "" && tag != "-" {
 				if idx := len(tag); idx > 0 && tag[idx-1:] != ",omitempty" {
@@ -120,10 +120,10 @@ func generateSchemaFromValue(v reflect.Value) *JSONSchema {
 			} else {
 				required = append(required, fieldName)
 			}
-			
+
 			properties[fieldName] = generateSchemaFromValue(v.Field(i))
 		}
-		
+
 		additionalProps := false
 		return &JSONSchema{
 			Type:                 "object",
@@ -180,7 +180,7 @@ func New(deps deps.Deps) *http.ServeMux {
 		var payload struct {
 			SystemPrompt   string          `json:"systemPrompt"`
 			UserMessage    string          `json:"userMessage"`
-			ResponseSchema json.RawMessage `json:"responseSchema"` // Optional: can be forwarded to frontend or used with tools like JSON schema validation
+			ResponseSchema json.RawMessage `json:"responseSchema"` // Optional: can be forwarded to frontend or used with JSON schema validation
 			GenerateSchema interface{}     `json:"generateSchema"` // Optional: arbitrary JSON object to generate schema from
 		}
 
@@ -196,22 +196,45 @@ func New(deps deps.Deps) *http.ServeMux {
 				"generatedSchema": schema,
 				"originalData":    payload.GenerateSchema,
 			}
-			
+
 			// If there's also an AI request, include both
 			if payload.SystemPrompt != "" && payload.UserMessage != "" {
+				// Enhanced system prompt for structured responses
+				systemPrompt := payload.SystemPrompt
+
+				// Create OpenAI request with function calling
 				req := openai.ChatCompletionRequest{
 					Model: openai.GPT4,
 					Messages: []openai.ChatCompletionMessage{
 						{
-							Role:    "system",
-							Content: payload.SystemPrompt,
+							Role:    openai.ChatMessageRoleSystem,
+							Content: systemPrompt,
 						},
 						{
-							Role:    "user",
+							Role:    openai.ChatMessageRoleUser,
 							Content: payload.UserMessage,
 						},
 					},
-					Temperature: 0.7,
+					Temperature: 0.3, // Lower temperature for more consistent code generation
+				}
+
+				// Add function tool if response schema is provided
+				if payload.ResponseSchema != nil {
+					// Convert the response schema to a proper JSON schema for OpenAI
+					var schemaMap map[string]interface{}
+					if err := json.Unmarshal(payload.ResponseSchema, &schemaMap); err == nil {
+						req.Tools = []openai.Tool{
+							{
+								Type: "function",
+								Function: &openai.FunctionDefinition{
+									Name:        "structured_response",
+									Description: "Provide a structured response matching the expected schema",
+									Parameters:  schemaMap,
+								},
+							},
+						}
+						req.ToolChoice = "required"
+					}
 				}
 
 				resp, err := deps.AI.CreateChatCompletion(r.Context(), req)
@@ -219,28 +242,58 @@ func New(deps deps.Deps) *http.ServeMux {
 					http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusInternalServerError)
 					return
 				}
-				
-				response["aiResponse"] = resp.Choices[0].Message.Content
+
+				// Handle function calling response
+				if len(resp.Choices) > 0 && len(resp.Choices[0].Message.ToolCalls) > 0 {
+					// Extract function call arguments as the structured response
+					toolCall := resp.Choices[0].Message.ToolCalls[0]
+					response["aiResponse"] = toolCall.Function.Arguments
+				} else {
+					// Fallback to regular message content
+					response["aiResponse"] = resp.Choices[0].Message.Content
+				}
 			}
-			
+
 			json.NewEncoder(w).Encode(response)
 			return
 		}
 
-		// Original AI-only functionality
+		// Original AI-only functionality with enhanced handling
+		systemPrompt := payload.SystemPrompt
+
+		// Create OpenAI request with function calling
 		req := openai.ChatCompletionRequest{
-			Model: openai.GPT4, // or GPT3Dot5Turbo if needed
+			Model: openai.GPT4,
 			Messages: []openai.ChatCompletionMessage{
 				{
-					Role:    "system",
-					Content: payload.SystemPrompt,
+					Role:    openai.ChatMessageRoleSystem,
+					Content: systemPrompt,
 				},
 				{
-					Role:    "user",
+					Role:    openai.ChatMessageRoleUser,
 					Content: payload.UserMessage,
 				},
 			},
-			Temperature: 0.7,
+			Temperature: 0.3, // Lower temperature for more consistent code generation
+		}
+
+		// Add function tool if response schema is provided
+		if payload.ResponseSchema != nil {
+			// Convert the response schema to a proper JSON schema for OpenAI
+			var schemaMap map[string]interface{}
+			if err := json.Unmarshal(payload.ResponseSchema, &schemaMap); err == nil {
+				req.Tools = []openai.Tool{
+					{
+						Type: "function",
+						Function: &openai.FunctionDefinition{
+							Name:        "structured_response",
+							Description: "Provide a structured response matching the expected schema",
+							Parameters:  schemaMap,
+						},
+					},
+				}
+				req.ToolChoice = "required"
+			}
 		}
 
 		resp, err := deps.AI.CreateChatCompletion(r.Context(), req)
@@ -249,7 +302,15 @@ func New(deps deps.Deps) *http.ServeMux {
 			return
 		}
 
-		json.NewEncoder(w).Encode(resp.Choices[0].Message.Content)
+		// Handle function calling response
+		if len(resp.Choices) > 0 && len(resp.Choices[0].Message.ToolCalls) > 0 {
+			// Extract function call arguments as the structured response
+			toolCall := resp.Choices[0].Message.ToolCalls[0]
+			json.NewEncoder(w).Encode(toolCall.Function.Arguments)
+		} else {
+			// Fallback to regular message content
+			json.NewEncoder(w).Encode(resp.Choices[0].Message.Content)
+		}
 	})
 
 	return m
