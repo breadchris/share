@@ -8,7 +8,8 @@
     "activeTab",
     "contextMenus",
     "scripting",
-    "tabs"
+    "tabs",
+    "storage"
   ],
   "devtools_page": "devtools.html",
   "background": {
@@ -21,6 +22,7 @@
       "128": "icons/icon128.png"
     }
   },
+  "options_page": "options.html",
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
@@ -29,6 +31,7 @@
   ],
   "host_permissions": [
     "http://localhost:8080/*",
-    "https://justshare.io/*"
+    "https://justshare.io/*",
+    "*://*/*"
   ]
 }

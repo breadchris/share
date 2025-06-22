@@ -33,6 +33,7 @@ import (
 	"github.com/breadchris/share/xctf"
 	"github.com/evanw/esbuild/pkg/api"
 
+	"github.com/breadchris/share/aiapi"
 	"github.com/breadchris/share/bread"
 	"github.com/breadchris/share/breadchris"
 	"github.com/breadchris/share/code"
@@ -241,7 +242,7 @@ func startServer(useTLS bool, port int) {
 	p("/articles", interpreted(NewArticle))
 	p("/zine", interpreted(NewZine))
 	// p("/card", interpreted(NewCard))
-	p("/ai", interpreted(NewAI))
+	p("/ai", interpreted(aiapi.New))
 	p("/card", interpreted(NewCard2))
 	p("/op", interpreted(op.New))
 	p("/websocket", interpreted(func(deps deps2.Deps) *http.ServeMux {

@@ -1,7 +1,30 @@
-// let BASE_ROUTE = 'https://justshare.io';
-let BASE_ROUTE = 'http://localhost:8080';
+// Default server URL
+const DEFAULT_SERVER_URL = 'https://justshare.io';
+let BASE_ROUTE = DEFAULT_SERVER_URL;
+
+// Load server URL from storage on startup
+async function loadServerUrl() {
+    try {
+        const result = await chrome.storage.sync.get(['serverUrl']);
+        BASE_ROUTE = result.serverUrl || DEFAULT_SERVER_URL;
+        console.log('Loaded server URL:', BASE_ROUTE);
+    } catch (error) {
+        console.error('Error loading server URL:', error);
+        BASE_ROUTE = DEFAULT_SERVER_URL;
+    }
+}
+
+// Initialize server URL
+loadServerUrl();
 
 chrome.runtime.onInstalled.addListener(() => {
+    // Set default server URL if not already set
+    chrome.storage.sync.get(['serverUrl'], (result) => {
+        if (!result.serverUrl) {
+            chrome.storage.sync.set({ serverUrl: DEFAULT_SERVER_URL });
+        }
+    });
+
     // Create context menu
     chrome.contextMenus.create({
         id: 'sharePage',
@@ -66,12 +89,19 @@ function getTabDetails(tabId) {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log('Message received:', message);
+    
+    // Handle settings update
+    if (message.action === 'settingsUpdated') {
+        loadServerUrl();
+        return;
+    }
+    
     if (message.action === "modifyClass") {
         (async () => {
             const { class: className, dataGodom } = message;
 
-            // Send the data to localhost:8080/modify
-            fetch('http://localhost:8080/modify', {
+            // Send the data to the configured server
+            fetch(`${BASE_ROUTE}/modify`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -88,8 +118,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'sendElement') {
         const { element, name } = message;
 
-        // Send the data to the server
-        fetch('https://justshare.io/extension/', {
+        // Send the data to the configured server
+        fetch(`${BASE_ROUTE}/extension/`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -162,7 +192,7 @@ async function generateTags(pageInfo) {
 
     console.log('Generating tags for page:', pageInfo);
     try {
-        // Send the data to the local server
+        // Send the data to the configured server
         const response = await fetch(`${BASE_ROUTE}/transform/get-tags`, {
             method: 'POST',
             headers: {
@@ -183,7 +213,7 @@ async function generateTags(pageInfo) {
 async function updateTags(url, tags) {
     console.log('Updating tags for URL:', url);
     try {
-        // Send the data to the local server
+        // Send the data to the configured server
         const response = await fetch(`${BASE_ROUTE}/update-tags`, {
             method: 'POST',
             headers: {
@@ -202,7 +232,7 @@ async function updateTags(url, tags) {
 async function sharePage(pageInfo) {
     console.log('Sharing page:', pageInfo);
     try {
-        // Send the data to the local server
+        // Send the data to the configured server
         const response = await fetch(`${BASE_ROUTE}/extension/save`, {
             method: 'POST',
             headers: {

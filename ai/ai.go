@@ -2,7 +2,9 @@ package ai
 
 import (
 	"context"
+
 	"github.com/breadchris/share/config"
+
 	"github.com/breadchris/share/models"
 	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
