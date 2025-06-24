@@ -413,6 +413,24 @@ root.render(<App />);`;
         }
     }, [esbuildReady, code, activeTab]);
 
+    // Auto-run when esbuild is ready or code changes (works for both tabs)
+    useEffect(() => {
+        if (esbuildReady && code.trim()) {
+            const timeoutId = setTimeout(() => {
+                buildAndRun();
+            }, 1500); // Debounce for 1.5 seconds to allow for typing
+            
+            return () => clearTimeout(timeoutId);
+        }
+    }, [esbuildReady, code]);
+
+    // Initial run when esbuild becomes ready
+    useEffect(() => {
+        if (esbuildReady && code.trim()) {
+            buildAndRun();
+        }
+    }, [esbuildReady]);
+
     // Handle output panel resizing
     const handleDragStart = (e: React.MouseEvent) => {
         setIsDragging(true);
@@ -467,11 +485,9 @@ root.render(<App />);`;
             const result = await esbuild.transform(code, {
                 loader: 'tsx',
                 target: 'es2020',
-                format: 'iife',
-                globalName: 'App',
-                jsx: 'transform',
-                jsxFactory: 'React.createElement',
-                jsxFragment: 'React.Fragment',
+                format: 'esm',
+                jsx: 'automatic',
+                jsxImportSource: 'react',
             });
 
             // Create the HTML content
@@ -482,8 +498,6 @@ root.render(<App />);`;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Code Output</title>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { margin: 0; padding: 16px; font-family: system-ui, -apple-system, sans-serif; }
@@ -502,7 +516,20 @@ root.render(<App />);`;
 </head>
 <body>
     <div id="root"></div>
-    <script>
+      <script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@18",
+      "react/": "https://esm.sh/react@18/",
+      "react/jsx-runtime": "https://esm.sh/react@18/jsx-runtime",
+      "react/jsx-dev-runtime": "https://esm.sh/react@18/jsx-dev-runtime",
+      "react-dom": "https://esm.sh/react-dom@18",
+      "react-dom/": "https://esm.sh/react-dom@18/",
+      "react-dom/client": "https://esm.sh/react-dom@18/client"
+    }
+  }
+  </script>
+    <script type="module">
         window.onerror = function(msg, url, line, col, error) {
             document.getElementById('root').innerHTML = 
                 '<div class="error">Runtime Error: ' + msg + '\\n\\nLine: ' + line + '</div>';
@@ -514,12 +541,12 @@ root.render(<App />);`;
                 '<div class="error">Promise Rejection: ' + event.reason + '</div>';
         });
 
-        try {
-            ${result.code}
-        } catch (error) {
-            document.getElementById('root').innerHTML = 
-                '<div class="error">Compilation Error: ' + error.message + '</div>';
-        }
+        // try {
+        ${result.code}
+        // } catch (error) {
+        //     document.getElementById('root').innerHTML = 
+        //         '<div class="error">Compilation Error: ' + error.message + '</div>';
+        // }
     </script>
 </body>
 </html>`;
@@ -906,43 +933,6 @@ root.render(<App />);`;
                         + New File
                     </button>
 
-                    {/* Run Button */}
-                    {activeTab === 'code' && (
-                        <button
-                            onClick={buildAndRun}
-                            disabled={isBuildLoading || !esbuildReady}
-                            style={{
-                                background: isBuildLoading ? (darkMode ? '#666' : '#ccc') : (darkMode ? '#1f2937' : '#0366d6'),
-                                color: '#ffffff',
-                                border: 'none',
-                                padding: '6px 12px',
-                                borderRadius: '6px',
-                                cursor: isBuildLoading || !esbuildReady ? 'not-allowed' : 'pointer',
-                                fontSize: '12px',
-                                fontWeight: 500,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px'
-                            }}
-                        >
-                            {isBuildLoading ? (
-                                <>
-                                    <div style={{
-                                        width: '12px',
-                                        height: '12px',
-                                        border: '2px solid rgba(255,255,255,0.3)',
-                                        borderTop: '2px solid #ffffff',
-                                        borderRadius: '50%',
-                                        animation: 'spin 1s linear infinite'
-                                    }}></div>
-                                    Building...
-                                </>
-                            ) : (
-                                <>▶ Run</>
-                            )}
-                        </button>
-                    )}
-
                     {/* Login/Logout */}
                     {isLoggedIn ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1271,10 +1261,32 @@ root.render(<App />);`;
                                 opacity: 0.6,
                                 color: darkMode ? '#888' : '#666' 
                             }}>
-                                (drag handle above to resize)
+                                (auto-updates on code changes)
                             </span>
                         </div>
-                        {!esbuildReady ? (
+                        {isBuildLoading ? (
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                fontSize: '11px',
+                                color: darkMode ? '#ffa500' : '#e65100',
+                                fontWeight: 500,
+                                background: darkMode ? 'rgba(255,165,0,0.1)' : 'rgba(230,81,0,0.1)',
+                                padding: '2px 6px',
+                                borderRadius: '4px'
+                            }}>
+                                <div style={{
+                                    width: '10px',
+                                    height: '10px',
+                                    border: '2px solid rgba(255,165,0,0.3)',
+                                    borderTop: '2px solid currentColor',
+                                    borderRadius: '50%',
+                                    animation: 'spin 1s linear infinite'
+                                }}></div>
+                                Building...
+                            </div>
+                        ) : !esbuildReady ? (
                             <span style={{
                                 fontSize: '11px',
                                 color: darkMode ? '#ffa500' : '#e65100',
@@ -1294,7 +1306,7 @@ root.render(<App />);`;
                                 padding: '2px 6px',
                                 borderRadius: '4px'
                             }}>
-                                Ready
+                                Live
                             </span>
                         )}
                     </div>
@@ -1315,7 +1327,7 @@ root.render(<App />);`;
                                 backgroundColor: 'transparent'
                             }}
                             title="Code Output"
-                            sandbox="allow-scripts allow-same-origin"
+                            // sandbox="allow-scripts allow-same-origin"
                             srcDoc={`
 <!DOCTYPE html>
 <html lang="en">
@@ -1351,8 +1363,8 @@ root.render(<App />);`;
         margin: ${isMobile ? '8px' : '16px'};
     ">
         <div style="font-size: ${isMobile ? '24px' : '32px'}; opacity: 0.7;">⚡</div>
-        <div style="font-size: ${isMobile ? '14px' : '16px'}; font-weight: 500;">Ready to run your code</div>
-        <div style="font-size: ${isMobile ? '11px' : '13px'}; opacity: 0.7;">Press the "▶ Run" button to see the output</div>
+        <div style="font-size: ${isMobile ? '14px' : '16px'}; font-weight: 500;">Waiting for code...</div>
+        <div style="font-size: ${isMobile ? '11px' : '13px'}; opacity: 0.7;">Output will appear automatically when you write code</div>
     </div>
 </body>
 </html>
