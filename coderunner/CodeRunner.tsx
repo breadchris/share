@@ -396,10 +396,14 @@ Please help the user with their request. If they want code changes, provide upda
                         : data.aiResponse;
                     
                     // Check if code should be updated
-                    if (aiData.shouldUpdateCode && aiData.code && editorRef.current) {
-                        // Update the code in the editor
-                        editorRef.current.setValue(aiData.code);
+                    if (aiData.shouldUpdateCode && aiData.code) {
+                        // Update the code state (this works even if editor isn't mounted)
                         setCode(aiData.code);
+                        
+                        // Update the editor if it's currently mounted
+                        if (editorRef.current) {
+                            editorRef.current.setValue(aiData.code);
+                        }
                         
                         // Switch to code tab to show the changes
                         setActiveTab('code');
@@ -1239,47 +1243,6 @@ Focus on:
                     >
                         + New File
                     </button>
-
-                    {/* AI Complete Button */}
-                    {activeTab === 'code' && editorRef.current && (
-                        <button
-                            onClick={completeWithAI}
-                            disabled={isBuildLoading}
-                            style={{
-                                background: isBuildLoading 
-                                    ? (darkMode ? '#4a4a4a' : '#e1e4e8')
-                                    : (darkMode ? '#8b5cf6' : '#7c3aed'),
-                                color: isBuildLoading ? (darkMode ? '#666' : '#999') : '#ffffff',
-                                border: 'none',
-                                padding: '6px 12px',
-                                borderRadius: '6px',
-                                cursor: isBuildLoading ? 'not-allowed' : 'pointer',
-                                fontSize: '12px',
-                                fontWeight: 500,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px'
-                            }}
-                        >
-                            {isBuildLoading ? (
-                                <>
-                                    <div style={{
-                                        width: '10px',
-                                        height: '10px',
-                                        border: '2px solid rgba(255,255,255,0.3)',
-                                        borderTop: '2px solid currentColor',
-                                        borderRadius: '50%',
-                                        animation: 'spin 1s linear infinite'
-                                    }}></div>
-                                    AI Working...
-                                </>
-                            ) : (
-                                <>
-                                    ✨ AI Complete
-                                </>
-                            )}
-                        </button>
-                    )}
 
                     {/* Login/Logout */}
                     {isLoggedIn ? (
