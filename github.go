@@ -3,6 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/exec"
+	"path"
+
 	"github.com/breadchris/share/breadchris"
 	"github.com/breadchris/share/config"
 	"github.com/breadchris/share/deps"
@@ -15,11 +21,6 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/markbates/goth/gothic"
 	ogithub "github.com/markbates/goth/providers/github"
-	"log/slog"
-	"net/http"
-	"os"
-	"os/exec"
-	"path"
 )
 
 type Github struct {
@@ -191,7 +192,7 @@ func (s *Github) Routes(d deps.Deps) *http.ServeMux {
 				return
 			}
 
-			http.Redirect(w, r, "/github/commit", http.StatusFound)
+			http.Redirect(w, r, "/coderunner/", http.StatusFound)
 			return
 		}
 

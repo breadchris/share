@@ -39,7 +39,6 @@ func New(d deps.Deps) *http.ServeMux {
 
 	// Main coderunner page
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Printf("DEBUG: Coderunner main handler received path: %s\n", r.URL.Path)
 		DefaultLayout(
 			Div(
 				Id("code-runner"),
@@ -54,16 +53,59 @@ func New(d deps.Deps) *http.ServeMux {
 
 	// API endpoints - these will receive the full path including /coderunner prefix
 	m.HandleFunc("/api/files", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Printf("DEBUG: API files handler received path: %s, method: %s\n", r.URL.Path, r.Method)
 		handleFiles(w, r)
 	})
 	m.HandleFunc("/api/files/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Printf("DEBUG: API files/ handler received path: %s, method: %s\n", r.URL.Path, r.Method)
 		handleFileContent(w, r)
 	})
 	m.HandleFunc("/api/build/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Printf("DEBUG: API build/ handler received path: %s, method: %s\n", r.URL.Path, r.Method)
 		handleBuild(w, r)
+	})
+
+	// GitHub user info endpoint
+	m.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
+		// Check if user is authenticated via session
+		// This assumes the GitHub OAuth handler sets a session cookie
+		_, err := r.Cookie("session") // Adjust cookie name as needed
+		if err != nil {
+			http.Error(w, `{"error":"not authenticated"}`, http.StatusUnauthorized)
+			return
+		}
+
+		// For now, we'll extract the username from the file path structure
+		// In a real implementation, you'd validate the session and get user info
+		// from the GitHub OAuth session data
+
+		// Check for any user-prefixed directories to determine if user is logged in
+		entries, err := os.ReadDir("./data/coderunner/src")
+		if err != nil {
+			http.Error(w, `{"error":"failed to read directory"}`, http.StatusInternalServerError)
+			return
+		}
+
+		var githubUsername string
+		for _, entry := range entries {
+			if entry.IsDir() && strings.HasPrefix(entry.Name(), "@") {
+				// Extract username from @username format
+				username := strings.TrimPrefix(entry.Name(), "@")
+				if username != "guest" {
+					githubUsername = username
+					break
+				}
+			}
+		}
+
+		if githubUsername == "" {
+			http.Error(w, `{"error":"no github user found"}`, http.StatusUnauthorized)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		response := map[string]string{
+			"username": githubUsername,
+			"provider": "github",
+		}
+		json.NewEncoder(w).Encode(response)
 	})
 
 	return m
@@ -84,8 +126,6 @@ func handleFiles(w http.ResponseWriter, r *http.Request) {
 // handleListFiles returns the directory structure as JSON
 func handleListFiles(w http.ResponseWriter, r *http.Request) {
 	srcDir := "./data/coderunner/src"
-
-	println("DEBUG: handleListFiles", srcDir)
 
 	files, err := buildFileTree(srcDir)
 	if err != nil {

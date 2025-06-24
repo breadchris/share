@@ -135,20 +135,58 @@ root.render(<App />);`);
     };
 
     // Login/logout functionality
-    const handleLogin = (inputUsername: string) => {
-        if (inputUsername.trim()) {
-            setUsername(inputUsername.trim());
-            setIsLoggedIn(true);
+    const handleGithubLogin = () => {
+        // Redirect to GitHub OAuth login
+        window.location.href = '/github/login';
+    };
+
+    
+    const handleLogout = async () => {
+        try {
+            // Clear local storage
+            localStorage.removeItem('coderunner_username');
+            localStorage.removeItem('coderunner_github_user');
+            
+            // Optional: Call logout endpoint if you have one
+            // await fetch('/github/logout', { method: 'POST' });
+            
+            setUsername('');
+            setIsLoggedIn(false);
             setShowLogin(false);
-            localStorage.setItem('coderunner_username', inputUsername.trim());
+            
+            // Reload to clear any server-side session
+            window.location.reload();
+        } catch (error) {
+            console.error('Logout error:', error);
+            // Still clear local state even if server logout fails
+            setUsername('');
+            setIsLoggedIn(false);
+            setShowLogin(false);
         }
     };
 
-    const handleLogout = () => {
-        setUsername('');
-        setIsLoggedIn(false);
-        setShowLogin(false);
-        localStorage.removeItem('coderunner_username');
+    // Check GitHub authentication status
+    const checkGithubAuth = async () => {
+        try {
+            const response = await fetch('/coderunner/user', {
+                credentials: 'include' // Include cookies for session
+            });
+            
+            if (response.ok) {
+                const userData = await response.json();
+                if (userData.username) {
+                    setUsername(userData.username);
+                    setIsLoggedIn(true);
+                    localStorage.setItem('coderunner_username', userData.username);
+                    localStorage.setItem('coderunner_github_user', JSON.stringify(userData));
+                    return true;
+                }
+            }
+            return false;
+        } catch (error) {
+            console.error('Auth check error:', error);
+            return false;
+        }
     };
 
     // File management functions
@@ -675,13 +713,28 @@ Focus on:
         }
     }, [currentFile, code, username]);
 
-    // Initialize from localStorage and URL params
+    // Initialize from localStorage and check GitHub auth
     useEffect(() => {
-        const savedUsername = localStorage.getItem('coderunner_username');
-        if (savedUsername) {
-            setUsername(savedUsername);
-            setIsLoggedIn(true);
-        }
+        const initializeAuth = async () => {
+            // First check localStorage for cached username
+            const savedUsername = localStorage.getItem('coderunner_username');
+            if (savedUsername) {
+                setUsername(savedUsername);
+                setIsLoggedIn(true);
+            }
+            
+            // Then check server-side GitHub authentication
+            const isGithubAuthenticated = await checkGithubAuth();
+            if (!isGithubAuthenticated && savedUsername) {
+                // Server session expired but we have cached data, clear it
+                localStorage.removeItem('coderunner_username');
+                localStorage.removeItem('coderunner_github_user');
+                setUsername('');
+                setIsLoggedIn(false);
+            }
+        };
+
+        initializeAuth();
 
         // Check for mobile
         const checkMobile = () => {
@@ -689,7 +742,7 @@ Focus on:
         };
         checkMobile();
         window.addEventListener('resize', checkMobile);
-
+        
         return () => {
             window.removeEventListener('resize', checkMobile);
             if (autoSaveTimeoutRef.current) {
@@ -1276,10 +1329,16 @@ Focus on:
                                 borderRadius: '6px',
                                 cursor: 'pointer',
                                 fontSize: '12px',
-                                fontWeight: 500
+                                fontWeight: 500,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px'
                             }}
                         >
-                            Login
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+                            </svg>
+                            Login with GitHub
                         </button>
                     )}
                 </div>
@@ -1687,67 +1746,87 @@ Focus on:
 
             {/* Login Modal */}
             {showLogin && (
-                <div style={{
+                <div style={{ 
                     position: 'fixed',
                     top: 0,
                     left: 0,
                     width: '100vw',
                     height: '100vh',
                     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
                     zIndex: 2000
                 }}>
                     <div style={{
                         backgroundColor: darkMode ? '#252526' : '#ffffff',
-                        padding: '24px',
-                        borderRadius: '8px',
+                        padding: '32px',
+                        borderRadius: '12px',
                         width: '90%',
                         maxWidth: '400px',
-                        border: `1px solid ${darkMode ? '#3e3e42' : '#e1e4e8'}`
+                        border: `1px solid ${darkMode ? '#3e3e42' : '#e1e4e8'}`,
+                        boxShadow: darkMode ? '0 8px 32px rgba(0,0,0,0.4)' : '0 8px 32px rgba(0,0,0,0.1)'
                     }}>
-                        <h3 style={{
-                            margin: '0 0 16px 0',
-                            fontSize: '18px',
-                            fontWeight: 600
-                        }}>
-                            Login to CodeRunner
-                        </h3>
-                        <p style={{
-                            margin: '0 0 16px 0',
-                            fontSize: '14px',
-                            color: darkMode ? '#888' : '#666',
-                            lineHeight: '1.5'
-                        }}>
-                            Enter a username to save and manage your files. Your files will be stored with your username prefix.
-                        </p>
-                        <input
-                            type="text"
-                            placeholder="Enter username..."
+                        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                            <div style={{ 
+                                fontSize: '48px', 
+                                marginBottom: '16px'
+                            }}>
+                                🚀
+                            </div>
+                            <h3 style={{
+                                margin: '0 0 8px 0',
+                                fontSize: '24px',
+                                fontWeight: 600,
+                                color: darkMode ? '#ffffff' : '#24292e'
+                            }}>
+                                Welcome to CodeRunner
+                            </h3>
+                            <p style={{
+                                margin: '0',
+                                fontSize: '14px',
+                                color: darkMode ? '#888' : '#666',
+                                lineHeight: '1.5'
+                            }}>
+                                Sign in with GitHub to save and manage your code files
+                            </p>
+                        </div>
+                        
+                        <button
+                            onClick={handleGithubLogin}
                             style={{
                                 width: '100%',
-                                padding: '12px',
-                                border: `1px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`,
-                                borderRadius: '6px',
-                                backgroundColor: darkMode ? '#1e1e1e' : '#ffffff',
-                                color: darkMode ? '#cccccc' : '#24292e',
-                                fontSize: '14px',
+                                padding: '12px 24px',
+                                backgroundColor: '#24292e',
+                                color: '#ffffff',
+                                border: 'none',
+                                borderRadius: '8px',
+                                fontSize: '16px',
+                                fontWeight: 500,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '12px',
                                 marginBottom: '16px',
-                                boxSizing: 'border-box'
+                                transition: 'background-color 0.2s'
                             }}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    const target = e.target as HTMLInputElement;
-                                    handleLogin(target.value);
-                                }
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = '#1c2128';
                             }}
-                            autoFocus
-                        />
-                        <div style={{
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '#24292e';
+                            }}
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+                            </svg>
+                            Continue with GitHub
+                        </button>
+                        
+                        <div style={{ 
                             display: 'flex',
-                            gap: '8px',
-                            justifyContent: 'flex-end'
+                            justifyContent: 'center'
                         }}>
                             <button
                                 onClick={() => setShowLogin(false)}
@@ -1762,26 +1841,6 @@ Focus on:
                                 }}
                             >
                                 Cancel
-                            </button>
-                            <button
-                                onClick={(e) => {
-                                    const input = e.currentTarget.parentElement?.parentElement?.querySelector('input') as HTMLInputElement;
-                                    if (input) {
-                                        handleLogin(input.value);
-                                    }
-                                }}
-                                style={{
-                                    background: darkMode ? '#0366d6' : '#0366d6',
-                                    color: '#ffffff',
-                                    border: 'none',
-                                    padding: '8px 16px',
-                                    borderRadius: '6px',
-                                    cursor: 'pointer',
-                                    fontSize: '14px',
-                                    fontWeight: 500
-                                }}
-                            >
-                                Login
                             </button>
                         </div>
                     </div>
