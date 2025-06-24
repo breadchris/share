@@ -55,6 +55,7 @@
 //go:generate yaegi extract github.com/dsoprea/go-exif/v3
 //go:generate yaegi extract github.com/dsoprea/go-jpeg-image-structure/v2
 //go:generate yaegi extract github.com/breadchris/share/db
+//go:generate yaegi extract github.com/evanw/esbuild/pkg/api
 
 package symbol
 

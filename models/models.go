@@ -6,12 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/kkdai/youtube/v2"
 	"github.com/sashabaranov/go-openai"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
-	"time"
 )
 
 type JSONField[T any] struct {

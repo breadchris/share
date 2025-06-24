@@ -182,6 +182,12 @@ func New(deps deps.Deps) *http.ServeMux {
 			UserMessage    string          `json:"userMessage"`
 			ResponseSchema json.RawMessage `json:"responseSchema"` // Optional: can be forwarded to frontend or used with JSON schema validation
 			GenerateSchema interface{}     `json:"generateSchema"` // Optional: arbitrary JSON object to generate schema from
+			ChatHistory    []struct {
+				Role      string `json:"role"`
+				Content   string `json:"content"`
+				Timestamp string `json:"timestamp"`
+			} `json:"chatHistory"` // Chat history from frontend
+			CurrentCode string `json:"currentCode"` // Current code context
 		}
 
 		if err := json.Unmarshal(body, &payload); err != nil {
@@ -210,13 +216,29 @@ func New(deps deps.Deps) *http.ServeMux {
 							Role:    openai.ChatMessageRoleSystem,
 							Content: systemPrompt,
 						},
-						{
-							Role:    openai.ChatMessageRoleUser,
-							Content: payload.UserMessage,
-						},
 					},
 					Temperature: 0.3, // Lower temperature for more consistent code generation
 				}
+
+				// Add chat history messages if provided
+				if len(payload.ChatHistory) > 0 {
+					for _, msg := range payload.ChatHistory {
+						role := openai.ChatMessageRoleUser
+						if msg.Role == "assistant" {
+							role = openai.ChatMessageRoleAssistant
+						}
+						req.Messages = append(req.Messages, openai.ChatCompletionMessage{
+							Role:    role,
+							Content: msg.Content,
+						})
+					}
+				}
+
+				// Add the current user message
+				req.Messages = append(req.Messages, openai.ChatCompletionMessage{
+					Role:    openai.ChatMessageRoleUser,
+					Content: payload.UserMessage,
+				})
 
 				// Add function tool if response schema is provided
 				if payload.ResponseSchema != nil {
@@ -243,15 +265,27 @@ func New(deps deps.Deps) *http.ServeMux {
 					return
 				}
 
+				// Create response object
+				response := map[string]interface{}{}
+
 				// Handle function calling response
 				if len(resp.Choices) > 0 && len(resp.Choices[0].Message.ToolCalls) > 0 {
 					// Extract function call arguments as the structured response
 					toolCall := resp.Choices[0].Message.ToolCalls[0]
-					response["aiResponse"] = toolCall.Function.Arguments
+					var functionResponse map[string]interface{}
+					if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &functionResponse); err == nil {
+						response["aiResponse"] = functionResponse
+					} else {
+						// Fallback to raw string if parsing fails
+						response["aiResponse"] = toolCall.Function.Arguments
+					}
 				} else {
 					// Fallback to regular message content
 					response["aiResponse"] = resp.Choices[0].Message.Content
 				}
+
+				json.NewEncoder(w).Encode(response)
+				return
 			}
 
 			json.NewEncoder(w).Encode(response)
@@ -269,13 +303,29 @@ func New(deps deps.Deps) *http.ServeMux {
 					Role:    openai.ChatMessageRoleSystem,
 					Content: systemPrompt,
 				},
-				{
-					Role:    openai.ChatMessageRoleUser,
-					Content: payload.UserMessage,
-				},
 			},
 			Temperature: 0.3, // Lower temperature for more consistent code generation
 		}
+
+		// Add chat history messages if provided
+		if len(payload.ChatHistory) > 0 {
+			for _, msg := range payload.ChatHistory {
+				role := openai.ChatMessageRoleUser
+				if msg.Role == "assistant" {
+					role = openai.ChatMessageRoleAssistant
+				}
+				req.Messages = append(req.Messages, openai.ChatCompletionMessage{
+					Role:    role,
+					Content: msg.Content,
+				})
+			}
+		}
+
+		// Add the current user message
+		req.Messages = append(req.Messages, openai.ChatCompletionMessage{
+			Role:    openai.ChatMessageRoleUser,
+			Content: payload.UserMessage,
+		})
 
 		// Add function tool if response schema is provided
 		if payload.ResponseSchema != nil {
@@ -302,15 +352,26 @@ func New(deps deps.Deps) *http.ServeMux {
 			return
 		}
 
+		// Create response object
+		response := map[string]interface{}{}
+
 		// Handle function calling response
 		if len(resp.Choices) > 0 && len(resp.Choices[0].Message.ToolCalls) > 0 {
 			// Extract function call arguments as the structured response
 			toolCall := resp.Choices[0].Message.ToolCalls[0]
-			json.NewEncoder(w).Encode(toolCall.Function.Arguments)
+			var functionResponse map[string]interface{}
+			if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &functionResponse); err == nil {
+				response["aiResponse"] = functionResponse
+			} else {
+				// Fallback to raw string if parsing fails
+				response["aiResponse"] = toolCall.Function.Arguments
+			}
 		} else {
 			// Fallback to regular message content
-			json.NewEncoder(w).Encode(resp.Choices[0].Message.Content)
+			response["aiResponse"] = resp.Choices[0].Message.Content
 		}
+
+		json.NewEncoder(w).Encode(response)
 	})
 
 	return m

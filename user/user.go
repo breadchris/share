@@ -2,12 +2,13 @@ package user
 
 import (
 	"context"
+	"net/http"
+	"strings"
+
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/models"
 	"github.com/google/uuid"
-	"net/http"
-	"strings"
 )
 
 func New(d deps.Deps) *http.ServeMux {

@@ -29,7 +29,6 @@ import (
 	"github.com/breadchris/share/registry"
 	"github.com/breadchris/share/sqlnotebook"
 
-	"github.com/breadchris/share/x"
 	"github.com/breadchris/share/xctf"
 	"github.com/evanw/esbuild/pkg/api"
 
@@ -341,7 +340,7 @@ func startServer(useTLS bool, port int) {
 		}
 	})
 
-	p("", interpreted(NewRecipe))
+	// p("", interpreted(NewRecipe))
 
 	go func() {
 		paths := []string{
@@ -393,13 +392,13 @@ func startServer(useTLS bool, port int) {
 	}()
 	go func() {
 		entrypoints := []string{
-			"./graph/graph.tsx",
-			"./graph/nodes.tsx",
-			"./graph/code.ts",
+			// "./graph/graph.tsx",
+			// "./graph/nodes.tsx",
+			// "./graph/code.ts",
 			//"./xctf/graph.tsx",
 			//"./code/monaco.tsx",
 			//"./code/playground.ts",
-			"./music.tsx",
+			// "./music.tsx",
 			"./coderunner/CodeRunner.tsx",
 			//"./wasmcode/monaco.tsx",
 			//"./wasmcode/analyzer/analyzer.worker.ts",
@@ -407,17 +406,17 @@ func startServer(useTLS bool, port int) {
 		}
 		paths := make([]string, len(entrypoints))
 		copy(paths, entrypoints)
-		if err := filepath.Walk("./wasmcode", func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			if filepath.Ext(path) == ".ts" || filepath.Ext(path) == ".tsx" {
-				paths = append(paths, path)
-			}
-			return nil
-		}); err != nil {
-			log.Fatalf("Failed to walk wasmcode: %v", err)
-		}
+		// if err := filepath.Walk("./wasmcode", func(path string, info os.FileInfo, err error) error {
+		// 	if err != nil {
+		// 		return err
+		// 	}
+		// 	if filepath.Ext(path) == ".ts" || filepath.Ext(path) == ".tsx" {
+		// 		paths = append(paths, path)
+		// 	}
+		// 	return nil
+		// }); err != nil {
+		// 	log.Fatalf("Failed to walk wasmcode: %v", err)
+		// }
 		if err := WatchFilesAndFolders(paths, func(s string) {
 			result := api.Build(api.BuildOptions{
 				EntryPoints: entrypoints,
@@ -433,7 +432,7 @@ func startServer(useTLS bool, port int) {
 					".css":   api.LoaderCSS,
 					".png":   api.LoaderFile,
 				},
-				Outdir:      "static/",
+				Outdir:      "static/coderunner",
 				Format:      api.FormatESModule,
 				Bundle:      true,
 				Write:       true,
@@ -457,17 +456,17 @@ func startServer(useTLS bool, port int) {
 				fmt.Println(f.Path)
 			}
 
-			if err = x.CopyPaths([]string{
-				"static/wasmcode",
-				"static/analyzer@v1.wasm",
-				"static/leapclient.js",
-				"static/leap-bind-textarea.js",
-				"static/node_modules",
-			}, "breadchris/static"); err != nil {
-				log.Fatalf("Failed to copy paths: %v", err)
-			}
+			// if err = x.CopyPaths([]string{
+			// 	"static/wasmcode",
+			// 	"static/analyzer@v1.wasm",
+			// 	"static/leapclient.js",
+			// 	"static/leap-bind-textarea.js",
+			// 	"static/node_modules",
+			// }, "breadchris/static"); err != nil {
+			// 	log.Fatalf("Failed to copy paths: %v", err)
+			// }
 
-			rel <- struct{}{}
+			// rel <- struct{}{}
 		}); err != nil {
 			log.Fatalf("Failed to watch files: %v", err)
 		}
