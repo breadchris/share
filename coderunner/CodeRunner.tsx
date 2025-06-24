@@ -292,18 +292,92 @@ root.render(<App />);`;
         setIsChatLoading(true);
         
         try {
-            const response = await fetch('/ai', {
+            // Always use structured code completion approach
+            const responseSchema = {
+                type: "object",
+                properties: {
+                    code: {
+                        type: "string",
+                        description: "The complete, valid TSX/TypeScript code that can be executed (only provide if code changes are needed)"
+                    },
+                    implementedComments: {
+                        type: "array",
+                        items: {
+                            type: "string"
+                        },
+                        description: "Array of comment descriptions that were implemented in the code (only if code was modified)"
+                    },
+                    explanation: {
+                        type: "string",
+                        description: "Technical explanation of changes made or advice given"
+                    },
+                    chatResponse: {
+                        type: "string",
+                        description: "Friendly response to the user"
+                    },
+                    shouldUpdateCode: {
+                        type: "boolean",
+                        description: "Whether the code should be updated in the editor"
+                    }
+                },
+                required: ["chatResponse", "shouldUpdateCode"],
+                additionalProperties: false
+            };
+            
+            const systemPrompt = `You are an expert React/TypeScript developer and helpful coding assistant. You can help users in two ways:
+
+1. **Code Modification**: When users ask you to improve, complete, or modify code, you should:
+   - Analyze the provided TSX/TypeScript code
+   - Understand the user's request and implement the requested changes
+   - Generate complete, valid TSX code that implements the functionality
+   - Use ONLY Tailwind CSS classes for styling (no inline styles, no CSS modules)
+   - Ensure all code is production-ready and follows React best practices
+   - Return valid TypeScript/TSX syntax that will compile without errors
+   - Set shouldUpdateCode to true and provide the code field
+
+2. **General Help**: When users ask questions, need explanations, or want advice:
+   - Provide helpful explanations and guidance
+   - Give debugging tips and best practices
+   - Answer questions about React, TypeScript, or web development
+   - Set shouldUpdateCode to false and don't provide the code field
+
+RULES for code modification:
+- Always return complete, runnable code that includes React imports and ReactDOM.render
+- Use proper TypeScript types and interfaces when needed
+- Implement React hooks correctly (useState, useEffect, etc.)
+- Use Tailwind CSS classes exclusively for styling
+- Handle edge cases and add proper error handling
+- Follow React component composition patterns
+- Ensure accessibility with proper ARIA attributes when needed
+- Always include the ReactDOM.createRoot and render call at the bottom
+
+You must respond with a JSON object containing the appropriate fields based on whether code modification is needed.`;
+            
+            const requestPayload = {
+                systemPrompt,
+                userMessage: `User request: "${message}"
+
+Current code:
+\`\`\`tsx
+${code}
+\`\`\`
+
+Please help the user with their request. If they want code changes, provide updated code. If they just want help or explanation, provide guidance without modifying the code.`,
+                currentCode: code,
+                responseSchema: responseSchema,
+                chatHistory: chatMessages.slice(-3).map(msg => ({
+                    role: msg.role,
+                    content: msg.content,
+                    timestamp: msg.timestamp.toISOString()
+                }))
+            };
+            
+            const response = await fetch('/ai/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    message: message,
-                    context: {
-                        currentFile: currentFile?.path,
-                        code: code
-                    }
-                })
+                body: JSON.stringify(requestPayload)
             });
             
             if (!response.ok) {
@@ -312,14 +386,58 @@ root.render(<App />);`;
             
             const data = await response.json();
             
+            let assistantContent = '';
+            
+            // Handle structured response
+            if (data.aiResponse) {
+                try {
+                    const aiData = typeof data.aiResponse === 'string' 
+                        ? JSON.parse(data.aiResponse) 
+                        : data.aiResponse;
+                    
+                    // Check if code should be updated
+                    if (aiData.shouldUpdateCode && aiData.code && editorRef.current) {
+                        // Update the code in the editor
+                        editorRef.current.setValue(aiData.code);
+                        setCode(aiData.code);
+                        
+                        // Switch to code tab to show the changes
+                        setActiveTab('code');
+                    }
+                    
+                    // Create chat response
+                    assistantContent = aiData.chatResponse || 'I\'ve processed your request.';
+                    
+                    if (aiData.shouldUpdateCode) {
+                        if (aiData.implementedComments && aiData.implementedComments.length > 0) {
+                            assistantContent += `\n\n**Implemented features:**\n${aiData.implementedComments.map(c => `• ${c}`).join('\n')}`;
+                        }
+                        
+                        if (aiData.explanation) {
+                            assistantContent += `\n\n**Technical details:** ${aiData.explanation}`;
+                        }
+                    } else if (aiData.explanation) {
+                        assistantContent += `\n\n${aiData.explanation}`;
+                    }
+                    
+                } catch (parseError) {
+                    console.error('Failed to parse structured response:', parseError);
+                    assistantContent = 'I encountered an error processing your request. Please try again.';
+                }
+            } else {
+                // Fallback for non-structured response
+                assistantContent = data.aiResponse || 'Sorry, I encountered an error.';
+            }
+            
             const assistantMessage = {
                 id: (Date.now() + 1).toString(),
                 role: 'assistant' as const,
-                content: data.response || 'Sorry, I encountered an error.',
+                content: assistantContent,
                 timestamp: new Date()
             };
             
             setChatMessages(prev => [...prev, assistantMessage]);
+            
         } catch (error) {
             console.error('Chat error:', error);
             const errorMessage = {
@@ -331,6 +449,195 @@ root.render(<App />);`;
             setChatMessages(prev => [...prev, errorMessage]);
         } finally {
             setIsChatLoading(false);
+        }
+    };
+
+    // AI Code Completion functionality
+    const completeWithAI = async () => {
+        if (!editorRef.current) return;
+        
+        setIsBuildLoading(true);
+        setError(null);
+        
+        try {
+            const currentCode = editorRef.current.getValue();
+            
+            // Define the expected response schema as a proper JSON Schema
+            const responseSchema = {
+                type: "object",
+                properties: {
+                    code: {
+                        type: "string",
+                        description: "The complete, valid TSX/TypeScript code that can be executed"
+                    },
+                    implementedComments: {
+                        type: "array",
+                        items: {
+                            type: "string"
+                        },
+                        description: "Array of comment descriptions that were implemented in the code"
+                    },
+                    explanation: {
+                        type: "string",
+                        description: "Brief explanation of the changes made and functionality implemented"
+                    }
+                },
+                required: ["code", "implementedComments", "explanation"],
+                additionalProperties: false
+            };
+            
+            const response = await fetch('/ai/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    systemPrompt: `You are an expert React/TypeScript developer. Your task is to:
+
+1. Analyze the provided TSX/TypeScript code
+2. Identify any comments that describe functionality but lack implementation
+3. Generate complete, valid TSX code that implements all described functionality
+4. Use ONLY Tailwind CSS classes for styling (no inline styles, no CSS modules)
+5. Ensure all code is production-ready and follows React best practices
+6. Return valid TypeScript/TSX syntax that will compile without errors
+
+EXAMPLE OUTPUT FORMAT:
+The code should follow this structure and format:
+
+\`\`\`tsx
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+
+const App = () => (
+  <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+    <h1>Hello from TSX!</h1>
+    <p>Edit the code on the left to see changes here.</p>
+    <button onClick={() => alert('Button clicked!')}>
+      Click me!
+    </button>
+  </div>
+);
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+\`\`\`
+
+However, replace all inline styles with Tailwind CSS classes. For example:
+- \`style={{ padding: '20px' }}\` becomes \`className="p-5"\`
+- \`style={{ fontFamily: 'Arial, sans-serif' }}\` becomes \`className="font-sans"\`
+
+Rules:
+- Always return complete, runnable code that includes React imports and ReactDOM.render
+- Use proper TypeScript types and interfaces when needed
+- Implement React hooks correctly (useState, useEffect, etc.)
+- Use Tailwind CSS classes exclusively for styling
+- Handle edge cases and add proper error handling
+- Follow React component composition patterns
+- Ensure accessibility with proper ARIA attributes when needed
+- Always include the ReactDOM.createRoot and render call at the bottom
+
+You must respond with a JSON object containing the code, implementedComments array, and explanation.`,
+                    userMessage: `Please analyze this TSX code and implement any functionality described in comments. Also improve the code quality and ensure it uses only Tailwind CSS classes for styling:
+
+\`\`\`tsx
+${currentCode}
+\`\`\`
+
+Focus on:
+1. Implementing any TODO comments or functionality described in comments
+2. Converting any inline styles to Tailwind CSS classes
+3. Adding proper TypeScript types
+4. Improving React patterns and performance
+5. Ensuring the code is complete and runnable
+6. Making sure the final code follows the example format provided in the system prompt`,
+                    responseSchema: responseSchema
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            // Handle structured response with function calling
+            if (result.aiResponse) {
+                try {
+                    // Parse the AI response as JSON (it should be the function arguments)
+                    const aiData = typeof result.aiResponse === 'string' 
+                        ? JSON.parse(result.aiResponse) 
+                        : result.aiResponse;
+                        
+                    if (aiData.code) {
+                        editorRef.current.setValue(aiData.code);
+                        setCode(aiData.code);
+                        
+                        // Show what was implemented
+                        if (aiData.implementedComments && aiData.implementedComments.length > 0) {
+                            console.log('Implemented comments:', aiData.implementedComments);
+                        }
+                        if (aiData.explanation) {
+                            console.log('AI explanation:', aiData.explanation);
+                        }
+                    } else {
+                        throw new Error('No code field in structured response');
+                    }
+                } catch (parseError) {
+                    console.error('Failed to parse structured response:', parseError);
+                    // Fallback: treat as plain text if JSON parsing fails
+                    const cleanCode = (typeof result.aiResponse === 'string' ? result.aiResponse : JSON.stringify(result.aiResponse))
+                        .replace(/^```(?:tsx?|typescript|javascript)?\n?/gm, '')
+                        .replace(/\n?```$/gm, '')
+                        .trim();
+                    
+                    editorRef.current.setValue(cleanCode);
+                    setCode(cleanCode);
+                }
+            } else if (typeof result === 'string') {
+                // Handle direct string response (function calling result)
+                try {
+                    const aiData = JSON.parse(result);
+                    if (aiData.code) {
+                        editorRef.current.setValue(aiData.code);
+                        setCode(aiData.code);
+                        
+                        if (aiData.implementedComments && aiData.implementedComments.length > 0) {
+                            console.log('Implemented comments:', aiData.implementedComments);
+                        }
+                        if (aiData.explanation) {
+                            console.log('AI explanation:', aiData.explanation);
+                        }
+                    } else {
+                        throw new Error('No code field in response');
+                    }
+                } catch (parseError) {
+                    // Fallback: treat as code directly
+                    const cleanCode = result
+                        .replace(/^```(?:tsx?|typescript|javascript)?\n?/gm, '')
+                        .replace(/\n?```$/gm, '')
+                        .trim();
+                    
+                    editorRef.current.setValue(cleanCode);
+                    setCode(cleanCode);
+                }
+            } else if (result.content) {
+                // Handle alternative response format
+                const cleanCode = result.content
+                    .replace(/^```(?:tsx?|typescript|javascript)?\n?/gm, '')
+                    .replace(/\n?```$/gm, '')
+                    .trim();
+                
+                editorRef.current.setValue(cleanCode);
+                setCode(cleanCode);
+            } else {
+                throw new Error('Unexpected response format from AI service');
+            }
+            
+        } catch (err) {
+            console.error('AI completion error:', err);
+            setError(err instanceof Error ? err.message : 'Failed to complete with AI');
+        } finally {
+            setIsBuildLoading(false);
         }
     };
 
@@ -932,6 +1239,47 @@ root.render(<App />);`;
                     >
                         + New File
                     </button>
+
+                    {/* AI Complete Button */}
+                    {activeTab === 'code' && editorRef.current && (
+                        <button
+                            onClick={completeWithAI}
+                            disabled={isBuildLoading}
+                            style={{
+                                background: isBuildLoading 
+                                    ? (darkMode ? '#4a4a4a' : '#e1e4e8')
+                                    : (darkMode ? '#8b5cf6' : '#7c3aed'),
+                                color: isBuildLoading ? (darkMode ? '#666' : '#999') : '#ffffff',
+                                border: 'none',
+                                padding: '6px 12px',
+                                borderRadius: '6px',
+                                cursor: isBuildLoading ? 'not-allowed' : 'pointer',
+                                fontSize: '12px',
+                                fontWeight: 500,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                            }}
+                        >
+                            {isBuildLoading ? (
+                                <>
+                                    <div style={{
+                                        width: '10px',
+                                        height: '10px',
+                                        border: '2px solid rgba(255,255,255,0.3)',
+                                        borderTop: '2px solid currentColor',
+                                        borderRadius: '50%',
+                                        animation: 'spin 1s linear infinite'
+                                    }}></div>
+                                    AI Working...
+                                </>
+                            ) : (
+                                <>
+                                    ✨ AI Complete
+                                </>
+                            )}
+                        </button>
+                    )}
 
                     {/* Login/Logout */}
                     {isLoggedIn ? (
