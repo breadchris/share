@@ -95,6 +95,15 @@ root.render(<App />);`);
     const [dragStartY, setDragStartY] = useState(0);
     const [dragStartHeight, setDragStartHeight] = useState(0);
     
+    // GitHub repository state
+    const [repositories, setRepositories] = useState<Array<{name: string, full_name: string, description?: string}>>([]);
+    const [selectedRepo, setSelectedRepo] = useState<string>('');
+    const [repoSearchQuery, setRepoSearchQuery] = useState('');
+    const [isLoadingRepos, setIsLoadingRepos] = useState(false);
+    const [showRepoSelector, setShowRepoSelector] = useState(false);
+    const [isCloning, setIsCloning] = useState(false);
+    const [cloneStatus, setCloneStatus] = useState<string>('');
+
     const editorRef: MutableRefObject<monaco.editor.IStandaloneCodeEditor | null> = useRef(null);
     const outputFrameRef: MutableRefObject<HTMLIFrameElement | null> = useRef(null);
     const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -118,15 +127,47 @@ root.render(<App />);`);
         const organized: { [key: string]: FileItem[] } = {};
         const rootFiles: FileItem[] = [];
         
+        // First pass: create all directory entries
         files.forEach(file => {
             if (file.isDir) {
                 organized[file.path] = [];
-            } else {
-                const dirPath = file.path.includes('/') ? file.path.substring(0, file.path.lastIndexOf('/')) : '';
-                if (dirPath && organized[dirPath] !== undefined) {
-                    organized[dirPath].push(file);
-                } else {
+            }
+        });
+        
+        // Second pass: organize files into their parent directories
+        files.forEach(file => {
+            if (!file.isDir) {
+                if (!file.path.includes('/')) {
+                    // File is in root directory
                     rootFiles.push(file);
+                } else {
+                    // File is in a subdirectory
+                    const parentDir = file.path.substring(0, file.path.lastIndexOf('/'));
+                    
+                    if (organized.hasOwnProperty(parentDir)) {
+                        // Direct parent directory exists
+                        organized[parentDir].push(file);
+                    } else {
+                        // Try to find the closest parent directory that exists
+                        let currentPath = parentDir;
+                        let found = false;
+                        
+                        while (currentPath.includes('/') && !found) {
+                            if (organized.hasOwnProperty(currentPath)) {
+                                organized[currentPath].push(file);
+                                found = true;
+                            } else {
+                                currentPath = currentPath.substring(0, currentPath.lastIndexOf('/'));
+                            }
+                        }
+                        
+                        // If no parent directory found, check if it's a top-level directory
+                        if (!found && organized.hasOwnProperty(currentPath)) {
+                            organized[currentPath].push(file);
+                        } else if (!found) {
+                            rootFiles.push(file);
+                        }
+                    }
                 }
             }
         });
@@ -147,14 +188,22 @@ root.render(<App />);`);
             localStorage.removeItem('coderunner_username');
             localStorage.removeItem('coderunner_github_user');
             
-            // Optional: Call logout endpoint if you have one
-            // await fetch('/github/logout', { method: 'POST' });
+            // Call GitHub logout endpoint to clear server-side session
+            try {
+                await fetch('/github/logout', { 
+                    method: 'GET',
+                    credentials: 'include'
+                });
+            } catch (error) {
+                console.warn('Failed to call GitHub logout endpoint:', error);
+                // Continue with local logout even if server logout fails
+            }
             
             setUsername('');
             setIsLoggedIn(false);
             setShowLogin(false);
             
-            // Reload to clear any server-side session
+            // Reload to clear any remaining session state
             window.location.reload();
         } catch (error) {
             console.error('Logout error:', error);
@@ -188,6 +237,102 @@ root.render(<App />);`);
             return false;
         }
     };
+
+    // GitHub repository functions
+    const fetchGithubRepositories = async () => {
+        if (!isLoggedIn) return;
+        
+        setIsLoadingRepos(true);
+        try {
+            const response = await fetch('/coderunner/repositories', {
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const repos = await response.json();
+                setRepositories(repos);
+            } else {
+                console.error('Failed to fetch repositories');
+            }
+        } catch (error) {
+            console.error('Error fetching repositories:', error);
+        } finally {
+            setIsLoadingRepos(false);
+        }
+    };
+
+    const handleRepoSelection = async (repoFullName: string) => {
+        try {
+            const response = await fetch('/coderunner/select-repo', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({ repository: repoFullName })
+            });
+            
+            if (response.ok) {
+                setSelectedRepo(repoFullName);
+                setShowRepoSelector(false);
+                // Don't automatically reload files here - wait for user to clone
+            } else {
+                console.error('Failed to select repository');
+            }
+        } catch (error) {
+            console.error('Error selecting repository:', error);
+        }
+    };
+
+    const cloneRepository = async () => {
+        if (!selectedRepo) return;
+        
+        setIsCloning(true);
+        setCloneStatus('');
+        
+        try {
+            const response = await fetch('/coderunner/clone-repo', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                setCloneStatus(result.message || 'Repository cloned successfully');
+                // Reload files to show the cloned repository
+                loadFiles();
+                
+                // Clear status after 3 seconds
+                setTimeout(() => {
+                    setCloneStatus('');
+                }, 3000);
+            } else {
+                const error = await response.json();
+                setCloneStatus(error.error || 'Failed to clone repository');
+                setTimeout(() => {
+                    setCloneStatus('');
+                }, 5000);
+            }
+        } catch (error) {
+            console.error('Error cloning repository:', error);
+            setCloneStatus('Error cloning repository');
+            setTimeout(() => {
+                setCloneStatus('');
+            }, 5000);
+        } finally {
+            setIsCloning(false);
+        }
+    };
+
+    // Filter repositories based on search query
+    const filteredRepositories = repositories.filter(repo =>
+        repo.name.toLowerCase().includes(repoSearchQuery.toLowerCase()) ||
+        repo.full_name.toLowerCase().includes(repoSearchQuery.toLowerCase()) ||
+        (repo.description && repo.description.toLowerCase().includes(repoSearchQuery.toLowerCase()))
+    );
 
     // File management functions
     const saveFile = async (filePath: string, content: string) => {
@@ -258,6 +403,59 @@ root.render(<App />);`;
         setActiveTab('code');
     };
 
+    const createNewFileInDirectory = async (dirPath: string) => {
+        const timestamp = new Date().toISOString().slice(0, -5).replace(/[T:]/g, '-');
+        const fileName = `untitled-${timestamp}.tsx`;
+        const filePath = `${dirPath}/${fileName}`;
+        
+        const defaultContent = `import React from 'react';
+import ReactDOM from 'react-dom/client';
+
+const App = () => {
+  return (
+    <div className="p-4">
+      <h1 className="text-xl font-bold">New Component</h1>
+      <p>Start building something amazing!</p>
+    </div>
+  );
+};
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);`;
+
+        try {
+            // Save the file first
+            await saveFile(filePath, defaultContent);
+            
+            // Create the file object
+            const newFile: FileItem = {
+                name: fileName,
+                path: filePath,
+                isDir: false,
+                size: defaultContent.length,
+                lastModified: new Date().toISOString()
+            };
+            
+            // Set as current file
+            setCurrentFile(newFile);
+            setCode(defaultContent);
+            if (editorRef.current) {
+                editorRef.current.setValue(defaultContent);
+            }
+            
+            // Reload files to show the new file
+            loadFiles();
+            
+            // Close sidebar and switch to code tab
+            setIsSidebarOpen(false);
+            setActiveTab('code');
+            
+        } catch (error) {
+            console.error('Failed to create new file:', error);
+            alert(`Failed to create new file: ${error.message}`);
+        }
+    };
+
     // Load files
     const loadFiles = async () => {
         try {
@@ -290,6 +488,37 @@ root.render(<App />);`;
             setIsSidebarOpen(false);
         } catch (err) {
             console.error('Failed to load file:', err);
+        }
+    };
+
+    const deleteFile = async (file: FileItem) => {
+        if (file.isDir) return;
+        
+        try {
+            const response = await fetch(`/coderunner/api/delete/${encodeURIComponent(file.path)}`, {
+                method: 'DELETE'
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || `Failed to delete file: ${response.statusText}`);
+            }
+            
+            // If the deleted file was the currently open file, clear the editor
+            if (currentFile && currentFile.path === file.path) {
+                setCurrentFile(null);
+                setCode('');
+                if (editorRef.current) {
+                    editorRef.current.setValue('');
+                }
+            }
+            
+            // Reload the file list to reflect the deletion
+            loadFiles();
+            
+        } catch (err) {
+            console.error('Failed to delete file:', err);
+            alert(`Failed to delete file: ${err.message}`);
         }
     };
 
@@ -731,6 +960,9 @@ Focus on:
                 localStorage.removeItem('coderunner_github_user');
                 setUsername('');
                 setIsLoggedIn(false);
+            } else if (isGithubAuthenticated) {
+                // Fetch repositories when user is authenticated
+                fetchGithubRepositories();
             }
         };
 
@@ -977,12 +1209,240 @@ Focus on:
                 </button>
             </div>
 
+            {/* GitHub Repository Selector */}
+            {isLoggedIn && (
+                <div style={{
+                    padding: '16px',
+                    borderBottom: `1px solid ${darkMode ? '#3e3e42' : '#e1e4e8'}`,
+                    backgroundColor: darkMode ? '#2d2d30' : '#f6f8fa'
+                }}>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: '8px'
+                    }}>
+                        <div style={{
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            color: darkMode ? '#cccccc' : '#24292e'
+                        }}>
+                            GitHub Repository
+                        </div>
+                        <button
+                            onClick={() => {
+                                setShowRepoSelector(!showRepoSelector);
+                                if (!showRepoSelector && repositories.length === 0) {
+                                    fetchGithubRepositories();
+                                }
+                            }}
+                            style={{
+                                background: 'none',
+                                border: `1px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`,
+                                color: darkMode ? '#cccccc' : '#24292e',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '11px'
+                            }}
+                        >
+                            {showRepoSelector ? 'Hide' : 'Browse'}
+                        </button>
+                    </div>
+                    
+                    {selectedRepo && (
+                        <div style={{
+                            fontSize: '11px',
+                            color: darkMode ? '#888' : '#666',
+                            backgroundColor: darkMode ? '#37373d' : '#e8f4fd',
+                            padding: '8px',
+                            borderRadius: '4px',
+                            marginBottom: showRepoSelector ? '8px' : '0',
+                            border: `1px solid ${darkMode ? '#4a4a4a' : '#c8e1ff'}`
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                <div>📦 {selectedRepo}</div>
+                                <button
+                                    onClick={cloneRepository}
+                                    disabled={isCloning}
+                                    style={{
+                                        background: isCloning ? (darkMode ? '#4a4a4a' : '#ddd') : (darkMode ? '#0366d6' : '#0366d6'),
+                                        color: '#ffffff',
+                                        border: 'none',
+                                        padding: '3px 8px',
+                                        borderRadius: '3px',
+                                        cursor: isCloning ? 'not-allowed' : 'pointer',
+                                        fontSize: '10px',
+                                        fontWeight: 500,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
+                                    }}
+                                >
+                                    {isCloning ? (
+                                        <>
+                                            <div style={{
+                                                width: '8px',
+                                                height: '8px',
+                                                border: '1px solid rgba(255,255,255,0.3)',
+                                                borderTop: '1px solid #ffffff',
+                                                borderRadius: '50%',
+                                                animation: 'spin 1s linear infinite'
+                                            }}></div>
+                                            Cloning...
+                                        </>
+                                    ) : (
+                                        '📥 Clone'
+                                    )}
+                                </button>
+                            </div>
+                            {cloneStatus && (
+                                <div style={{
+                                    fontSize: '10px',
+                                    color: cloneStatus.includes('success') || cloneStatus.includes('up to date') 
+                                        ? (darkMode ? '#4caf50' : '#2e7d32')
+                                        : (darkMode ? '#f44336' : '#d32f2f'),
+                                    fontWeight: 500
+                                }}>
+                                    {cloneStatus}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    
+                    {showRepoSelector && (
+                        <div style={{
+                            border: `1px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`,
+                            borderRadius: '6px',
+                            backgroundColor: darkMode ? '#1e1e1e' : '#ffffff',
+                            maxHeight: '200px',
+                            overflow: 'hidden'
+                        }}>
+                            {/* Search Input */}
+                            <div style={{ padding: '8px' }}>
+                                <input
+                                    type="text"
+                                    placeholder="Search repositories..."
+                                    value={repoSearchQuery}
+                                    onChange={(e) => setRepoSearchQuery(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '4px 8px',
+                                        border: `1px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`,
+                                        borderRadius: '4px',
+                                        backgroundColor: darkMode ? '#252526' : '#ffffff',
+                                        color: darkMode ? '#cccccc' : '#24292e',
+                                        fontSize: '11px',
+                                        boxSizing: 'border-box'
+                                    }}
+                                />
+                            </div>
+                            
+                            {/* Repository List */}
+                            <div style={{
+                                maxHeight: '140px',
+                                overflow: 'auto',
+                                borderTop: `1px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`
+                            }}>
+                                {isLoadingRepos ? (
+                                    <div style={{
+                                        padding: '16px',
+                                        textAlign: 'center',
+                                        color: darkMode ? '#888' : '#666',
+                                        fontSize: '11px'
+                                    }}>
+                                        Loading repositories...
+                                    </div>
+                                ) : filteredRepositories.length === 0 ? (
+                                    <div style={{
+                                        padding: '16px',
+                                        textAlign: 'center',
+                                        color: darkMode ? '#888' : '#666',
+                                        fontSize: '11px'
+                                    }}>
+                                        {repositories.length === 0 ? 'No repositories found' : 'No matching repositories'}
+                                    </div>
+                                ) : (
+                                    filteredRepositories.map((repo) => (
+                                        <button
+                                            key={repo.full_name}
+                                            onClick={() => handleRepoSelection(repo.full_name)}
+                                            style={{
+                                                width: '100%',
+                                                padding: '8px 12px',
+                                                background: selectedRepo === repo.full_name
+                                                    ? (darkMode ? '#37373d' : '#e8f4fd')
+                                                    : 'none',
+                                                border: 'none',
+                                                color: selectedRepo === repo.full_name
+                                                    ? (darkMode ? '#ffffff' : '#0366d6')
+                                                    : (darkMode ? '#cccccc' : '#24292e'),
+                                                cursor: 'pointer',
+                                                fontSize: '11px',
+                                                textAlign: 'left',
+                                                transition: 'background-color 0.2s',
+                                                borderBottom: `1px solid ${darkMode ? '#3e3e42' : '#e1e4e8'}`
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                if (selectedRepo !== repo.full_name) {
+                                                    e.currentTarget.style.backgroundColor = darkMode ? '#3e3e42' : '#f0f0f0';
+                                                }
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                if (selectedRepo !== repo.full_name) {
+                                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                                }
+                                            }}
+                                        >
+                                            <div style={{ fontWeight: 500, marginBottom: '2px' }}>
+                                                {repo.name}
+                                            </div>
+                                            {repo.description && (
+                                                <div style={{
+                                                    fontSize: '10px',
+                                                    opacity: 0.7,
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap'
+                                                }}>
+                                                    {repo.description}
+                                                </div>
+                                            )}
+                                        </button>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* File Browser with Expandable Directories */}
             <div style={{
                 flex: 1,
                 overflow: 'auto',
                 padding: '8px'
             }}>
+                {/* Path indicator */}
+                {files.length > 0 && (
+                    <div style={{
+                        padding: '8px 12px',
+                        marginBottom: '8px',
+                        backgroundColor: darkMode ? '#2d2d30' : '#f6f8fa',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        color: darkMode ? '#888' : '#666',
+                        border: `1px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`
+                    }}>
+                        📁 {isLoggedIn ? `@${username}` : '@guest'} / coderunner files
+                        {selectedRepo && (
+                            <div style={{ marginTop: '2px', color: darkMode ? '#4caf50' : '#2e7d32' }}>
+                                🔗 Repository: {selectedRepo}
+                            </div>
+                        )}
+                    </div>
+                )}
+                
                 {(() => {
                     const { organized, rootFiles } = organizeFilesByDirectory(files);
                     const allDirectories = Object.keys(organized);
@@ -991,39 +1451,80 @@ Focus on:
                         <div>
                             {/* Root files first */}
                             {rootFiles.map((file, index) => (
-                                <button
+                                <div
                                     key={`root-${index}`}
-                                    onClick={() => openFile(file)}
                                     style={{
-                                        width: '100%',
-                                        padding: '8px 12px',
-                                        background: currentFile?.path === file.path 
-                                            ? (darkMode ? '#37373d' : '#e8f4fd') 
-                                            : 'none',
-                                        border: 'none',
-                                        color: currentFile?.path === file.path 
-                                            ? (darkMode ? '#ffffff' : '#0366d6')
-                                            : (darkMode ? '#cccccc' : '#24292e'),
-                                        cursor: 'pointer',
-                                        fontSize: '13px',
-                                        textAlign: 'left',
-                                        borderRadius: '4px',
-                                        transition: 'background-color 0.2s',
+                                        position: 'relative',
                                         marginBottom: '2px'
                                     }}
-                                    onMouseEnter={(e) => {
-                                        if (currentFile?.path !== file.path) {
-                                            e.currentTarget.style.backgroundColor = darkMode ? '#3e3e42' : '#f0f0f0';
-                                        }
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        if (currentFile?.path !== file.path) {
-                                            e.currentTarget.style.backgroundColor = 'transparent';
-                                        }
-                                    }}
                                 >
-                                    📄 {file.name}
-                                </button>
+                                    <button
+                                        onClick={() => openFile(file)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '8px 12px',
+                                            background: currentFile?.path === file.path 
+                                                ? (darkMode ? '#37373d' : '#e8f4fd') 
+                                                : 'none',
+                                            border: 'none',
+                                            color: currentFile?.path === file.path 
+                                                ? (darkMode ? '#ffffff' : '#0366d6')
+                                                : (darkMode ? '#cccccc' : '#24292e'),
+                                            cursor: 'pointer',
+                                            fontSize: '13px',
+                                            textAlign: 'left',
+                                            borderRadius: '4px',
+                                            transition: 'background-color 0.2s',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            if (currentFile?.path !== file.path) {
+                                                e.currentTarget.style.backgroundColor = darkMode ? '#3e3e42' : '#f0f0f0';
+                                            }
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            if (currentFile?.path !== file.path) {
+                                                e.currentTarget.style.backgroundColor = 'transparent';
+                                            }
+                                        }}
+                                    >
+                                        <span>📄 {file.name}</span>
+                                        {!file.isDir && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if (confirm(`Are you sure you want to delete "${file.name}"?`)) {
+                                                        deleteFile(file);
+                                                    }
+                                                }}
+                                                style={{
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    color: darkMode ? '#ff6b6b' : '#dc3545',
+                                                    cursor: 'pointer',
+                                                    padding: '2px 4px',
+                                                    borderRadius: '3px',
+                                                    fontSize: '12px',
+                                                    opacity: 0.7,
+                                                    transition: 'opacity 0.2s, background-color 0.2s'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.opacity = '1';
+                                                    e.currentTarget.style.backgroundColor = darkMode ? 'rgba(255, 107, 107, 0.1)' : 'rgba(220, 53, 69, 0.1)';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.opacity = '0.7';
+                                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                                }}
+                                                title="Delete file"
+                                            >
+                                                🗑️
+                                            </button>
+                                        )}
+                                    </button>
+                                </div>
                             ))}
                             
                             {/* Directories and their files */}
@@ -1075,43 +1576,127 @@ Focus on:
                                         </button>
                                         
                                         {/* Directory files - shown when expanded */}
-                                        {isExpanded && dirFiles.map((file, fileIndex) => (
-                                            <button
-                                                key={`${dirPath}-${fileIndex}`}
-                                                onClick={() => openFile(file)}
-                                                style={{
-                                                    width: '100%',
-                                                    padding: '6px 12px 6px 20px',
-                                                    background: currentFile?.path === file.path 
-                                                        ? (darkMode ? '#37373d' : '#e8f4fd') 
-                                                        : 'none',
-                                                    border: 'none',
-                                                    borderLeft: `2px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`,
-                                                    marginLeft: '12px',
-                                                    color: currentFile?.path === file.path 
-                                                        ? (darkMode ? '#ffffff' : '#0366d6')
-                                                        : (darkMode ? '#cccccc' : '#24292e'),
-                                                    cursor: 'pointer',
-                                                    fontSize: '12px',
-                                                    textAlign: 'left',
-                                                    borderRadius: '0 4px 4px 0',
-                                                    transition: 'background-color 0.2s',
+                                        {isExpanded && (
+                                            <>
+                                                {/* Plus button to create new file in this directory */}
+                                                <div style={{
+                                                    position: 'relative',
                                                     marginBottom: '1px'
-                                                }}
-                                                onMouseEnter={(e) => {
-                                                    if (currentFile?.path !== file.path) {
-                                                        e.currentTarget.style.backgroundColor = darkMode ? '#3e3e42' : '#f0f0f0';
-                                                    }
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    if (currentFile?.path !== file.path) {
-                                                        e.currentTarget.style.backgroundColor = 'transparent';
-                                                    }
-                                                }}
-                                            >
-                                                📄 {file.name}
-                                            </button>
-                                        ))}
+                                                }}>
+                                                    <button
+                                                        onClick={() => createNewFileInDirectory(dirPath)}
+                                                        style={{
+                                                            width: '100%',
+                                                            padding: '6px 12px 6px 20px',
+                                                            background: 'none',
+                                                            border: 'none',
+                                                            borderLeft: `2px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`,
+                                                            marginLeft: '12px',
+                                                            color: darkMode ? '#4caf50' : '#28a745',
+                                                            cursor: 'pointer',
+                                                            fontSize: '12px',
+                                                            textAlign: 'left',
+                                                            borderRadius: '0 4px 4px 0',
+                                                            transition: 'background-color 0.2s',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '6px',
+                                                            fontWeight: 500
+                                                        }}
+                                                        onMouseEnter={(e) => {
+                                                            e.currentTarget.style.backgroundColor = darkMode ? 'rgba(76, 175, 80, 0.1)' : 'rgba(40, 167, 69, 0.1)';
+                                                        }}
+                                                        onMouseLeave={(e) => {
+                                                            e.currentTarget.style.backgroundColor = 'transparent';
+                                                        }}
+                                                        title="Create new file"
+                                                    >
+                                                        <span style={{ fontSize: '14px' }}>+</span>
+                                                        <span style={{ fontSize: '11px', opacity: 0.8 }}>New file</span>
+                                                    </button>
+                                                </div>
+                                                
+                                                {/* Existing files in directory */}
+                                                {dirFiles.map((file, fileIndex) => (
+                                                    <div
+                                                        key={`${dirPath}-${fileIndex}`}
+                                                        style={{
+                                                            position: 'relative',
+                                                            marginBottom: '1px'
+                                                        }}
+                                                    >
+                                                        <button
+                                                            onClick={() => openFile(file)}
+                                                            style={{
+                                                                width: '100%',
+                                                                padding: '6px 12px 6px 20px',
+                                                                background: currentFile?.path === file.path 
+                                                                    ? (darkMode ? '#37373d' : '#e8f4fd') 
+                                                                    : 'none',
+                                                                border: 'none',
+                                                                borderLeft: `2px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`,
+                                                                marginLeft: '12px',
+                                                                color: currentFile?.path === file.path 
+                                                                    ? (darkMode ? '#ffffff' : '#0366d6')
+                                                                    : (darkMode ? '#cccccc' : '#24292e'),
+                                                                cursor: 'pointer',
+                                                                fontSize: '12px',
+                                                                textAlign: 'left',
+                                                                borderRadius: '0 4px 4px 0',
+                                                                transition: 'background-color 0.2s',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'space-between'
+                                                            }}
+                                                            onMouseEnter={(e) => {
+                                                                if (currentFile?.path !== file.path) {
+                                                                    e.currentTarget.style.backgroundColor = darkMode ? '#3e3e42' : '#f0f0f0';
+                                                                }
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                                if (currentFile?.path !== file.path) {
+                                                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                                                }
+                                                            }}
+                                                        >
+                                                            <span>📄 {file.name}</span>
+                                                            {!file.isDir && (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        if (confirm(`Are you sure you want to delete "${file.name}"?`)) {
+                                                                            deleteFile(file);
+                                                                        }
+                                                                    }}
+                                                                    style={{
+                                                                        background: 'none',
+                                                                        border: 'none',
+                                                                        color: darkMode ? '#ff6b6b' : '#dc3545',
+                                                                        cursor: 'pointer',
+                                                                        padding: '2px 4px',
+                                                                        borderRadius: '3px',
+                                                                        fontSize: '11px',
+                                                                        opacity: 0.7,
+                                                                        transition: 'opacity 0.2s, background-color 0.2s'
+                                                                    }}
+                                                                    onMouseEnter={(e) => {
+                                                                        e.currentTarget.style.opacity = '1';
+                                                                        e.currentTarget.style.backgroundColor = darkMode ? 'rgba(255, 107, 107, 0.1)' : 'rgba(220, 53, 69, 0.1)';
+                                                                    }}
+                                                                    onMouseLeave={(e) => {
+                                                                        e.currentTarget.style.opacity = '0.7';
+                                                                        e.currentTarget.style.backgroundColor = 'transparent';
+                                                                    }}
+                                                                    title="Delete file"
+                                                                >
+                                                                    🗑️
+                                                                </button>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </>
+                                        )}
                                     </div>
                                 );
                             })}
@@ -1160,17 +1745,17 @@ Focus on:
 
             {/* Header */}
             <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '12px 16px',
-                backgroundColor: darkMode ? '#252526' : '#f8f9fa',
-                borderBottom: `1px solid ${darkMode ? '#3e3e42' : '#e1e4e8'}`,
-                fontSize: '14px',
-                minHeight: '48px',
-                boxSizing: 'border-box'
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: isMobile ? '8px 12px' : '12px 16px',
+        backgroundColor: darkMode ? '#252526' : '#f8f9fa',
+        borderBottom: `1px solid ${darkMode ? '#3e3e42' : '#e1e4e8'}`,
+        fontSize: '14px',
+        minHeight: isMobile ? '44px' : '48px',
+        boxSizing: 'border-box'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '12px' }}>
                     {/* Hamburger Menu */}
                     <button
                         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -1207,9 +1792,12 @@ Focus on:
                         }}></div>
                     </button>
                     
-                    <h3 style={{ margin: 0, fontWeight: 600, fontSize: '14px' }}>
-                        CodeRunner
-                    </h3>
+                    {/* Title - only show on desktop */}
+                    {!isMobile && (
+                        <h3 style={{ margin: 0, fontWeight: 600, fontSize: '14px' }}>
+                            CodeRunner
+                        </h3>
+                    )}
 
                     {/* Tab Navigation */}
                     <div style={{ display: 'flex', gap: '4px' }}>
@@ -1224,13 +1812,17 @@ Focus on:
                                     ? (darkMode ? '#ffffff' : '#0366d6')
                                     : (darkMode ? '#cccccc' : '#24292e'),
                                 cursor: 'pointer',
-                                padding: '6px 12px',
+        padding: isMobile ? '6px 8px' : '6px 12px',
                                 borderRadius: '6px',
-                                fontSize: '12px',
-                                fontWeight: 500
+        fontSize: isMobile ? '16px' : '12px',
+                                fontWeight: 500,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: isMobile ? '0' : '4px'
                             }}
+                            title="Chat"
                         >
-                            💬 Chat
+                            {isMobile ? '💬' : '💬 Chat'}
                         </button>
                         <button
                             onClick={() => setActiveTab('code')}
@@ -1243,18 +1835,22 @@ Focus on:
                                     ? (darkMode ? '#ffffff' : '#0366d6')
                                     : (darkMode ? '#cccccc' : '#24292e'),
                                 cursor: 'pointer',
-                                padding: '6px 12px',
-                                borderRadius: '6px',
-                                fontSize: '12px',
-                                fontWeight: 500
+                                padding: isMobile ? '6px 8px' : '6px 12px',
+        borderRadius: '6px',
+                                fontSize: isMobile ? '16px' : '12px',
+                                fontWeight: 500,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: isMobile ? '0' : '4px'
                             }}
+                            title="Code"
                         >
-                            📝 Code
+                            {isMobile ? '📝' : '📝 Code'}
                         </button>
                     </div>
                     
-                    {/* Current File Indicator */}
-                    {currentFile && activeTab === 'code' && (
+                    {/* Current File Indicator - only show on desktop when in code tab */}
+                    {!isMobile && currentFile && activeTab === 'code' && (
                         <div style={{
                             fontSize: '12px',
                             color: darkMode ? '#888' : '#666',
@@ -1267,10 +1863,10 @@ Focus on:
                         </div>
                     )}
 
-                    {/* Save Status */}
-                    {saveStatus && (
+                    {/* Save Status - only show on desktop */}
+                    {!isMobile && saveStatus && (
                         <div style={{
-                            fontSize: '12px',
+        fontSize: '12px',
                             color: saveStatus.includes('✓') ? '#28a745' : '#dc3545',
                             fontWeight: 500
                         }}>
@@ -1279,7 +1875,7 @@ Focus on:
                     )}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '6px' : '8px' }}>
                     {/* New File Button */}
                     <button
                         onClick={createNewFile}
@@ -1287,35 +1883,42 @@ Focus on:
                             background: darkMode ? '#0e4429' : '#238636',
                             color: '#ffffff',
                             border: 'none',
-                            padding: '6px 12px',
+                            padding: isMobile ? '6px 8px' : '6px 12px',
                             borderRadius: '6px',
                             cursor: 'pointer',
-                            fontSize: '12px',
-                            fontWeight: 500
+                            fontSize: isMobile ? '16px' : '12px',
+                            fontWeight: 500,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: isMobile ? '0' : '4px'
                         }}
+                        title="New File"
                     >
-                        + New File
+                        {isMobile ? '+' : '+ New File'}
                     </button>
 
                     {/* Login/Logout */}
                     {isLoggedIn ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ fontSize: '12px', color: darkMode ? '#888' : '#666' }}>
-                                @{username}
-                            </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '4px' : '8px' }}>
+                            {!isMobile && (
+                                <span style={{ fontSize: '12px', color: darkMode ? '#888' : '#666' }}>
+                                    @{username}
+                                </span>
+                            )}
                             <button
                                 onClick={handleLogout}
                                 style={{
                                     background: 'none',
                                     border: `1px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`,
                                     color: darkMode ? '#cccccc' : '#24292e',
-                                    padding: '4px 8px',
+                                    padding: isMobile ? '6px 8px' : '4px 8px',
                                     borderRadius: '4px',
                                     cursor: 'pointer',
-                                    fontSize: '12px'
+                                    fontSize: isMobile ? '11px' : '12px'
                                 }}
+                                title={isMobile ? `Logout @${username}` : 'Logout'}
                             >
-                                Logout
+                                {isMobile ? '↗' : 'Logout'}
                             </button>
                         </div>
                     ) : (
@@ -1325,20 +1928,31 @@ Focus on:
                                 background: darkMode ? '#1f2937' : '#f8f9fa',
                                 border: `1px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`,
                                 color: darkMode ? '#cccccc' : '#24292e',
-                                padding: '6px 12px',
+                                padding: isMobile ? '6px 8px' : '6px 12px',
                                 borderRadius: '6px',
                                 cursor: 'pointer',
-                                fontSize: '12px',
+                                fontSize: isMobile ? '11px' : '12px',
                                 fontWeight: 500,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px'
+        display: 'flex',
+        alignItems: 'center',
+                                gap: isMobile ? '2px' : '6px'
                             }}
                         >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
-                            </svg>
-                            Login with GitHub
+                            {isMobile ? (
+                                <>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+                                    </svg>
+                                    Login
+                                </>
+                            ) : (
+                                <>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+                                    </svg>
+                                    Login with GitHub
+                                </>
+                            )}
                         </button>
                     )}
                 </div>

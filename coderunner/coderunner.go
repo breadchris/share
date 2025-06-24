@@ -12,6 +12,9 @@ import (
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	"github.com/evanw/esbuild/pkg/api"
+	"github.com/go-git/go-git/v5"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/google/go-github/v66/github"
 )
 
 type BuildCache struct {
@@ -61,49 +64,234 @@ func New(d deps.Deps) *http.ServeMux {
 	m.HandleFunc("/api/build/", func(w http.ResponseWriter, r *http.Request) {
 		handleBuild(w, r)
 	})
+	m.HandleFunc("/api/delete/", func(w http.ResponseWriter, r *http.Request) {
+		handleDeleteFile(w, r)
+	})
 
 	// GitHub user info endpoint
 	m.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
-		// Check if user is authenticated via session
-		// This assumes the GitHub OAuth handler sets a session cookie
-		_, err := r.Cookie("session") // Adjust cookie name as needed
+		// Get GitHub user data from session
+		gitHubUser, err := d.Session.GetGitHubUser(r.Context())
 		if err != nil {
 			http.Error(w, `{"error":"not authenticated"}`, http.StatusUnauthorized)
 			return
 		}
 
-		// For now, we'll extract the username from the file path structure
-		// In a real implementation, you'd validate the session and get user info
-		// from the GitHub OAuth session data
+		w.Header().Set("Content-Type", "application/json")
+		response := map[string]string{
+			"username": gitHubUser.GithubUsername,
+			"provider": "github",
+			"email":    gitHubUser.Email,
+		}
+		json.NewEncoder(w).Encode(response)
+	})
 
-		// Check for any user-prefixed directories to determine if user is logged in
-		entries, err := os.ReadDir("./data/coderunner/src")
+	// GitHub repositories endpoint - now uses real GitHub API
+	m.HandleFunc("/repositories", func(w http.ResponseWriter, r *http.Request) {
+		// Get GitHub user data from session
+		gitHubUser, err := d.Session.GetGitHubUser(r.Context())
 		if err != nil {
-			http.Error(w, `{"error":"failed to read directory"}`, http.StatusInternalServerError)
+			http.Error(w, `{"error":"not authenticated"}`, http.StatusUnauthorized)
 			return
 		}
 
-		var githubUsername string
-		for _, entry := range entries {
-			if entry.IsDir() && strings.HasPrefix(entry.Name(), "@") {
-				// Extract username from @username format
-				username := strings.TrimPrefix(entry.Name(), "@")
-				if username != "guest" {
-					githubUsername = username
-					break
-				}
-			}
+		if gitHubUser.AccessToken == "" {
+			http.Error(w, `{"error":"no access token found"}`, http.StatusUnauthorized)
+			return
 		}
 
-		if githubUsername == "" {
-			http.Error(w, `{"error":"no github user found"}`, http.StatusUnauthorized)
+		// Create GitHub client with user's access token
+		client := github.NewClient(nil).WithAuthToken(gitHubUser.AccessToken)
+
+		// Fetch repositories using GitHub API
+		opt := &github.RepositoryListByAuthenticatedUserOptions{
+			ListOptions: github.ListOptions{PerPage: 100}, // Increased to get more repos
+			Sort:        "updated",                        // Sort by last updated
+			Direction:   "desc",                           // Most recently updated first
+		}
+
+		var allRepos []*github.Repository
+		for {
+			repos, resp, err := client.Repositories.ListByAuthenticatedUser(r.Context(), opt)
+			if err != nil {
+				http.Error(w, fmt.Sprintf(`{"error":"failed to fetch repositories: %v"}`, err), http.StatusInternalServerError)
+				return
+			}
+
+			allRepos = append(allRepos, repos...)
+			if resp.NextPage == 0 {
+				break
+			}
+			opt.Page = resp.NextPage
+		}
+
+		// Format repositories for frontend
+		formattedRepos := make([]map[string]interface{}, 0, len(allRepos))
+		for _, repo := range allRepos {
+			// Skip forks if desired (optional)
+			// if repo.GetFork() { continue }
+
+			repoData := map[string]interface{}{
+				"name":        repo.GetName(),
+				"full_name":   repo.GetFullName(),
+				"description": repo.GetDescription(),
+				"private":     repo.GetPrivate(),
+				"language":    repo.GetLanguage(),
+				"updated_at":  repo.GetUpdatedAt().Format(time.RFC3339),
+				"html_url":    repo.GetHTMLURL(),
+				"clone_url":   repo.GetCloneURL(),
+			}
+			formattedRepos = append(formattedRepos, repoData)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(formattedRepos)
+	})
+
+	// GitHub repository selection endpoint
+	m.HandleFunc("/select-repo", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var req struct {
+			Repository string `json:"repository"`
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "Invalid JSON", http.StatusBadRequest)
+			return
+		}
+
+		if req.Repository == "" {
+			http.Error(w, "Repository is required", http.StatusBadRequest)
+			return
+		}
+
+		// Update repository selection in session
+		if err := d.Session.UpdateGitHubUserRepo(r.Context(), req.Repository); err != nil {
+			http.Error(w, `{"error":"failed to update repository selection"}`, http.StatusInternalServerError)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		response := map[string]string{
-			"username": githubUsername,
-			"provider": "github",
+		response := map[string]interface{}{
+			"success":    true,
+			"repository": req.Repository,
+			"message":    "Repository selected successfully",
+		}
+		json.NewEncoder(w).Encode(response)
+	})
+
+	// GitHub repository clone endpoint
+	m.HandleFunc("/clone-repo", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		// Get GitHub user data from session
+		gitHubUser, err := d.Session.GetGitHubUser(r.Context())
+		if err != nil {
+			http.Error(w, `{"error":"not authenticated"}`, http.StatusUnauthorized)
+			return
+		}
+
+		if gitHubUser.Repo == "" {
+			http.Error(w, `{"error":"no repository selected"}`, http.StatusBadRequest)
+			return
+		}
+
+		// Parse repository full name (owner/repo)
+		repoParts := strings.Split(gitHubUser.Repo, "/")
+		if len(repoParts) != 2 {
+			http.Error(w, `{"error":"invalid repository format"}`, http.StatusBadRequest)
+			return
+		}
+
+		repoName := repoParts[1]
+		repoURL := fmt.Sprintf("https://github.com/%s.git", gitHubUser.Repo)
+
+		// Create user directory path: ./data/coderunner/src/@username/repositories/reponame
+		userDir := fmt.Sprintf("./data/coderunner/src/@%s", gitHubUser.GithubUsername)
+		repoDir := filepath.Join(userDir, "repositories", repoName)
+
+		// Ensure the user and repositories directory exists
+		if err := os.MkdirAll(filepath.Dir(repoDir), 0755); err != nil {
+			http.Error(w, fmt.Sprintf(`{"error":"failed to create directories: %v"}`, err), http.StatusInternalServerError)
+			return
+		}
+
+		var cloneResult string
+		if _, err := os.Stat(repoDir); err != nil {
+			// Repository doesn't exist, clone it
+			fmt.Printf("Cloning repository %s into %s\n", repoURL, repoDir)
+
+			cloneOptions := &git.CloneOptions{
+				URL:      repoURL,
+				Progress: os.Stdout,
+			}
+
+			// Add authentication if we have an access token
+			if gitHubUser.AccessToken != "" {
+				cloneOptions.Auth = &githttp.BasicAuth{
+					Username: gitHubUser.GithubUsername,
+					Password: gitHubUser.AccessToken,
+				}
+			}
+
+			_, err := git.PlainClone(repoDir, false, cloneOptions)
+			if err != nil {
+				http.Error(w, fmt.Sprintf(`{"error":"failed to clone repository: %v"}`, err), http.StatusInternalServerError)
+				return
+			}
+			cloneResult = "Repository cloned successfully"
+		} else {
+			// Repository exists, pull latest changes
+			fmt.Printf("Pulling latest changes for repository %s\n", repoURL)
+
+			repo, err := git.PlainOpen(repoDir)
+			if err != nil {
+				http.Error(w, fmt.Sprintf(`{"error":"failed to open repository: %v"}`, err), http.StatusInternalServerError)
+				return
+			}
+
+			workTree, err := repo.Worktree()
+			if err != nil {
+				http.Error(w, fmt.Sprintf(`{"error":"failed to get worktree: %v"}`, err), http.StatusInternalServerError)
+				return
+			}
+
+			pullAuth := &git.PullOptions{
+				RemoteName: "origin",
+			}
+			if gitHubUser.AccessToken != "" {
+				pullAuth.Auth = &githttp.BasicAuth{
+					Username: gitHubUser.GithubUsername,
+					Password: gitHubUser.AccessToken,
+				}
+			}
+
+			err = workTree.Pull(pullAuth)
+			if err != nil && err != git.NoErrAlreadyUpToDate {
+				http.Error(w, fmt.Sprintf(`{"error":"failed to pull repository: %v"}`, err), http.StatusInternalServerError)
+				return
+			}
+
+			if err == git.NoErrAlreadyUpToDate {
+				cloneResult = "Repository is already up to date"
+			} else {
+				cloneResult = "Repository updated successfully"
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		response := map[string]interface{}{
+			"success":    true,
+			"repository": gitHubUser.Repo,
+			"message":    cloneResult,
+			"path":       repoDir,
 		}
 		json.NewEncoder(w).Encode(response)
 	})
@@ -371,33 +559,44 @@ func handleBuild(w http.ResponseWriter, r *http.Request) {
 func buildFileTree(dir string) ([]FileInfo, error) {
 	var files []FileInfo
 
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, entry := range entries {
-		fullPath := filepath.Join(dir, entry.Name())
-		info, err := entry.Info()
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			continue
+			return nil // Continue walking even if we can't access a file
+		}
+
+		// Skip the root directory itself
+		if path == dir {
+			return nil
+		}
+
+		// Skip hidden files and directories (starting with .)
+		if strings.HasPrefix(info.Name(), ".") {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
 		}
 
 		// Calculate relative path from src directory
-		relPath, err := filepath.Rel("./data/coderunner/src", fullPath)
+		relPath, err := filepath.Rel(dir, path)
 		if err != nil {
-			continue
+			return nil
 		}
 
 		fileInfo := FileInfo{
-			Name:         entry.Name(),
+			Name:         info.Name(),
 			Path:         filepath.ToSlash(relPath), // Ensure forward slashes for web
-			IsDir:        entry.IsDir(),
+			IsDir:        info.IsDir(),
 			Size:         info.Size(),
 			LastModified: info.ModTime(),
 		}
 
 		files = append(files, fileInfo)
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	return files, nil
@@ -417,4 +616,68 @@ func isCachedBuildValid(srcPath, outputPath string) bool {
 
 	// Cached build is valid if it's newer than the source
 	return outputInfo.ModTime().After(srcInfo.ModTime())
+}
+
+// handleDeleteFile deletes a file from the filesystem
+func handleDeleteFile(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "DELETE" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract path from URL
+	urlPath := strings.TrimPrefix(r.URL.Path, "/api/delete/")
+	if urlPath == "" {
+		http.Error(w, "File path is required", http.StatusBadRequest)
+		return
+	}
+
+	// Validate and sanitize the path
+	cleanPath := filepath.Clean(urlPath)
+	if strings.Contains(cleanPath, "..") {
+		http.Error(w, "Invalid path", http.StatusBadRequest)
+		return
+	}
+
+	// Ensure path starts with username (e.g., "@breadchris/")
+	if !strings.HasPrefix(cleanPath, "@") {
+		http.Error(w, "Path must start with username (e.g., @breadchris/filename.tsx)", http.StatusBadRequest)
+		return
+	}
+
+	// Build full path
+	fullPath := filepath.Join("./data/coderunner/src", cleanPath)
+
+	// Check if file exists
+	info, err := os.Stat(fullPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			http.Error(w, "File not found", http.StatusNotFound)
+		} else {
+			http.Error(w, fmt.Sprintf("Error accessing file: %v", err), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Don't allow deleting directories
+	if info.IsDir() {
+		http.Error(w, "Cannot delete directories", http.StatusBadRequest)
+		return
+	}
+
+	// Delete the file
+	if err := os.Remove(fullPath); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to delete file: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Return success response
+	response := map[string]interface{}{
+		"success": true,
+		"path":    cleanPath,
+		"message": "File deleted successfully",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }

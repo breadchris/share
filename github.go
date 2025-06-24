@@ -31,6 +31,11 @@ type Github struct {
 
 var users = map[string]*User{}
 
+// GetUsers returns the users map for external packages
+func GetUsers() map[string]*User {
+	return users
+}
+
 func NewGithub(d deps.Deps) *Github {
 	return &Github{
 		h: gothic.NewHandler(
@@ -61,9 +66,10 @@ func (s *Github) Routes(d deps.Deps) *http.ServeMux {
 			return
 		}
 
-		user, ok := users[u]
-		if !ok {
-			http.Error(w, "failed to get user", http.StatusInternalServerError)
+		// Get GitHub user data from session
+		gitHubUser, err := s.s.GetGitHubUser(r.Context())
+		if err != nil {
+			http.Error(w, "failed to get GitHub user data from session", http.StatusInternalServerError)
 			return
 		}
 
@@ -75,18 +81,26 @@ func (s *Github) Routes(d deps.Deps) *http.ServeMux {
 				return
 			}
 
-			// TODO breadchris replace with sql
-			user.Repo = repo
-			users[u] = user
+			// Update repository in session
+			if err := s.s.UpdateGitHubUserRepo(r.Context(), repo); err != nil {
+				http.Error(w, "failed to update repository in session", http.StatusInternalServerError)
+				return
+			}
 
-			repoDir := fmt.Sprintf("%s/%s", user.GithubUsername, repo)
+			// Also update the legacy users map for backward compatibility
+			if user, exists := users[u]; exists {
+				user.Repo = repo
+				users[u] = user
+			}
+
+			repoDir := fmt.Sprintf("%s/%s", gitHubUser.GithubUsername, repo)
 			repoURL := fmt.Sprintf("https://github.com/%s.git", repoDir)
 
 			repoPath := path.Join("./data/repos", repoDir)
 
 			var auth = &ghttp.BasicAuth{
-				Username: user.GithubUsername,
-				Password: user.AccessToken,
+				Username: gitHubUser.GithubUsername,
+				Password: gitHubUser.AccessToken,
 			}
 
 			if _, err := os.Stat(repoPath); err != nil {
@@ -192,19 +206,19 @@ func (s *Github) Routes(d deps.Deps) *http.ServeMux {
 				return
 			}
 
-			http.Redirect(w, r, "/coderunner/", http.StatusFound)
+			http.Redirect(w, r, "/github/commit/", http.StatusFound)
 			return
 		}
 
-		if user.Repo != "" {
+		if gitHubUser.Repo != "" {
 			ctx := context.WithValue(r.Context(), "baseURL", "/github")
 			DefaultLayout(
-				Text("Repo: "+user.Repo),
+				Text("Repo: "+gitHubUser.Repo),
 			).RenderPageCtx(ctx, w, r)
 			return
 		}
 
-		client := github.NewClient(nil).WithAuthToken(user.AccessToken)
+		client := github.NewClient(nil).WithAuthToken(gitHubUser.AccessToken)
 
 		opt := &github.RepositoryListByAuthenticatedUserOptions{
 			ListOptions: github.ListOptions{PerPage: 10},
@@ -232,6 +246,14 @@ func (s *Github) Routes(d deps.Deps) *http.ServeMux {
 		DefaultLayout(
 			RepoSelector(repoNames),
 		).RenderPageCtx(ctx, w, r)
+	})
+	mux.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
+		// Clear GitHub session data
+		s.s.ClearGitHubUser(r.Context())
+		s.s.ClearUserID(r.Context())
+
+		// Redirect to login page or homepage
+		http.Redirect(w, r, "/github/", http.StatusFound)
 	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), "baseURL", "/github")
@@ -286,30 +308,40 @@ func (s *Github) callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var id string
-	for _, user := range users {
-		if user.Email == u.Email {
-			id = user.ID
-			break
-		}
-	}
-
 	fmt.Printf("%+v\n", u)
 	fmt.Printf("%+v\n", u.RawData)
 
-	if id == "" {
-		id = uuid.NewString()
-		users[id] = &User{
-			ID:             id,
-			Email:          u.Email,
-			AccessToken:    u.AccessToken,
-			GithubUsername: u.NickName,
-		}
-	} else {
-		users[id].AccessToken = u.AccessToken
-		users[id].GithubUsername = u.NickName
-	}
-	s.s.SetUserID(r.Context(), id)
+	// Create user ID and set in session
+	userID := uuid.NewString()
+	s.s.SetUserID(r.Context(), userID)
 
-	http.Redirect(w, r, "/github/commit", http.StatusFound)
+	// Store GitHub user data in session
+	gitHubUser := &session.GitHubUserData{
+		ID:             userID,
+		Email:          u.Email,
+		AccessToken:    u.AccessToken,
+		GithubUsername: u.NickName,
+		DisplayName:    u.Name,
+		Icon:           u.AvatarURL,
+		Repo:           "", // Will be set when user selects a repository
+	}
+
+	if err := s.s.SetGitHubUser(r.Context(), gitHubUser); err != nil {
+		slog.Error("failed to store GitHub user in session", "error", err)
+		http.Error(w, "Failed to store user data", http.StatusInternalServerError)
+		return
+	}
+
+	// Also maintain the old users map for backward compatibility (if needed)
+	users[userID] = &User{
+		ID:             userID,
+		Email:          u.Email,
+		AccessToken:    u.AccessToken,
+		GithubUsername: u.NickName,
+		DisplayName:    u.Name,
+		Icon:           u.AvatarURL,
+		Repo:           "",
+	}
+
+	http.Redirect(w, r, "/coderunner/", http.StatusFound)
 }

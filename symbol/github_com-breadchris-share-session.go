@@ -12,13 +12,17 @@ import (
 func init() {
 	Symbols["github.com/breadchris/share/session/session"] = map[string]reflect.Value{
 		// function, constant and variable definitions
-		"New":            reflect.ValueOf(session.New),
-		"NewFileStore":   reflect.ValueOf(session.NewFileStore),
-		"UserIDCtxKey":   reflect.ValueOf(constant.MakeFromLiteral("\"user\"", token.STRING, 0)),
-		"UserLoginError": reflect.ValueOf(&session.UserLoginError).Elem(),
+		"GitHubRepoCtxKey":  reflect.ValueOf(constant.MakeFromLiteral("\"github_repo\"", token.STRING, 0)),
+		"GitHubTokenCtxKey": reflect.ValueOf(constant.MakeFromLiteral("\"github_token\"", token.STRING, 0)),
+		"GitHubUserCtxKey":  reflect.ValueOf(constant.MakeFromLiteral("\"github_user\"", token.STRING, 0)),
+		"New":               reflect.ValueOf(session.New),
+		"NewFileStore":      reflect.ValueOf(session.NewFileStore),
+		"UserIDCtxKey":      reflect.ValueOf(constant.MakeFromLiteral("\"user\"", token.STRING, 0)),
+		"UserLoginError":    reflect.ValueOf(&session.UserLoginError).Elem(),
 
 		// type definitions
 		"FileStore":      reflect.ValueOf((*session.FileStore)(nil)),
+		"GitHubUserData": reflect.ValueOf((*session.GitHubUserData)(nil)),
 		"SessionManager": reflect.ValueOf((*session.SessionManager)(nil)),
 	}
 }

@@ -275,6 +275,7 @@ func startServer(useTLS bool, port int) {
 	p("/registry", interpreted(registry.New))
 	g := NewGithub(deps)
 	p("/github", interpreted(g.Routes))
+
 	p("/coderunner", interpreted(coderunner.New))
 	p("/filecode", func() *http.ServeMux {
 		m := http.NewServeMux()

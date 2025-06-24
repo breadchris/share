@@ -34,7 +34,7 @@
 //go:generate yaegi extract github.com/go-shiori/dom
 //go:generate yaegi extract github.com/go-shiori/go-readability
 //go:generate yaegi extract github.com/markbates/goth/providers/github
-//go:generate yaegi extract github.com/google/go-github/v55/github
+//go:generate yaegi extract github.com/google/go-github/v66/github
 //go:generate yaegi extract github.com/gorilla/sessions
 //go:generate yaegi extract github.com/markbates/goth/gothic
 //go:generate yaegi extract golang.org/x/oauth2
@@ -56,6 +56,7 @@
 //go:generate yaegi extract github.com/dsoprea/go-jpeg-image-structure/v2
 //go:generate yaegi extract github.com/breadchris/share/db
 //go:generate yaegi extract github.com/evanw/esbuild/pkg/api
+//go:generate yaegi extract github.com/go-git/go-git/v5/plumbing/transport/http
 
 package symbol
 
