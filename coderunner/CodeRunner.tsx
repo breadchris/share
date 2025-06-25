@@ -1038,7 +1038,7 @@ Focus on:
     const handleDragMove = useCallback((e: MouseEvent) => {
         if (!isDragging) return;
         
-        const deltaY = dragStartY - e.clientY; // Negative because we're dragging up to increase height
+        const deltaY = e.clientY - dragStartY; // Positive when dragging down, negative when dragging up
         const newHeight = Math.max(150, Math.min(window.innerHeight * 0.7, dragStartHeight + deltaY));
         setOutputHeight(newHeight);
     }, [isDragging, dragStartY, dragStartHeight]);
@@ -1966,7 +1966,187 @@ Focus on:
                 display: 'flex',
                 flexDirection: 'column'
             }}>
-                {/* Chat/Code Content Area */}
+                {/* Output Panel - Now at Top */}
+                <div style={{
+                    height: outputHeight,
+                    minHeight: outputHeight,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    backgroundColor: darkMode ? '#1a1a1a' : '#f9f9f9',
+                    border: `1px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`,
+                    borderBottom: 'none',
+                    borderRadius: '8px 8px 0 0',
+                    overflow: 'hidden',
+                    boxShadow: darkMode ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.1)'
+                }}>
+                    {/* Output Header */}
+                    <div style={{
+                        padding: '12px 16px',
+                        backgroundColor: darkMode ? '#2d2d2d' : '#e8f4fd',
+                        borderBottom: `2px solid ${darkMode ? '#4a4a4a' : '#c8e1ff'}`,
+                        fontSize: '14px',
+                        fontWeight: 700,
+                        color: darkMode ? '#ffffff' : '#0366d6',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        position: 'relative'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '16px' }}>📺</span>
+                            <span>Live Output</span>
+                            <span style={{ 
+                                fontSize: '11px', 
+                                opacity: 0.6,
+                                color: darkMode ? '#888' : '#666' 
+                            }}>
+                                (auto-updates on code changes)
+                            </span>
+                        </div>
+                        {isBuildLoading ? (
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                fontSize: '11px',
+                                color: darkMode ? '#ffa500' : '#e65100',
+                                fontWeight: 500,
+                                background: darkMode ? 'rgba(255,165,0,0.1)' : 'rgba(230,81,0,0.1)',
+                                padding: '2px 6px',
+                                borderRadius: '4px'
+                            }}>
+                                <div style={{
+                                    width: '10px',
+                                    height: '10px',
+                                    border: '2px solid rgba(255,165,0,0.3)',
+                                    borderTop: '2px solid currentColor',
+                                    borderRadius: '50%',
+                                    animation: 'spin 1s linear infinite'
+                                }}></div>
+                                Building...
+                            </div>
+                        ) : !esbuildReady ? (
+                            <span style={{
+                                fontSize: '11px',
+                                color: darkMode ? '#ffa500' : '#e65100',
+                                fontWeight: 500,
+                                background: darkMode ? 'rgba(255,165,0,0.1)' : 'rgba(230,81,0,0.1)',
+                                padding: '2px 6px',
+                                borderRadius: '4px'
+                            }}>
+                                Initializing...
+                            </span>
+                        ) : (
+                            <span style={{
+                                fontSize: '11px',
+                                color: darkMode ? '#4caf50' : '#2e7d32',
+                                fontWeight: 500,
+                                background: darkMode ? 'rgba(76,175,80,0.1)' : 'rgba(46,125,50,0.1)',
+                                padding: '2px 6px',
+                                borderRadius: '4px'
+                            }}>
+                                Live
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Output Content */}
+                    <div style={{ 
+                        flex: 1, 
+                        minHeight: 0,
+                        position: 'relative',
+                        background: darkMode ? '#1e1e1e' : '#ffffff'
+                    }}>
+                        <iframe
+                            ref={outputFrameRef}
+                            style={{ 
+                                width: '100%', 
+                                height: '100%', 
+                                border: 'none',
+                                backgroundColor: 'transparent'
+                            }}
+                            title="Code Output"
+                            // sandbox="allow-scripts allow-same-origin"
+                            srcDoc={`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Output</title>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 16px; 
+            font-family: system-ui, -apple-system, sans-serif;
+            background: ${darkMode ? '#1e1e1e' : '#ffffff'};
+            color: ${darkMode ? '#cccccc' : '#24292e'};
+            min-height: 100vh;
+        }
+        #root { min-height: calc(100vh - 32px); }
+    </style>
+</head>
+<body>
+    <div style="
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        height: ${isMobile ? '180px' : '220px'}; 
+        background: ${darkMode ? 'linear-gradient(135deg, #2a2a2a 0%, #1e1e1e 100%)' : 'linear-gradient(135deg, #f0f8ff 0%, #ffffff 100%)'};
+        border: 2px dashed ${darkMode ? '#555' : '#ddd'};
+        border-radius: 12px;
+        color: ${darkMode ? '#888' : '#666'};
+        text-align: center;
+        flex-direction: column;
+        gap: ${isMobile ? '8px' : '12px'};
+        margin: ${isMobile ? '8px' : '16px'};
+    ">
+        <div style="font-size: ${isMobile ? '24px' : '32px'}; opacity: 0.7;">⚡</div>
+        <div style="font-size: ${isMobile ? '14px' : '16px'}; font-weight: 500;">Waiting for code...</div>
+        <div style="font-size: ${isMobile ? '11px' : '13px'}; opacity: 0.7;">Output will appear automatically when you write code</div>
+    </div>
+</body>
+</html>
+                            `}
+                        />
+                    </div>
+                </div>
+
+                {/* Drag Handle for Resizing Output */}
+                <div 
+                    onMouseDown={handleDragStart}
+                    style={{
+                        width: '100%',
+                        height: '8px',
+                        backgroundColor: isDragging ? (darkMode ? '#7c7c7c' : '#a0a7ae') : (darkMode ? '#5c5c5c' : '#d0d7de'),
+                        cursor: 'ns-resize',
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        transition: isDragging ? 'none' : 'background-color 0.2s',
+                        position: 'relative',
+                        flexShrink: 0
+                    }}
+                >
+                    {/* Drag Handle Visual Indicator */}
+                    <div style={{
+                        width: '40px',
+                        height: '3px',
+                        backgroundColor: isDragging ? (darkMode ? '#ffffff' : '#666666') : (darkMode ? '#888888' : '#999999'),
+                        borderRadius: '2px',
+                        transition: isDragging ? 'none' : 'background-color 0.2s'
+                    }} />
+                </div>
+
+                {/* Horizontal Divider */}
+                <div style={{ 
+                    width: '100%',
+                    height: '2px',
+                    backgroundColor: darkMode ? '#5c5c5c' : '#d0d7de',
+                    flexShrink: 0
+                }} />
+
+                {/* Chat/Code Content Area - Now at Bottom */}
                 <div style={{
                     flex: 1,
                     minHeight: 0,
@@ -2175,186 +2355,6 @@ Focus on:
                             />
                         </div>
                     )}
-                </div>
-
-                {/* Horizontal Divider */}
-                <div style={{
-                    width: '100%',
-                    height: '2px',
-                    backgroundColor: darkMode ? '#5c5c5c' : '#d0d7de',
-                    flexShrink: 0
-                }} />
-
-                {/* Drag Handle for Resizing Output */}
-                <div 
-                    onMouseDown={handleDragStart}
-                    style={{
-                        width: '100%',
-                        height: '8px',
-                        backgroundColor: isDragging ? (darkMode ? '#7c7c7c' : '#a0a7ae') : (darkMode ? '#5c5c5c' : '#d0d7de'),
-                        cursor: 'ns-resize',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: isDragging ? 'none' : 'background-color 0.2s',
-                        position: 'relative',
-                        flexShrink: 0
-                    }}
-                >
-                    {/* Drag Handle Visual Indicator */}
-                    <div style={{
-                        width: '40px',
-                        height: '3px',
-                        backgroundColor: isDragging ? (darkMode ? '#ffffff' : '#666666') : (darkMode ? '#888888' : '#999999'),
-                        borderRadius: '2px',
-                        transition: isDragging ? 'none' : 'background-color 0.2s'
-                    }} />
-                </div>
-
-                {/* Output Panel - Always at Bottom */}
-                <div style={{
-                    height: outputHeight,
-                    minHeight: outputHeight,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    backgroundColor: darkMode ? '#1a1a1a' : '#f9f9f9',
-                    border: `1px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`,
-                    borderTop: 'none',
-                    borderRadius: '0 0 8px 8px',
-                    overflow: 'hidden',
-                    boxShadow: darkMode ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.1)'
-                }}>
-                    {/* Output Header */}
-                    <div style={{
-                        padding: '12px 16px',
-                        backgroundColor: darkMode ? '#2d2d2d' : '#e8f4fd',
-                        borderBottom: `2px solid ${darkMode ? '#4a4a4a' : '#c8e1ff'}`,
-                        fontSize: '14px',
-                        fontWeight: 700,
-                        color: darkMode ? '#ffffff' : '#0366d6',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        position: 'relative'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ fontSize: '16px' }}>📺</span>
-                            <span>Live Output</span>
-                            <span style={{ 
-                                fontSize: '11px', 
-                                opacity: 0.6,
-                                color: darkMode ? '#888' : '#666' 
-                            }}>
-                                (auto-updates on code changes)
-                            </span>
-                        </div>
-                        {isBuildLoading ? (
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                fontSize: '11px',
-                                color: darkMode ? '#ffa500' : '#e65100',
-                                fontWeight: 500,
-                                background: darkMode ? 'rgba(255,165,0,0.1)' : 'rgba(230,81,0,0.1)',
-                                padding: '2px 6px',
-                                borderRadius: '4px'
-                            }}>
-                                <div style={{
-                                    width: '10px',
-                                    height: '10px',
-                                    border: '2px solid rgba(255,165,0,0.3)',
-                                    borderTop: '2px solid currentColor',
-                                    borderRadius: '50%',
-                                    animation: 'spin 1s linear infinite'
-                                }}></div>
-                                Building...
-                            </div>
-                        ) : !esbuildReady ? (
-                            <span style={{
-                                fontSize: '11px',
-                                color: darkMode ? '#ffa500' : '#e65100',
-                                fontWeight: 500,
-                                background: darkMode ? 'rgba(255,165,0,0.1)' : 'rgba(230,81,0,0.1)',
-                                padding: '2px 6px',
-                                borderRadius: '4px'
-                            }}>
-                                Initializing...
-                            </span>
-                        ) : (
-                            <span style={{
-                                fontSize: '11px',
-                                color: darkMode ? '#4caf50' : '#2e7d32',
-                                fontWeight: 500,
-                                background: darkMode ? 'rgba(76,175,80,0.1)' : 'rgba(46,125,50,0.1)',
-                                padding: '2px 6px',
-                                borderRadius: '4px'
-                            }}>
-                                Live
-                            </span>
-                        )}
-                    </div>
-
-                    {/* Output Content */}
-                    <div style={{ 
-                        flex: 1, 
-                        minHeight: 0,
-                        position: 'relative',
-                        background: darkMode ? '#1e1e1e' : '#ffffff'
-                    }}>
-                        <iframe
-                            ref={outputFrameRef}
-                            style={{
-                                width: '100%',
-                                height: '100%',
-                                border: 'none',
-                                backgroundColor: 'transparent'
-                            }}
-                            title="Code Output"
-                            // sandbox="allow-scripts allow-same-origin"
-                            srcDoc={`
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Code Output</title>
-    <style>
-        body { 
-            margin: 0; 
-            padding: 16px; 
-            font-family: system-ui, -apple-system, sans-serif;
-            background: ${darkMode ? '#1e1e1e' : '#ffffff'};
-            color: ${darkMode ? '#cccccc' : '#24292e'};
-            min-height: 100vh;
-        }
-        #root { min-height: calc(100vh - 32px); }
-    </style>
-</head>
-<body>
-    <div style="
-        display: flex; 
-        align-items: center; 
-        justify-content: center; 
-        height: ${isMobile ? '180px' : '220px'}; 
-        background: ${darkMode ? 'linear-gradient(135deg, #2a2a2a 0%, #1e1e1e 100%)' : 'linear-gradient(135deg, #f0f8ff 0%, #ffffff 100%)'};
-        border: 2px dashed ${darkMode ? '#555' : '#ddd'};
-        border-radius: 12px;
-        color: ${darkMode ? '#888' : '#666'};
-        text-align: center;
-        flex-direction: column;
-        gap: ${isMobile ? '8px' : '12px'};
-        margin: ${isMobile ? '8px' : '16px'};
-    ">
-        <div style="font-size: ${isMobile ? '24px' : '32px'}; opacity: 0.7;">⚡</div>
-        <div style="font-size: ${isMobile ? '14px' : '16px'}; font-weight: 500;">Waiting for code...</div>
-        <div style="font-size: ${isMobile ? '11px' : '13px'}; opacity: 0.7;">Output will appear automatically when you write code</div>
-    </div>
-</body>
-</html>
-                            `}
-                        />
-                    </div>
                 </div>
             </div>
 
