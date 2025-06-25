@@ -1,57 +1,33 @@
 import React, { useEffect, useState, useRef, MutableRefObject, useCallback } from 'react';
-import MonacoEditor, { type Monaco, loader } from '@monaco-editor/react';
 import { createRoot } from 'react-dom/client';
-import * as monaco from 'monaco-editor';
+import CollaborativeCodeRunner from './CollaborativeCodeRunner';
+import { YDocProvider } from "@y-sweet/react";
+import {
+    CodeRunnerHeader,
+    SharedMonacoEditor,
+    OutputPanel,
+    AIChatPanel,
+    useAIService,
+    useIsMobile,
+    initializeEsbuild,
+    buildAndRunCode,
+    configureMonacoLoader,
+    BaseCodeRunnerProps,
+    FileItem
+} from './SharedComponents';
 
-let loaderConfigured = false;
-export const configureMonacoLoader = () => {
-    if (loaderConfigured) {
-        return;
-    }
-    loader.config({ monaco });
-    loaderConfigured = true;
-};
-
-const nodeModules = '/static/node_modules/monaco-editor/esm/vs/';
-window.MonacoEnvironment = {
-    getWorkerUrl: function (moduleId, label) {
-        if (label === 'json') {
-            return nodeModules + 'language/json/json.worker.js';
-        }
-        if (label === 'css' || label === 'scss' || label === 'less') {
-            return nodeModules + 'language/css/css.worker.js';
-        }
-        if (label === 'html' || label === 'handlebars' || label === 'razor') {
-            return nodeModules + 'language/html/html.worker.js';
-        }
-        if (label === 'typescript' || label === 'javascript') {
-            return nodeModules + 'language/typescript/ts.worker.js';
-        }
-        return nodeModules + 'editor/editor.worker.js';
-    },
-};
-
+// Monaco configuration is now handled in SharedComponents
 configureMonacoLoader();
 
-interface CodeRunnerProps {
-    initialCode?: string;
-    darkMode?: boolean;
-    language?: string;
-    initialFilePath?: string;
-}
-
-interface FileItem {
-    name: string;
-    path: string;
-    isDir: boolean;
-    size: number;
-    lastModified: string;
+interface CodeRunnerProps extends BaseCodeRunnerProps {
+    roomId?: string;
 }
 
 const CodeRunner: React.FC<CodeRunnerProps> = ({ 
     initialCode = '', 
     darkMode = true,
-    language = 'typescript'
+    language = 'typescript',
+    roomId = '',
 }) => {
     // State management
     const [code, setCode] = useState(initialCode || `import React from 'react';
@@ -59,11 +35,9 @@ import ReactDOM from 'react-dom/client';
 
 const App = () => {
   return (
-    <div className="p-6 max-w-md mx-auto bg-white rounded-xl shadow-lg">
-      <h1 className="text-2xl font-bold text-gray-900 mb-4">Welcome!</h1>
-      <p className="text-gray-600">
-        Edit the code on the left to see changes here. Use Tailwind CSS classes for styling!
-      </p>
+    <div className="p-4">
+      <h1 className="text-xl font-bold">New Component</h1>
+      <p>Start building something amazing!</p>
     </div>
   );
 };
@@ -79,7 +53,7 @@ root.render(<App />);`);
     const [isLoading, setIsLoading] = useState(false);
     const [isBuildLoading, setIsBuildLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [isMobile, setIsMobile] = useState(false);
+    const isMobile = useIsMobile();
     const [isFileLoading, setIsFileLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [saveStatus, setSaveStatus] = useState<string>('');
@@ -87,9 +61,10 @@ root.render(<App />);`);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [showLogin, setShowLogin] = useState(false);
     const [activeTab, setActiveTab] = useState<'chat' | 'code'>('chat');
-    const [chatMessages, setChatMessages] = useState<Array<{id: string, role: 'user' | 'assistant', content: string, timestamp: Date}>>([]);
+    
+    // AI Service for chat functionality
+    const { chatMessages, setChatMessages, isChatLoading, sendMessage } = useAIService();
     const [chatInput, setChatInput] = useState('');
-    const [isChatLoading, setIsChatLoading] = useState(false);
     const [outputHeight, setOutputHeight] = useState(isMobile ? 250 : 300);
     const [isDragging, setIsDragging] = useState(false);
     const [dragStartY, setDragStartY] = useState(0);
@@ -103,6 +78,15 @@ root.render(<App />);`);
     const [showRepoSelector, setShowRepoSelector] = useState(false);
     const [isCloning, setIsCloning] = useState(false);
     const [cloneStatus, setCloneStatus] = useState<string>('');
+    const [hoveredFile, setHoveredFile] = useState<string | null>(null);
+    
+    // View mode state
+    const [viewMode, setViewMode] = useState<'ai-chat' | 'collaborative'>(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const mode = urlParams.get('mode');
+        return mode === 'collaborative' ? 'collaborative' : 'ai-chat';
+    });
+    const [showViewDropdown, setShowViewDropdown] = useState(false);
 
     const editorRef: MutableRefObject<monaco.editor.IStandaloneCodeEditor | null> = useRef(null);
     const outputFrameRef: MutableRefObject<HTMLIFrameElement | null> = useRef(null);
@@ -173,6 +157,21 @@ root.render(<App />);`);
         });
         
         return { organized, rootFiles };
+    };
+
+    // View mode functionality
+    const handleViewModeChange = (mode: 'ai-chat' | 'collaborative') => {
+        setViewMode(mode);
+        setShowViewDropdown(false);
+        
+        // Update URL to persist the view mode
+        const url = new URL(window.location.href);
+        if (mode === 'collaborative') {
+            url.searchParams.set('mode', 'collaborative');
+        } else {
+            url.searchParams.delete('mode');
+        }
+        window.history.pushState({}, '', url.toString());
     };
 
     // Login/logout functionality
@@ -1035,6 +1034,13 @@ Focus on:
         e.preventDefault();
     };
 
+    const handleTouchStart = (e: React.TouchEvent) => {
+        setIsDragging(true);
+        setDragStartY(e.touches[0].clientY);
+        setDragStartHeight(outputHeight);
+        e.preventDefault();
+    };
+
     const handleDragMove = useCallback((e: MouseEvent) => {
         if (!isDragging) return;
         
@@ -1043,26 +1049,53 @@ Focus on:
         setOutputHeight(newHeight);
     }, [isDragging, dragStartY, dragStartHeight]);
 
+    const handleTouchMove = useCallback((e: TouchEvent) => {
+        if (!isDragging) return;
+        
+        const deltaY = e.touches[0].clientY - dragStartY;
+        const newHeight = Math.max(150, Math.min(window.innerHeight * 0.7, dragStartHeight + deltaY));
+        setOutputHeight(newHeight);
+        e.preventDefault();
+    }, [isDragging, dragStartY, dragStartHeight]);
+
     const handleDragEnd = useCallback(() => {
         setIsDragging(false);
     }, []);
 
-    // Add global mouse event listeners for dragging
+    // Add global mouse and touch event listeners for dragging
     useEffect(() => {
         if (isDragging) {
             document.addEventListener('mousemove', handleDragMove);
             document.addEventListener('mouseup', handleDragEnd);
+            document.addEventListener('touchmove', handleTouchMove, { passive: false });
+            document.addEventListener('touchend', handleDragEnd);
             document.body.style.cursor = 'ns-resize';
             document.body.style.userSelect = 'none';
             
             return () => {
                 document.removeEventListener('mousemove', handleDragMove);
                 document.removeEventListener('mouseup', handleDragEnd);
+                document.removeEventListener('touchmove', handleTouchMove);
+                document.removeEventListener('touchend', handleDragEnd);
                 document.body.style.cursor = '';
                 document.body.style.userSelect = '';
             };
         }
-    }, [isDragging, handleDragMove, handleDragEnd]);
+    }, [isDragging, handleDragMove, handleDragEnd, handleTouchMove]);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (showViewDropdown) {
+                setShowViewDropdown(false);
+            }
+        };
+
+        if (showViewDropdown) {
+            document.addEventListener('click', handleClickOutside);
+            return () => document.removeEventListener('click', handleClickOutside);
+        }
+    }, [showViewDropdown]);
 
     // Build and run code
     const buildAndRun = async () => {
@@ -1480,18 +1513,20 @@ Focus on:
                                             justifyContent: 'space-between'
                                         }}
                                         onMouseEnter={(e) => {
+                                            setHoveredFile(file.path);
                                             if (currentFile?.path !== file.path) {
                                                 e.currentTarget.style.backgroundColor = darkMode ? '#3e3e42' : '#f0f0f0';
                                             }
                                         }}
                                         onMouseLeave={(e) => {
+                                            setHoveredFile(null);
                                             if (currentFile?.path !== file.path) {
                                                 e.currentTarget.style.backgroundColor = 'transparent';
                                             }
                                         }}
                                     >
                                         <span>📄 {file.name}</span>
-                                        {!file.isDir && (
+                                        {!file.isDir && hoveredFile === file.path && (
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -1649,18 +1684,20 @@ Focus on:
                                                                 justifyContent: 'space-between'
                                                             }}
                                                             onMouseEnter={(e) => {
+                                                                setHoveredFile(file.path);
                                                                 if (currentFile?.path !== file.path) {
                                                                     e.currentTarget.style.backgroundColor = darkMode ? '#3e3e42' : '#f0f0f0';
                                                                 }
                                                             }}
                                                             onMouseLeave={(e) => {
+                                                                setHoveredFile(null);
                                                                 if (currentFile?.path !== file.path) {
                                                                     e.currentTarget.style.backgroundColor = 'transparent';
                                                                 }
                                                             }}
                                                         >
                                                             <span>📄 {file.name}</span>
-                                                            {!file.isDir && (
+                                                            {!file.isDir && hoveredFile === file.path && (
                                                                 <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
@@ -1707,7 +1744,24 @@ Focus on:
         </div>
     );
 
-    // Main layout
+    // Render collaborative view if selected
+    if (viewMode === 'collaborative') {
+        // Get room and username from URL params if available
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlUsername = urlParams.get('username') || username || undefined;
+        
+        return (
+            <CollaborativeCodeRunner
+                roomId={roomId}
+                username={urlUsername}
+                initialCode={code}
+                language={language}
+                onBackToLobby={() => handleViewModeChange('ai-chat')}
+            />
+        );
+    }
+
+    // Main layout (AI Chat mode)
     return (
         <div style={{
             height: '100vh',
@@ -1798,6 +1852,86 @@ Focus on:
                             CodeRunner
                         </h3>
                     )}
+
+                    {/* View Mode Dropdown */}
+                    <div style={{ position: 'relative' }} onClick={(e) => e.stopPropagation()}>
+                        <button
+                            onClick={() => setShowViewDropdown(!showViewDropdown)}
+                            style={{
+                                background: darkMode ? '#37373d' : '#f8f9fa',
+                                border: `1px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`,
+                                color: darkMode ? '#cccccc' : '#24292e',
+                                cursor: 'pointer',
+                                padding: isMobile ? '6px 8px' : '6px 12px',
+                                borderRadius: '6px',
+                                fontSize: isMobile ? '12px' : '12px',
+                                fontWeight: 500,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                            }}
+                            title="Switch View Mode"
+                        >
+                            {viewMode === 'ai-chat' ? '🤖 AI Chat' : '👥 Collaborative'}
+                            <span style={{ fontSize: '10px' }}>▼</span>
+                        </button>
+                        
+                        {showViewDropdown && (
+                            <div style={{
+                                position: 'absolute',
+                                top: '100%',
+                                left: 0,
+                                zIndex: 1000,
+                                backgroundColor: darkMode ? '#2d2d30' : '#ffffff',
+                                border: `1px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`,
+                                borderRadius: '6px',
+                                boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+                                minWidth: '150px',
+                                marginTop: '4px'
+                            }}>
+                                <button
+                                    onClick={() => handleViewModeChange('ai-chat')}
+                                    style={{
+                                        width: '100%',
+                                        padding: '8px 12px',
+                                        border: 'none',
+                                        background: viewMode === 'ai-chat' ? (darkMode ? '#37373d' : '#e8f4fd') : 'transparent',
+                                        color: viewMode === 'ai-chat' ? (darkMode ? '#ffffff' : '#0366d6') : (darkMode ? '#cccccc' : '#24292e'),
+                                        cursor: 'pointer',
+                                        fontSize: '12px',
+                                        textAlign: 'left',
+                                        borderRadius: '4px',
+                                        margin: '2px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px'
+                                    }}
+                                >
+                                    🤖 AI Chat
+                                </button>
+                                <button
+                                    onClick={() => handleViewModeChange('collaborative')}
+                                    style={{
+                                        width: '100%',
+                                        padding: '8px 12px',
+                                        border: 'none',
+                                        background: viewMode === 'collaborative' ? (darkMode ? '#37373d' : '#e8f4fd') : 'transparent',
+                                        color: viewMode === 'collaborative' ? (darkMode ? '#ffffff' : '#0366d6') : (darkMode ? '#cccccc' : '#24292e'),
+                                        cursor: 'pointer',
+                                        fontSize: '12px',
+                                        textAlign: 'left',
+                                        borderRadius: '4px',
+                                        margin: '2px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px'
+                                    }}
+                                >
+                                    👥 Collaborative
+                                </button>
+                            </div>
+                        )}
+                    </div>
 
                     {/* Tab Navigation */}
                     <div style={{ display: 'flex', gap: '4px' }}>
@@ -1979,77 +2113,6 @@ Focus on:
                     overflow: 'hidden',
                     boxShadow: darkMode ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.1)'
                 }}>
-                    {/* Output Header */}
-                    <div style={{
-                        padding: '12px 16px',
-                        backgroundColor: darkMode ? '#2d2d2d' : '#e8f4fd',
-                        borderBottom: `2px solid ${darkMode ? '#4a4a4a' : '#c8e1ff'}`,
-                        fontSize: '14px',
-                        fontWeight: 700,
-                        color: darkMode ? '#ffffff' : '#0366d6',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        position: 'relative'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ fontSize: '16px' }}>📺</span>
-                            <span>Live Output</span>
-                            <span style={{ 
-                                fontSize: '11px', 
-                                opacity: 0.6,
-                                color: darkMode ? '#888' : '#666' 
-                            }}>
-                                (auto-updates on code changes)
-                            </span>
-                        </div>
-                        {isBuildLoading ? (
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                fontSize: '11px',
-                                color: darkMode ? '#ffa500' : '#e65100',
-                                fontWeight: 500,
-                                background: darkMode ? 'rgba(255,165,0,0.1)' : 'rgba(230,81,0,0.1)',
-                                padding: '2px 6px',
-                                borderRadius: '4px'
-                            }}>
-                                <div style={{
-                                    width: '10px',
-                                    height: '10px',
-                                    border: '2px solid rgba(255,165,0,0.3)',
-                                    borderTop: '2px solid currentColor',
-                                    borderRadius: '50%',
-                                    animation: 'spin 1s linear infinite'
-                                }}></div>
-                                Building...
-                            </div>
-                        ) : !esbuildReady ? (
-                            <span style={{
-                                fontSize: '11px',
-                                color: darkMode ? '#ffa500' : '#e65100',
-                                fontWeight: 500,
-                                background: darkMode ? 'rgba(255,165,0,0.1)' : 'rgba(230,81,0,0.1)',
-                                padding: '2px 6px',
-                                borderRadius: '4px'
-                            }}>
-                                Initializing...
-                            </span>
-                        ) : (
-                            <span style={{
-                                fontSize: '11px',
-                                color: darkMode ? '#4caf50' : '#2e7d32',
-                                fontWeight: 500,
-                                background: darkMode ? 'rgba(76,175,80,0.1)' : 'rgba(46,125,50,0.1)',
-                                padding: '2px 6px',
-                                borderRadius: '4px'
-                            }}>
-                                Live
-                            </span>
-                        )}
-                    </div>
-
                     {/* Output Content */}
                     <div style={{ 
                         flex: 1, 
@@ -2115,6 +2178,7 @@ Focus on:
                 {/* Drag Handle for Resizing Output */}
                 <div 
                     onMouseDown={handleDragStart}
+                    onTouchStart={handleTouchStart}
                     style={{
                         width: '100%',
                         height: '8px',
@@ -2470,8 +2534,28 @@ if (container) {
     const root = createRoot(container);
     const propsAttr = container.getAttribute('data-props');
     const props = propsAttr ? JSON.parse(propsAttr) : {};
-    
-    root.render(<CodeRunner {...props} />);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomId = props.roomId || urlParams.get("room") || Math.random().toString(36).substring(2, 15);
+    const docId = `coderunner-${roomId}`;
+    props.roomId = roomId;
+
+    root.render(
+        <YDocProvider
+            docId={docId}
+            authEndpoint={async (): Promise<any> => {
+                const res = await fetch("/graph/auth", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        id: docId,
+                    }),
+                });
+                return await res.json();
+            }}
+        >
+            <CodeRunner {...props} />
+        </YDocProvider>
+    );
 }
 
 export default CodeRunner;

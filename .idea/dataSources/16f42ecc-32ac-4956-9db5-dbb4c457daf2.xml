@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <dataSource name="docs.db">
-  <database-model serializer="dbm" dbms="SQLITE" family-id="SQLITE" format-version="4.49">
+  <database-model serializer="dbm" dbms="SQLITE" family-id="SQLITE" format-version="4.53">
     <root id="1">
       <ServerVersion>3.43.0</ServerVersion>
     </root>
@@ -446,8 +446,7 @@
     <routine id="176" parent="1" name="fts5"/>
     <schema id="177" parent="1" name="main">
       <Current>1</Current>
-      <IntrospectionTimestamp>2024-11-26.22:17:50.702</IntrospectionTimestamp>
-      <LocalIntrospectionTimestamp>2024-11-27.06:17:50</LocalIntrospectionTimestamp>
+      <LastIntrospectionLocalTimestamp>2024-11-27.06:17:50</LastIntrospectionLocalTimestamp>
     </schema>
     <argument id="178" parent="16">
       <ArgumentDirection>R</ArgumentDirection>
@@ -1474,16 +1473,16 @@
       <System>1</System>
     </table>
     <column id="520" parent="518" name="id">
-      <DasType>UUID|0s</DasType>
       <Position>1</Position>
+      <StoredType>UUID|0s</StoredType>
     </column>
     <column id="521" parent="518" name="collection">
-      <DasType>TEXT|0s</DasType>
       <Position>2</Position>
+      <StoredType>TEXT|0s</StoredType>
     </column>
     <column id="522" parent="518" name="value">
-      <DasType>JSONB|0s</DasType>
       <Position>3</Position>
+      <StoredType>JSONB|0s</StoredType>
     </column>
     <index id="523" parent="518" name="sqlite_autoindex_document_1">
       <ColNames>id</ColNames>
@@ -1496,24 +1495,24 @@
       <UnderlyingIndexName>sqlite_autoindex_document_1</UnderlyingIndexName>
     </key>
     <column id="525" parent="519" name="type">
-      <DasType>TEXT|0s</DasType>
       <Position>1</Position>
+      <StoredType>TEXT|0s</StoredType>
     </column>
     <column id="526" parent="519" name="name">
-      <DasType>TEXT|0s</DasType>
       <Position>2</Position>
+      <StoredType>TEXT|0s</StoredType>
     </column>
     <column id="527" parent="519" name="tbl_name">
-      <DasType>TEXT|0s</DasType>
       <Position>3</Position>
+      <StoredType>TEXT|0s</StoredType>
     </column>
     <column id="528" parent="519" name="rootpage">
-      <DasType>INT|0s</DasType>
       <Position>4</Position>
+      <StoredType>INT|0s</StoredType>
     </column>
     <column id="529" parent="519" name="sql">
-      <DasType>TEXT|0s</DasType>
       <Position>5</Position>
+      <StoredType>TEXT|0s</StoredType>
     </column>
   </database-model>
 </dataSource>

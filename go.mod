@@ -9,6 +9,7 @@ replace github.com/markbates/goth v1.78.0 => github.com/breadchris/goth v0.0.0-2
 require (
 	github.com/Jeffail/gabs v1.4.0
 	github.com/JohannesKaufmann/html-to-markdown v1.6.0
+	github.com/NYTimes/gziphandler v1.1.1
 	github.com/PuerkitoBio/goquery v1.10.2
 	github.com/adrg/frontmatter v0.2.0
 	github.com/amir/raidman v0.0.0-20170415203553-1ccc43bfb9c9
@@ -27,11 +28,13 @@ require (
 	github.com/chromedp/cdproto v0.0.0-20240810084448-b931b754e476
 	github.com/chromedp/chromedp v0.10.0
 	github.com/cosmos72/gomacro v0.0.0-20240506194242-2ff796e3da10
+	github.com/creack/pty v1.1.9
 	github.com/dsoprea/go-exif/v2 v2.0.0-20230826092837-6579e82b732d
 	github.com/dsoprea/go-exif/v3 v3.0.1
 	github.com/dsoprea/go-jpeg-image-structure/v2 v2.0.0-20221012074422-4f3f7e934102
 	github.com/evanphx/json-patch/v5 v5.9.0
 	github.com/evanw/esbuild v0.23.0
+	github.com/fatih/structs v1.1.0
 	github.com/fatih/structtag v1.2.0
 	github.com/fsnotify/fsnotify v1.8.0
 	github.com/garyburd/redigo v1.6.4
@@ -98,6 +101,7 @@ require (
 	github.com/wasmerio/wasmer-go v1.0.4
 	github.com/x1unix/foundation v1.0.0
 	github.com/yeka/zip v0.0.0-20231116150916-03d6312748a9
+	github.com/yudai/hcl v0.0.0-20151013225006-5fa2393b3552
 	github.com/yuin/goldmark v1.7.1
 	github.com/zmb3/spotify/v2 v2.4.2
 	go.abhg.dev/goldmark/frontmatter v0.2.0

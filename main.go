@@ -407,17 +407,17 @@ func startServer(useTLS bool, port int) {
 		}
 		paths := make([]string, len(entrypoints))
 		copy(paths, entrypoints)
-		// if err := filepath.Walk("./wasmcode", func(path string, info os.FileInfo, err error) error {
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// 	if filepath.Ext(path) == ".ts" || filepath.Ext(path) == ".tsx" {
-		// 		paths = append(paths, path)
-		// 	}
-		// 	return nil
-		// }); err != nil {
-		// 	log.Fatalf("Failed to walk wasmcode: %v", err)
-		// }
+		if err := filepath.Walk("./coderunner", func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if filepath.Ext(path) == ".ts" || filepath.Ext(path) == ".tsx" {
+				paths = append(paths, path)
+			}
+			return nil
+		}); err != nil {
+			log.Fatalf("Failed to walk wasmcode: %v", err)
+		}
 		if err := WatchFilesAndFolders(paths, func(s string) {
 			result := api.Build(api.BuildOptions{
 				EntryPoints: entrypoints,
