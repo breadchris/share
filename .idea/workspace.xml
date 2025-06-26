@@ -5,18 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/symbol/github_com-go-git-go-git-v5-plumbing-transport-http.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/symbol/github_com-google-go-github-v66-github.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/16f42ecc-32ac-4956-9db5-dbb4c457daf2.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/16f42ecc-32ac-4956-9db5-dbb4c457daf2.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/703d2825-3ed4-4e92-96c3-68496e883ddf.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/703d2825-3ed4-4e92-96c3-68496e883ddf.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/DESIGN.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/coderunner/CodeRunner.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/CodeRunner.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/CollaborativeCodeRunner.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/CollaborativeCodeRunner.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/SharedComponents.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/SharedComponents.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/coderunner.go" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/coderunner.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/static/coderunner/CodeRunner.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/coderunner/CodeRunner.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -261,7 +255,7 @@
       <workItem from="1747973023098" duration="26954000" />
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
-      <workItem from="1750823408293" duration="16349000" />
+      <workItem from="1750823408293" duration="32172000" />
     </task>
     <servers />
   </component>

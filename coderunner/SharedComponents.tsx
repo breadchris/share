@@ -1,5 +1,5 @@
-import React, { useRef, MutableRefObject } from 'react';
-import MonacoEditor from '@monaco-editor/react';
+import React, { useRef, MutableRefObject, useState, useEffect, useCallback } from 'react';
+import MonacoEditor, { loader } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 
 // Shared interfaces
@@ -24,7 +24,6 @@ export const configureMonacoLoader = () => {
     if (loaderConfigured) {
         return;
     }
-    const { loader } = require('@monaco-editor/react');
     loader.config({ monaco });
     loaderConfigured = true;
 };
@@ -448,13 +447,13 @@ export const buildAndRunCode = async (
     if (!esbuild) {
         throw new Error('esbuild is not ready yet');
     }
-    
+
     const result = await esbuild.transform(code, {
         loader: 'tsx',
-        format: 'iife',
         target: 'es2020',
+        format: 'esm',
         jsx: 'automatic',
-        jsxImportSource: 'react'
+        jsxImportSource: 'react',
     });
 
     const htmlContent = `
@@ -501,9 +500,9 @@ export const buildAndRunCode = async (
 
 // Shared mobile detection hook
 export const useIsMobile = () => {
-    const [isMobile, setIsMobile] = React.useState(false);
+    const [isMobile, setIsMobile] = useState(false);
     
-    React.useEffect(() => {
+    useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 768);
         checkMobile();
         window.addEventListener('resize', checkMobile);

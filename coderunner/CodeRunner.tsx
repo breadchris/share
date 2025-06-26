@@ -23,7 +23,7 @@ interface CodeRunnerProps extends BaseCodeRunnerProps {
     roomId?: string;
 }
 
-const CodeRunner: React.FC<CodeRunnerProps> = ({ 
+const CodeRunner: React.FC<CodeRunnerProps> = ({
     initialCode = '', 
     darkMode = true,
     language = 'typescript',
@@ -542,184 +542,15 @@ root.render(<App />);`;
         loadFiles();
     }, []);
 
-    // Chat functionality
+    // Chat functionality using AI service
     const sendChatMessage = async (message: string) => {
         if (!message.trim() || isChatLoading) return;
         
-        const newMessage = {
-            id: Date.now().toString(),
-            role: 'user' as const,
-            content: message,
-            timestamp: new Date()
-        };
+        // Use the AI service from the hook
+        await sendMessage(message, code);
         
-        setChatMessages(prev => [...prev, newMessage]);
+        // Clear input (setChatMessages is handled by the AI service)
         setChatInput('');
-        setIsChatLoading(true);
-        
-        try {
-            // Always use structured code completion approach
-            const responseSchema = {
-                type: "object",
-                properties: {
-                    code: {
-                        type: "string",
-                        description: "The complete, valid TSX/TypeScript code that can be executed (only provide if code changes are needed)"
-                    },
-                    implementedComments: {
-                        type: "array",
-                        items: {
-                            type: "string"
-                        },
-                        description: "Array of comment descriptions that were implemented in the code (only if code was modified)"
-                    },
-                    explanation: {
-                        type: "string",
-                        description: "Technical explanation of changes made or advice given"
-                    },
-                    chatResponse: {
-                        type: "string",
-                        description: "Friendly response to the user"
-                    },
-                    shouldUpdateCode: {
-                        type: "boolean",
-                        description: "Whether the code should be updated in the editor"
-                    }
-                },
-                required: ["chatResponse", "shouldUpdateCode"],
-                additionalProperties: false
-            };
-            
-            const systemPrompt = `You are an expert React/TypeScript developer and helpful coding assistant. You can help users in two ways:
-
-1. **Code Modification**: When users ask you to improve, complete, or modify code, you should:
-   - Analyze the provided TSX/TypeScript code
-   - Understand the user's request and implement the requested changes
-   - Generate complete, valid TSX code that implements the functionality
-   - Use ONLY Tailwind CSS classes for styling (no inline styles, no CSS modules)
-   - Ensure all code is production-ready and follows React best practices
-   - Return valid TypeScript/TSX syntax that will compile without errors
-   - Set shouldUpdateCode to true and provide the code field
-
-2. **General Help**: When users ask questions, need explanations, or want advice:
-   - Provide helpful explanations and guidance
-   - Give debugging tips and best practices
-   - Answer questions about React, TypeScript, or web development
-   - Set shouldUpdateCode to false and don't provide the code field
-
-RULES for code modification:
-- Always return complete, runnable code that includes React imports and ReactDOM.render
-- Use proper TypeScript types and interfaces when needed
-- Implement React hooks correctly (useState, useEffect, etc.)
-- Use Tailwind CSS classes exclusively for styling
-- Handle edge cases and add proper error handling
-- Follow React component composition patterns
-- Ensure accessibility with proper ARIA attributes when needed
-- Always include the ReactDOM.createRoot and render call at the bottom
-
-You must respond with a JSON object containing the appropriate fields based on whether code modification is needed.`;
-            
-            const requestPayload = {
-                systemPrompt,
-                userMessage: `User request: "${message}"
-
-Current code:
-\`\`\`tsx
-${code}
-\`\`\`
-
-Please help the user with their request. If they want code changes, provide updated code. If they just want help or explanation, provide guidance without modifying the code.`,
-                currentCode: code,
-                responseSchema: responseSchema,
-                chatHistory: chatMessages.slice(-3).map(msg => ({
-                    role: msg.role,
-                    content: msg.content,
-                    timestamp: msg.timestamp.toISOString()
-                }))
-            };
-            
-            const response = await fetch('/ai/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestPayload)
-            });
-            
-            if (!response.ok) {
-                throw new Error('Failed to send message');
-            }
-            
-            const data = await response.json();
-            
-            let assistantContent = '';
-            
-            // Handle structured response
-            if (data.aiResponse) {
-                try {
-                    const aiData = typeof data.aiResponse === 'string' 
-                        ? JSON.parse(data.aiResponse) 
-                        : data.aiResponse;
-                    
-                    // Check if code should be updated
-                    if (aiData.shouldUpdateCode && aiData.code) {
-                        // Update the code state (this works even if editor isn't mounted)
-                        setCode(aiData.code);
-                        
-                        // Update the editor if it's currently mounted
-                        if (editorRef.current) {
-                            editorRef.current.setValue(aiData.code);
-                        }
-                        
-                        // Switch to code tab to show the changes
-                        setActiveTab('code');
-                    }
-                    
-                    // Create chat response
-                    assistantContent = aiData.chatResponse || 'I\'ve processed your request.';
-                    
-                    if (aiData.shouldUpdateCode) {
-                        if (aiData.implementedComments && aiData.implementedComments.length > 0) {
-                            assistantContent += `\n\n**Implemented features:**\n${aiData.implementedComments.map(c => `• ${c}`).join('\n')}`;
-                        }
-                        
-                        if (aiData.explanation) {
-                            assistantContent += `\n\n**Technical details:** ${aiData.explanation}`;
-                        }
-                    } else if (aiData.explanation) {
-                        assistantContent += `\n\n${aiData.explanation}`;
-                    }
-                    
-                } catch (parseError) {
-                    console.error('Failed to parse structured response:', parseError);
-                    assistantContent = 'I encountered an error processing your request. Please try again.';
-                }
-            } else {
-                // Fallback for non-structured response
-                assistantContent = data.aiResponse || 'Sorry, I encountered an error.';
-            }
-            
-            const assistantMessage = {
-                id: (Date.now() + 1).toString(),
-                role: 'assistant' as const,
-                content: assistantContent,
-                timestamp: new Date()
-            };
-            
-            setChatMessages(prev => [...prev, assistantMessage]);
-            
-        } catch (error) {
-            console.error('Chat error:', error);
-            const errorMessage = {
-                id: (Date.now() + 1).toString(),
-                role: 'assistant' as const,
-                content: 'Sorry, I encountered an error processing your message.',
-                timestamp: new Date()
-            };
-            setChatMessages(prev => [...prev, errorMessage]);
-        } finally {
-            setIsChatLoading(false);
-        }
     };
 
     // AI Code Completion functionality
@@ -967,15 +798,7 @@ Focus on:
 
         initializeAuth();
 
-        // Check for mobile
-        const checkMobile = () => {
-            setIsMobile(window.innerWidth <= 1024);
-        };
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        
         return () => {
-            window.removeEventListener('resize', checkMobile);
             if (autoSaveTimeoutRef.current) {
                 clearTimeout(autoSaveTimeoutRef.current);
             }
@@ -1097,7 +920,7 @@ Focus on:
         }
     }, [showViewDropdown]);
 
-    // Build and run code
+    // Build and run code using shared utility
     const buildAndRun = async () => {
         if (!esbuildReady) {
             setError('esbuild is not ready yet');
@@ -1108,85 +931,7 @@ Focus on:
         setError(null);
 
         try {
-            const esbuild = (window as any).esbuild;
-            
-            // Transform the code
-            const result = await esbuild.transform(code, {
-                loader: 'tsx',
-                target: 'es2020',
-                format: 'esm',
-                jsx: 'automatic',
-                jsxImportSource: 'react',
-            });
-
-            // Create the HTML content
-            const htmlContent = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Code Output</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { margin: 0; padding: 16px; font-family: system-ui, -apple-system, sans-serif; }
-        #root { min-height: 100vh; }
-        .error { 
-            background: #fee; 
-            border: 1px solid #fcc; 
-            color: #c33; 
-            padding: 16px; 
-            border-radius: 8px; 
-            margin: 16px;
-            font-family: monospace;
-            white-space: pre-wrap;
-        }
-    </style>
-</head>
-<body>
-    <div id="root"></div>
-      <script type="importmap">
-  {
-    "imports": {
-      "react": "https://esm.sh/react@18",
-      "react/": "https://esm.sh/react@18/",
-      "react/jsx-runtime": "https://esm.sh/react@18/jsx-runtime",
-      "react/jsx-dev-runtime": "https://esm.sh/react@18/jsx-dev-runtime",
-      "react-dom": "https://esm.sh/react-dom@18",
-      "react-dom/": "https://esm.sh/react-dom@18/",
-      "react-dom/client": "https://esm.sh/react-dom@18/client"
-    }
-  }
-  </script>
-    <script type="module">
-        window.onerror = function(msg, url, line, col, error) {
-            document.getElementById('root').innerHTML = 
-                '<div class="error">Runtime Error: ' + msg + '\\n\\nLine: ' + line + '</div>';
-            return false;
-        };
-        
-        window.addEventListener('unhandledrejection', function(event) {
-            document.getElementById('root').innerHTML = 
-                '<div class="error">Promise Rejection: ' + event.reason + '</div>';
-        });
-
-        // try {
-        ${result.code}
-        // } catch (error) {
-        //     document.getElementById('root').innerHTML = 
-        //         '<div class="error">Compilation Error: ' + error.message + '</div>';
-        // }
-    </script>
-</body>
-</html>`;
-
-
-            // Update the iframe
-            if (outputFrameRef.current) {
-                const iframe = outputFrameRef.current;
-                iframe.srcdoc = htmlContent;
-            }
-
+            await buildAndRunCode(code, outputFrameRef);
         } catch (error) {
             console.error('Build failed:', error);
             setError(`Build failed: ${error.message}`);
@@ -1797,194 +1542,18 @@ Focus on:
                 />
             )}
 
-            {/* Header */}
-            <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: isMobile ? '8px 12px' : '12px 16px',
-        backgroundColor: darkMode ? '#252526' : '#f8f9fa',
-        borderBottom: `1px solid ${darkMode ? '#3e3e42' : '#e1e4e8'}`,
-        fontSize: '14px',
-        minHeight: isMobile ? '44px' : '48px',
-        boxSizing: 'border-box'
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '12px' }}>
-                    {/* Hamburger Menu */}
-                    <button
-                        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: darkMode ? '#cccccc' : '#24292e',
-                            padding: '4px',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '3px',
-                            width: '20px',
-                            height: '16px'
-                        }}
-                    >
-                        <div style={{
-                            width: '100%',
-                            height: '2px',
-                            backgroundColor: 'currentColor',
-                            borderRadius: '1px'
-                        }}></div>
-                        <div style={{
-                            width: '100%',
-                            height: '2px',
-                            backgroundColor: 'currentColor',
-                            borderRadius: '1px'
-                        }}></div>
-                        <div style={{
-                            width: '100%',
-                            height: '2px',
-                            backgroundColor: 'currentColor',
-                            borderRadius: '1px'
-                        }}></div>
-                    </button>
-                    
-                    {/* Title - only show on desktop */}
-                    {!isMobile && (
-                        <h3 style={{ margin: 0, fontWeight: 600, fontSize: '14px' }}>
-                            CodeRunner
-                        </h3>
-                    )}
-
-                    {/* View Mode Dropdown */}
-                    <div style={{ position: 'relative' }} onClick={(e) => e.stopPropagation()}>
-                        <button
-                            onClick={() => setShowViewDropdown(!showViewDropdown)}
-                            style={{
-                                background: darkMode ? '#37373d' : '#f8f9fa',
-                                border: `1px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`,
-                                color: darkMode ? '#cccccc' : '#24292e',
-                                cursor: 'pointer',
-                                padding: isMobile ? '6px 8px' : '6px 12px',
-                                borderRadius: '6px',
-                                fontSize: isMobile ? '12px' : '12px',
-                                fontWeight: 500,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px'
-                            }}
-                            title="Switch View Mode"
-                        >
-                            {viewMode === 'ai-chat' ? '🤖 AI Chat' : '👥 Collaborative'}
-                            <span style={{ fontSize: '10px' }}>▼</span>
-                        </button>
-                        
-                        {showViewDropdown && (
-                            <div style={{
-                                position: 'absolute',
-                                top: '100%',
-                                left: 0,
-                                zIndex: 1000,
-                                backgroundColor: darkMode ? '#2d2d30' : '#ffffff',
-                                border: `1px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`,
-                                borderRadius: '6px',
-                                boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-                                minWidth: '150px',
-                                marginTop: '4px'
-                            }}>
-                                <button
-                                    onClick={() => handleViewModeChange('ai-chat')}
-                                    style={{
-                                        width: '100%',
-                                        padding: '8px 12px',
-                                        border: 'none',
-                                        background: viewMode === 'ai-chat' ? (darkMode ? '#37373d' : '#e8f4fd') : 'transparent',
-                                        color: viewMode === 'ai-chat' ? (darkMode ? '#ffffff' : '#0366d6') : (darkMode ? '#cccccc' : '#24292e'),
-                                        cursor: 'pointer',
-                                        fontSize: '12px',
-                                        textAlign: 'left',
-                                        borderRadius: '4px',
-                                        margin: '2px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '6px'
-                                    }}
-                                >
-                                    🤖 AI Chat
-                                </button>
-                                <button
-                                    onClick={() => handleViewModeChange('collaborative')}
-                                    style={{
-                                        width: '100%',
-                                        padding: '8px 12px',
-                                        border: 'none',
-                                        background: viewMode === 'collaborative' ? (darkMode ? '#37373d' : '#e8f4fd') : 'transparent',
-                                        color: viewMode === 'collaborative' ? (darkMode ? '#ffffff' : '#0366d6') : (darkMode ? '#cccccc' : '#24292e'),
-                                        cursor: 'pointer',
-                                        fontSize: '12px',
-                                        textAlign: 'left',
-                                        borderRadius: '4px',
-                                        margin: '2px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '6px'
-                                    }}
-                                >
-                                    👥 Collaborative
-                                </button>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Tab Navigation */}
-                    <div style={{ display: 'flex', gap: '4px' }}>
-                        <button
-                            onClick={() => setActiveTab('chat')}
-                            style={{
-                                background: activeTab === 'chat' 
-                                    ? (darkMode ? '#37373d' : '#e8f4fd')
-                                    : 'none',
-                                border: `1px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`,
-                                color: activeTab === 'chat'
-                                    ? (darkMode ? '#ffffff' : '#0366d6')
-                                    : (darkMode ? '#cccccc' : '#24292e'),
-                                cursor: 'pointer',
-        padding: isMobile ? '6px 8px' : '6px 12px',
-                                borderRadius: '6px',
-        fontSize: isMobile ? '16px' : '12px',
-                                fontWeight: 500,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: isMobile ? '0' : '4px'
-                            }}
-                            title="Chat"
-                        >
-                            {isMobile ? '💬' : '💬 Chat'}
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('code')}
-                            style={{
-                                background: activeTab === 'code' 
-                                    ? (darkMode ? '#37373d' : '#e8f4fd')
-                                    : 'none',
-                                border: `1px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`,
-                                color: activeTab === 'code'
-                                    ? (darkMode ? '#ffffff' : '#0366d6')
-                                    : (darkMode ? '#cccccc' : '#24292e'),
-                                cursor: 'pointer',
-                                padding: isMobile ? '6px 8px' : '6px 12px',
-        borderRadius: '6px',
-                                fontSize: isMobile ? '16px' : '12px',
-                                fontWeight: 500,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: isMobile ? '0' : '4px'
-                            }}
-                            title="Code"
-                        >
-                            {isMobile ? '📝' : '📝 Code'}
-                        </button>
-                    </div>
-                    
-                    {/* Current File Indicator - only show on desktop when in code tab */}
-                    {!isMobile && currentFile && activeTab === 'code' && (
+            {/* Header using shared component */}
+            <CodeRunnerHeader
+                darkMode={darkMode}
+                isMobile={isMobile}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                showViewDropdown={showViewDropdown}
+                viewMode={viewMode}
+                onViewModeChange={handleViewModeChange}
+                onToggleViewDropdown={() => setShowViewDropdown(!showViewDropdown)}
+                additionalInfo={
+                    !isMobile && currentFile && activeTab === 'code' && (
                         <div style={{
                             fontSize: '12px',
                             color: darkMode ? '#888' : '#666',
@@ -1995,102 +1564,70 @@ Focus on:
                         }}>
                             {currentFile.name}
                         </div>
-                    )}
-
-                    {/* Save Status - only show on desktop */}
-                    {!isMobile && saveStatus && (
-                        <div style={{
-        fontSize: '12px',
-                            color: saveStatus.includes('✓') ? '#28a745' : '#dc3545',
-                            fontWeight: 500
-                        }}>
-                            {saveStatus}
-                        </div>
-                    )}
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '6px' : '8px' }}>
-                    {/* New File Button */}
-                    <button
-                        onClick={createNewFile}
-                        style={{
-                            background: darkMode ? '#0e4429' : '#238636',
-                            color: '#ffffff',
-                            border: 'none',
-                            padding: isMobile ? '6px 8px' : '6px 12px',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontSize: isMobile ? '16px' : '12px',
-                            fontWeight: 500,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: isMobile ? '0' : '4px'
-                        }}
-                        title="New File"
-                    >
-                        {isMobile ? '+' : '+ New File'}
-                    </button>
-
-                    {/* Login/Logout */}
-                    {isLoggedIn ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '4px' : '8px' }}>
-                            {!isMobile && (
-                                <span style={{ fontSize: '12px', color: darkMode ? '#888' : '#666' }}>
-                                    @{username}
-                                </span>
-                            )}
-                            <button
-                                onClick={handleLogout}
-                                style={{
-                                    background: 'none',
-                                    border: `1px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`,
-                                    color: darkMode ? '#cccccc' : '#24292e',
-                                    padding: isMobile ? '6px 8px' : '4px 8px',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    fontSize: isMobile ? '11px' : '12px'
-                                }}
-                                title={isMobile ? `Logout @${username}` : 'Logout'}
-                            >
-                                {isMobile ? '↗' : 'Logout'}
-                            </button>
-                        </div>
-                    ) : (
+                    )
+                }
+                rightActions={
+                    <>
                         <button
-                            onClick={() => setShowLogin(true)}
+                            onClick={createNewFile}
                             style={{
-                                background: darkMode ? '#1f2937' : '#f8f9fa',
-                                border: `1px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`,
-                                color: darkMode ? '#cccccc' : '#24292e',
+                                background: darkMode ? '#238636' : '#0366d6',
+                                color: '#ffffff',
+                                border: 'none',
                                 padding: isMobile ? '6px 8px' : '6px 12px',
                                 borderRadius: '6px',
                                 cursor: 'pointer',
-                                fontSize: isMobile ? '11px' : '12px',
+                                fontSize: isMobile ? '16px' : '12px',
                                 fontWeight: 500,
-        display: 'flex',
-        alignItems: 'center',
-                                gap: isMobile ? '2px' : '6px'
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: isMobile ? '0' : '4px'
                             }}
+                            title="Create New File"
                         >
-                            {isMobile ? (
-                                <>
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
-                                    </svg>
-                                    Login
-                                </>
-                            ) : (
-                                <>
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
-                                    </svg>
-                                    Login with GitHub
-                                </>
-                            )}
+                            {isMobile ? '+' : '+ New File'}
                         </button>
-                    )}
-                </div>
-            </div>
+                        
+                        {isLoggedIn ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '12px', color: darkMode ? '#888' : '#666' }}>
+                                    @{username}
+                                </span>
+                                <button
+                                    onClick={handleLogout}
+                                    style={{
+                                        background: 'none',
+                                        border: `1px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`,
+                                        color: darkMode ? '#cccccc' : '#24292e',
+                                        padding: '4px 8px',
+                                        borderRadius: '4px',
+                                        cursor: 'pointer',
+                                        fontSize: '12px'
+                                    }}
+                                >
+                                    Logout
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setShowLogin(true)}
+                                style={{
+                                    background: darkMode ? '#238636' : '#0366d6',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    padding: '6px 12px',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontSize: '12px',
+                                    fontWeight: 500
+                                }}
+                            >
+                                Login with GitHub
+                            </button>
+                        )}
+                    </>
+                }
+            />
 
             {/* Main Content */}
             <div style={{
@@ -2100,7 +1637,7 @@ Focus on:
                 display: 'flex',
                 flexDirection: 'column'
             }}>
-                {/* Output Panel - Now at Top */}
+                {/* Output Panel using shared component */}
                 <div style={{
                     height: outputHeight,
                     minHeight: outputHeight,
@@ -2113,66 +1650,12 @@ Focus on:
                     overflow: 'hidden',
                     boxShadow: darkMode ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.1)'
                 }}>
-                    {/* Output Content */}
-                    <div style={{ 
-                        flex: 1, 
-                        minHeight: 0,
-                        position: 'relative',
-                        background: darkMode ? '#1e1e1e' : '#ffffff'
-                    }}>
-                        <iframe
-                            ref={outputFrameRef}
-                            style={{ 
-                                width: '100%', 
-                                height: '100%', 
-                                border: 'none',
-                                backgroundColor: 'transparent'
-                            }}
-                            title="Code Output"
-                            // sandbox="allow-scripts allow-same-origin"
-                            srcDoc={`
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Code Output</title>
-    <style>
-        body { 
-            margin: 0; 
-            padding: 16px; 
-            font-family: system-ui, -apple-system, sans-serif;
-            background: ${darkMode ? '#1e1e1e' : '#ffffff'};
-            color: ${darkMode ? '#cccccc' : '#24292e'};
-            min-height: 100vh;
-        }
-        #root { min-height: calc(100vh - 32px); }
-    </style>
-</head>
-<body>
-    <div style="
-        display: flex; 
-        align-items: center; 
-        justify-content: center; 
-        height: ${isMobile ? '180px' : '220px'}; 
-        background: ${darkMode ? 'linear-gradient(135deg, #2a2a2a 0%, #1e1e1e 100%)' : 'linear-gradient(135deg, #f0f8ff 0%, #ffffff 100%)'};
-        border: 2px dashed ${darkMode ? '#555' : '#ddd'};
-        border-radius: 12px;
-        color: ${darkMode ? '#888' : '#666'};
-        text-align: center;
-        flex-direction: column;
-        gap: ${isMobile ? '8px' : '12px'};
-        margin: ${isMobile ? '8px' : '16px'};
-    ">
-        <div style="font-size: ${isMobile ? '24px' : '32px'}; opacity: 0.7;">⚡</div>
-        <div style="font-size: ${isMobile ? '14px' : '16px'}; font-weight: 500;">Waiting for code...</div>
-        <div style="font-size: ${isMobile ? '11px' : '13px'}; opacity: 0.7;">Output will appear automatically when you write code</div>
-    </div>
-</body>
-</html>
-                            `}
-                        />
-                    </div>
+                    <OutputPanel
+                        darkMode={darkMode}
+                        isBuildLoading={isBuildLoading}
+                        error={error}
+                        outputFrameRef={outputFrameRef}
+                    />
                 </div>
 
                 {/* Drag Handle for Resizing Output */}
@@ -2225,195 +1708,39 @@ Focus on:
                             flexDirection: 'column',
                             maxHeight: '100%'
                         }}>
-                            {/* Chat Messages */}
-                            <div 
-                                ref={chatMessagesRef}
-                                style={{
-                                    flex: 1,
-                                    overflow: 'auto',
-                                    padding: '16px',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '16px'
-                                }}
-                            >
-                                {chatMessages.length === 0 ? (
-                                    <div style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        height: '100%',
-                                        color: darkMode ? '#666' : '#999',
-                                        textAlign: 'center'
-                                    }}>
-                                        <div>
-                                            <div style={{ fontSize: '24px', marginBottom: '8px' }}>💬</div>
-                                            <div>Start a conversation with the AI assistant</div>
-                                            <div style={{ fontSize: '12px', marginTop: '4px' }}>
-                                                Ask questions about your code or request help
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    chatMessages.map((message) => (
-                                        <div
-                                            key={message.id}
-                                            style={{
-                                                alignSelf: message.role === 'user' ? 'flex-end' : 'flex-start',
-                                                maxWidth: '80%',
-                                                padding: '12px 16px',
-                                                borderRadius: '16px',
-                                                backgroundColor: message.role === 'user'
-                                                    ? (darkMode ? '#0366d6' : '#0366d6')
-                                                    : (darkMode ? '#37373d' : '#f0f0f0'),
-                                                color: message.role === 'user'
-                                                    ? '#ffffff'
-                                                    : (darkMode ? '#cccccc' : '#24292e'),
-                                                wordBreak: 'break-word'
-                                            }}
-                                        >
-                                            <div style={{ fontSize: '14px', lineHeight: '1.5' }}>
-                                                {message.content}
-                                            </div>
-                                            <div style={{
-                                                fontSize: '11px',
-                                                opacity: 0.7,
-                                                marginTop: '4px'
-                                            }}>
-                                                {message.timestamp.toLocaleTimeString()}
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                                
-                                {isChatLoading && (
-                                    <div style={{
-                                        alignSelf: 'flex-start',
-                                        maxWidth: '80%',
-                                        padding: '12px 16px',
-                                        borderRadius: '16px',
-                                        backgroundColor: darkMode ? '#37373d' : '#f0f0f0',
-                                        color: darkMode ? '#cccccc' : '#24292e'
-                                    }}>
-                                        <div style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '8px'
-                                        }}>
-                                            <div style={{
-                                                width: '16px',
-                                                height: '16px',
-                                                border: `2px solid ${darkMode ? '#666' : '#ccc'}`,
-                                                borderTop: `2px solid ${darkMode ? '#cccccc' : '#666'}`,
-                                                borderRadius: '50%',
-                                                animation: 'spin 1s linear infinite'
-                                            }}></div>
-                                            AI is thinking...
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Chat Input */}
-                            <div style={{
-                                padding: '16px',
-                                borderTop: `1px solid ${darkMode ? '#3e3e42' : '#e1e4e8'}`,
-                                backgroundColor: darkMode ? '#252526' : '#f8f9fa'
-                            }}>
-                                <div style={{
-                                    display: 'flex',
-                                    gap: '8px',
-                                    alignItems: 'flex-end'
-                                }}>
-                                    <textarea
-                                        value={chatInput}
-                                        onChange={(e) => setChatInput(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                e.preventDefault();
-                                                sendChatMessage(chatInput);
-                                            }
-                                        }}
-                                        placeholder="Ask the AI assistant about your code..."
-                                        style={{
-                                            flex: 1,
-                                            minHeight: '40px',
-                                            maxHeight: '120px',
-                                            padding: '8px 12px',
-                                            border: `1px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`,
-                                            borderRadius: '8px',
-                                            backgroundColor: darkMode ? '#1e1e1e' : '#ffffff',
-                                            color: darkMode ? '#cccccc' : '#24292e',
-                                            fontSize: '14px',
-                                            resize: 'vertical',
-                                            fontFamily: 'inherit'
-                                        }}
-                                    />
-                                    <button
-                                        onClick={() => sendChatMessage(chatInput)}
-                                        disabled={!chatInput.trim() || isChatLoading}
-                                        style={{
-                                            background: darkMode ? '#0366d6' : '#0366d6',
-                                            color: '#ffffff',
-                                            border: 'none',
-                                            padding: '10px 16px',
-                                            borderRadius: '8px',
-                                            cursor: chatInput.trim() && !isChatLoading ? 'pointer' : 'not-allowed',
-                                            fontSize: '14px',
-                                            fontWeight: 500,
-                                            opacity: chatInput.trim() && !isChatLoading ? 1 : 0.6
-                                        }}
-                                    >
-                                        Send
-                                    </button>
-                                </div>
-                            </div>
+                            <AIChatPanel
+                                darkMode={darkMode}
+                                isMobile={isMobile}
+                                chatMessages={chatMessages}
+                                chatInput={chatInput}
+                                setChatInput={setChatInput}
+                                onSendMessage={sendChatMessage}
+                                isChatLoading={isChatLoading}
+                            />
                         </div>
                     ) : (
                         /* Code Editor */
                         <div style={{
                             flex: 1,
                             display: 'flex',
-                            flexDirection: 'column',
-                            minHeight: 0
+                            flexDirection: 'column'
                         }}>
-                            {error && (
-                                <div style={{
-                                    backgroundColor: '#fee',
-                                    border: '1px solid #fcc',
-                                    color: '#c33',
-                                    padding: '12px',
-                                    margin: '8px',
-                                    borderRadius: '4px',
-                                    fontSize: '14px',
-                                    fontFamily: 'monospace'
-                                }}>
-                                    {error}
-                                </div>
-                            )}
-                            <MonacoEditor
+                            <SharedMonacoEditor
+                                height="100%"
                                 language={language}
                                 theme={darkMode ? 'vs-dark' : 'vs-light'}
                                 value={code}
                                 onChange={(value) => setCode(value || '')}
                                 onMount={(editor) => {
                                     editorRef.current = editor;
-                                    editor.focus();
                                 }}
                                 options={{
-                                    minimap: { enabled: false },
-                                    scrollBeyondLastLine: false,
                                     fontSize: 14,
                                     lineNumbers: 'on',
-                                    roundedSelection: false,
-                                    scrollbar: {
-                                        vertical: 'visible',
-                                        horizontal: 'visible',
-                                    },
-                                    automaticLayout: true,
                                     wordWrap: 'on',
-                                    tabSize: 2,
-                                    insertSpaces: true,
+                                    minimap: { enabled: !isMobile },
+                                    scrollBeyondLastLine: false,
+                                    automaticLayout: true,
                                     padding: { top: 16, bottom: 16 },
                                 }}
                             />
@@ -2464,56 +1791,42 @@ Focus on:
                                 margin: '0',
                                 fontSize: '14px',
                                 color: darkMode ? '#888' : '#666',
-                                lineHeight: '1.5'
+                                lineHeight: 1.5
                             }}>
-                                Sign in with GitHub to save and manage your code files
+                                Sign in with GitHub to save files to your repositories
                             </p>
                         </div>
                         
-                        <button
-                            onClick={handleGithubLogin}
-                            style={{
-                                width: '100%',
-                                padding: '12px 24px',
-                                backgroundColor: '#24292e',
-                                color: '#ffffff',
-                                border: 'none',
-                                borderRadius: '8px',
-                                fontSize: '16px',
-                                fontWeight: 500,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '12px',
-                                marginBottom: '16px',
-                                transition: 'background-color 0.2s'
-                            }}
-                            onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = '#1c2128';
-                            }}
-                            onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = '#24292e';
-                            }}
-                        >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
-                            </svg>
-                            Continue with GitHub
-                        </button>
-                        
-                        <div style={{ 
-                            display: 'flex',
-                            justifyContent: 'center'
-                        }}>
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                            <button
+                                onClick={handleGithubLogin}
+                                style={{
+                                    background: darkMode ? '#238636' : '#0366d6',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    padding: '12px 24px',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    fontSize: '14px',
+                                    fontWeight: 500,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px'
+                                }}
+                            >
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+                                </svg>
+                                Continue with GitHub
+                            </button>
                             <button
                                 onClick={() => setShowLogin(false)}
                                 style={{
                                     background: 'none',
                                     border: `1px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`,
                                     color: darkMode ? '#cccccc' : '#24292e',
-                                    padding: '8px 16px',
-                                    borderRadius: '6px',
+                                    padding: '12px 24px',
+                                    borderRadius: '8px',
                                     cursor: 'pointer',
                                     fontSize: '14px'
                                 }}
@@ -2557,5 +1870,6 @@ if (container) {
         </YDocProvider>
     );
 }
+
 
 export default CodeRunner;

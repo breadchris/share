@@ -5,6 +5,7 @@ import * as monaco from 'monaco-editor';
 import * as Y from 'yjs';
 import { MonacoBinding } from 'y-monaco';
 import { useMap, useYDoc, useYjsProvider, YDocProvider } from "@y-sweet/react";
+import { buildAndRunCode } from './SharedComponents';
 
 // Import ContentServiceProvider if available (optional for this implementation)
 // We'll create a simple wrapper if not available
@@ -147,6 +148,9 @@ root.render(<App />);`,
     const [isBuildLoading, setIsBuildLoading] = useState(false);
     const [outputHeight, setOutputHeight] = useState(isMobile ? 250 : 300);
     const [showShareModal, setShowShareModal] = useState(false);
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStartY, setDragStartY] = useState(0);
+    const [dragStartHeight, setDragStartHeight] = useState(0);
     
     // Yjs hooks
     const doc = useYDoc();
@@ -166,13 +170,21 @@ root.render(<App />);`,
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
     
-    // Detect mobile
+    // Detect mobile and update output height accordingly
     useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        const checkMobile = () => {
+            const mobile = window.innerWidth < 768;
+            setIsMobile(mobile);
+            if (mobile && outputHeight > 250) {
+                setOutputHeight(250);
+            } else if (!mobile && outputHeight < 300) {
+                setOutputHeight(300);
+            }
+        };
         checkMobile();
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
-    }, []);
+    }, [outputHeight]);
     
     // Initialize esbuild (same as original)
     useEffect(() => {
@@ -320,6 +332,7 @@ root.render(<App />);`,
     }, [chatInput, username, chatMessagesMap]);
     
     // Build and run code (same as original)
+    // Build and run code using shared utility
     const buildAndRun = async () => {
         if (!esbuildReady) {
             setError('esbuild is not ready yet');
@@ -330,63 +343,63 @@ root.render(<App />);`,
         setError(null);
 
         try {
-            const esbuild = (window as any).esbuild;
-            
-            const result = await esbuild.transform(code, {
-                loader: 'tsx',
-                format: 'iife',
-                target: 'es2020',
-                jsx: 'automatic',
-                jsxImportSource: 'react'
-            });
-
-            const htmlContent = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Code Output</title>
-                    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-                    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-                    <script src="https://cdn.tailwindcss.com"></script>
-                    <style>
-                        body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-                        #root { width: 100%; height: 100vh; }
-                    </style>
-                </head>
-                <body>
-                    <div id="root"></div>
-                    <script>
-                        try {
-                            ${result.code}
-                        } catch (error) {
-                            document.getElementById('root').innerHTML = \`
-                                <div style="padding: 20px; color: red; font-family: monospace;">
-                                    <h3>Runtime Error:</h3>
-                                    <pre>\${error.message}</pre>
-                                    <pre>\${error.stack}</pre>
-                                </div>
-                            \`;
-                        }
-                    </script>
-                </body>
-                </html>
-            `;
-
-            if (outputFrameRef.current) {
-                const blob = new Blob([htmlContent], { type: 'text/html' });
-                const url = URL.createObjectURL(blob);
-                outputFrameRef.current.src = url;
-                
-                setTimeout(() => URL.revokeObjectURL(url), 1000);
-            }
+            await buildAndRunCode(code, outputFrameRef);
         } catch (error) {
+            console.error('Build failed:', error);
             setError('Build failed: ' + (error as Error).message);
         } finally {
             setIsBuildLoading(false);
         }
     };
+    
+    // Drag handlers for resizing output panel
+    const handleDragStart = (e: React.MouseEvent) => {
+        setIsDragging(true);
+        setDragStartY(e.clientY);
+        setDragStartHeight(outputHeight);
+        e.preventDefault();
+    };
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        setIsDragging(true);
+        setDragStartY(e.touches[0].clientY);
+        setDragStartHeight(outputHeight);
+        e.preventDefault();
+    };
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!isDragging) return;
+            const deltaY = e.clientY - dragStartY;
+            const newHeight = Math.max(150, Math.min(600, dragStartHeight + deltaY));
+            setOutputHeight(newHeight);
+        };
+
+        const handleTouchMove = (e: TouchEvent) => {
+            if (!isDragging) return;
+            const deltaY = e.touches[0].clientY - dragStartY;
+            const newHeight = Math.max(150, Math.min(600, dragStartHeight + deltaY));
+            setOutputHeight(newHeight);
+        };
+
+        const handleMouseUp = () => {
+            setIsDragging(false);
+        };
+
+        if (isDragging) {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+            document.addEventListener('touchmove', handleTouchMove);
+            document.addEventListener('touchend', handleMouseUp);
+        }
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            document.removeEventListener('touchmove', handleTouchMove);
+            document.removeEventListener('touchend', handleMouseUp);
+        };
+    }, [isDragging, dragStartY, dragStartHeight]);
     
     // Auto-run when code changes (same as original)
     useEffect(() => {
@@ -563,45 +576,127 @@ root.render(<App />);`,
                 </div>
             </div>
 
-            {/* Main Content Area - same layout as original */}
-            <div style={{ 
-                display: 'flex', 
-                flex: 1, 
-                flexDirection: isMobile ? 'column' : 'row',
-                overflow: 'hidden'
+            {/* Main Content - Same layout as CodeRunner */}
+            <div style={{
+                flex: 1,
+                minHeight: 0,
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column'
             }}>
-                {/* Monaco Editor - same as original */}
+                {/* Output Panel at top */}
                 <div style={{
-                    flex: 1,
-                    display: activeTab === 'code' || !isMobile ? 'block' : 'none',
-                    height: isMobile ? `calc(100vh - ${outputHeight}px - 80px)` : '100%'
-                }}>
-                    <MonacoEditor
-                        height="100%"
-                        language={language}
-                        theme={darkMode ? 'vs-dark' : 'vs-light'}
-                        onMount={handleEditorDidMount}
-                        options={{
-                            fontSize: 14,
-                            lineNumbers: 'on',
-                            wordWrap: 'on',
-                            minimap: { enabled: !isMobile },
-                            scrollBeyondLastLine: false,
-                            automaticLayout: true,
-                        }}
-                    />
-                </div>
-
-                {/* Chat/Output Panel - same structure as original */}
-                <div style={{
-                    width: isMobile ? '100%' : '400px',
-                    height: isMobile ? `${outputHeight}px` : '100%',
-                    backgroundColor: darkMode ? '#1e1e1e' : '#ffffff',
-                    borderLeft: !isMobile ? `1px solid ${darkMode ? '#3e3e42' : '#e1e4e8'}` : 'none',
-                    borderTop: isMobile ? `1px solid ${darkMode ? '#3e3e42' : '#e1e4e8'}` : 'none',
+                    height: outputHeight,
+                    minHeight: outputHeight,
                     display: 'flex',
                     flexDirection: 'column',
-                    overflow: 'hidden'
+                    backgroundColor: darkMode ? '#1a1a1a' : '#f9f9f9',
+                    border: `1px solid ${darkMode ? '#4a4a4a' : '#d0d7de'}`,
+                    borderBottom: 'none',
+                    borderRadius: '8px 8px 0 0',
+                    overflow: 'hidden',
+                    boxShadow: darkMode ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.1)'
+                }}>
+                    <div style={{ 
+                        width: '100%', 
+                        height: '100%',
+                        backgroundColor: '#ffffff',
+                        position: 'relative'
+                    }}>
+                        <style>{`
+                            @keyframes spin {
+                                0% { transform: rotate(0deg); }
+                                100% { transform: rotate(360deg); }
+                            }
+                        `}</style>
+                        
+                        {isBuildLoading && (
+                            <div style={{
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)',
+                                zIndex: 10,
+                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                padding: '20px',
+                                borderRadius: '8px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px'
+                            }}>
+                                <div style={{
+                                    width: '20px',
+                                    height: '20px',
+                                    border: '2px solid #e1e4e8',
+                                    borderTop: '2px solid #0366d6',
+                                    borderRadius: '50%',
+                                    animation: 'spin 1s linear infinite'
+                                }}></div>
+                                Building...
+                            </div>
+                        )}
+                        
+                        {error && (
+                            <div style={{
+                                padding: '20px',
+                                backgroundColor: '#ffeaea',
+                                color: '#d73a49',
+                                fontFamily: 'Monaco, Consolas, monospace',
+                                fontSize: '12px',
+                                whiteSpace: 'pre-wrap',
+                                maxHeight: '200px',
+                                overflowY: 'auto'
+                            }}>
+                                {error}
+                            </div>
+                        )}
+                        
+                        <iframe
+                            ref={outputFrameRef}
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                border: 'none',
+                                backgroundColor: '#ffffff'
+                            }}
+                            title="Output"
+                        />
+                    </div>
+                </div>
+
+                {/* Drag Handle for Resizing Output */}
+                <div 
+                    onMouseDown={handleDragStart}
+                    onTouchStart={handleTouchStart}
+                    style={{
+                        width: '100%',
+                        height: '8px',
+                        backgroundColor: isDragging ? (darkMode ? '#7c7c7c' : '#a0a7ae') : (darkMode ? '#5c5c5c' : '#d0d7de'),
+                        cursor: 'ns-resize',
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        transition: isDragging ? 'none' : 'background-color 0.2s',
+                        position: 'relative',
+                        flexShrink: 0
+                    }}
+                >
+                    {/* Drag Handle Visual Indicator */}
+                    <div style={{
+                        width: '40px',
+                        height: '3px',
+                        backgroundColor: isDragging ? (darkMode ? '#ffffff' : '#666666') : (darkMode ? '#888888' : '#999999'),
+                        borderRadius: '2px',
+                        transition: isDragging ? 'none' : 'background-color 0.2s'
+                    }} />
+                </div>
+
+                {/* Chat/Code Content Area at bottom */}
+                <div style={{
+                    flex: 1,
+                    minHeight: 0,
+                    display: 'flex',
+                    flexDirection: 'column'
                 }}>
                     {activeTab === 'chat' ? (
                         // Chat Panel - modified for collaborative chat
@@ -762,63 +857,25 @@ root.render(<App />);`,
                             </div>
                         </>
                     ) : (
-                        // Output Panel - same as original
-                        <div style={{ 
-                            width: '100%', 
-                            height: '100%',
-                            backgroundColor: '#ffffff',
-                            position: 'relative'
+                        // Code Editor - Monaco with collaborative editing
+                        <div style={{
+                            flex: 1,
+                            display: 'flex',
+                            flexDirection: 'column'
                         }}>
-                            {isBuildLoading && (
-                                <div style={{
-                                    position: 'absolute',
-                                    top: '50%',
-                                    left: '50%',
-                                    transform: 'translate(-50%, -50%)',
-                                    zIndex: 10,
-                                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                    padding: '20px',
-                                    borderRadius: '8px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '10px'
-                                }}>
-                                    <div style={{
-                                        width: '20px',
-                                        height: '20px',
-                                        border: '2px solid #e1e4e8',
-                                        borderTop: '2px solid #0366d6',
-                                        borderRadius: '50%',
-                                        animation: 'spin 1s linear infinite'
-                                    }}></div>
-                                    Building...
-                                </div>
-                            )}
-                            
-                            {error && (
-                                <div style={{
-                                    padding: '20px',
-                                    backgroundColor: '#ffeaea',
-                                    color: '#d73a49',
-                                    fontFamily: 'Monaco, Consolas, monospace',
-                                    fontSize: '12px',
-                                    whiteSpace: 'pre-wrap',
-                                    maxHeight: '200px',
-                                    overflowY: 'auto'
-                                }}>
-                                    {error}
-                                </div>
-                            )}
-                            
-                            <iframe
-                                ref={outputFrameRef}
-                                style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    border: 'none',
-                                    backgroundColor: '#ffffff'
+                            <MonacoEditor
+                                height="100%"
+                                language={language}
+                                theme={darkMode ? 'vs-dark' : 'vs-light'}
+                                onMount={handleEditorDidMount}
+                                options={{
+                                    fontSize: 14,
+                                    lineNumbers: 'on',
+                                    wordWrap: 'on',
+                                    minimap: { enabled: !isMobile },
+                                    scrollBeyondLastLine: false,
+                                    automaticLayout: true,
                                 }}
-                                title="Output"
                             />
                         </div>
                     )}

@@ -296,6 +296,16 @@ func New(d deps.Deps) *http.ServeMux {
 		json.NewEncoder(w).Encode(response)
 	})
 
+	// Component renderer endpoint
+	m.HandleFunc("/render/", func(w http.ResponseWriter, r *http.Request) {
+		handleRenderComponent(w, r)
+	})
+
+	// ES Module endpoint - serves compiled JavaScript as ES modules
+	m.HandleFunc("/module/", func(w http.ResponseWriter, r *http.Request) {
+		handleServeModule(w, r)
+	})
+
 	return m
 }
 
@@ -478,6 +488,8 @@ func handleBuild(w http.ResponseWriter, r *http.Request) {
 	buildDir := "./data/coderunner/build"
 	outputPath := filepath.Join(buildDir, cleanPath+".js")
 
+	println("Building file:", srcPath, "to", outputPath)
+
 	// Check if source file exists
 	if _, err := os.Stat(srcPath); os.IsNotExist(err) {
 		http.Error(w, "Source file not found", http.StatusNotFound)
@@ -521,7 +533,25 @@ func handleBuild(w http.ResponseWriter, r *http.Request) {
 		Target:          api.ES2017,
 		JSX:             api.JSXAutomatic,
 		JSXImportSource: "react",
-		LogLevel:        api.LogLevelSilent, // Suppress logs for API calls
+		LogLevel:        api.LogLevelInfo, // Enable logs to see build details
+		TsconfigRaw: `{
+			"compilerOptions": {
+				"jsx": "react-jsx",
+				"allowSyntheticDefaultImports": true,
+				"esModuleInterop": true,
+				"moduleResolution": "node",
+				"target": "ES2017",
+				"lib": ["ES2017", "DOM", "DOM.Iterable"],
+				"allowJs": true,
+				"skipLibCheck": true,
+				"strict": false,
+				"forceConsistentCasingInFileNames": true,
+				"noEmit": true,
+				"incremental": true,
+				"resolveJsonModule": true,
+				"isolatedModules": true
+			}
+		}`,
 	})
 
 	// Check for build errors
@@ -680,4 +710,353 @@ func handleDeleteFile(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// handleRenderComponent builds and renders a React component in a simple HTML page
+func handleRenderComponent(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract path from URL
+	componentPath := strings.TrimPrefix(r.URL.Path, "/render/")
+	if componentPath == "" {
+		http.Error(w, "Component path is required", http.StatusBadRequest)
+		return
+	}
+
+	// Get component name from query parameter (optional)
+	componentName := r.URL.Query().Get("component")
+	if componentName == "" {
+		componentName = "App" // Default to App component
+	}
+
+	// Validate and sanitize the path
+	cleanPath := filepath.Clean(componentPath)
+	if strings.Contains(cleanPath, "..") {
+		http.Error(w, "Invalid path", http.StatusBadRequest)
+		return
+	}
+
+	// Ensure path starts with username
+	if !strings.HasPrefix(cleanPath, "@") {
+		http.Error(w, "Path must start with username (e.g., @breadchris/filename.tsx)", http.StatusBadRequest)
+		return
+	}
+
+	// Build source path
+	srcPath := filepath.Join("./data/coderunner/src", cleanPath)
+
+	// Check if source file exists
+	if _, err := os.Stat(srcPath); os.IsNotExist(err) {
+		http.Error(w, "Source file not found", http.StatusNotFound)
+		return
+	}
+
+	// Read the source code to build
+	sourceCode, err := os.ReadFile(srcPath)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to read source file: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	println("Rendering component from:", srcPath, "with component name:", componentName)
+
+	// Build with esbuild to get the compiled JavaScript
+	result := api.Build(api.BuildOptions{
+		Stdin: &api.StdinOptions{
+			Contents:   string(sourceCode),
+			ResolveDir: filepath.Dir(srcPath),
+			Sourcefile: filepath.Base(srcPath),
+			Loader:     api.LoaderTSX,
+		},
+		Loader: map[string]api.Loader{
+			".js":  api.LoaderJS,
+			".jsx": api.LoaderJSX,
+			".ts":  api.LoaderTS,
+			".tsx": api.LoaderTSX,
+			".css": api.LoaderCSS,
+		},
+		Format:          api.FormatESModule,
+		Bundle:          true,
+		Write:           false,
+		TreeShaking:     api.TreeShakingTrue,
+		Target:          api.ESNext,
+		JSX:             api.JSXAutomatic,
+		JSXImportSource: "react",
+		LogLevel:        api.LogLevelSilent,
+		External:        []string{"react", "react-dom"},
+		TsconfigRaw: `{
+			"compilerOptions": {
+				"jsx": "react-jsx",
+				"allowSyntheticDefaultImports": true,
+				"esModuleInterop": true,
+				"moduleResolution": "node",
+				"target": "ESNext",
+				"lib": ["ESNext", "DOM", "DOM.Iterable"],
+				"allowJs": true,
+				"skipLibCheck": true,
+				"strict": false,
+				"forceConsistentCasingInFileNames": true,
+				"noEmit": true,
+				"incremental": true,
+				"resolveJsonModule": true,
+				"isolatedModules": true
+			}
+		}`,
+	})
+
+	// Check for build errors
+	if len(result.Errors) > 0 {
+		errorMessages := make([]string, len(result.Errors))
+		for i, err := range result.Errors {
+			errorMessages[i] = fmt.Sprintf("%s:%d:%d: %s", err.Location.File, err.Location.Line, err.Location.Column, err.Text)
+		}
+
+		errorHTML := fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Build Error</title>
+    <style>
+        body { font-family: monospace; margin: 20px; background: #fff5f5; }
+        .error { background: #fed7d7; border: 1px solid #fc8181; padding: 15px; border-radius: 5px; }
+        .error h1 { color: #c53030; margin-top: 0; }
+        .error-list { margin: 10px 0; }
+        .error-item { margin: 5px 0; padding: 5px; background: #ffffff; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="error">
+        <h1>Build Error</h1>
+        <p>Failed to build component from <code>%s</code></p>
+        <div class="error-list">
+            %s
+        </div>
+    </div>
+</body>
+</html>`, componentPath, formatErrorMessages(errorMessages))
+
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(errorHTML))
+		return
+	}
+
+	// Verify build succeeded
+	if len(result.OutputFiles) == 0 {
+		http.Error(w, "No output generated from build", http.StatusInternalServerError)
+		return
+	}
+
+	// Generate the HTML page that renders the component
+	htmlPage := fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React Component - %s</title>
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18",
+            "react-dom": "https://esm.sh/react-dom@18",
+            "react-dom/client": "https://esm.sh/react-dom@18/client",
+            "react/jsx-runtime": "https://esm.sh/react@18/jsx-runtime"
+        }
+    }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        #root { width: 100%%; height: 100vh; }
+        .error { 
+            padding: 20px; 
+            color: #dc2626; 
+            background: #fef2f2; 
+            border: 1px solid #fecaca; 
+            margin: 20px; 
+            border-radius: 8px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="module">
+        try {
+            // Import the compiled component module from the /module/ endpoint
+            const componentModule = await import('/coderunner/module/%s');
+            
+            // Import React and ReactDOM
+            const React = await import('react');
+            const ReactDOM = await import('react-dom/client');
+            
+            // Try to get the component to render
+            let ComponentToRender;
+            
+            // First try the specified component name
+            if (componentModule.%s) {
+                ComponentToRender = componentModule.%s;
+            }
+            // Then try default export
+            else if (componentModule.default) {
+                ComponentToRender = componentModule.default;
+            }
+            else {
+                throw new Error('No component found. Make sure to export a component named "%s" or a default export.');
+            }
+            
+            // Render the component
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(React.createElement(ComponentToRender));
+            
+        } catch (error) {
+            console.error('Runtime Error:', error);
+            document.getElementById('root').innerHTML = 
+                '<div class="error">' +
+                '<h3>Runtime Error:</h3>' +
+                '<pre>' + error.message + '</pre>' +
+                '<pre>' + (error.stack || '') + '</pre>' +
+                '</div>';
+        }
+    </script>
+</body>
+</html>`, componentName, componentPath, componentName, componentName, componentName)
+
+	// Return the HTML page
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(htmlPage))
+}
+
+// formatErrorMessages formats build error messages as HTML
+func formatErrorMessages(errors []string) string {
+	var formatted []string
+	for _, err := range errors {
+		formatted = append(formatted, fmt.Sprintf(`<div class="error-item">%s</div>`, err))
+	}
+	return strings.Join(formatted, "\n")
+}
+
+// handleServeModule builds and serves a React component as an ES module
+func handleServeModule(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract path from URL
+	componentPath := strings.TrimPrefix(r.URL.Path, "/module/")
+	if componentPath == "" {
+		http.Error(w, "Component path is required", http.StatusBadRequest)
+		return
+	}
+
+	// Validate and sanitize the path
+	cleanPath := filepath.Clean(componentPath)
+	if strings.Contains(cleanPath, "..") {
+		http.Error(w, "Invalid path", http.StatusBadRequest)
+		return
+	}
+
+	// Ensure path starts with username
+	if !strings.HasPrefix(cleanPath, "@") {
+		http.Error(w, "Path must start with username (e.g., @breadchris/filename.tsx)", http.StatusBadRequest)
+		return
+	}
+
+	// Build source path
+	srcPath := filepath.Join("./data/coderunner/src", cleanPath)
+
+	// Check if source file exists
+	if _, err := os.Stat(srcPath); os.IsNotExist(err) {
+		http.Error(w, "Source file not found", http.StatusNotFound)
+		return
+	}
+
+	// Read the source code to build
+	sourceCode, err := os.ReadFile(srcPath)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to read source file: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Build with esbuild to get the compiled JavaScript as ES module
+	result := api.Build(api.BuildOptions{
+		Stdin: &api.StdinOptions{
+			Contents:   string(sourceCode),
+			ResolveDir: filepath.Dir(srcPath),
+			Sourcefile: filepath.Base(srcPath),
+			Loader:     api.LoaderTSX,
+		},
+		Loader: map[string]api.Loader{
+			".js":  api.LoaderJS,
+			".jsx": api.LoaderJSX,
+			".ts":  api.LoaderTS,
+			".tsx": api.LoaderTSX,
+			".css": api.LoaderCSS,
+		},
+		Format:          api.FormatESModule,
+		Bundle:          true,
+		Write:           false,
+		TreeShaking:     api.TreeShakingTrue,
+		Target:          api.ESNext,
+		JSX:             api.JSXAutomatic,
+		JSXImportSource: "react",
+		LogLevel:        api.LogLevelSilent,
+		External:        []string{"react", "react-dom", "react-dom/client", "react/jsx-runtime"},
+		TsconfigRaw: `{
+			"compilerOptions": {
+				"jsx": "react-jsx",
+				"allowSyntheticDefaultImports": true,
+				"esModuleInterop": true,
+				"moduleResolution": "node",
+				"target": "ESNext",
+				"lib": ["ESNext", "DOM", "DOM.Iterable"],
+				"allowJs": true,
+				"skipLibCheck": true,
+				"strict": false,
+				"forceConsistentCasingInFileNames": true,
+				"noEmit": true,
+				"incremental": true,
+				"resolveJsonModule": true,
+				"isolatedModules": true
+			}
+		}`,
+	})
+
+	// Check for build errors
+	if len(result.Errors) > 0 {
+		errorMessages := make([]string, len(result.Errors))
+		for i, err := range result.Errors {
+			errorMessages[i] = fmt.Sprintf("%s:%d:%d: %s", err.Location.File, err.Location.Line, err.Location.Column, err.Text)
+		}
+
+		errorResponse := map[string]interface{}{
+			"error":   "Build failed",
+			"details": errorMessages,
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(errorResponse)
+		return
+	}
+
+	// Get the compiled JavaScript
+	if len(result.OutputFiles) == 0 {
+		http.Error(w, "No output generated from build", http.StatusInternalServerError)
+		return
+	}
+
+	compiledJS := string(result.OutputFiles[0].Contents)
+
+	// Return the ES module code
+	w.Header().Set("Content-Type", "application/javascript")
+	w.Header().Set("Cache-Control", "no-cache") // Prevent caching during development
+	w.Write([]byte(compiledJS))
 }
