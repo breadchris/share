@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -324,8 +325,27 @@ func handleFiles(w http.ResponseWriter, r *http.Request) {
 // handleListFiles returns the directory structure as JSON
 func handleListFiles(w http.ResponseWriter, r *http.Request) {
 	srcDir := "./data/coderunner/src"
-
-	files, err := buildFileTree(srcDir)
+	
+	// Check for path parameter to list specific directory
+	queryPath := r.URL.Query().Get("path")
+	depth := 1 // Default to immediate children only
+	if depthStr := r.URL.Query().Get("depth"); depthStr != "" {
+		if d, err := strconv.Atoi(depthStr); err == nil && d > 0 {
+			depth = d
+		}
+	}
+	
+	var files []FileInfo
+	var err error
+	
+	if queryPath != "" {
+		// List specific directory
+		files, err = buildDirectoryListing(srcDir, queryPath, depth)
+	} else {
+		// List all files (backwards compatibility) but limit to depth 1 for performance
+		files, err = buildDirectoryListing(srcDir, "", 1)
+	}
+	
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to read files: %v", err), http.StatusInternalServerError)
 		return
@@ -583,6 +603,73 @@ func handleBuild(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/javascript")
 	w.Header().Set("X-Build-Cache", "miss")
 	w.Write(builtContent)
+}
+
+// buildDirectoryListing lists files in a specific directory with controlled depth
+func buildDirectoryListing(baseDir, relativePath string, maxDepth int) ([]FileInfo, error) {
+	var files []FileInfo
+	
+	// Build the target directory path
+	targetDir := baseDir
+	if relativePath != "" {
+		// Validate and sanitize the relative path
+		cleanPath := filepath.Clean(relativePath)
+		if strings.Contains(cleanPath, "..") {
+			return nil, fmt.Errorf("invalid path")
+		}
+		targetDir = filepath.Join(baseDir, cleanPath)
+	}
+	
+	// Check if directory exists
+	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
+		return nil, fmt.Errorf("directory not found")
+	}
+	
+	// Read directory contents
+	entries, err := os.ReadDir(targetDir)
+	if err != nil {
+		return nil, err
+	}
+	
+	for _, entry := range entries {
+		// Skip hidden files and directories (starting with .)
+		if strings.HasPrefix(entry.Name(), ".") {
+			continue
+		}
+		
+		info, err := entry.Info()
+		if err != nil {
+			continue // Skip files we can't read
+		}
+		
+		// Build the relative path from the base src directory
+		var relPath string
+		if relativePath == "" {
+			relPath = entry.Name()
+		} else {
+			relPath = filepath.ToSlash(filepath.Join(relativePath, entry.Name()))
+		}
+		
+		fileInfo := FileInfo{
+			Name:         entry.Name(),
+			Path:         relPath,
+			IsDir:        entry.IsDir(),
+			Size:         info.Size(),
+			LastModified: info.ModTime(),
+		}
+		
+		files = append(files, fileInfo)
+		
+		// If it's a directory and we haven't reached max depth, recurse
+		if entry.IsDir() && maxDepth > 1 {
+			childFiles, err := buildDirectoryListing(baseDir, relPath, maxDepth-1)
+			if err == nil {
+				files = append(files, childFiles...)
+			}
+		}
+	}
+	
+	return files, nil
 }
 
 // buildFileTree recursively builds a tree of files and directories

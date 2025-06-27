@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BrowserMCP Extension Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        .code {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>BrowserMCP Extension Test Page</h1>
+    
+    <div class="info">
+        <h3>Test Instructions:</h3>
+        <ol>
+            <li>Load the browser extension in Chrome developer mode</li>
+            <li>Make sure this tab is active</li>
+            <li>Press <strong>Ctrl+Shift+C</strong> (or <strong>Cmd+Shift+C</strong> on Mac)</li>
+            <li>You should see a notification about connecting to BrowserMCP</li>
+            <li>Check the browser console for detailed logs</li>
+        </ol>
+    </div>
+
+    <div class="code">
+        Keyboard Shortcut: <strong>Ctrl+Shift+C</strong> (Windows/Linux) or <strong>Cmd+Shift+C</strong> (Mac)
+    </div>
+
+    <button onclick="testButtonClick()">Test Button (for automation testing)</button>
+    <button onclick="showPageInfo()">Show Page Info</button>
+    <button onclick="testWebSocketConnection()">Test WebSocket Connection</button>
+
+    <div id="output"></div>
+
+    <script>
+        function testButtonClick() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<div class="success">Test button clicked successfully!</div>';
+            console.log('Test button clicked at:', new Date());
+        }
+
+        function showPageInfo() {
+            const info = {
+                url: window.location.href,
+                title: document.title,
+                userAgent: navigator.userAgent,
+                timestamp: new Date().toISOString()
+            };
+            
+            const output = document.getElementById('output');
+            output.innerHTML = `
+                <div class="info">
+                    <h4>Page Information:</h4>
+                    <pre>${JSON.stringify(info, null, 2)}</pre>
+                </div>
+            `;
+            console.log('Page info:', info);
+        }
+
+        function testWebSocketConnection() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<div class="info">Testing WebSocket connection to port 8765...</div>';
+            
+            try {
+                const ws = new WebSocket('ws://localhost:8765');
+                
+                ws.onopen = () => {
+                    output.innerHTML = '<div class="success">WebSocket connection successful!</div>';
+                    ws.send(JSON.stringify({
+                        type: 'test_message',
+                        message: 'Hello from test page',
+                        timestamp: Date.now()
+                    }));
+                };
+                
+                ws.onerror = (error) => {
+                    output.innerHTML = '<div class="error">WebSocket connection failed. Make sure BrowserMCP server is running on port 8765.</div>';
+                    console.error('WebSocket error:', error);
+                };
+                
+                ws.onmessage = (event) => {
+                    console.log('Received message:', event.data);
+                };
+                
+                setTimeout(() => {
+                    if (ws.readyState === WebSocket.CONNECTING) {
+                        ws.close();
+                        output.innerHTML = '<div class="error">WebSocket connection timeout. Server may not be running.</div>';
+                    }
+                }, 5000);
+                
+            } catch (error) {
+                output.innerHTML = '<div class="error">WebSocket test failed: ' + error.message + '</div>';
+                console.error('WebSocket test error:', error);
+            }
+        }
+
+        // Log extension events
+        console.log('BrowserMCP test page loaded');
+        console.log('To test the keyboard shortcut, press Ctrl+Shift+C (or Cmd+Shift+C on Mac)');
+        
+        // Test if we can detect the extension
+        if (typeof chrome !== 'undefined' && chrome.runtime) {
+            console.log('Chrome extension API available');
+        } else {
+            console.log('Chrome extension API not available (normal for content scripts)');
+        }
+    </script>
+</body>
+</html>

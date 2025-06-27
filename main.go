@@ -558,7 +558,7 @@ func neuter(next http.Handler) http.Handler {
 }
 
 func serveFiles(dir string) http.HandlerFunc {
-	fileServer := neuter(http.FileServer(http.Dir(dir)))
+	fileServer := http.FileServer(http.Dir(dir))
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		filePath := filepath.Join(".", r.URL.Path)

@@ -9,7 +9,8 @@
     "contextMenus",
     "scripting",
     "tabs",
-    "storage"
+    "storage",
+    "notifications"
   ],
   "devtools_page": "devtools.html",
   "background": {
@@ -33,5 +34,14 @@
     "http://localhost:8080/*",
     "https://justshare.io/*",
     "*://*/*"
-  ]
+  ],
+  "commands": {
+    "connect-current-tab": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+C",
+        "mac": "Command+Shift+C"
+      },
+      "description": "Connect current tab to BrowserMCP server"
+    }
+  }
 }

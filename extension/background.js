@@ -2,6 +2,23 @@
 const DEFAULT_SERVER_URL = 'https://justshare.io';
 let BASE_ROUTE = DEFAULT_SERVER_URL;
 
+// BrowserMCP WebSocket connection
+let BROWSERMCP_WS_PORT = 8765; // Default BrowserMCP WebSocket port
+let mcpConnection = null;
+const connectedTabs = new Set();
+
+// Load BrowserMCP port from storage
+async function loadBrowserMCPPort() {
+    try {
+        const result = await chrome.storage.sync.get(['browsermcpPort']);
+        BROWSERMCP_WS_PORT = result.browsermcpPort || 8765;
+        console.log('Loaded BrowserMCP port:', BROWSERMCP_WS_PORT);
+    } catch (error) {
+        console.error('Error loading BrowserMCP port:', error);
+        BROWSERMCP_WS_PORT = 8765;
+    }
+}
+
 // Load server URL from storage on startup
 async function loadServerUrl() {
     try {
@@ -14,14 +31,22 @@ async function loadServerUrl() {
     }
 }
 
-// Initialize server URL
+// Initialize server URL and BrowserMCP port
 loadServerUrl();
+loadBrowserMCPPort();
 
 chrome.runtime.onInstalled.addListener(() => {
     // Set default server URL if not already set
     chrome.storage.sync.get(['serverUrl'], (result) => {
         if (!result.serverUrl) {
             chrome.storage.sync.set({ serverUrl: DEFAULT_SERVER_URL });
+        }
+    });
+
+    // Set default BrowserMCP port if not already set
+    chrome.storage.sync.get(['browsermcpPort'], (result) => {
+        if (!result.browsermcpPort) {
+            chrome.storage.sync.set({ browsermcpPort: 8765 });
         }
     });
 
@@ -248,3 +273,197 @@ async function sharePage(pageInfo) {
         console.error('Error:', error);
     }
 }
+
+// BrowserMCP connection functionality
+async function connectToBrowserMCP() {
+    if (mcpConnection && mcpConnection.readyState === WebSocket.OPEN) {
+        console.log('Already connected to BrowserMCP');
+        return true;
+    }
+
+    try {
+        mcpConnection = new WebSocket(`ws://localhost:${BROWSERMCP_WS_PORT}`);
+        
+        mcpConnection.onopen = () => {
+            console.log('Connected to BrowserMCP server');
+            // Send initialization message
+            mcpConnection.send(JSON.stringify({
+                type: 'extension_connected',
+                timestamp: Date.now()
+            }));
+        };
+
+        mcpConnection.onmessage = (event) => {
+            try {
+                const message = JSON.parse(event.data);
+                console.log('Received message from BrowserMCP:', message);
+                handleMCPMessage(message);
+            } catch (error) {
+                console.error('Error parsing MCP message:', error);
+            }
+        };
+
+        mcpConnection.onclose = () => {
+            console.log('Disconnected from BrowserMCP server');
+            mcpConnection = null;
+            connectedTabs.clear();
+        };
+
+        mcpConnection.onerror = (error) => {
+            console.error('BrowserMCP connection error:', error);
+            mcpConnection = null;
+        };
+
+        return true;
+    } catch (error) {
+        console.error('Failed to connect to BrowserMCP:', error);
+        return false;
+    }
+}
+
+async function connectCurrentTab() {
+    try {
+        // Get the current active tab
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        
+        if (!tab) {
+            console.error('No active tab found');
+            return;
+        }
+
+        // Connect to BrowserMCP if not already connected
+        const connected = await connectToBrowserMCP();
+        if (!connected) {
+            chrome.notifications.create({
+                type: 'basic',
+                iconUrl: 'icons/icon48.png',
+                title: 'BrowserMCP Connection Failed',
+                message: 'Could not connect to BrowserMCP server. Make sure it\'s running on port ' + BROWSERMCP_WS_PORT
+            });
+            return;
+        }
+
+        // Add tab to connected tabs
+        connectedTabs.add(tab.id);
+
+        // Inject content script if needed
+        try {
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: initializeMCPConnection
+            });
+        } catch (error) {
+            console.log('Content script already injected or injection failed:', error);
+        }
+
+        // Send tab connection message to MCP server
+        if (mcpConnection && mcpConnection.readyState === WebSocket.OPEN) {
+            mcpConnection.send(JSON.stringify({
+                type: 'tab_connected',
+                tabId: tab.id,
+                url: tab.url,
+                title: tab.title,
+                timestamp: Date.now()
+            }));
+        }
+
+        // Show success notification
+        chrome.notifications.create({
+            type: 'basic',
+            iconUrl: 'icons/icon48.png',
+            title: 'Tab Connected to BrowserMCP',
+            message: `Connected: ${tab.title}`
+        });
+
+        console.log('Tab connected to BrowserMCP:', tab.id, tab.url);
+    } catch (error) {
+        console.error('Error connecting current tab:', error);
+        chrome.notifications.create({
+            type: 'basic',
+            iconUrl: 'icons/icon48.png',
+            title: 'BrowserMCP Error',
+            message: 'Failed to connect tab: ' + error.message
+        });
+    }
+}
+
+function handleMCPMessage(message) {
+    switch (message.type) {
+        case 'execute_script':
+            if (message.tabId && connectedTabs.has(message.tabId)) {
+                chrome.scripting.executeScript({
+                    target: { tabId: message.tabId },
+                    func: executeRemoteScript,
+                    args: [message.script]
+                });
+            }
+            break;
+        case 'get_page_content':
+            if (message.tabId && connectedTabs.has(message.tabId)) {
+                chrome.scripting.executeScript({
+                    target: { tabId: message.tabId },
+                    func: getPageContent
+                }).then(results => {
+                    if (mcpConnection && mcpConnection.readyState === WebSocket.OPEN) {
+                        mcpConnection.send(JSON.stringify({
+                            type: 'page_content_response',
+                            tabId: message.tabId,
+                            content: results[0]?.result || null,
+                            requestId: message.requestId
+                        }));
+                    }
+                });
+            }
+            break;
+        default:
+            console.log('Unknown MCP message type:', message.type);
+    }
+}
+
+// Functions to be injected into content script
+function initializeMCPConnection() {
+    console.log('BrowserMCP content script initialized');
+    // Add any tab-specific initialization here
+}
+
+function executeRemoteScript(script) {
+    try {
+        eval(script);
+    } catch (error) {
+        console.error('Error executing remote script:', error);
+    }
+}
+
+function getPageContent() {
+    return {
+        url: window.location.href,
+        title: document.title,
+        html: document.documentElement.outerHTML,
+        text: document.body.innerText
+    };
+}
+
+// Listen for keyboard shortcuts
+chrome.commands.onCommand.addListener((command) => {
+    if (command === 'connect-current-tab') {
+        connectCurrentTab();
+    }
+});
+
+// Clean up when tabs are closed
+chrome.tabs.onRemoved.addListener((tabId) => {
+    if (connectedTabs.has(tabId)) {
+        connectedTabs.delete(tabId);
+        
+        // Notify MCP server about tab disconnection
+        if (mcpConnection && mcpConnection.readyState === WebSocket.OPEN) {
+            mcpConnection.send(JSON.stringify({
+                type: 'tab_disconnected',
+                tabId: tabId,
+                timestamp: Date.now()
+            }));
+        }
+        
+        console.log('Tab disconnected from BrowserMCP:', tabId);
+    }
+});
