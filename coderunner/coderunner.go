@@ -31,6 +31,7 @@ type FileInfo struct {
 	IsDir        bool      `json:"isDir"`
 	Size         int64     `json:"size"`
 	LastModified time.Time `json:"lastModified"`
+	FileCount    int       `json:"fileCount"` // Number of files in directory (0 for regular files)
 }
 
 type SaveFileRequest struct {
@@ -325,7 +326,7 @@ func handleFiles(w http.ResponseWriter, r *http.Request) {
 // handleListFiles returns the directory structure as JSON
 func handleListFiles(w http.ResponseWriter, r *http.Request) {
 	srcDir := "./data/coderunner/src"
-	
+
 	// Check for path parameter to list specific directory
 	queryPath := r.URL.Query().Get("path")
 	depth := 1 // Default to immediate children only
@@ -334,10 +335,10 @@ func handleListFiles(w http.ResponseWriter, r *http.Request) {
 			depth = d
 		}
 	}
-	
+
 	var files []FileInfo
 	var err error
-	
+
 	if queryPath != "" {
 		// List specific directory
 		files, err = buildDirectoryListing(srcDir, queryPath, depth)
@@ -345,7 +346,7 @@ func handleListFiles(w http.ResponseWriter, r *http.Request) {
 		// List all files (backwards compatibility) but limit to depth 1 for performance
 		files, err = buildDirectoryListing(srcDir, "", 1)
 	}
-	
+
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to read files: %v", err), http.StatusInternalServerError)
 		return
@@ -608,7 +609,7 @@ func handleBuild(w http.ResponseWriter, r *http.Request) {
 // buildDirectoryListing lists files in a specific directory with controlled depth
 func buildDirectoryListing(baseDir, relativePath string, maxDepth int) ([]FileInfo, error) {
 	var files []FileInfo
-	
+
 	// Build the target directory path
 	targetDir := baseDir
 	if relativePath != "" {
@@ -619,29 +620,29 @@ func buildDirectoryListing(baseDir, relativePath string, maxDepth int) ([]FileIn
 		}
 		targetDir = filepath.Join(baseDir, cleanPath)
 	}
-	
+
 	// Check if directory exists
 	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
 		return nil, fmt.Errorf("directory not found")
 	}
-	
+
 	// Read directory contents
 	entries, err := os.ReadDir(targetDir)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	for _, entry := range entries {
 		// Skip hidden files and directories (starting with .)
 		if strings.HasPrefix(entry.Name(), ".") {
 			continue
 		}
-		
+
 		info, err := entry.Info()
 		if err != nil {
 			continue // Skip files we can't read
 		}
-		
+
 		// Build the relative path from the base src directory
 		var relPath string
 		if relativePath == "" {
@@ -649,27 +650,55 @@ func buildDirectoryListing(baseDir, relativePath string, maxDepth int) ([]FileIn
 		} else {
 			relPath = filepath.ToSlash(filepath.Join(relativePath, entry.Name()))
 		}
-		
+
 		fileInfo := FileInfo{
 			Name:         entry.Name(),
 			Path:         relPath,
 			IsDir:        entry.IsDir(),
 			Size:         info.Size(),
 			LastModified: info.ModTime(),
+			FileCount:    0, // Default to 0 for files
 		}
-		
+
+		// If it's a directory, count the files inside it (one level deep)
+		//if entry.IsDir() {
+		//	fileInfo.FileCount = countFilesInDirectory(filepath.Join(targetDir, entry.Name()))
+		//}
+
 		files = append(files, fileInfo)
-		
+
 		// If it's a directory and we haven't reached max depth, recurse
-		if entry.IsDir() && maxDepth > 1 {
+		if entry.IsDir() && maxDepth >= 1 {
 			childFiles, err := buildDirectoryListing(baseDir, relPath, maxDepth-1)
 			if err == nil {
 				files = append(files, childFiles...)
 			}
 		}
 	}
-	
+
 	return files, nil
+}
+
+// countFilesInDirectory counts the number of files (not directories) in a directory one level deep
+func countFilesInDirectory(dirPath string) int {
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return 0 // Return 0 if we can't read the directory
+	}
+
+	count := 0
+	for _, entry := range entries {
+		// Skip hidden files and directories (starting with .)
+		if strings.HasPrefix(entry.Name(), ".") {
+			continue
+		}
+
+		// Count both files and subdirectories for UI display purposes
+		// This gives a better sense of "content" in the directory
+		count++
+	}
+
+	return count
 }
 
 // buildFileTree recursively builds a tree of files and directories
@@ -706,6 +735,7 @@ func buildFileTree(dir string) ([]FileInfo, error) {
 			IsDir:        info.IsDir(),
 			Size:         info.Size(),
 			LastModified: info.ModTime(),
+			FileCount:    0, // Default to 0 for files, could be enhanced later for directories
 		}
 
 		files = append(files, fileInfo)

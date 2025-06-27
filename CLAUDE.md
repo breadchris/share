@@ -2,12 +2,21 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Go
+- Debug print statements should be fmt.Printf("Debug: %+v\n", variable)
+
+## Persisting State
+- Uploading files will use the "/upload" endpoint to persist files located in main.go as func uploadHandler(w http.ResponseWriter, r *http.Request) {
+- Storing models in the database is managed in ./models/models.go, which uses GORM for ORM functionality.
+- The database is automatically migrated in the ./db/ package, which handles schema changes and updates.
+
 ## Tools
 - Use the browsermcp tool for debugging the currently opened web app when there are errors or when the user wants to inspect the current state of the application to make enhancements to rendered UI elements.
 
 ## Context
 - The api for the coderunner is in ./coderunner/coderunner.go
-- ./data/coderunner/src/@breadchris is where components are stored
+- ./data/coderunner/src/ is where components are stored
+- Components are written in TypeScript/React and compiled with esbuild. They use tailwindcss for styling.
 
 ––––––––––––––––––––––––
 By following this layered thought-process—starting from purpose and use cases, down through props, state, visuals, and tests—you ensure your component is both well-defined and resilient to future change.

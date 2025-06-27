@@ -37,6 +37,7 @@ import (
 	"github.com/breadchris/share/breadchris"
 	"github.com/breadchris/share/code"
 	"github.com/breadchris/share/coderunner"
+	"github.com/breadchris/share/docker"
 	config2 "github.com/breadchris/share/config"
 	. "github.com/breadchris/share/db"
 	deps2 "github.com/breadchris/share/deps"
@@ -173,6 +174,7 @@ func startServer(useTLS bool, port int) {
 	lm := leaps.RegisterRoutes(leaps.NewLogger())
 	docs := NewSqliteDocumentStore("data/docs.db")
 	aip := ai.New(appConfig, db)
+	dockerManager := docker.NewManager(db)
 	deps := deps2.Deps{
 		DB:                db,
 		Docs:              docs,
@@ -182,6 +184,7 @@ func startServer(useTLS bool, port int) {
 		AI:                oai,
 		Config:            appConfig,
 		WebsocketRegistry: reg,
+		Docker:            dockerManager,
 		Search: deps2.SearchIndex{
 			Recipe: recipeIdx,
 		},
@@ -277,6 +280,7 @@ func startServer(useTLS bool, port int) {
 	p("/github", interpreted(g.Routes))
 
 	p("/coderunner", interpreted(coderunner.New))
+	p("/docker", interpreted(docker.New))
 	p("/filecode", func() *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

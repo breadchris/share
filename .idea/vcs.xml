@@ -3,6 +3,7 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/browsermcp" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/browsermcp/yjs-inspector" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/gotty" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/hmr" vcs="Git" />
   </component>

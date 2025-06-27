@@ -241,3 +241,42 @@ func AIRecipeToModel(ar AIRecipe, id, domain string, ts youtube.VideoTranscript)
 	r.Transcript = MakeJSONField(ts)
 	return r
 }
+
+type DockerHost struct {
+	Model
+	Name        string `json:"name" gorm:"unique;not null"`
+	Endpoint    string `json:"endpoint" gorm:"not null"`
+	TLSCert     string `json:"tls_cert,omitempty"`
+	TLSKey      string `json:"tls_key,omitempty"`
+	TLSCA       string `json:"tls_ca,omitempty"`
+	TLSVerify   bool   `json:"tls_verify"`
+	IsDefault   bool   `json:"is_default"`
+	UserID      string `json:"user_id" gorm:"index"`
+	User        *User  `gorm:"foreignKey:UserID"`
+}
+
+type Container struct {
+	Model
+	ContainerID   string     `json:"container_id" gorm:"unique;not null"`
+	Name          string     `json:"name" gorm:"not null"`
+	Image         string     `json:"image" gorm:"not null"`
+	Status        string     `json:"status"`
+	Command       string     `json:"command"`
+	Ports         *JSONField[map[string]string] `json:"ports"`
+	Environment   *JSONField[map[string]string] `json:"environment"`
+	UserID        string     `json:"user_id" gorm:"index"`
+	DockerHostID  string     `json:"docker_host_id" gorm:"index"`
+	SessionID     string     `json:"session_id,omitempty" gorm:"index"`
+	User          *User      `gorm:"foreignKey:UserID"`
+	DockerHost    *DockerHost `gorm:"foreignKey:DockerHostID"`
+}
+
+type ContainerSession struct {
+	Model
+	ContainerID   string     `json:"container_id" gorm:"index"`
+	SessionID     string     `json:"session_id" gorm:"unique;not null"`
+	Command       string     `json:"command"`
+	UserID        string     `json:"user_id" gorm:"index"`
+	Container     *Container `gorm:"foreignKey:ContainerID"`
+	User          *User      `gorm:"foreignKey:UserID"`
+}
