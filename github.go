@@ -8,11 +8,13 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"time"
 
 	"github.com/breadchris/share/breadchris"
 	"github.com/breadchris/share/config"
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
+	"github.com/breadchris/share/models"
 	"github.com/breadchris/share/session"
 	"github.com/go-git/go-git/v5"
 	ghttp "github.com/go-git/go-git/v5/plumbing/transport/http"
@@ -21,6 +23,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/markbates/goth/gothic"
 	ogithub "github.com/markbates/goth/providers/github"
+	"gorm.io/gorm"
 )
 
 type Github struct {
@@ -58,7 +61,7 @@ func NewGithub(d deps.Deps) *Github {
 func (s *Github) Routes(d deps.Deps) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/login", s.login)
-	mux.HandleFunc("/callback", s.callback)
+	mux.HandleFunc("/callback", s.callback(d))
 	mux.HandleFunc("/commit", func(w http.ResponseWriter, r *http.Request) {
 		u, err := s.s.GetUserID(r.Context())
 		if err != nil {
@@ -298,50 +301,74 @@ func (s *Github) login(w http.ResponseWriter, r *http.Request) {
 	s.h.BeginAuthHandler(w, r)
 }
 
-func (s *Github) callback(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query()
-	q.Set("provider", "github")
-	r.URL.RawQuery = q.Encode()
-	u, err := s.h.CompleteUserAuth(w, r)
-	if err != nil {
-		slog.Error("failed to complete user auth", "error", err)
-		return
+func (s *Github) callback(d deps.Deps) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		q.Set("provider", "github")
+		r.URL.RawQuery = q.Encode()
+		u, err := s.h.CompleteUserAuth(w, r)
+		if err != nil {
+			slog.Error("failed to complete user auth", "error", err)
+			return
+		}
+
+		// Use GitHub username as the primary identifier
+		username := u.NickName
+		if username == "" {
+			username = u.Email
+		}
+
+		// Find or create user in database
+		var user models.User
+		if err := d.DB.Where("username = ?", username).First(&user).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				// Create new user
+				user = models.User{
+					ID:        uuid.NewString(),
+					CreatedAt: time.Now(),
+					Username:  username,
+				}
+				if err := d.DB.Create(&user).Error; err != nil {
+					http.Error(w, "Database error", http.StatusInternalServerError)
+					return
+				}
+			} else {
+				http.Error(w, "Database error", http.StatusInternalServerError)
+				return
+			}
+		}
+
+		// Set user ID in session
+		s.s.SetUserID(r.Context(), user.ID)
+
+		// Store GitHub user data in session for GitHub-specific functionality
+		gitHubUser := &session.GitHubUserData{
+			ID:             user.ID,
+			Email:          u.Email,
+			AccessToken:    u.AccessToken,
+			GithubUsername: u.NickName,
+			DisplayName:    u.Name,
+			Icon:           u.AvatarURL,
+			Repo:           "", // Will be set when user selects a repository
+		}
+
+		if err := s.s.SetGitHubUser(r.Context(), gitHubUser); err != nil {
+			slog.Error("failed to store GitHub user in session", "error", err)
+			http.Error(w, "Failed to store user data", http.StatusInternalServerError)
+			return
+		}
+
+		// Also maintain the old users map for backward compatibility (if needed)
+		users[user.ID] = &User{
+			ID:             user.ID,
+			Email:          u.Email,
+			AccessToken:    u.AccessToken,
+			GithubUsername: u.NickName,
+			DisplayName:    u.Name,
+			Icon:           u.AvatarURL,
+			Repo:           "",
+		}
+
+		http.Redirect(w, r, "/coderunner/", http.StatusFound)
 	}
-
-	fmt.Printf("%+v\n", u)
-	fmt.Printf("%+v\n", u.RawData)
-
-	// Create user ID and set in session
-	userID := uuid.NewString()
-	s.s.SetUserID(r.Context(), userID)
-
-	// Store GitHub user data in session
-	gitHubUser := &session.GitHubUserData{
-		ID:             userID,
-		Email:          u.Email,
-		AccessToken:    u.AccessToken,
-		GithubUsername: u.NickName,
-		DisplayName:    u.Name,
-		Icon:           u.AvatarURL,
-		Repo:           "", // Will be set when user selects a repository
-	}
-
-	if err := s.s.SetGitHubUser(r.Context(), gitHubUser); err != nil {
-		slog.Error("failed to store GitHub user in session", "error", err)
-		http.Error(w, "Failed to store user data", http.StatusInternalServerError)
-		return
-	}
-
-	// Also maintain the old users map for backward compatibility (if needed)
-	users[userID] = &User{
-		ID:             userID,
-		Email:          u.Email,
-		AccessToken:    u.AccessToken,
-		GithubUsername: u.NickName,
-		DisplayName:    u.Name,
-		Icon:           u.AvatarURL,
-		Repo:           "",
-	}
-
-	http.Redirect(w, r, "/coderunner/", http.StatusFound)
 }
