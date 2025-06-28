@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/breadchris/share/config"
 	. "github.com/breadchris/share/html"
@@ -135,6 +136,44 @@ type AuthState struct {
 func (s *Auth) handleLogout(w http.ResponseWriter, r *http.Request) {
 	s.s.ClearUserID(r.Context())
 	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+func (s *Auth) handleAPILogout(w http.ResponseWriter, r *http.Request) {
+	s.s.ClearUserID(r.Context())
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"success": true, "message": "Logged out successfully"}`))
+}
+
+func (s *Auth) handleAPIUser(w http.ResponseWriter, r *http.Request) {
+	userID, err := s.s.GetUserID(r.Context())
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte(`{"error": "unauthorized"}`))
+		return
+	}
+
+	var user models.User
+	if err := s.db.Where("id = ?", userID).First(&user).Error; err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(`{"error": "user not found"}`))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	
+	// Create user response matching frontend expectations
+	response := map[string]interface{}{
+		"id":         user.ID,
+		"username":   user.Username,
+		"email":      user.Username, // In this app, username is the email
+		"created_at": user.CreatedAt.Format("2006-01-02T15:04:05.000Z"),
+	}
+	
+	json.NewEncoder(w).Encode(response)
 }
 
 func (s *Auth) handleLogin(w http.ResponseWriter, r *http.Request) {

@@ -130,6 +130,23 @@ func New(d deps.Deps) *http.ServeMux {
 		}
 	})
 
+	// Authentication endpoints
+	m.HandleFunc("/api/auth/user", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			handleAPIUser(w, r, d)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	m.HandleFunc("/api/auth/logout", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "POST" {
+			handleAPILogout(w, r, d)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
 	return m
 }
 
@@ -809,4 +826,42 @@ func handleQRCodeJoin(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(html))
+}
+
+func handleAPILogout(w http.ResponseWriter, r *http.Request, d deps.Deps) {
+	d.Session.ClearUserID(r.Context())
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"success": true, "message": "Logged out successfully"}`))
+}
+
+func handleAPIUser(w http.ResponseWriter, r *http.Request, d deps.Deps) {
+	userID, err := d.Session.GetUserID(r.Context())
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte(`{"error": "unauthorized"}`))
+		return
+	}
+
+	var user models.User
+	if err := d.DB.Where("id = ?", userID).First(&user).Error; err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(`{"error": "user not found"}`))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	
+	// Create user response matching frontend expectations
+	response := map[string]interface{}{
+		"id":         user.ID,
+		"username":   user.Username,
+		"email":      user.Username, // In this app, username is the email
+		"created_at": user.CreatedAt.Format("2006-01-02T15:04:05.000Z"),
+	}
+	
+	json.NewEncoder(w).Encode(response)
 }
