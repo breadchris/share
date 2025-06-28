@@ -204,7 +204,7 @@ func handleListDocs(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 	}
 
 	var docs []models.ClaudeDoc
-	query := d.DB.Preload("User").Preload("Tags").Preload("Content").Where("is_public = ?", true)
+	query := d.DB.Preload("User").Preload("Tags").Where("is_public = ?", true)
 
 	// Filter by tags if provided
 	if len(tagList) > 0 {
@@ -264,24 +264,6 @@ func handleCreateDoc(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 		return
 	}
 
-	// Create content record
-	content := models.Content{
-		Model: models.Model{
-			ID:        uuid.NewString(),
-			CreatedAt: time.Now(),
-		},
-		Type:   "claude_md",
-		Data:   req.Content,
-		UserID: userID,
-		// Note: GroupID will need to be handled based on your app's group logic
-		GroupID: "default", // You might want to make this configurable
-	}
-
-	if err := d.DB.Create(&content).Error; err != nil {
-		http.Error(w, "Failed to create content", http.StatusInternalServerError)
-		return
-	}
-
 	// Create CLAUDE.md document
 	doc := models.ClaudeDoc{
 		Model: models.Model{
@@ -290,7 +272,7 @@ func handleCreateDoc(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 		},
 		Title:       req.Title,
 		Description: req.Description,
-		ContentID:   content.ID,
+		Content:     req.Content,
 		UserID:      userID,
 		IsPublic:    req.IsPublic,
 	}
@@ -308,7 +290,7 @@ func handleCreateDoc(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 	}
 
 	// Reload with associations
-	d.DB.Preload("User").Preload("Tags").Preload("Content").First(&doc, doc.ID)
+	d.DB.Preload("User").Preload("Tags").First(&doc, doc.ID)
 
 	response := buildClaudeDocResponse(doc, userID, d.DB)
 	w.Header().Set("Content-Type", "application/json")
@@ -317,7 +299,7 @@ func handleCreateDoc(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 
 func handleGetDoc(w http.ResponseWriter, r *http.Request, d deps.Deps, docID string) {
 	var doc models.ClaudeDoc
-	if err := d.DB.Preload("User").Preload("Tags").Preload("Content").First(&doc, "id = ?", docID).Error; err != nil {
+	if err := d.DB.Preload("User").Preload("Tags").First(&doc, "id = ?", docID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			http.Error(w, "Document not found", http.StatusNotFound)
 		} else {
@@ -380,10 +362,7 @@ func handleUpdateDoc(w http.ResponseWriter, r *http.Request, d deps.Deps, docID 
 	}
 
 	// Update content
-	if err := d.DB.Model(&models.Content{}).Where("id = ?", doc.ContentID).Update("data", req.Content).Error; err != nil {
-		http.Error(w, "Failed to update content", http.StatusInternalServerError)
-		return
-	}
+	doc.Content = req.Content
 
 	// Update tags
 	if err := assignTagsToDoc(d.DB, &doc, req.TagNames, userID); err != nil {
@@ -391,7 +370,7 @@ func handleUpdateDoc(w http.ResponseWriter, r *http.Request, d deps.Deps, docID 
 	}
 
 	// Reload with associations
-	d.DB.Preload("User").Preload("Tags").Preload("Content").First(&doc, doc.ID)
+	d.DB.Preload("User").Preload("Tags").First(&doc, doc.ID)
 
 	response := buildClaudeDocResponse(doc, userID, d.DB)
 	w.Header().Set("Content-Type", "application/json")
@@ -419,7 +398,6 @@ func handleDeleteDoc(w http.ResponseWriter, r *http.Request, d deps.Deps, docID 
 	d.DB.Where("claude_doc_id = ?", doc.ID).Delete(&models.ClaudeDocTag{})
 	d.DB.Where("claude_doc_id = ?", doc.ID).Delete(&models.ClaudeDocStar{})
 	d.DB.Delete(&doc)
-	d.DB.Delete(&models.Content{}, doc.ContentID)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]bool{"success": true})
@@ -491,7 +469,7 @@ func handleStarDoc(w http.ResponseWriter, r *http.Request, d deps.Deps, docID st
 
 func handleDownloadDoc(w http.ResponseWriter, r *http.Request, d deps.Deps, docID string) {
 	var doc models.ClaudeDoc
-	if err := d.DB.Preload("Content").First(&doc, "id = ?", docID).Error; err != nil {
+	if err := d.DB.First(&doc, "id = ?", docID).Error; err != nil {
 		http.Error(w, "Document not found", http.StatusNotFound)
 		return
 	}
@@ -513,7 +491,7 @@ func handleDownloadDoc(w http.ResponseWriter, r *http.Request, d deps.Deps, docI
 	// Return the markdown content
 	w.Header().Set("Content-Type", "text/markdown")
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s.md\"", doc.Title))
-	w.Write([]byte(doc.Content.Data))
+	w.Write([]byte(doc.Content))
 }
 
 func handleSearchDocs(w http.ResponseWriter, r *http.Request, d deps.Deps) {
@@ -531,7 +509,7 @@ func handleSearchDocs(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 	}
 
 	var docs []models.ClaudeDoc
-	dbQuery := d.DB.Preload("User").Preload("Tags").Preload("Content").Where("is_public = ?", true)
+	dbQuery := d.DB.Preload("User").Preload("Tags").Where("is_public = ?", true)
 
 	// Text search
 	if query != "" {
@@ -597,7 +575,7 @@ func handleGetUserDocs(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 	}
 
 	var docs []models.ClaudeDoc
-	if err := d.DB.Preload("User").Preload("Tags").Preload("Content").Where("user_id = ?", userID).Order("created_at DESC").Find(&docs).Error; err != nil {
+	if err := d.DB.Preload("User").Preload("Tags").Where("user_id = ?", userID).Order("created_at DESC").Find(&docs).Error; err != nil {
 		http.Error(w, "Failed to fetch documents", http.StatusInternalServerError)
 		return
 	}

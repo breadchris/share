@@ -18,7 +18,7 @@ import (
 )
 
 type CreateContentRequest struct {
-	Type     string                 `json:"type"` // text, image, audio, clipboard
+	Type     string                 `json:"type"` // text, image, audio, clipboard, url
 	Data     string                 `json:"data"` // Text content or base64 for files
 	GroupID  string                 `json:"group_id"`
 	Tags     []string               `json:"tags,omitempty"`
@@ -145,6 +145,20 @@ func handleCreateContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 
 	if req.Type == "" || req.Data == "" || req.GroupID == "" {
 		http.Error(w, `{"error":"type, data, and group_id are required"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Validate content type
+	validTypes := map[string]bool{
+		"text":      true,
+		"image":     true,
+		"audio":     true,
+		"clipboard": true,
+		"url":       true,
+		"file":      true,
+	}
+	if !validTypes[req.Type] {
+		http.Error(w, `{"error":"invalid content type"}`, http.StatusBadRequest)
 		return
 	}
 

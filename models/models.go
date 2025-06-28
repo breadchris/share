@@ -313,13 +313,12 @@ type ClaudeDoc struct {
 	Model
 	Title       string   `json:"title" gorm:"not null"`
 	Description string   `json:"description"`
-	ContentID   string   `json:"content_id" gorm:"index;not null"`
+	Content     string   `json:"content" gorm:"type:text"`
 	UserID      string   `json:"user_id" gorm:"index;not null"`
 	IsPublic    bool     `json:"is_public" gorm:"default:true"`
 	Downloads   int      `json:"downloads" gorm:"default:0"`
 	Stars       int      `json:"stars" gorm:"default:0"`
 	Views       int      `json:"views" gorm:"default:0"`
-	Content     *Content `gorm:"foreignKey:ContentID"`
 	User        *User    `gorm:"foreignKey:UserID"`
 	Tags        []*Tag   `gorm:"many2many:claude_doc_tags;"`
 }
