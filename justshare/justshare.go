@@ -134,8 +134,11 @@ func New(d deps.Deps) *http.ServeMux {
 }
 
 func handleCreateContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
-	// TODO: Get user from session
-	userID := "test-user" // Placeholder
+	userID, err := d.Session.GetUserID(r.Context())
+	if err != nil {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
 
 	var req CreateContentRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -320,8 +323,11 @@ func handleGetContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 }
 
 func handleDeleteContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
-	// TODO: Get user from session
-	userID := "test-user" // Placeholder
+	userID, err := d.Session.GetUserID(r.Context())
+	if err != nil {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
 
 	// Extract content ID from URL path
 	path := strings.TrimPrefix(r.URL.Path, "/api/content/")
@@ -374,8 +380,11 @@ func handleDeleteContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 }
 
 func handleCreateGroup(w http.ResponseWriter, r *http.Request, d deps.Deps) {
-	// TODO: Get user from session
-	userID := "test-user" // Placeholder
+	userID, err := d.Session.GetUserID(r.Context())
+	if err != nil {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
 
 	var req CreateGroupRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -422,8 +431,11 @@ func handleCreateGroup(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 }
 
 func handleJoinGroup(w http.ResponseWriter, r *http.Request, d deps.Deps) {
-	// TODO: Get user from session
-	userID := "test-user" // Placeholder
+	userID, err := d.Session.GetUserID(r.Context())
+	if err != nil {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
 
 	var req JoinGroupRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -445,7 +457,7 @@ func handleJoinGroup(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 
 	// Check if user is already a member
 	var existingMembership models.GroupMembership
-	err := d.DB.First(&existingMembership, "user_id = ? AND group_id = ?", userID, group.ID).Error
+	err = d.DB.First(&existingMembership, "user_id = ? AND group_id = ?", userID, group.ID).Error
 	if err == nil {
 		http.Error(w, `{"error":"already a member of this group"}`, http.StatusConflict)
 		return
@@ -470,8 +482,11 @@ func handleJoinGroup(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 }
 
 func handleGetUserGroups(w http.ResponseWriter, r *http.Request, d deps.Deps) {
-	// TODO: Get user from session
-	userID := "test-user" // Placeholder
+	userID, err := d.Session.GetUserID(r.Context())
+	if err != nil {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
 
 	var groups []*models.Group
 	query := d.DB.Joins("JOIN group_memberships ON groups.id = group_memberships.group_id").
@@ -513,8 +528,11 @@ func handleGetUserGroups(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 }
 
 func handleSearchTags(w http.ResponseWriter, r *http.Request, d deps.Deps) {
-	// TODO: Get user from session
-	userID := "test-user" // Placeholder
+	userID, err := d.Session.GetUserID(r.Context())
+	if err != nil {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
 
 	query := r.URL.Query().Get("q")
 	if query == "" {
