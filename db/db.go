@@ -210,6 +210,11 @@ func LoadDB(dsn string) *gorm.DB {
 		&models.Equipment{},
 		&models.Direction{},
 		&models.PromptContext{},
+		&models.ContentTag{},
+		&models.Content{},
+		&models.ClaudeDoc{},
+		&models.ClaudeDocTag{},
+		&models.ClaudeDocStar{},
 
 		// xctf models
 		&xmodels.Competition{},

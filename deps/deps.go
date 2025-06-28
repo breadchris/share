@@ -60,12 +60,12 @@ type ContainerInfo struct {
 }
 
 type ContainerConfig struct {
-	Image       string            `json:"image"`
-	Name        string            `json:"name"`
-	Command     []string          `json:"command"`
-	Env         map[string]string `json:"environment"`
-	Ports       map[string]string `json:"ports"`
-	Volumes     map[string]string `json:"volumes"`
-	WorkingDir  string            `json:"working_dir"`
-	AutoRemove  bool              `json:"auto_remove"`
+	Image      string            `json:"image"`
+	Name       string            `json:"name"`
+	Command    []string          `json:"command"`
+	Env        map[string]string `json:"environment"`
+	Ports      map[string]string `json:"ports"`
+	Volumes    map[string]string `json:"volumes"`
+	WorkingDir string            `json:"working_dir"`
+	AutoRemove bool              `json:"auto_remove"`
 }

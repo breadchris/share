@@ -240,24 +240,25 @@ func New(deps deps.Deps) *http.ServeMux {
 					Content: payload.UserMessage,
 				})
 
-				// Add function tool if response schema is provided
 				if payload.ResponseSchema != nil {
-					// Convert the response schema to a proper JSON schema for OpenAI
 					var schemaMap map[string]interface{}
-					if err := json.Unmarshal(payload.ResponseSchema, &schemaMap); err == nil {
-						req.Tools = []openai.Tool{
-							{
-								Type: "function",
-								Function: &openai.FunctionDefinition{
-									Name:        "structured_response",
-									Description: "Provide a structured response matching the expected schema",
-									Parameters:  schemaMap,
-								},
-							},
-						}
-						req.ToolChoice = "required"
+					if err := json.Unmarshal(payload.ResponseSchema, &schemaMap); err != nil {
+						http.Error(w, `{"error":"invalid response schema"}`, http.StatusBadRequest)
+						return
 					}
 				}
+
+				req.Tools = []openai.Tool{
+					{
+						Type: "function",
+						Function: &openai.FunctionDefinition{
+							Name:        "structured_response",
+							Description: "Provide a structured response matching the expected schema",
+							Parameters:  schema,
+						},
+					},
+				}
+				req.ToolChoice = "required"
 
 				resp, err := deps.AI.CreateChatCompletion(r.Context(), req)
 				if err != nil {

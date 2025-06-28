@@ -63,7 +63,7 @@ func (j *JSONField[T]) UnmarshalJSON(b []byte) error {
 }
 
 type Model struct {
-	ID        string `gorm:"primaryKey"`
+	ID        string `gorm:"primaryKey" json:"id"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
@@ -96,12 +96,12 @@ type Identity struct {
 }
 
 type Group struct {
-	ID        string `gorm:"primaryKey"`
-	CreatedAt time.Time
-	Name      string             `gorm:"unique;not null"`
-	JoinCode  string             `gorm:"unique"`
-	Members   []*GroupMembership `gorm:"foreignKey:GroupID"`
-	Pages     []*Page            `gorm:"foreignKey:GroupID"`
+	ID        string             `gorm:"primaryKey" json:"id"`
+	CreatedAt time.Time         `json:"created_at"`
+	Name      string             `gorm:"unique;not null" json:"name"`
+	JoinCode  string             `gorm:"unique" json:"join_code"`
+	Members   []*GroupMembership `gorm:"foreignKey:GroupID" json:"members,omitempty"`
+	Pages     []*Page            `gorm:"foreignKey:GroupID" json:"pages,omitempty"`
 }
 
 type GroupMembership struct {
@@ -160,14 +160,6 @@ type Recipe struct {
 	Directions  []*Direction  `json:"directions" gorm:"foreignKey:RecipeID"`
 	Equipment   []*Equipment  `json:"equipment" description:"The equipment used while making the recipe."`
 	Transcript  *JSONField[youtube.VideoTranscript]
-	Tags        []Tag `gorm:"many2many:recipe_tags;"`
-}
-
-type Tag struct {
-	Model
-	Name        string `gorm:"unique;not null"`
-	Description string
-	Recipes     []Recipe `gorm:"many2many:recipe_tags;"`
 }
 
 type PromptContext struct {
@@ -244,39 +236,106 @@ func AIRecipeToModel(ar AIRecipe, id, domain string, ts youtube.VideoTranscript)
 
 type DockerHost struct {
 	Model
-	Name        string `json:"name" gorm:"unique;not null"`
-	Endpoint    string `json:"endpoint" gorm:"not null"`
-	TLSCert     string `json:"tls_cert,omitempty"`
-	TLSKey      string `json:"tls_key,omitempty"`
-	TLSCA       string `json:"tls_ca,omitempty"`
-	TLSVerify   bool   `json:"tls_verify"`
-	IsDefault   bool   `json:"is_default"`
-	UserID      string `json:"user_id" gorm:"index"`
-	User        *User  `gorm:"foreignKey:UserID"`
+	Name      string `json:"name" gorm:"unique;not null"`
+	Endpoint  string `json:"endpoint" gorm:"not null"`
+	TLSCert   string `json:"tls_cert,omitempty"`
+	TLSKey    string `json:"tls_key,omitempty"`
+	TLSCA     string `json:"tls_ca,omitempty"`
+	TLSVerify bool   `json:"tls_verify"`
+	IsDefault bool   `json:"is_default"`
+	UserID    string `json:"user_id" gorm:"index"`
+	User      *User  `gorm:"foreignKey:UserID"`
 }
 
 type Container struct {
 	Model
-	ContainerID   string     `json:"container_id" gorm:"unique;not null"`
-	Name          string     `json:"name" gorm:"not null"`
-	Image         string     `json:"image" gorm:"not null"`
-	Status        string     `json:"status"`
-	Command       string     `json:"command"`
-	Ports         *JSONField[map[string]string] `json:"ports"`
-	Environment   *JSONField[map[string]string] `json:"environment"`
-	UserID        string     `json:"user_id" gorm:"index"`
-	DockerHostID  string     `json:"docker_host_id" gorm:"index"`
-	SessionID     string     `json:"session_id,omitempty" gorm:"index"`
-	User          *User      `gorm:"foreignKey:UserID"`
-	DockerHost    *DockerHost `gorm:"foreignKey:DockerHostID"`
+	ContainerID  string                        `json:"container_id" gorm:"unique;not null"`
+	Name         string                        `json:"name" gorm:"not null"`
+	Image        string                        `json:"image" gorm:"not null"`
+	Status       string                        `json:"status"`
+	Command      string                        `json:"command"`
+	Ports        *JSONField[map[string]string] `json:"ports"`
+	Environment  *JSONField[map[string]string] `json:"environment"`
+	UserID       string                        `json:"user_id" gorm:"index"`
+	DockerHostID string                        `json:"docker_host_id" gorm:"index"`
+	SessionID    string                        `json:"session_id,omitempty" gorm:"index"`
+	User         *User                         `gorm:"foreignKey:UserID"`
+	DockerHost   *DockerHost                   `gorm:"foreignKey:DockerHostID"`
 }
 
 type ContainerSession struct {
 	Model
-	ContainerID   string     `json:"container_id" gorm:"index"`
-	SessionID     string     `json:"session_id" gorm:"unique;not null"`
-	Command       string     `json:"command"`
-	UserID        string     `json:"user_id" gorm:"index"`
-	Container     *Container `gorm:"foreignKey:ContainerID"`
-	User          *User      `gorm:"foreignKey:UserID"`
+	ContainerID string     `json:"container_id" gorm:"index"`
+	SessionID   string     `json:"session_id" gorm:"unique;not null"`
+	Command     string     `json:"command"`
+	UserID      string     `json:"user_id" gorm:"index"`
+	Container   *Container `gorm:"foreignKey:ContainerID"`
+	User        *User      `gorm:"foreignKey:UserID"`
+}
+
+// JustShare Models
+
+type Content struct {
+	Model
+	Type     string                             `json:"type" gorm:"not null"`  // text, image, audio, clipboard
+	Data     string                             `json:"data" gorm:"type:text"` // Text content or file path
+	MediaURL string                             `json:"media_url,omitempty"`   // URL for media files
+	MimeType string                             `json:"mime_type,omitempty"`   // MIME type for media
+	FileSize int64                              `json:"file_size,omitempty"`   // File size in bytes
+	GroupID  string                             `json:"group_id" gorm:"index;not null"`
+	UserID   string                             `json:"user_id" gorm:"index;not null"`
+	Group    *Group                             `gorm:"foreignKey:GroupID"`
+	User     *User                              `gorm:"foreignKey:UserID"`
+	Tags     []*Tag                             `gorm:"many2many:content_tags;"`
+	Metadata *JSONField[map[string]interface{}] `json:"metadata,omitempty"` // Additional metadata
+}
+
+type Tag struct {
+	Model
+	Name     string     `json:"name" gorm:"unique;not null;index"`
+	Color    string     `json:"color,omitempty"`               // Hex color for display
+	UserID   string     `json:"user_id" gorm:"index;not null"` // Tag creator
+	User     *User      `gorm:"foreignKey:UserID"`
+	Contents []*Content `gorm:"many2many:content_tags;"`
+}
+
+type ContentTag struct {
+	ContentID string    `json:"content_id" gorm:"primaryKey"`
+	TagID     string    `json:"tag_id" gorm:"primaryKey"`
+	CreatedAt time.Time `json:"created_at"`
+	Content   *Content  `gorm:"foreignKey:ContentID"`
+	Tag       *Tag      `gorm:"foreignKey:TagID"`
+}
+
+// CLAUDE.md Document Models
+
+type ClaudeDoc struct {
+	Model
+	Title       string   `json:"title" gorm:"not null"`
+	Description string   `json:"description"`
+	ContentID   string   `json:"content_id" gorm:"index;not null"`
+	UserID      string   `json:"user_id" gorm:"index;not null"`
+	IsPublic    bool     `json:"is_public" gorm:"default:true"`
+	Downloads   int      `json:"downloads" gorm:"default:0"`
+	Stars       int      `json:"stars" gorm:"default:0"`
+	Views       int      `json:"views" gorm:"default:0"`
+	Content     *Content `gorm:"foreignKey:ContentID"`
+	User        *User    `gorm:"foreignKey:UserID"`
+	Tags        []*Tag   `gorm:"many2many:claude_doc_tags;"`
+}
+
+type ClaudeDocTag struct {
+	ClaudeDocID string     `json:"claude_doc_id" gorm:"primaryKey"`
+	TagID       string     `json:"tag_id" gorm:"primaryKey"`
+	CreatedAt   time.Time  `json:"created_at"`
+	ClaudeDoc   *ClaudeDoc `gorm:"foreignKey:ClaudeDocID"`
+	Tag         *Tag       `gorm:"foreignKey:TagID"`
+}
+
+type ClaudeDocStar struct {
+	Model
+	ClaudeDocID string     `json:"claude_doc_id" gorm:"index;not null"`
+	UserID      string     `json:"user_id" gorm:"index;not null"`
+	ClaudeDoc   *ClaudeDoc `gorm:"foreignKey:ClaudeDocID"`
+	User        *User      `gorm:"foreignKey:UserID"`
 }

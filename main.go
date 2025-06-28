@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/justshare"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -35,12 +36,13 @@ import (
 	"github.com/breadchris/share/aiapi"
 	"github.com/breadchris/share/bread"
 	"github.com/breadchris/share/breadchris"
+	"github.com/breadchris/share/claudemd"
 	"github.com/breadchris/share/code"
 	"github.com/breadchris/share/coderunner"
-	"github.com/breadchris/share/docker"
 	config2 "github.com/breadchris/share/config"
 	. "github.com/breadchris/share/db"
 	deps2 "github.com/breadchris/share/deps"
+	"github.com/breadchris/share/docker"
 	"github.com/breadchris/share/editor/config"
 	"github.com/breadchris/share/editor/leaps"
 	"github.com/breadchris/share/editor/playground"
@@ -278,8 +280,10 @@ func startServer(useTLS bool, port int) {
 	p("/registry", interpreted(registry.New))
 	g := NewGithub(deps)
 	p("/github", interpreted(g.Routes))
+	p("/justshare", interpreted(justshare.New))
 
 	p("/coderunner", interpreted(coderunner.New))
+	p("/claudemd", interpreted(claudemd.New))
 	p("/docker", interpreted(docker.New))
 	p("/filecode", func() *http.ServeMux {
 		m := http.NewServeMux()

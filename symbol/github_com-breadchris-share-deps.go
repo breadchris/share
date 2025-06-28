@@ -9,8 +9,84 @@ import (
 
 func init() {
 	Symbols["github.com/breadchris/share/deps/deps"] = map[string]reflect.Value{
+		// function, constant and variable definitions
+		"NewDepsFactory": reflect.ValueOf(deps.NewDepsFactory),
+
 		// type definitions
-		"Deps":        reflect.ValueOf((*deps.Deps)(nil)),
-		"SearchIndex": reflect.ValueOf((*deps.SearchIndex)(nil)),
+		"ContainerConfig": reflect.ValueOf((*deps.ContainerConfig)(nil)),
+		"ContainerInfo":   reflect.ValueOf((*deps.ContainerInfo)(nil)),
+		"Deps":            reflect.ValueOf((*deps.Deps)(nil)),
+		"DepsFactory":     reflect.ValueOf((*deps.DepsFactory)(nil)),
+		"DockerClient":    reflect.ValueOf((*deps.DockerClient)(nil)),
+		"DockerManager":   reflect.ValueOf((*deps.DockerManager)(nil)),
+		"SearchIndex":     reflect.ValueOf((*deps.SearchIndex)(nil)),
+
+		// interface wrapper definitions
+		"_DockerClient":  reflect.ValueOf((*_github_com_breadchris_share_deps_DockerClient)(nil)),
+		"_DockerManager": reflect.ValueOf((*_github_com_breadchris_share_deps_DockerManager)(nil)),
 	}
+}
+
+// _github_com_breadchris_share_deps_DockerClient is an interface wrapper for DockerClient type
+type _github_com_breadchris_share_deps_DockerClient struct {
+	IValue           interface{}
+	WCreateContainer func(config deps.ContainerConfig) (*deps.ContainerInfo, error)
+	WGetLogs         func(containerID string) (string, error)
+	WListContainers  func() ([]deps.ContainerInfo, error)
+	WRemoveContainer func(containerID string) error
+	WStartContainer  func(containerID string) error
+	WStopContainer   func(containerID string) error
+}
+
+func (W _github_com_breadchris_share_deps_DockerClient) CreateContainer(config deps.ContainerConfig) (*deps.ContainerInfo, error) {
+	return W.WCreateContainer(config)
+}
+func (W _github_com_breadchris_share_deps_DockerClient) GetLogs(containerID string) (string, error) {
+	return W.WGetLogs(containerID)
+}
+func (W _github_com_breadchris_share_deps_DockerClient) ListContainers() ([]deps.ContainerInfo, error) {
+	return W.WListContainers()
+}
+func (W _github_com_breadchris_share_deps_DockerClient) RemoveContainer(containerID string) error {
+	return W.WRemoveContainer(containerID)
+}
+func (W _github_com_breadchris_share_deps_DockerClient) StartContainer(containerID string) error {
+	return W.WStartContainer(containerID)
+}
+func (W _github_com_breadchris_share_deps_DockerClient) StopContainer(containerID string) error {
+	return W.WStopContainer(containerID)
+}
+
+// _github_com_breadchris_share_deps_DockerManager is an interface wrapper for DockerManager type
+type _github_com_breadchris_share_deps_DockerManager struct {
+	IValue           interface{}
+	WCreateContainer func(hostID string, userID string, config deps.ContainerConfig) (*deps.ContainerInfo, error)
+	WGetClient       func(hostID string) (deps.DockerClient, error)
+	WGetLogs         func(hostID string, containerID string) (string, error)
+	WListContainers  func(hostID string, userID string) ([]deps.ContainerInfo, error)
+	WRemoveContainer func(hostID string, containerID string) error
+	WStartContainer  func(hostID string, containerID string) error
+	WStopContainer   func(hostID string, containerID string) error
+}
+
+func (W _github_com_breadchris_share_deps_DockerManager) CreateContainer(hostID string, userID string, config deps.ContainerConfig) (*deps.ContainerInfo, error) {
+	return W.WCreateContainer(hostID, userID, config)
+}
+func (W _github_com_breadchris_share_deps_DockerManager) GetClient(hostID string) (deps.DockerClient, error) {
+	return W.WGetClient(hostID)
+}
+func (W _github_com_breadchris_share_deps_DockerManager) GetLogs(hostID string, containerID string) (string, error) {
+	return W.WGetLogs(hostID, containerID)
+}
+func (W _github_com_breadchris_share_deps_DockerManager) ListContainers(hostID string, userID string) ([]deps.ContainerInfo, error) {
+	return W.WListContainers(hostID, userID)
+}
+func (W _github_com_breadchris_share_deps_DockerManager) RemoveContainer(hostID string, containerID string) error {
+	return W.WRemoveContainer(hostID, containerID)
+}
+func (W _github_com_breadchris_share_deps_DockerManager) StartContainer(hostID string, containerID string) error {
+	return W.WStartContainer(hostID, containerID)
+}
+func (W _github_com_breadchris_share_deps_DockerManager) StopContainer(hostID string, containerID string) error {
+	return W.WStopContainer(hostID, containerID)
 }

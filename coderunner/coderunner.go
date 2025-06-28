@@ -378,10 +378,6 @@ func handleSaveFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Ensure path starts with username (e.g., "@breadchris/")
-	if !strings.HasPrefix(cleanPath, "@") {
-		http.Error(w, "Path must start with username (e.g., @breadchris/filename.tsx)", http.StatusBadRequest)
-		return
-	}
 
 	// Build full path
 	fullPath := filepath.Join("./data/coderunner/src", cleanPath)
@@ -495,12 +491,6 @@ func handleBuild(w http.ResponseWriter, r *http.Request) {
 	cleanPath := filepath.Clean(buildPath)
 	if strings.Contains(cleanPath, "..") {
 		http.Error(w, "Invalid path", http.StatusBadRequest)
-		return
-	}
-
-	// Ensure path starts with username
-	if !strings.HasPrefix(cleanPath, "@") {
-		http.Error(w, "Path must start with username (e.g., @breadchris/filename.tsx)", http.StatusBadRequest)
 		return
 	}
 
@@ -786,12 +776,6 @@ func handleDeleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Ensure path starts with username (e.g., "@breadchris/")
-	if !strings.HasPrefix(cleanPath, "@") {
-		http.Error(w, "Path must start with username (e.g., @breadchris/filename.tsx)", http.StatusBadRequest)
-		return
-	}
-
 	// Build full path
 	fullPath := filepath.Join("./data/coderunner/src", cleanPath)
 
@@ -856,12 +840,6 @@ func handleRenderComponent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Ensure path starts with username
-	if !strings.HasPrefix(cleanPath, "@") {
-		http.Error(w, "Path must start with username (e.g., @breadchris/filename.tsx)", http.StatusBadRequest)
-		return
-	}
-
 	// Build source path
 	srcPath := filepath.Join("./data/coderunner/src", cleanPath)
 
@@ -877,8 +855,6 @@ func handleRenderComponent(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Failed to read source file: %v", err), http.StatusInternalServerError)
 		return
 	}
-
-	println("Rendering component from:", srcPath, "with component name:", componentName)
 
 	// Build with esbuild to get the compiled JavaScript
 	result := api.Build(api.BuildOptions{
@@ -903,7 +879,7 @@ func handleRenderComponent(w http.ResponseWriter, r *http.Request) {
 		JSX:             api.JSXAutomatic,
 		JSXImportSource: "react",
 		LogLevel:        api.LogLevelSilent,
-		External:        []string{"react", "react-dom"},
+		External:        []string{"react", "react-dom", "react-qr-code"},
 		TsconfigRaw: `{
 			"compilerOptions": {
 				"jsx": "react-jsx",
@@ -970,13 +946,13 @@ func handleRenderComponent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate the HTML page that renders the component
-	htmlPage := fmt.Sprintf(`
+	htmlPage := `
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>React Component - %s</title>
+    <title>React Component - ` + componentName + `</title>
     <script type="importmap">
     {
         "imports": {
@@ -987,7 +963,8 @@ func handleRenderComponent(w http.ResponseWriter, r *http.Request) {
         }
     }
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
+	<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daisyui@5">
+	<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
         #root { width: 100%%; height: 100vh; }
@@ -1007,7 +984,7 @@ func handleRenderComponent(w http.ResponseWriter, r *http.Request) {
     <script type="module">
         try {
             // Import the compiled component module from the /module/ endpoint
-            const componentModule = await import('/coderunner/module/%s');
+            const componentModule = await import('/coderunner/module/` + componentPath + `');
             
             // Import React and ReactDOM
             const React = await import('react');
@@ -1017,15 +994,17 @@ func handleRenderComponent(w http.ResponseWriter, r *http.Request) {
             let ComponentToRender;
             
             // First try the specified component name
-            if (componentModule.%s) {
-                ComponentToRender = componentModule.%s;
+            if (componentModule.` + componentName + `) {
+				console.log('Rendering component:', componentModule.` + componentName + `);
+                ComponentToRender = componentModule.` + componentName + `;
             }
             // Then try default export
             else if (componentModule.default) {
+				console.log('Rendering default component:', componentModule.default);
                 ComponentToRender = componentModule.default;
             }
             else {
-                throw new Error('No component found. Make sure to export a component named "%s" or a default export.');
+                throw new Error('No component found. Make sure to export a component named "` + componentName + `" or a default export.');
             }
             
             // Render the component
@@ -1043,7 +1022,7 @@ func handleRenderComponent(w http.ResponseWriter, r *http.Request) {
         }
     </script>
 </body>
-</html>`, componentName, componentPath, componentName, componentName, componentName)
+</html>`
 
 	// Return the HTML page
 	w.Header().Set("Content-Type", "text/html")
@@ -1077,12 +1056,6 @@ func handleServeModule(w http.ResponseWriter, r *http.Request) {
 	cleanPath := filepath.Clean(componentPath)
 	if strings.Contains(cleanPath, "..") {
 		http.Error(w, "Invalid path", http.StatusBadRequest)
-		return
-	}
-
-	// Ensure path starts with username
-	if !strings.HasPrefix(cleanPath, "@") {
-		http.Error(w, "Path must start with username (e.g., @breadchris/filename.tsx)", http.StatusBadRequest)
 		return
 	}
 

@@ -35,7 +35,7 @@ func New(d deps.Deps) *http.ServeMux {
 
 		switch r.Method {
 		case http.MethodGet:
-			handleGetContainers(w, r, db, user, id, d.Docker)
+			handleGetContainers(w, r, db, user, id)
 		case http.MethodPost:
 			handleCreateContainer(w, r, db, user, d.Docker)
 		case http.MethodDelete:
@@ -126,7 +126,7 @@ func New(d deps.Deps) *http.ServeMux {
 	return mux
 }
 
-func handleGetContainers(w http.ResponseWriter, r *http.Request, db *gorm.DB, user models.User, id string, docker deps.DockerManager) {
+func handleGetContainers(w http.ResponseWriter, r *http.Request, db *gorm.DB, user models.User, id string) {
 	if id != "" {
 		// Get specific container
 		var container models.Container
@@ -288,9 +288,9 @@ func handleContainerAction(w http.ResponseWriter, r *http.Request, db *gorm.DB, 
 	// TODO: Implement container actions (start, stop, restart)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{
-		"status":      "not implemented",
-		"action":      action,
-		"container":   containerID,
+		"status":    "not implemented",
+		"action":    action,
+		"container": containerID,
 	})
 }
 
@@ -300,7 +300,7 @@ func renderDashboard(ctx context.Context, w http.ResponseWriter, r *http.Request
 			Class("p-5 max-w-6xl mx-auto"),
 			Div(Class("text-sm text-center m-10"), T("Docker Management - "+user.Username)),
 			Div(Class("divider")),
-			
+
 			// Containers section
 			Div(Class("mb-8"),
 				Div(Class("text-lg mb-4"), Text("Containers")),
@@ -308,7 +308,7 @@ func renderDashboard(ctx context.Context, w http.ResponseWriter, r *http.Request
 					Text("Loading containers..."),
 				),
 			),
-			
+
 			// Docker hosts section
 			Div(Class("mb-8"),
 				Div(Class("text-lg mb-4"), Text("Docker Hosts")),

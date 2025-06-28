@@ -230,6 +230,10 @@ Rule of thumb: stop when you can hand off your spec to a teammate and have them 
 - **coderunner/**: Code execution environment with Monaco editor integration
   - `coderunner.go` - Backend API endpoints for file operations
   - `CodeRunner.tsx` - Frontend React component
+- **justshare/**: Mobile-first content capture and sharing platform
+  - `justshare.go` - Backend API for content, groups, and file management
+  - `JustShare.tsx` - Main React application component
+  - See `/data/coderunner/src/justshare/CLAUDE.md` for detailed documentation
 - **ai/**: AI integration and chat functionality
 - **breadchris/**: Blog and content management
 - **xctf/**: CTF (Capture The Flag) platform features
