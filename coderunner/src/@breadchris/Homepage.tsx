@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useComponentRegistry, ComponentInfo } from './ComponentRegistry';
 import { ComponentCard, AllSoftwareCard } from './ComponentCard';
 
@@ -26,6 +26,12 @@ export const Homepage: React.FC<HomepageProps> = ({
     const [searchQuery, setSearchQuery] = useState('');
     const [currentTime, setCurrentTime] = useState(new Date());
     const [username, setUsername] = useState('User');
+    const [focusedIndex, setFocusedIndex] = useState(0);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    
+    // Touch gesture state
+    const [touchStart, setTouchStart] = useState<number | null>(null);
+    const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
     // Update time every minute
     useEffect(() => {
@@ -81,10 +87,134 @@ export const Homepage: React.FC<HomepageProps> = ({
         return componentsToShow;
     }, [components, searchQuery, getFeaturedComponents, getRecentComponents, searchComponents]);
 
-    // Split components into main grid (first 10) and overflow
-    const mainGridComponents = displayComponents.slice(0, 10);
-    const hasOverflow = displayComponents.length > 10;
-    const overflowCount = displayComponents.length - 10;
+    // Split components into main grid (first 7) and overflow - Nintendo Switch style
+    const mainGridComponents = displayComponents.slice(0, 7);
+    const hasOverflow = displayComponents.length > 7;
+    const overflowCount = displayComponents.length - 7;
+    
+    // Include All Software card in the total items for navigation
+    const allItems = hasOverflow ? [...mainGridComponents, { isAllSoftware: true }] : mainGridComponents;
+    
+    // Scroll to focused item
+    const scrollToFocused = useCallback((index: number) => {
+        if (scrollContainerRef.current) {
+            const container = scrollContainerRef.current;
+            const itemWidth = 264; // Card width (224px) + gap (24px) + padding
+            const containerWidth = container.clientWidth;
+            const scrollLeft = Math.max(0, (index * itemWidth) - (containerWidth / 2) + (itemWidth / 2));
+            
+            container.scrollTo({
+                left: scrollLeft,
+                behavior: 'smooth'
+            });
+        }
+    }, []);
+    
+    // Keyboard navigation
+    const handleKeyDown = useCallback((e: KeyboardEvent) => {
+        if (e.key === 'ArrowLeft' && focusedIndex > 0) {
+            const newIndex = focusedIndex - 1;
+            setFocusedIndex(newIndex);
+            scrollToFocused(newIndex);
+        } else if (e.key === 'ArrowRight' && focusedIndex < allItems.length - 1) {
+            const newIndex = focusedIndex + 1;
+            setFocusedIndex(newIndex);
+            scrollToFocused(newIndex);
+        } else if (e.key === 'Enter') {
+            const focusedItem = allItems[focusedIndex];
+            if (focusedItem && !('isAllSoftware' in focusedItem)) {
+                onComponentSelect?.(focusedItem as ComponentInfo);
+            } else if (focusedItem && 'isAllSoftware' in focusedItem) {
+                handleAllSoftwareClick();
+            }
+        }
+    }, [focusedIndex, allItems, scrollToFocused, onComponentSelect]);
+    
+    // Mouse wheel support for horizontal scrolling
+    const handleWheel = useCallback((e: WheelEvent) => {
+        if (scrollContainerRef.current && allItems.length > 1) {
+            e.preventDefault();
+            
+            // Determine scroll direction
+            const deltaY = e.deltaY;
+            const scrollSpeed = 2; // Multiplier for scroll sensitivity
+            
+            if (deltaY > 0 && focusedIndex < allItems.length - 1) {
+                // Scroll right (next item)
+                const newIndex = focusedIndex + 1;
+                setFocusedIndex(newIndex);
+                scrollToFocused(newIndex);
+            } else if (deltaY < 0 && focusedIndex > 0) {
+                // Scroll left (previous item)
+                const newIndex = focusedIndex - 1;
+                setFocusedIndex(newIndex);
+                scrollToFocused(newIndex);
+            }
+        }
+    }, [focusedIndex, allItems.length, scrollToFocused]);
+
+    // Touch gesture handlers
+    const handleTouchStart = useCallback((e: TouchEvent) => {
+        setTouchEnd(null);
+        setTouchStart(e.targetTouches[0].clientX);
+    }, []);
+
+    const handleTouchMove = useCallback((e: TouchEvent) => {
+        setTouchEnd(e.targetTouches[0].clientX);
+    }, []);
+
+    const handleTouchEnd = useCallback(() => {
+        if (!touchStart || !touchEnd) return;
+        
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > 50; // Minimum swipe distance
+        const isRightSwipe = distance < -50;
+        
+        if (isLeftSwipe && focusedIndex < allItems.length - 1) {
+            // Swipe left = next item
+            const newIndex = focusedIndex + 1;
+            setFocusedIndex(newIndex);
+            scrollToFocused(newIndex);
+        } else if (isRightSwipe && focusedIndex > 0) {
+            // Swipe right = previous item
+            const newIndex = focusedIndex - 1;
+            setFocusedIndex(newIndex);
+            scrollToFocused(newIndex);
+        }
+        
+        // Reset touch state
+        setTouchStart(null);
+        setTouchEnd(null);
+    }, [touchStart, touchEnd, focusedIndex, allItems.length, scrollToFocused]);
+
+    // Add keyboard and mouse wheel event listeners
+    useEffect(() => {
+        window.addEventListener('keydown', handleKeyDown);
+        
+        // Add wheel and touch listeners to the scroll container
+        const container = scrollContainerRef.current;
+        if (container) {
+            container.addEventListener('wheel', handleWheel, { passive: false });
+            container.addEventListener('touchstart', handleTouchStart, { passive: true });
+            container.addEventListener('touchmove', handleTouchMove, { passive: true });
+            container.addEventListener('touchend', handleTouchEnd, { passive: true });
+        }
+        
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            if (container) {
+                container.removeEventListener('wheel', handleWheel);
+                container.removeEventListener('touchstart', handleTouchStart);
+                container.removeEventListener('touchmove', handleTouchMove);
+                container.removeEventListener('touchend', handleTouchEnd);
+            }
+        };
+    }, [handleKeyDown, handleWheel, handleTouchStart, handleTouchMove, handleTouchEnd]);
+    
+    // Reset focus when components change
+    useEffect(() => {
+        setFocusedIndex(0);
+    }, [displayComponents]);
 
     const handleAllSoftwareClick = () => {
         if (onAllSoftwareClick) {
@@ -151,6 +281,16 @@ export const Homepage: React.FC<HomepageProps> = ({
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 relative overflow-hidden">
+            {/* Custom scrollbar hiding styles */}
+            <style jsx>{`
+                .scrollbar-hide {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+                .scrollbar-hide::-webkit-scrollbar {
+                    display: none;
+                }
+            `}</style>
             {/* Background Circles */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-20 left-20 w-64 h-64 bg-blue-500/10 rounded-full blur-xl"></div>
@@ -215,31 +355,133 @@ export const Homepage: React.FC<HomepageProps> = ({
                     </div>
                 </div>
 
-                {/* Component Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 auto-rows-max">
-                    {/* Main Components */}
-                    {mainGridComponents.map((component, index) => (
-                        <ComponentCard
-                            key={component.path}
-                            component={component}
-                            onClick={onComponentSelect}
-                            size={index < 3 ? 'large' : 'medium'}
-                            showPreview={true}
-                            className={`
-                                ${index === 0 ? 'col-span-2 row-span-2' : ''}
-                                ${index === 1 || index === 2 ? 'col-span-1 row-span-2' : ''}
-                            `}
-                        />
-                    ))}
+                {/* Horizontal Scrolling App Row - Nintendo Switch Style */}
+                <div className="relative">
+                    <div 
+                        ref={scrollContainerRef}
+                        className="flex gap-6 overflow-x-auto scrollbar-hide px-8 py-4"
+                        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    >
+                        {/* Main Components */}
+                        {mainGridComponents.map((component, index) => (
+                            <div 
+                                key={component.path}
+                                className={`flex-shrink-0 transition-all duration-300 cursor-pointer ${
+                                    focusedIndex === index 
+                                        ? 'scale-110 z-10' 
+                                        : 'scale-90 opacity-70 hover:scale-95 hover:opacity-85'
+                                }`}
+                                onClick={() => {
+                                    setFocusedIndex(index);
+                                    onComponentSelect?.(component);
+                                }}
+                                onMouseEnter={() => setFocusedIndex(index)}
+                            >
+                                <ComponentCard
+                                    component={component}
+                                    onClick={onComponentSelect}
+                                    size="medium"
+                                    showPreview={true}
+                                />
+                            </div>
+                        ))}
+                        
+                        {/* All Software Card */}
+                        {hasOverflow && (
+                            <div 
+                                className={`flex-shrink-0 transition-all duration-300 cursor-pointer ${
+                                    focusedIndex === mainGridComponents.length 
+                                        ? 'scale-110 z-10' 
+                                        : 'scale-90 opacity-70 hover:scale-95 hover:opacity-85'
+                                }`}
+                                onClick={() => {
+                                    setFocusedIndex(mainGridComponents.length);
+                                    handleAllSoftwareClick();
+                                }}
+                                onMouseEnter={() => setFocusedIndex(mainGridComponents.length)}
+                            >
+                                <AllSoftwareCard
+                                    onClick={handleAllSoftwareClick}
+                                    componentCount={displayComponents.length}
+                                    size="medium"
+                                />
+                            </div>
+                        )}
+                    </div>
                     
-                    {/* All Software Card */}
-                    {hasOverflow && (
-                        <AllSoftwareCard
-                            onClick={handleAllSoftwareClick}
-                            componentCount={displayComponents.length}
-                            size="medium"
-                        />
+                    {/* Navigation Indicators */}
+                    {allItems.length > 1 && (
+                        <div className="flex justify-center mt-4 space-x-2">
+                            {allItems.map((_, index) => (
+                                <button
+                                    key={index}
+                                    className={`w-2 h-2 rounded-full transition-colors ${
+                                        focusedIndex === index ? 'bg-white' : 'bg-white/30'
+                                    }`}
+                                    onClick={() => {
+                                        setFocusedIndex(index);
+                                        scrollToFocused(index);
+                                    }}
+                                />
+                            ))}
+                        </div>
                     )}
+                </div>
+
+                {/* Secondary Icon Shelf - Nintendo Switch Style */}
+                <div className="mt-8 px-8">
+                    <div className="flex justify-center gap-8">
+                        {/* System Icons */}
+                        <button 
+                            className="flex flex-col items-center gap-2 p-3 rounded-lg hover:bg-white/10 transition-colors group"
+                            onClick={() => window.location.href = '/coderunner/browse'}
+                        >
+                            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center text-2xl group-hover:bg-white/30 transition-colors">
+                                📁
+                            </div>
+                            <span className="text-white/70 text-xs">Browse</span>
+                        </button>
+                        
+                        <button 
+                            className="flex flex-col items-center gap-2 p-3 rounded-lg hover:bg-white/10 transition-colors group"
+                            onClick={() => window.location.href = '/coderunner/editor'}
+                        >
+                            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center text-2xl group-hover:bg-white/30 transition-colors">
+                                ⚙️
+                            </div>
+                            <span className="text-white/70 text-xs">Editor</span>
+                        </button>
+                        
+                        <button 
+                            className="flex flex-col items-center gap-2 p-3 rounded-lg hover:bg-white/10 transition-colors group"
+                            onClick={refreshComponents}
+                        >
+                            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center text-2xl group-hover:bg-white/30 transition-colors">
+                                🔄
+                            </div>
+                            <span className="text-white/70 text-xs">Refresh</span>
+                        </button>
+                        
+                        <button 
+                            className="flex flex-col items-center gap-2 p-3 rounded-lg hover:bg-white/10 transition-colors group"
+                            onClick={() => window.location.href = '/account'}
+                        >
+                            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center text-2xl group-hover:bg-white/30 transition-colors">
+                                👤
+                            </div>
+                            <span className="text-white/70 text-xs">Account</span>
+                        </button>
+                        
+                        <button 
+                            className="flex flex-col items-center gap-2 p-3 rounded-lg hover:bg-white/10 transition-colors group"
+                            onClick={() => window.location.href = '/justshare'}
+                        >
+                            <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center text-2xl group-hover:bg-white/30 transition-colors">
+                                📸
+                            </div>
+                            <span className="text-white/70 text-xs">Album</span>
+                        </button>
+                    </div>
                 </div>
 
                 {/* No Components Message */}
@@ -277,7 +519,7 @@ export const Homepage: React.FC<HomepageProps> = ({
                 <div className="mt-12 text-center text-white/50 text-sm">
                     <p>
                         {components.length} components available • 
-                        {mainGridComponents.length} shown • 
+                        {mainGridComponents.length} shown{hasOverflow ? ` • ${overflowCount} more in All Software` : ''} • 
                         Last updated {new Date().toLocaleTimeString()}
                     </p>
                 </div>

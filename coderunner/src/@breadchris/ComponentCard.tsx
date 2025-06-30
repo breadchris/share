@@ -22,17 +22,17 @@ export const ComponentCard: React.FC<ComponentCardProps> = ({
     const [imageError, setImageError] = useState(false);
     const iframeRef = useRef<HTMLIFrameElement>(null);
 
-    // Size configurations
+    // Size configurations - Nintendo Switch style (much larger)
     const sizeClasses = {
-        small: 'w-24 h-24',
-        medium: 'w-32 h-32',
-        large: 'w-48 h-32'
+        small: 'w-40 h-40',
+        medium: 'w-56 h-56',
+        large: 'w-72 h-56'
     };
 
     const textSizeClasses = {
-        small: 'text-xs',
-        medium: 'text-sm', 
-        large: 'text-base'
+        small: 'text-sm',
+        medium: 'text-base', 
+        large: 'text-lg'
     };
 
     // Category-based colors (Nintendo Switch style)
@@ -121,12 +121,18 @@ export const ComponentCard: React.FC<ComponentCardProps> = ({
             `} />
 
             {/* Preview Content */}
-            <div className="absolute inset-0 p-2 flex flex-col">
+            <div className={`absolute inset-0 flex flex-col ${
+                size === 'large' ? 'p-4' : size === 'medium' ? 'p-3' : 'p-2'
+            }`}>
                 {/* Header with icon and category */}
-                <div className="flex items-center justify-between mb-1">
-                    <span className="text-lg">{getCategoryIcon(component.category)}</span>
+                <div className="flex items-center justify-between mb-2">
+                    <span className={`${
+                        size === 'large' ? 'text-2xl' : size === 'medium' ? 'text-xl' : 'text-lg'
+                    }`}>{getCategoryIcon(component.category)}</span>
                     {component.isFeatured && (
-                        <div className="bg-yellow-400 text-yellow-900 text-xs px-1.5 py-0.5 rounded-full font-bold">
+                        <div className={`bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full font-bold ${
+                            size === 'large' ? 'text-sm' : 'text-xs'
+                        }`}>
                             ⭐
                         </div>
                     )}
@@ -134,7 +140,7 @@ export const ComponentCard: React.FC<ComponentCardProps> = ({
 
                 {/* Component Preview */}
                 {showPreview && size !== 'small' && (
-                    <div className="flex-1 mb-2 relative">
+                    <div className="flex-1 mb-3 relative">
                         {!imageError ? (
                             <img
                                 src={getPreviewImageUrl()}
@@ -144,7 +150,9 @@ export const ComponentCard: React.FC<ComponentCardProps> = ({
                             />
                         ) : (
                             <div className="w-full h-full rounded-lg bg-white/20 flex items-center justify-center">
-                                <span className="text-white/60 text-xs">No Preview</span>
+                                <span className={`text-white/60 ${
+                                    size === 'large' ? 'text-sm' : 'text-xs'
+                                }`}>No Preview</span>
                             </div>
                         )}
                     </div>
@@ -153,14 +161,16 @@ export const ComponentCard: React.FC<ComponentCardProps> = ({
                 {/* Component Name */}
                 <div className="mt-auto">
                     <h3 className={`
-                        text-white font-semibold leading-tight truncate
+                        text-white font-bold leading-tight truncate
                         ${textSizeClasses[size]}
                     `}>
                         {component.displayName}
                     </h3>
                     
                     {size !== 'small' && (
-                        <p className="text-white/80 text-xs truncate">
+                        <p className={`text-white/80 truncate ${
+                            size === 'large' ? 'text-sm' : 'text-xs'
+                        }`}>
                             by {component.author}
                         </p>
                     )}
@@ -169,37 +179,48 @@ export const ComponentCard: React.FC<ComponentCardProps> = ({
 
             {/* Hover Overlay */}
             <div className={`
-                absolute inset-0 bg-black/40 p-3 flex flex-col justify-end
+                absolute inset-0 bg-black/40 flex flex-col justify-end
                 transition-opacity duration-200
                 ${isHovered && size !== 'small' ? 'opacity-100' : 'opacity-0'}
+                ${size === 'large' ? 'p-4' : size === 'medium' ? 'p-3' : 'p-2'}
             `}>
                 <div className="text-white">
-                    <h3 className="font-bold text-sm mb-1">{component.displayName}</h3>
+                    <h3 className={`font-bold mb-1 ${
+                        size === 'large' ? 'text-base' : 'text-sm'
+                    }`}>{component.displayName}</h3>
                     {component.description && (
-                        <p className="text-xs text-white/90 line-clamp-2 mb-2">
+                        <p className={`text-white/90 line-clamp-2 mb-2 ${
+                            size === 'large' ? 'text-sm' : 'text-xs'
+                        }`}>
                             {component.description}
                         </p>
                     )}
                     
                     {/* Tags */}
                     <div className="flex flex-wrap gap-1 mb-2">
-                        {component.tags.slice(0, 3).map((tag, index) => (
+                        {component.tags.slice(0, size === 'large' ? 4 : 3).map((tag, index) => (
                             <span
                                 key={index}
-                                className="px-1.5 py-0.5 text-xs bg-white/20 rounded-full text-white/90"
+                                className={`px-2 py-1 bg-white/20 rounded-full text-white/90 ${
+                                    size === 'large' ? 'text-xs' : 'text-xs'
+                                }`}
                             >
                                 {tag}
                             </span>
                         ))}
-                        {component.tags.length > 3 && (
-                            <span className="px-1.5 py-0.5 text-xs bg-white/20 rounded-full text-white/90">
-                                +{component.tags.length - 3}
+                        {component.tags.length > (size === 'large' ? 4 : 3) && (
+                            <span className={`px-2 py-1 bg-white/20 rounded-full text-white/90 ${
+                                size === 'large' ? 'text-xs' : 'text-xs'
+                            }`}>
+                                +{component.tags.length - (size === 'large' ? 4 : 3)}
                             </span>
                         )}
                     </div>
 
                     {/* Last Modified */}
-                    <p className="text-xs text-white/70">
+                    <p className={`text-white/70 ${
+                        size === 'large' ? 'text-xs' : 'text-xs'
+                    }`}>
                         Updated {new Date(component.lastModified).toLocaleDateString()}
                     </p>
                 </div>
@@ -233,9 +254,9 @@ export const AllSoftwareCard: React.FC<AllSoftwareCardProps> = ({
     const [isHovered, setIsHovered] = useState(false);
 
     const sizeClasses = {
-        small: 'w-24 h-24',
-        medium: 'w-32 h-32',
-        large: 'w-48 h-32'
+        small: 'w-40 h-40',
+        medium: 'w-56 h-56',
+        large: 'w-72 h-56'
     };
 
     return (
@@ -264,10 +285,18 @@ export const AllSoftwareCard: React.FC<AllSoftwareCardProps> = ({
             </div>
 
             {/* Content */}
-            <div className="absolute inset-0 p-3 flex flex-col items-center justify-center text-white">
-                <div className="text-2xl mb-2">📱</div>
-                <h3 className="font-bold text-sm text-center mb-1">All Software</h3>
-                <p className="text-xs text-white/80 text-center">
+            <div className={`absolute inset-0 flex flex-col items-center justify-center text-white ${
+                size === 'large' ? 'p-6' : size === 'medium' ? 'p-4' : 'p-3'
+            }`}>
+                <div className={`mb-3 ${
+                    size === 'large' ? 'text-4xl' : size === 'medium' ? 'text-3xl' : 'text-2xl'
+                }`}>📱</div>
+                <h3 className={`font-bold text-center mb-2 ${
+                    size === 'large' ? 'text-lg' : size === 'medium' ? 'text-base' : 'text-sm'
+                }`}>All Software</h3>
+                <p className={`text-white/80 text-center ${
+                    size === 'large' ? 'text-sm' : size === 'medium' ? 'text-sm' : 'text-xs'
+                }`}>
                     {componentCount} components
                 </p>
             </div>

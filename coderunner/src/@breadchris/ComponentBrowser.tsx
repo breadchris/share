@@ -9,6 +9,12 @@ interface FileItem {
     lastModified: string;
 }
 
+// Configuration types for pinned files
+interface PinnedFilesConfig {
+    pinnedFiles: string[];
+    togglePin: (filePath: string) => boolean;
+}
+
 interface ComponentMetadata {
     name: string;
     path: string;
@@ -49,6 +55,7 @@ export const ComponentBrowser: React.FC = () => {
     const [isLoadingFiles, setIsLoadingFiles] = useState(false);
 
     // UI state
+    const [currentView, setCurrentView] = useState<'all' | 'pinned' | 'recent'>('all');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedComponent, setSelectedComponent] = useState<ComponentMetadata | null>(null);
@@ -79,6 +86,10 @@ export const ComponentBrowser: React.FC = () => {
     const [loadedDirectories, setLoadedDirectories] = useState<Set<string>>(new Set([''])); // Root is always loaded
     const [loadingDirectories, setLoadingDirectories] = useState<Set<string>>(new Set());
     const [directoryChildren, setDirectoryChildren] = useState<Map<string, FileItem[]>>(new Map());
+
+    // Pinned files state
+    const [pinnedFiles, setPinnedFiles] = useState<Set<string>>(new Set());
+    const [isLoadingPinnedFiles, setIsLoadingPinnedFiles] = useState(false);
 
     // Mobile detection
     useEffect(() => {
@@ -182,6 +193,51 @@ export const ComponentBrowser: React.FC = () => {
         } finally {
             setIsCloning(false);
         }
+    };
+
+    // Pinned Files Management Functions
+    const loadPinnedFiles = async () => {
+        setIsLoadingPinnedFiles(true);
+        try {
+            const response = await fetch('/coderunner/api/config/pinned-files', {
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const config = await response.json();
+                setPinnedFiles(new Set(config.pinnedFiles || []));
+            }
+        } catch (error) {
+            console.error('Error loading pinned files:', error);
+        } finally {
+            setIsLoadingPinnedFiles(false);
+        }
+    };
+
+    const togglePinFile = async (filePath: string) => {
+        try {
+            const response = await fetch(`/coderunner/api/config/pinned-files/${encodeURIComponent(filePath)}`, {
+                method: 'PUT',
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.isPinned) {
+                    setPinnedFiles(prev => new Set(prev).add(filePath));
+                } else {
+                    setPinnedFiles(prev => {
+                        const newSet = new Set(prev);
+                        newSet.delete(filePath);
+                        return newSet;
+                    });
+                }
+                return result.isPinned;
+            }
+        } catch (error) {
+            console.error('Error toggling pin status:', error);
+        }
+        return false;
     };
 
     // File System Functions
@@ -543,6 +599,21 @@ export const ComponentBrowser: React.FC = () => {
 
     // Filter and Search Functions
     const filteredComponents = components.filter(component => {
+        // Filter by current view first
+        if (currentView === 'pinned' && !pinnedFiles.has(component.path)) {
+            return false;
+        }
+        
+        if (currentView === 'recent') {
+            // Show components modified in the last 7 days
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            const componentDate = new Date(component.lastModified);
+            if (componentDate < weekAgo) {
+                return false;
+            }
+        }
+
         const matchesSearch = searchQuery === '' || 
             component.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             component.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -558,6 +629,14 @@ export const ComponentBrowser: React.FC = () => {
 
         return matchesSearch && matchesType && matchesDirectory;
     }).sort((a, b) => {
+        // For pinned view, show pinned items first
+        if (currentView === 'pinned') {
+            const aIsPinned = pinnedFiles.has(a.path);
+            const bIsPinned = pinnedFiles.has(b.path);
+            if (aIsPinned && !bIsPinned) return -1;
+            if (!aIsPinned && bIsPinned) return 1;
+        }
+        
         switch (sortBy) {
             case 'name':
                 return a.name.localeCompare(b.name);
@@ -594,6 +673,7 @@ export const ComponentBrowser: React.FC = () => {
                 await fetchGithubRepositories();
             }
             await loadFiles();
+            await loadPinnedFiles();
         };
         initializeAuth();
     }, []);
@@ -694,11 +774,18 @@ export const ComponentBrowser: React.FC = () => {
                 {/* Component Info */}
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                        <h3 className={`font-semibold text-gray-900 ${
-                            isCompact ? 'text-sm' : 'text-base'
-                        }`}>
-                            {component.name}
-                        </h3>
+                        <div className="flex items-center gap-2">
+                            <h3 className={`font-semibold text-gray-900 ${
+                                isCompact ? 'text-sm' : 'text-base'
+                            }`}>
+                                {component.name}
+                            </h3>
+                            {pinnedFiles.has(component.path) && (
+                                <span className="text-yellow-600" title="Pinned component">
+                                    📌
+                                </span>
+                            )}
+                        </div>
                         <span className={`text-gray-500 ${
                             isCompact ? 'text-xs' : 'text-sm'
                         }`}>
@@ -737,10 +824,25 @@ export const ComponentBrowser: React.FC = () => {
 
                     {/* Component Actions */}
                     <div className="flex items-center justify-between pt-2 border-t">
-                        <div className={`text-gray-500 ${
-                            isCompact ? 'text-xs' : 'text-sm'
-                        }`}>
-                            {Math.round(component.size / 1024)}KB
+                        <div className="flex items-center gap-2">
+                            <div className={`text-gray-500 ${
+                                isCompact ? 'text-xs' : 'text-sm'
+                            }`}>
+                                {Math.round(component.size / 1024)}KB
+                            </div>
+                            <button
+                                onClick={() => togglePinFile(component.path)}
+                                className={`px-2 py-1 rounded transition-all duration-200 ${
+                                    isCompact ? 'text-xs' : 'text-sm'
+                                } ${
+                                    pinnedFiles.has(component.path)
+                                        ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 shadow-sm scale-105'
+                                        : 'bg-gray-100 text-gray-400 hover:bg-gray-200 hover:text-gray-600'
+                                }`}
+                                title={pinnedFiles.has(component.path) ? 'Unpin file' : 'Pin file'}
+                            >
+                                {pinnedFiles.has(component.path) ? '📌' : '📍'}
+                            </button>
                         </div>
                         <button
                             onClick={() => setSelectedComponent(component)}
@@ -884,6 +986,65 @@ export const ComponentBrowser: React.FC = () => {
                     </div>
                 </div>
             )}
+
+            {/* Pinned Files */}
+            <div className="p-4 border-b">
+                <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-medium text-gray-700">Pinned Files</h3>
+                    <button
+                        onClick={() => setCurrentView('pinned')}
+                        className="text-xs text-blue-600 hover:text-blue-800"
+                    >
+                        View All
+                    </button>
+                </div>
+                {pinnedFiles.size > 0 ? (
+                    <div className="space-y-1">
+                        {Array.from(pinnedFiles).slice(0, 5).map(filePath => {
+                            const fileName = filePath.split('/').pop() || filePath;
+                            const component = components.find(c => c.path === filePath);
+                            return (
+                                <div 
+                                    key={filePath}
+                                    className="flex items-center justify-between p-2 bg-yellow-50 border border-yellow-200 rounded text-sm"
+                                >
+                                    <button
+                                        onClick={() => {
+                                            if (component) {
+                                                setSelectedComponent(component);
+                                            }
+                                        }}
+                                        className="flex-1 text-left hover:text-blue-600 truncate"
+                                        title={filePath}
+                                    >
+                                        📌 {fileName}
+                                    </button>
+                                    <button
+                                        onClick={() => togglePinFile(filePath)}
+                                        className="text-gray-500 hover:text-red-600 ml-2"
+                                        title="Unpin file"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                            );
+                        })}
+                        {pinnedFiles.size > 5 && (
+                            <div className="text-xs text-gray-500 text-center pt-1">
+                                +{pinnedFiles.size - 5} more pinned files
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div className="text-sm text-gray-500 text-center py-3">
+                        <div className="text-2xl mb-1">📌</div>
+                        <div>No pinned files yet</div>
+                        <div className="text-xs mt-1">
+                            Pin components to quick access
+                        </div>
+                    </div>
+                )}
+            </div>
 
             {/* Directory Navigation */}
             <div className="p-4">
@@ -1064,10 +1225,55 @@ export const ComponentBrowser: React.FC = () => {
                             <h1 className="text-xl font-bold text-gray-900">
                                 Component Browser
                             </h1>
-                            <div className="text-sm text-gray-500">
-                                {filteredComponents.length} components
-                            </div>
                         </div>
+                        
+                        {/* Navigation Tabs */}
+                        <div className="flex bg-gray-100 rounded-lg p-1">
+                            <button
+                                onClick={() => setCurrentView('all')}
+                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                                    currentView === 'all'
+                                        ? 'bg-white text-blue-600 shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
+                                }`}
+                            >
+                                All Components
+                                <span className="ml-1 text-xs text-gray-500">({components.length})</span>
+                            </button>
+                            <button
+                                onClick={() => setCurrentView('pinned')}
+                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                                    currentView === 'pinned'
+                                        ? 'bg-white text-yellow-600 shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
+                                }`}
+                            >
+                                📌 Pinned
+                                <span className="ml-1 text-xs text-gray-500">({pinnedFiles.size})</span>
+                            </button>
+                            <button
+                                onClick={() => setCurrentView('recent')}
+                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                                    currentView === 'recent'
+                                        ? 'bg-white text-green-600 shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
+                                }`}
+                            >
+                                🕒 Recent
+                                <span className="ml-1 text-xs text-gray-500">
+                                    ({components.filter(c => {
+                                        const weekAgo = new Date();
+                                        weekAgo.setDate(weekAgo.getDate() - 7);
+                                        return new Date(c.lastModified) > weekAgo;
+                                    }).length})
+                                </span>
+                            </button>
+                        </div>
+                        
+                        <div className="text-sm text-gray-500">
+                            {filteredComponents.length} {currentView === 'all' ? 'components' : currentView === 'pinned' ? 'pinned' : 'recent'}
+                        </div>
+                    </div>
 
                         <div className="flex items-center space-x-2">
                             {/* View Mode Toggle */}
@@ -1138,13 +1344,43 @@ export const ComponentBrowser: React.FC = () => {
                 <div className="flex-1 overflow-auto p-4">
                     {filteredComponents.length === 0 ? (
                         <div className="text-center py-12">
-                            <div className="text-6xl mb-4">📦</div>
-                            <h3 className="text-xl font-medium text-gray-900 mb-2">
-                                No components found
-                            </h3>
-                            <p className="text-gray-600">
-                                {searchQuery ? 'Try adjusting your search query' : 'Create some React components to get started'}
-                            </p>
+                            {currentView === 'pinned' ? (
+                                <div>
+                                    <div className="text-6xl mb-4">📌</div>
+                                    <h3 className="text-xl font-medium text-gray-900 mb-2">
+                                        No pinned components yet
+                                    </h3>
+                                    <p className="text-gray-600 mb-4">
+                                        Pin your favorite components for quick access
+                                    </p>
+                                    <button
+                                        onClick={() => setCurrentView('all')}
+                                        className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors"
+                                    >
+                                        Browse All Components
+                                    </button>
+                                </div>
+                            ) : currentView === 'recent' ? (
+                                <div>
+                                    <div className="text-6xl mb-4">🕒</div>
+                                    <h3 className="text-xl font-medium text-gray-900 mb-2">
+                                        No recent components
+                                    </h3>
+                                    <p className="text-gray-600">
+                                        Components modified in the last 7 days will appear here
+                                    </p>
+                                </div>
+                            ) : (
+                                <div>
+                                    <div className="text-6xl mb-4">📦</div>
+                                    <h3 className="text-xl font-medium text-gray-900 mb-2">
+                                        No components found
+                                    </h3>
+                                    <p className="text-gray-600">
+                                        {searchQuery ? 'Try adjusting your search query' : 'Create some React components to get started'}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className={
@@ -1234,6 +1470,17 @@ export const ComponentBrowser: React.FC = () => {
                                     {selectedComponent.name}
                                 </h2>
                                 <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => togglePinFile(selectedComponent.path)}
+                                        className={`px-3 py-1 rounded text-sm transition-colors ${
+                                            pinnedFiles.has(selectedComponent.path)
+                                                ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        }`}
+                                        title={pinnedFiles.has(selectedComponent.path) ? 'Unpin file' : 'Pin file'}
+                                    >
+                                        📌 {pinnedFiles.has(selectedComponent.path) ? 'Unpin' : 'Pin'}
+                                    </button>
                                     <button
                                         onClick={() => openInNewTab(selectedComponent)}
                                         className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded text-sm"

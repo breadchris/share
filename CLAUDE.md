@@ -4,6 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Go
 - Debug print statements should be fmt.Printf("Debug: %+v\n", variable)
+- Routes are mounted in `main.go` using the `p()` function. Each route handler is wrapped with `interpreted("/path")`
+- JustShare is mounted as the root route ("") in both startServer and startXCTF functions
+- Utility functions have been moved to `main_todo.go` to keep main.go focused on core server setup
+- Never try to run the apps yourself
+
+## React
+- React apps are built using TypeScript and React, with components stored in `.tsx` files.
+- Components use esmodules are available 
 
 ## Persisting State
 - Uploading files will use the "/upload" endpoint to persist files located in main.go as func uploadHandler(w http.ResponseWriter, r *http.Request) {

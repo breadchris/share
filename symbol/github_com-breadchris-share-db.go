@@ -10,20 +10,22 @@ import (
 func init() {
 	Symbols["github.com/breadchris/share/db/db"] = map[string]reflect.Value{
 		// function, constant and variable definitions
-		"LoadClaudeMD":           reflect.ValueOf(db.LoadClaudeMD),
-		"LoadDB":                 reflect.ValueOf(db.LoadDB),
-		"LoadSearchIndex":        reflect.ValueOf(db.LoadSearchIndex),
-		"NewDBAny":               reflect.ValueOf(db.NewDBAny),
-		"NewDocumentStore":       reflect.ValueOf(db.NewDocumentStore),
-		"NewSearchIndex":         reflect.ValueOf(db.NewSearchIndex),
-		"NewSqliteDocumentStore": reflect.ValueOf(db.NewSqliteDocumentStore),
-		"WalkDirectory":          reflect.ValueOf(db.WalkDirectory),
+		"DefaultPinnedDocsConfig": reflect.ValueOf(db.DefaultPinnedDocsConfig),
+		"LoadClaudeMD":            reflect.ValueOf(db.LoadClaudeMD),
+		"LoadDB":                  reflect.ValueOf(db.LoadDB),
+		"LoadSearchIndex":         reflect.ValueOf(db.LoadSearchIndex),
+		"NewDBAny":                reflect.ValueOf(db.NewDBAny),
+		"NewDocumentStore":        reflect.ValueOf(db.NewDocumentStore),
+		"NewSearchIndex":          reflect.ValueOf(db.NewSearchIndex),
+		"NewSqliteDocumentStore":  reflect.ValueOf(db.NewSqliteDocumentStore),
+		"WalkDirectory":           reflect.ValueOf(db.WalkDirectory),
 
 		// type definitions
-		"DBAny":           reflect.ValueOf((*db.DBAny)(nil)),
-		"Document":        reflect.ValueOf((*db.Document)(nil)),
-		"DocumentStore":   reflect.ValueOf((*db.DocumentStore)(nil)),
-		"ProcessFileFunc": reflect.ValueOf((*db.ProcessFileFunc)(nil)),
-		"SearchIndex":     reflect.ValueOf((*db.SearchIndex)(nil)),
+		"DBAny":            reflect.ValueOf((*db.DBAny)(nil)),
+		"Document":         reflect.ValueOf((*db.Document)(nil)),
+		"DocumentStore":    reflect.ValueOf((*db.DocumentStore)(nil)),
+		"PinnedDocsConfig": reflect.ValueOf((*db.PinnedDocsConfig)(nil)),
+		"ProcessFileFunc":  reflect.ValueOf((*db.ProcessFileFunc)(nil)),
+		"SearchIndex":      reflect.ValueOf((*db.SearchIndex)(nil)),
 	}
 }

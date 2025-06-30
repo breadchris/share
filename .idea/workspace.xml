@@ -7,12 +7,17 @@
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/claudemd/claudemd.go" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/claudemd.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/coderunner.go" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/coderunner.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/module.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/react.go" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/react.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/@breadchris/ComponentBrowser.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/ComponentBrowser.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/@breadchris/ComponentCard.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/ComponentCard.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/@breadchris/Homepage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/Homepage.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/supabase/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/supabase/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/supabase/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/supabase/go.sum" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/coderunner/src/supabase/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/supabase/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/db.go" beforeDir="false" afterPath="$PROJECT_DIR$/db/db.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/justshare/justshare.go" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/justshare.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/share/share.xcodeproj/project.xcworkspace/xcuserdata/hacked.xcuserdatad/UserInterfaceState.xcuserstate" beforeDir="false" afterPath="$PROJECT_DIR$/share/share.xcodeproj/project.xcworkspace/xcuserdata/hacked.xcuserdatad/UserInterfaceState.xcuserstate" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-db.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-db.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -258,7 +263,7 @@
       <workItem from="1747973023098" duration="26954000" />
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
-      <workItem from="1750823408293" duration="123753000" />
+      <workItem from="1750823408293" duration="130485000" />
     </task>
     <servers />
   </component>
