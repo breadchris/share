@@ -111,7 +111,7 @@ func (a *Auth) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	a.s.SetUserID(r.Context(), user.ID)
-	http.Redirect(w, r, "/justshare", http.StatusFound)
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 func (s *Auth) handleInvite(w http.ResponseWriter, r *http.Request) {
@@ -164,7 +164,7 @@ func (s *Auth) handleAPIUser(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	
+
 	// Create user response matching frontend expectations
 	response := map[string]interface{}{
 		"id":         user.ID,
@@ -172,7 +172,7 @@ func (s *Auth) handleAPIUser(w http.ResponseWriter, r *http.Request) {
 		"email":      user.Username, // In this app, username is the email
 		"created_at": user.CreatedAt.Format("2006-01-02T15:04:05.000Z"),
 	}
-	
+
 	json.NewEncoder(w).Encode(response)
 }
 

@@ -1,7 +1,7 @@
 // Authentication utilities for JustShare
 import { getErrorMessage } from './api';
 
-const API_BASE = '/justshare/api';
+const API_BASE = '/api';
 
 export interface User {
   id: string;
