@@ -10,6 +10,7 @@ import (
 func init() {
 	Symbols["github.com/breadchris/share/db/db"] = map[string]reflect.Value{
 		// function, constant and variable definitions
+		"LoadClaudeMD":           reflect.ValueOf(db.LoadClaudeMD),
 		"LoadDB":                 reflect.ValueOf(db.LoadDB),
 		"LoadSearchIndex":        reflect.ValueOf(db.LoadSearchIndex),
 		"NewDBAny":               reflect.ValueOf(db.NewDBAny),

@@ -116,6 +116,7 @@ func startXCTF(port int) error {
 
 	p("", xctf.New)
 	p("/user", user.New)
+	p("/justshare", justshare.New)
 
 	http.HandleFunc("/register", a.handleRegister)
 	http.HandleFunc("/account", a.accountHandler)

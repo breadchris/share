@@ -2,10 +2,14 @@ package models
 
 import (
 	"bytes"
+	"crypto/rand"
+	"crypto/sha256"
 	"database/sql/driver"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -63,9 +67,9 @@ func (j *JSONField[T]) UnmarshalJSON(b []byte) error {
 }
 
 type Model struct {
-	ID        string `gorm:"primaryKey" json:"id"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID        string         `gorm:"primaryKey" json:"id"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
@@ -97,7 +101,7 @@ type Identity struct {
 
 type Group struct {
 	ID        string             `gorm:"primaryKey" json:"id"`
-	CreatedAt time.Time         `json:"created_at"`
+	CreatedAt time.Time          `json:"created_at"`
 	Name      string             `gorm:"unique;not null" json:"name"`
 	JoinCode  string             `gorm:"unique" json:"join_code"`
 	Members   []*GroupMembership `gorm:"foreignKey:GroupID" json:"members,omitempty"`
@@ -307,20 +311,113 @@ type ContentTag struct {
 	Tag       *Tag      `gorm:"foreignKey:TagID"`
 }
 
+// NewContent creates a new Content instance with proper initialization
+func NewContent(contentType, data, groupID, userID string, metadata map[string]interface{}) *Content {
+	return &Content{
+		Model: Model{
+			ID:        uuid.NewString(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
+		Type:     contentType,
+		Data:     data,
+		GroupID:  groupID,
+		UserID:   userID,
+		Metadata: MakeJSONField(metadata),
+	}
+}
+
+// API Key Models for mobile app authentication
+
+type ApiKey struct {
+	Model
+	Name        string    `json:"name" gorm:"not null"`                    // Human-readable name for the key
+	Token       string    `json:"token,omitempty" gorm:"unique;not null"`  // The actual API key token
+	TokenHash   string    `json:"-" gorm:"not null"`                       // Hashed version stored in DB
+	UserID      string    `json:"user_id" gorm:"index;not null"`
+	LastUsedAt  *time.Time `json:"last_used_at,omitempty"`
+	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
+	IsActive    bool      `json:"is_active" gorm:"default:true"`
+	Scopes      string    `json:"scopes" gorm:"default:'read,write'"`       // Comma-separated permissions
+	User        *User     `gorm:"foreignKey:UserID"`
+}
+
+// NewApiKey creates a new API key with secure token generation
+func NewApiKey(name, userID string, scopes []string) *ApiKey {
+	token := generateSecureToken()
+	return &ApiKey{
+		Model: Model{
+			ID:        uuid.NewString(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
+		Name:      name,
+		Token:     token,
+		TokenHash: hashToken(token),
+		UserID:    userID,
+		IsActive:  true,
+		Scopes:    strings.Join(scopes, ","),
+	}
+}
+
+// ValidateToken checks if the provided token matches this API key
+func (ak *ApiKey) ValidateToken(token string) bool {
+	return ak.IsActive && ak.TokenHash == hashToken(token) && (ak.ExpiresAt == nil || ak.ExpiresAt.After(time.Now()))
+}
+
+// HasScope checks if the API key has the specified scope
+func (ak *ApiKey) HasScope(scope string) bool {
+	scopes := strings.Split(ak.Scopes, ",")
+	for _, s := range scopes {
+		if strings.TrimSpace(s) == scope {
+			return true
+		}
+	}
+	return false
+}
+
+// UpdateLastUsed updates the last used timestamp
+func (ak *ApiKey) UpdateLastUsed() {
+	now := time.Now()
+	ak.LastUsedAt = &now
+}
+
+// generateSecureToken creates a cryptographically secure random token
+func generateSecureToken() string {
+	// Generate 32 random bytes (256 bits)
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		panic(fmt.Sprintf("failed to generate secure token: %v", err))
+	}
+	// Return as hex string with "ak_" prefix for identification
+	return "ak_" + hex.EncodeToString(bytes)
+}
+
+// HashToken creates a SHA-256 hash of the token for secure storage
+func HashToken(token string) string {
+	hash := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(hash[:])
+}
+
+// hashToken is the internal version for package use
+func hashToken(token string) string {
+	return HashToken(token)
+}
+
 // CLAUDE.md Document Models
 
 type ClaudeDoc struct {
 	Model
-	Title       string   `json:"title" gorm:"not null"`
-	Description string   `json:"description"`
-	Content     string   `json:"content" gorm:"type:text"`
-	UserID      string   `json:"user_id" gorm:"index;not null"`
-	IsPublic    bool     `json:"is_public" gorm:"default:true"`
-	Downloads   int      `json:"downloads" gorm:"default:0"`
-	Stars       int      `json:"stars" gorm:"default:0"`
-	Views       int      `json:"views" gorm:"default:0"`
-	User        *User    `gorm:"foreignKey:UserID"`
-	Tags        []*Tag   `gorm:"many2many:claude_doc_tags;"`
+	Title       string `json:"title" gorm:"not null"`
+	Description string `json:"description"`
+	Content     string `json:"content" gorm:"type:text"`
+	UserID      string `json:"user_id" gorm:"index;not null"`
+	IsPublic    bool   `json:"is_public" gorm:"default:true"`
+	Downloads   int    `json:"downloads" gorm:"default:0"`
+	Stars       int    `json:"stars" gorm:"default:0"`
+	Views       int    `json:"views" gorm:"default:0"`
+	User        *User  `gorm:"foreignKey:UserID"`
+	Tags        []*Tag `gorm:"many2many:claude_doc_tags;"`
 }
 
 type ClaudeDocTag struct {
@@ -337,4 +434,14 @@ type ClaudeDocStar struct {
 	UserID      string     `json:"user_id" gorm:"index;not null"`
 	ClaudeDoc   *ClaudeDoc `gorm:"foreignKey:ClaudeDocID"`
 	User        *User      `gorm:"foreignKey:UserID"`
+}
+
+type ClaudeSession struct {
+	Model
+	SessionID string                             `json:"session_id" gorm:"unique;not null;index"`
+	UserID    string                             `json:"user_id" gorm:"index;not null"`
+	User      *User                              `gorm:"foreignKey:UserID"`
+	Title     string                             `json:"title"`
+	Messages  JSONField[interface{}]             `json:"messages" gorm:"type:json"`
+	Metadata  *JSONField[map[string]interface{}] `json:"metadata,omitempty"`
 }

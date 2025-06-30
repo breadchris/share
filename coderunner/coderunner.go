@@ -10,12 +10,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/breadchris/share/coderunner/claude"
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/go-git/go-git/v5"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v66/github"
+	"github.com/gorilla/websocket"
 )
 
 type BuildCache struct {
@@ -49,10 +51,9 @@ func New(d deps.Deps) *http.ServeMux {
 				Id("code-runner"),
 				Attr("data-props", `{"darkMode": true, "language": "typescript"}`),
 			),
-			Link(Href("/static/coderunner/CodeRunner.css"), Rel("stylesheet")),
 			Script(Src("https://cdn.tailwindcss.com")),
 			Script(Src("https://unpkg.com/esbuild-wasm@0.25.5/lib/browser.min.js")),
-			Script(Src("/static/coderunner/CodeRunner.js"), Type("module")),
+			Script(Src("/module/coderunner/"), Type("module")),
 		).RenderPage(w, r)
 	})
 
@@ -215,8 +216,8 @@ func New(d deps.Deps) *http.ServeMux {
 		repoName := repoParts[1]
 		repoURL := fmt.Sprintf("https://github.com/%s.git", gitHubUser.Repo)
 
-		// Create user directory path: ./data/coderunner/src/@username/repositories/reponame
-		userDir := fmt.Sprintf("./data/coderunner/src/@%s", gitHubUser.GithubUsername)
+		// Create user directory path: ./coderunner/src/@username/repositories/reponame
+		userDir := fmt.Sprintf("./coderunner/src/@%s", gitHubUser.GithubUsername)
 		repoDir := filepath.Join(userDir, "repositories", repoName)
 
 		// Ensure the user and repositories directory exists
@@ -308,6 +309,93 @@ func New(d deps.Deps) *http.ServeMux {
 		handleServeModule(w, r)
 	})
 
+	// Claude endpoints
+	claudeService := claude.NewClaudeService(d.DB)
+
+	// WebSocket endpoint for Claude streaming
+	upgrader := websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			return true // Allow all origins in development
+		},
+	}
+
+	m.HandleFunc("/claude/ws", func(w http.ResponseWriter, r *http.Request) {
+		// Get user ID from session
+		userID, err := d.Session.GetUserID(r.Context())
+		if err != nil {
+			// For WebSocket connections, we can't redirect, so return JSON error
+			// The frontend will handle this and redirect to login
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error":    "authentication_required",
+				"message":  "Please log in to access Claude",
+				"redirect": "/login",
+			})
+			return
+		}
+
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			http.Error(w, "Failed to upgrade WebSocket", http.StatusInternalServerError)
+			return
+		}
+
+		claudeService.HandleWebSocket(conn, userID)
+	})
+
+	// List Claude sessions
+	m.HandleFunc("/claude/sessions", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		userID, err := d.Session.GetUserID(r.Context())
+		if err != nil {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
+		sessions, err := claudeService.GetSessions(userID)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to get sessions: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(sessions)
+	})
+
+	// Get specific Claude session
+	m.HandleFunc("/claude/sessions/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		userID, err := d.Session.GetUserID(r.Context())
+		if err != nil {
+			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			return
+		}
+
+		sessionID := strings.TrimPrefix(r.URL.Path, "/claude/sessions/")
+		if sessionID == "" {
+			http.Error(w, "Session ID required", http.StatusBadRequest)
+			return
+		}
+
+		session, err := claudeService.GetSession(sessionID, userID)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to get session: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(session)
+	})
+
 	return m
 }
 
@@ -325,7 +413,7 @@ func handleFiles(w http.ResponseWriter, r *http.Request) {
 
 // handleListFiles returns the directory structure as JSON
 func handleListFiles(w http.ResponseWriter, r *http.Request) {
-	srcDir := "./data/coderunner/src"
+	srcDir := "./coderunner/src"
 
 	// Check for path parameter to list specific directory
 	queryPath := r.URL.Query().Get("path")
@@ -380,7 +468,7 @@ func handleSaveFile(w http.ResponseWriter, r *http.Request) {
 	// Ensure path starts with username (e.g., "@breadchris/")
 
 	// Build full path
-	fullPath := filepath.Join("./data/coderunner/src", cleanPath)
+	fullPath := filepath.Join("./coderunner/src", cleanPath)
 
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(fullPath)
@@ -428,7 +516,7 @@ func handleFileContent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build full path
-	fullPath := filepath.Join("./data/coderunner/src", cleanPath)
+	fullPath := filepath.Join("./coderunner/src", cleanPath)
 
 	// Check if file exists and is not a directory
 	info, err := os.Stat(fullPath)
@@ -495,8 +583,8 @@ func handleBuild(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build source and output paths
-	srcPath := filepath.Join("./data/coderunner/src", cleanPath)
-	buildDir := "./data/coderunner/build"
+	srcPath := filepath.Join("./coderunner/src", cleanPath)
+	buildDir := "./coderunner/build"
 	outputPath := filepath.Join(buildDir, cleanPath+".js")
 
 	println("Building file:", srcPath, "to", outputPath)
@@ -777,7 +865,7 @@ func handleDeleteFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build full path
-	fullPath := filepath.Join("./data/coderunner/src", cleanPath)
+	fullPath := filepath.Join("./coderunner/src", cleanPath)
 
 	// Check if file exists
 	info, err := os.Stat(fullPath)
@@ -841,7 +929,7 @@ func handleRenderComponent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build source path
-	srcPath := filepath.Join("./data/coderunner/src", cleanPath)
+	srcPath := filepath.Join("./coderunner/src", cleanPath)
 
 	// Check if source file exists
 	if _, err := os.Stat(srcPath); os.IsNotExist(err) {
@@ -879,7 +967,7 @@ func handleRenderComponent(w http.ResponseWriter, r *http.Request) {
 		JSX:             api.JSXAutomatic,
 		JSXImportSource: "react",
 		LogLevel:        api.LogLevelSilent,
-		External:        []string{"react", "react-dom", "react-qr-code"},
+		External:        []string{"react", "react-dom", "react-player"},
 		TsconfigRaw: `{
 			"compilerOptions": {
 				"jsx": "react-jsx",
@@ -1060,7 +1148,7 @@ func handleServeModule(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build source path
-	srcPath := filepath.Join("./data/coderunner/src", cleanPath)
+	srcPath := filepath.Join("./coderunner/src", cleanPath)
 
 	// Check if source file exists
 	if _, err := os.Stat(srcPath); os.IsNotExist(err) {

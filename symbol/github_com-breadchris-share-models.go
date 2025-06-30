@@ -11,12 +11,17 @@ func init() {
 	Symbols["github.com/breadchris/share/models/models"] = map[string]reflect.Value{
 		// function, constant and variable definitions
 		"AIRecipeToModel": reflect.ValueOf(models.AIRecipeToModel),
+		"HashToken":       reflect.ValueOf(models.HashToken),
+		"NewApiKey":       reflect.ValueOf(models.NewApiKey),
+		"NewContent":      reflect.ValueOf(models.NewContent),
 
 		// type definitions
 		"AIRecipe":         reflect.ValueOf((*models.AIRecipe)(nil)),
+		"ApiKey":           reflect.ValueOf((*models.ApiKey)(nil)),
 		"ClaudeDoc":        reflect.ValueOf((*models.ClaudeDoc)(nil)),
 		"ClaudeDocStar":    reflect.ValueOf((*models.ClaudeDocStar)(nil)),
 		"ClaudeDocTag":     reflect.ValueOf((*models.ClaudeDocTag)(nil)),
+		"ClaudeSession":    reflect.ValueOf((*models.ClaudeSession)(nil)),
 		"Container":        reflect.ValueOf((*models.Container)(nil)),
 		"ContainerSession": reflect.ValueOf((*models.ContainerSession)(nil)),
 		"Content":          reflect.ValueOf((*models.Content)(nil)),

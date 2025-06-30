@@ -5,7 +5,6 @@ import (
 	"github.com/google/uuid"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/go-webauthn/webauthn/webauthn"
 )
@@ -27,8 +26,6 @@ func setupWebauthn() {
 	if err != nil {
 		log.Fatalf("failed to create webAuthn: %v", err)
 	}
-
-	loadUsersFromFile()
 
 	http.HandleFunc("/auth/register", beginRegistration)
 	http.HandleFunc("/auth/register/finish", finishRegistration)
@@ -72,35 +69,6 @@ func (u User) WebAuthnCredentials() []webauthn.Credential {
 
 var webSessions = map[string]*webauthn.SessionData{}
 
-func saveUsersToFile() {
-	file, err := os.Create("data/users.json")
-	if err != nil {
-		log.Fatalf("failed to create file: %v", err)
-	}
-	defer file.Close()
-
-	encoder := json.NewEncoder(file)
-	err = encoder.Encode(users)
-	if err != nil {
-		log.Fatalf("failed to encode users: %v", err)
-	}
-}
-
-func loadUsersFromFile() {
-	file, err := os.Open("data/users.json")
-	if err != nil {
-		log.Printf("failed to open file: %v", err)
-		return
-	}
-	defer file.Close()
-
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&users)
-	if err != nil {
-		log.Fatalf("failed to decode users: %v", err)
-	}
-}
-
 func beginRegistration(w http.ResponseWriter, r *http.Request) {
 	user := &User{
 		ID:          uuid.NewString(),
@@ -133,9 +101,6 @@ func finishRegistration(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user.Credentials = append(user.Credentials, *credential)
-
-	// TODO breadchris race conditions abound
-	saveUsersToFile()
 
 	json.NewEncoder(w).Encode("Registration successful")
 }

@@ -111,7 +111,7 @@ func (a *Auth) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	a.s.SetUserID(r.Context(), user.ID)
-	http.Redirect(w, r, "/", http.StatusFound)
+	http.Redirect(w, r, "/justshare", http.StatusFound)
 }
 
 func (s *Auth) handleInvite(w http.ResponseWriter, r *http.Request) {

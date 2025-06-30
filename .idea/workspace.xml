@@ -5,9 +5,99 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/coderunner/ClaudeInterface.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/build/@breadchris/MyComponent.tsx.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/claude/claude.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/AIEnhancedComponentBuilder.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/ClaudeDocApp.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/ClaudeDocBrowser.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/ClaudeDocEditor.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/Comp.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/ComponentBrowser.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/ComponentBuilderMVP.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/IdeaIterationPlatform.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/MyComponent.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/StateInspector/AddPropertyDialog.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/StateInspector/DeletePropertyDialog.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/StateInspector/StateInspector.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/StateInspector/StateInspectorExample.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/StateInspector/StateNode.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/StateInspector/StateTree.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/StateInspector/index.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/StateInspector/types.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/StateInspector/utils.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/TestComponent.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/UserProfile.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@breadchris/VideoPlayer.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@daisyui/Alert.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@daisyui/Button.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@daisyui/Card.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@daisyui/Checkbox.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@daisyui/DemoShowcase.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@daisyui/Input.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@daisyui/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@daisyui/Textarea.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@daisyui/index.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@daisyui/types.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@daisyui/utils.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@test/ExampleComponent.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/@testuser/repositories/test-repo/src/index.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/claude/ClaudeWebInterface.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/claude/README.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/claude/components/InputArea.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/claude/components/MessageList.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/claude/components/SessionBrowser.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/claude/components/StatusIndicator.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/claude/demo/ClaudeDemo.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/claude/hooks/useClaudeMessages.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/claude/hooks/useClaudeSession.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/claude/hooks/useClaudeWebSocket.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/claude/index.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/claude/styles.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/claude/types/index.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/claude/utils/messageFormatting.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/justshare/CLAUDE.md" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/justshare/JustShare.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/justshare/components/AppSidebar.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/justshare/components/ConfirmationDialog.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/justshare/components/ContentCapture.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/justshare/components/ContentViewer.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/justshare/components/GroupManager.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/justshare/components/GroupMenu.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/justshare/components/GroupSelector.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/justshare/components/GroupSettings.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/justshare/components/JoinCodeModal.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/justshare/components/LoginPrompt.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/justshare/components/SwipeableContentItem.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/justshare/components/TagInput.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/justshare/components/Timeline.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/justshare/components/UserProfile.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/justshare/components/VideoPlayer.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/justshare/components/YouTubePlayer.tsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/justshare/types/index.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/justshare/utils/api.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/justshare/utils/auth.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/justshare/utils/media.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/coderunner/src/justshare/utils/url.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/db/db_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/auth.go" beforeDir="false" afterPath="$PROJECT_DIR$/auth.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/coderunner.go" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/coderunner.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/db.go" beforeDir="false" afterPath="$PROJECT_DIR$/db/db.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/doc_test.go" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/justshare/justshare.go" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/justshare.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/models.go" beforeDir="false" afterPath="$PROJECT_DIR$/models/models.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/share/ext/ShareViewController.swift" beforeDir="false" afterPath="$PROJECT_DIR$/share/ext/ShareViewController.swift" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/share/share.xcodeproj/project.xcworkspace/xcuserdata/hacked.xcuserdatad/UserInterfaceState.xcuserstate" beforeDir="false" afterPath="$PROJECT_DIR$/share/share.xcodeproj/project.xcworkspace/xcuserdata/hacked.xcuserdatad/UserInterfaceState.xcuserstate" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/share/share/ContentView.swift" beforeDir="false" afterPath="$PROJECT_DIR$/share/share/ContentView.swift" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-db.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-db.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-models.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-models.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/symbol.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/symbol.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/webauthn.go" beforeDir="false" afterPath="$PROJECT_DIR$/webauthn.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -43,6 +133,7 @@
   "keyToString": {
     "DefaultGoTemplateProperty": "Go File",
     "Go Build.share.executor": "Run",
+    "Go Test.TestClaudeMigrate in github.com/breadchris/share/db.executor": "Run",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
@@ -121,6 +212,18 @@
       <output_directory value="$PROJECT_DIR$/data" />
       <method v="2" />
     </configuration>
+    <configuration name="TestClaudeMigrate in github.com/breadchris/share/db" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="share" />
+      <working_directory value="$PROJECT_DIR$/db" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/breadchris/share/db" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestClaudeMigrate\E$" />
+      <method v="2" />
+    </configuration>
     <configuration name="TestCopyRecipesBetweenDatabases in github.com/breadchris/share" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="share" />
       <working_directory value="$PROJECT_DIR$" />
@@ -165,17 +268,6 @@
       <pattern value="^\QTestPrompt\E$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestRecipes in github.com/breadchris/share" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
-      <module name="share" />
-      <working_directory value="$PROJECT_DIR$" />
-      <kind value="PACKAGE" />
-      <package value="github.com/breadchris/share" />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$" />
-      <framework value="gotest" />
-      <pattern value="^\QTestRecipes\E$" />
-      <method v="2" />
-    </configuration>
     <configuration default="true" type="GoTestRunConfiguration" factoryName="Go Test">
       <module name="share" />
       <working_directory value="$PROJECT_DIR$" />
@@ -189,19 +281,19 @@
     <list>
       <item itemvalue="Go Build.share" />
       <item itemvalue="Go Build.xctf" />
+      <item itemvalue="Go Test.TestClaudeMigrate in github.com/breadchris/share/db" />
       <item itemvalue="Go Test.TestLoadDB in github.com/breadchris/share" />
       <item itemvalue="Go Test.TestCopyRecipesBetweenDatabases in github.com/breadchris/share" />
       <item itemvalue="Go Test.TestIngestChannels in github.com/breadchris/share" />
       <item itemvalue="Go Test.TestPrompt in github.com/breadchris/share" />
-      <item itemvalue="Go Test.TestRecipes in github.com/breadchris/share" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Test.TestClaudeMigrate in github.com/breadchris/share/db" />
         <item itemvalue="Go Test.TestLoadDB in github.com/breadchris/share" />
         <item itemvalue="Go Test.TestCopyRecipesBetweenDatabases in github.com/breadchris/share" />
         <item itemvalue="Go Test.TestIngestChannels in github.com/breadchris/share" />
         <item itemvalue="Go Test.TestPrompt in github.com/breadchris/share" />
-        <item itemvalue="Go Test.TestRecipes in github.com/breadchris/share" />
       </list>
     </recent_temporary>
   </component>
@@ -251,7 +343,7 @@
       <workItem from="1747973023098" duration="26954000" />
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
-      <workItem from="1750823408293" duration="89379000" />
+      <workItem from="1750823408293" duration="122643000" />
     </task>
     <servers />
   </component>
@@ -260,16 +352,5 @@
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$PROJECT_DIR$/main.go</url>
-          <line>88</line>
-          <option name="timeStamp" value="3" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
 </project>

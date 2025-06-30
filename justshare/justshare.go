@@ -1,6 +1,7 @@
 package justshare
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,6 +16,7 @@ import (
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/models"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type CreateContentRequest struct {
@@ -35,8 +37,8 @@ type JoinGroupRequest struct {
 
 type ContentResponse struct {
 	*models.Content
-	TagNames []string         `json:"tag_names,omitempty"`
-	UserInfo *models.User     `json:"user_info,omitempty"`
+	TagNames []string     `json:"tag_names,omitempty"`
+	UserInfo *models.User `json:"user_info,omitempty"`
 }
 
 type TimelineResponse struct {
@@ -45,18 +47,197 @@ type TimelineResponse struct {
 	HasMore    bool               `json:"has_more"`
 }
 
+type GroupMemberResponse struct {
+	ID        string    `json:"id"`
+	UserID    string    `json:"user_id"`
+	GroupID   string    `json:"group_id"`
+	Role      string    `json:"role"`
+	CreatedAt time.Time `json:"created_at"`
+	User      *models.User `json:"user,omitempty"`
+}
+
+type GroupSettingsResponse struct {
+	ID        string                  `json:"id"`
+	Name      string                  `json:"name"`
+	JoinCode  string                  `json:"join_code"`
+	CreatedAt time.Time               `json:"created_at"`
+	Members   []*GroupMemberResponse  `json:"members"`
+	UserRole  string                  `json:"user_role"`
+}
+
+type CreateAPIKeyRequest struct {
+	Name   string   `json:"name"`
+	Scopes []string `json:"scopes,omitempty"`
+}
+
+type APIKeyResponse struct {
+	*models.ApiKey
+	Token string `json:"token,omitempty"` // Only included in create response
+}
+
+// Context keys for storing user information
+const (
+	UserContextKey = "user_id"
+	APIKeyContextKey = "api_key"
+)
+
+// authenticateUser tries session first, then API key authentication
+func authenticateUser(r *http.Request, d deps.Deps) (string, *models.ApiKey, error) {
+	// First try session authentication
+	if userID, err := d.Session.GetUserID(r.Context()); err == nil {
+		return userID, nil, nil
+	}
+	
+	// Try API key authentication
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		return "", nil, fmt.Errorf("no authentication provided")
+	}
+	
+	// Check for Bearer token format
+	parts := strings.SplitN(authHeader, " ", 2)
+	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+		return "", nil, fmt.Errorf("invalid authorization header format")
+	}
+	
+	token := parts[1]
+	if !strings.HasPrefix(token, "ak_") {
+		return "", nil, fmt.Errorf("invalid API key format")
+	}
+	
+	// Validate the API key
+	var apiKey models.ApiKey
+	tokenHash := models.HashToken(token)
+	err := d.DB.Where("token_hash = ? AND is_active = ?", tokenHash, true).First(&apiKey).Error
+	if err != nil {
+		return "", nil, fmt.Errorf("invalid or expired API key")
+	}
+	
+	// Check expiration
+	if apiKey.ExpiresAt != nil && apiKey.ExpiresAt.Before(time.Now()) {
+		return "", nil, fmt.Errorf("API key has expired")
+	}
+	
+	// Update last used timestamp
+	apiKey.UpdateLastUsed()
+	d.DB.Save(&apiKey)
+	
+	return apiKey.UserID, &apiKey, nil
+}
+
+// requireAuth middleware that supports both session and API key authentication
+func requireAuth(d deps.Deps, handler func(http.ResponseWriter, *http.Request, deps.Deps)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userID, apiKey, err := authenticateUser(r, d)
+		if err != nil {
+			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+			return
+		}
+		
+		// Add user and API key info to context
+		ctx := context.WithValue(r.Context(), UserContextKey, userID)
+		if apiKey != nil {
+			ctx = context.WithValue(ctx, APIKeyContextKey, apiKey)
+		}
+		r = r.WithContext(ctx)
+		
+		handler(w, r, d)
+	}
+}
+
+// getUserID extracts user ID from context (works for both auth methods)
+func getUserID(ctx context.Context) (string, error) {
+	userID, ok := ctx.Value(UserContextKey).(string)
+	if !ok || userID == "" {
+		return "", fmt.Errorf("user not authenticated")
+	}
+	return userID, nil
+}
+
+// getAPIKey extracts API key from context (only for API key auth)
+func getAPIKey(ctx context.Context) *models.ApiKey {
+	apiKey, _ := ctx.Value(APIKeyContextKey).(*models.ApiKey)
+	return apiKey
+}
+
+// checkAPIKeyScope verifies API key has required scope
+func checkAPIKeyScope(ctx context.Context, requiredScope string) error {
+	apiKey := getAPIKey(ctx)
+	if apiKey == nil {
+		// Session auth - allow all operations
+		return nil
+	}
+	
+	if !apiKey.HasScope(requiredScope) {
+		return fmt.Errorf("insufficient permissions")
+	}
+	
+	return nil
+}
+
+func loadModule(componentPath, componentName string) *Node {
+	return Script(Type("module"), Raw(`
+        try {
+            // Import the compiled component module from the /module/ endpoint
+            const componentModule = await import('/coderunner/module/`+componentPath+`');
+            
+            // Import React and ReactDOM
+            const React = await import('react');
+            const ReactDOM = await import('react-dom/client');
+            
+            // Try to get the component to render
+            let ComponentToRender;
+            
+            // First try the specified component name
+            if (componentModule.`+componentName+`) {
+				console.log('Rendering component:', componentModule.`+componentName+`);
+                ComponentToRender = componentModule.`+componentName+`;
+            }
+            // Then try default export
+            else if (componentModule.default) {
+				console.log('Rendering default component:', componentModule.default);
+                ComponentToRender = componentModule.default;
+            }
+            else {
+                throw new Error('No component found. Make sure to export a component named "`+componentName+`" or a default export.');
+            }
+            
+            // Render the component
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(React.createElement(ComponentToRender));
+            
+        } catch (error) {
+            console.error('Runtime Error:', error);
+            document.getElementById('root').innerHTML = 
+                '<div class="error">' +
+                '<h3>Runtime Error:</h3>' +
+                '<pre>' + error.message + '</pre>' +
+                '<pre>' + (error.stack || '') + '</pre>' +
+                '</div>';
+        }
+    </script>
+`))
+}
+
 func New(d deps.Deps) *http.ServeMux {
 	m := http.NewServeMux()
 
 	// Main JustShare page
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		DefaultLayout(
-			Div(
-				Id("justshare-app"),
-			),
-			Link(Href("/static/justshare/JustShare.css"), Rel("stylesheet")),
+			Script(Type("importmap"), Raw(`
+	   {
+	       "imports": {
+	           "react": "https://esm.sh/react@18",
+	           "react-dom": "https://esm.sh/react-dom@18",
+	           "react-dom/client": "https://esm.sh/react-dom@18/client",
+	           "react/jsx-runtime": "https://esm.sh/react@18/jsx-runtime"
+	       }
+	   }
+`)),
 			Script(Src("https://cdn.tailwindcss.com")),
-			Script(Src("/static/justshare/JustShare.js"), Type("module")),
+			Div(Id("root")),
+			loadModule("justshare/JustShare.tsx", "JustShare"),
 		).RenderPage(w, r)
 	})
 
@@ -64,9 +245,9 @@ func New(d deps.Deps) *http.ServeMux {
 	m.HandleFunc("/api/content", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "POST":
-			handleCreateContent(w, r, d)
+			requireAuth(d, handleCreateContent)(w, r)
 		case "GET":
-			handleGetTimeline(w, r, d)
+			requireAuth(d, handleGetTimeline)(w, r)
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
@@ -75,9 +256,9 @@ func New(d deps.Deps) *http.ServeMux {
 	m.HandleFunc("/api/content/", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "GET":
-			handleGetContent(w, r, d)
+			requireAuth(d, handleGetContent)(w, r)
 		case "DELETE":
-			handleDeleteContent(w, r, d)
+			requireAuth(d, handleDeleteContent)(w, r)
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
@@ -87,10 +268,19 @@ func New(d deps.Deps) *http.ServeMux {
 	m.HandleFunc("/api/groups", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "POST":
-			handleCreateGroup(w, r, d)
+			requireAuth(d, handleCreateGroup)(w, r)
 		case "GET":
-			handleGetUserGroups(w, r, d)
+			requireAuth(d, handleGetUserGroups)(w, r)
 		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	// Default group endpoint for mobile apps
+	m.HandleFunc("/api/groups/default", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			requireAuth(d, handleGetDefaultGroup)(w, r)
+		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
@@ -100,6 +290,40 @@ func New(d deps.Deps) *http.ServeMux {
 			handleJoinGroup(w, r, d)
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	// Group management endpoints
+	m.HandleFunc("/api/groups/", func(w http.ResponseWriter, r *http.Request) {
+		path := strings.TrimPrefix(r.URL.Path, "/api/groups/")
+		pathParts := strings.Split(path, "/")
+		
+		if len(pathParts) < 1 || pathParts[0] == "" {
+			http.Error(w, "Group ID required", http.StatusBadRequest)
+			return
+		}
+		
+		groupID := pathParts[0]
+		
+		if len(pathParts) == 1 {
+			// /api/groups/{groupID}
+			switch r.Method {
+			case "GET":
+				handleGetGroupSettings(w, r, d, groupID)
+			case "DELETE":
+				handleDeleteGroup(w, r, d, groupID)
+			default:
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
+		} else if len(pathParts) == 2 && pathParts[1] == "members" {
+			// /api/groups/{groupID}/members
+			if r.Method == "GET" {
+				handleGetGroupMembers(w, r, d, groupID)
+			} else {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
+		} else {
+			http.Error(w, "Invalid endpoint", http.StatusNotFound)
 		}
 	})
 
@@ -147,13 +371,48 @@ func New(d deps.Deps) *http.ServeMux {
 		}
 	})
 
+	// API Key management endpoints
+	m.HandleFunc("/api/auth/keys", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "POST":
+			handleCreateAPIKey(w, r, d)
+		case "GET":
+			handleListAPIKeys(w, r, d)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	m.HandleFunc("/api/auth/keys/", func(w http.ResponseWriter, r *http.Request) {
+		path := strings.TrimPrefix(r.URL.Path, "/api/auth/keys/")
+		keyID := strings.Split(path, "/")[0]
+		
+		if keyID == "" {
+			http.Error(w, "API key ID required", http.StatusBadRequest)
+			return
+		}
+		
+		switch r.Method {
+		case "DELETE":
+			handleRevokeAPIKey(w, r, d, keyID)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
 	return m
 }
 
 func handleCreateContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
-	userID, err := d.Session.GetUserID(r.Context())
+	userID, err := getUserID(r.Context())
 	if err != nil {
 		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+	
+	// Check if API key has write permissions
+	if err := checkAPIKeyScope(r.Context(), "write"); err != nil {
+		http.Error(w, `{"error":"insufficient permissions"}`, http.StatusForbidden)
 		return
 	}
 
@@ -183,18 +442,7 @@ func handleCreateContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 	}
 
 	// Create content
-	content := &models.Content{
-		Model: models.Model{
-			ID:        uuid.NewString(),
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
-		},
-		Type:     req.Type,
-		Data:     req.Data,
-		GroupID:  req.GroupID,
-		UserID:   userID,
-		Metadata: models.MakeJSONField(req.Metadata),
-	}
+	content := models.NewContent(req.Type, req.Data, req.GroupID, userID, req.Metadata)
 
 	if err := d.DB.Create(content).Error; err != nil {
 		http.Error(w, fmt.Sprintf(`{"error":"failed to create content: %v"}`, err), http.StatusInternalServerError)
@@ -254,12 +502,31 @@ func handleCreateContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 }
 
 func handleGetTimeline(w http.ResponseWriter, r *http.Request, d deps.Deps) {
+	userID, err := getUserID(r.Context())
+	if err != nil {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+	
+	// Check if API key has read permissions
+	if err := checkAPIKeyScope(r.Context(), "read"); err != nil {
+		http.Error(w, `{"error":"insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
+
 	groupID := r.URL.Query().Get("group_id")
 	offsetStr := r.URL.Query().Get("offset")
 	limitStr := r.URL.Query().Get("limit")
 
 	if groupID == "" {
 		http.Error(w, `{"error":"group_id is required"}`, http.StatusBadRequest)
+		return
+	}
+	
+	// Verify user has access to this group
+	_, err = checkGroupMembership(d.DB, userID, groupID)
+	if err != nil {
+		http.Error(w, `{"error":"not a member of this group"}`, http.StatusForbidden)
 		return
 	}
 
@@ -311,6 +578,18 @@ func handleGetTimeline(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 }
 
 func handleGetContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
+	userID, err := getUserID(r.Context())
+	if err != nil {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+	
+	// Check if API key has read permissions
+	if err := checkAPIKeyScope(r.Context(), "read"); err != nil {
+		http.Error(w, `{"error":"insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
+
 	// Extract content ID from URL path
 	path := strings.TrimPrefix(r.URL.Path, "/api/content/")
 	contentID := strings.Split(path, "/")[0]
@@ -323,6 +602,13 @@ func handleGetContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 	var content models.Content
 	if err := d.DB.Preload("Tags").Preload("User").First(&content, "id = ?", contentID).Error; err != nil {
 		http.Error(w, `{"error":"content not found"}`, http.StatusNotFound)
+		return
+	}
+	
+	// Verify user has access to this content's group
+	_, err = checkGroupMembership(d.DB, userID, content.GroupID)
+	if err != nil {
+		http.Error(w, `{"error":"access denied"}`, http.StatusForbidden)
 		return
 	}
 
@@ -340,9 +626,15 @@ func handleGetContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 }
 
 func handleDeleteContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
-	userID, err := d.Session.GetUserID(r.Context())
+	userID, err := getUserID(r.Context())
 	if err != nil {
 		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+	
+	// Check if API key has write permissions
+	if err := checkAPIKeyScope(r.Context(), "write"); err != nil {
+		http.Error(w, `{"error":"insufficient permissions"}`, http.StatusForbidden)
 		return
 	}
 
@@ -396,10 +688,73 @@ func handleDeleteContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func handleCreateGroup(w http.ResponseWriter, r *http.Request, d deps.Deps) {
-	userID, err := d.Session.GetUserID(r.Context())
+func handleGetDefaultGroup(w http.ResponseWriter, r *http.Request, d deps.Deps) {
+	userID, err := getUserID(r.Context())
 	if err != nil {
 		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+	
+	// Check if API key has read permissions
+	if err := checkAPIKeyScope(r.Context(), "read"); err != nil {
+		http.Error(w, `{"error":"insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
+
+	// Find the user's personal group (first group where they are admin)
+	var membership models.GroupMembership
+	err = d.DB.Where("user_id = ? AND role = ?", userID, "admin").
+		Preload("Group").
+		Order("created_at ASC").
+		First(&membership).Error
+	
+	if err != nil {
+		// If no personal group exists, create one
+		personalGroup := &models.Group{
+			ID:        uuid.NewString(),
+			CreatedAt: time.Now(),
+			Name:      "Personal",
+			JoinCode:  generateJoinCode(),
+		}
+
+		if err := d.DB.Create(personalGroup).Error; err != nil {
+			http.Error(w, fmt.Sprintf(`{"error":"failed to create personal group: %v"}`, err), http.StatusInternalServerError)
+			return
+		}
+
+		// Add user as admin member
+		newMembership := &models.GroupMembership{
+			ID:        uuid.NewString(),
+			CreatedAt: time.Now(),
+			UserID:    userID,
+			GroupID:   personalGroup.ID,
+			Role:      "admin",
+		}
+
+		if err := d.DB.Create(newMembership).Error; err != nil {
+			http.Error(w, fmt.Sprintf(`{"error":"failed to create membership: %v"}`, err), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(personalGroup)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(membership.Group)
+}
+
+func handleCreateGroup(w http.ResponseWriter, r *http.Request, d deps.Deps) {
+	userID, err := getUserID(r.Context())
+	if err != nil {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+	
+	// Check if API key has write permissions
+	if err := checkAPIKeyScope(r.Context(), "write"); err != nil {
+		http.Error(w, `{"error":"insufficient permissions"}`, http.StatusForbidden)
 		return
 	}
 
@@ -499,9 +854,15 @@ func handleJoinGroup(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 }
 
 func handleGetUserGroups(w http.ResponseWriter, r *http.Request, d deps.Deps) {
-	userID, err := d.Session.GetUserID(r.Context())
+	userID, err := getUserID(r.Context())
 	if err != nil {
 		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+	
+	// Check if API key has read permissions
+	if err := checkAPIKeyScope(r.Context(), "read"); err != nil {
+		http.Error(w, `{"error":"insufficient permissions"}`, http.StatusForbidden)
 		return
 	}
 
@@ -598,7 +959,7 @@ func handleFileUpload(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 
 	// Get file extension
 	ext := filepath.Ext(header.Filename)
-	
+
 	// Generate unique filename following main.go pattern
 	filename := uuid.NewString() + ext
 	uploadDir := "data/uploads"
@@ -854,7 +1215,7 @@ func handleAPIUser(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	
+
 	// Create user response matching frontend expectations
 	response := map[string]interface{}{
 		"id":         user.ID,
@@ -862,6 +1223,285 @@ func handleAPIUser(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 		"email":      user.Username, // In this app, username is the email
 		"created_at": user.CreatedAt.Format("2006-01-02T15:04:05.000Z"),
 	}
+
+	json.NewEncoder(w).Encode(response)
+}
+
+// checkGroupMembership verifies user is a member and returns their role
+func checkGroupMembership(db *gorm.DB, userID, groupID string) (string, error) {
+	var membership models.GroupMembership
+	err := db.Where("user_id = ? AND group_id = ?", userID, groupID).First(&membership).Error
+	if err != nil {
+		return "", err
+	}
+	return membership.Role, nil
+}
+
+func handleGetGroupMembers(w http.ResponseWriter, r *http.Request, d deps.Deps, groupID string) {
+	userID, err := d.Session.GetUserID(r.Context())
+	if err != nil {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
+	// Check if user is a member of the group
+	_, err = checkGroupMembership(d.DB, userID, groupID)
+	if err != nil {
+		http.Error(w, `{"error":"not a member of this group"}`, http.StatusForbidden)
+		return
+	}
+
+	// Get all group members with user info
+	var memberships []models.GroupMembership
+	if err := d.DB.Where("group_id = ?", groupID).Preload("User").Find(&memberships).Error; err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"failed to fetch members: %v"}`, err), http.StatusInternalServerError)
+		return
+	}
+
+	// Convert to response format
+	var members []*GroupMemberResponse
+	for _, membership := range memberships {
+		member := &GroupMemberResponse{
+			ID:        membership.ID,
+			UserID:    membership.UserID,
+			GroupID:   membership.GroupID,
+			Role:      membership.Role,
+			CreatedAt: membership.CreatedAt,
+			User:      membership.User,
+		}
+		members = append(members, member)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(members)
+}
+
+func handleGetGroupSettings(w http.ResponseWriter, r *http.Request, d deps.Deps, groupID string) {
+	userID, err := d.Session.GetUserID(r.Context())
+	if err != nil {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
+	// Check if user is a member and get their role
+	userRole, err := checkGroupMembership(d.DB, userID, groupID)
+	if err != nil {
+		http.Error(w, `{"error":"not a member of this group"}`, http.StatusForbidden)
+		return
+	}
+
+	// Get group info
+	var group models.Group
+	if err := d.DB.Where("id = ?", groupID).First(&group).Error; err != nil {
+		http.Error(w, `{"error":"group not found"}`, http.StatusNotFound)
+		return
+	}
+
+	// Get all group members with user info
+	var memberships []models.GroupMembership
+	if err := d.DB.Where("group_id = ?", groupID).Preload("User").Find(&memberships).Error; err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"failed to fetch members: %v"}`, err), http.StatusInternalServerError)
+		return
+	}
+
+	// Convert to response format
+	var members []*GroupMemberResponse
+	for _, membership := range memberships {
+		member := &GroupMemberResponse{
+			ID:        membership.ID,
+			UserID:    membership.UserID,
+			GroupID:   membership.GroupID,
+			Role:      membership.Role,
+			CreatedAt: membership.CreatedAt,
+			User:      membership.User,
+		}
+		members = append(members, member)
+	}
+
+	response := &GroupSettingsResponse{
+		ID:        group.ID,
+		Name:      group.Name,
+		JoinCode:  group.JoinCode,
+		CreatedAt: group.CreatedAt,
+		Members:   members,
+		UserRole:  userRole,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func handleCreateAPIKey(w http.ResponseWriter, r *http.Request, d deps.Deps) {
+	userID, err := d.Session.GetUserID(r.Context())
+	if err != nil {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
+	var req CreateAPIKeyRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid JSON"}`, http.StatusBadRequest)
+		return
+	}
+
+	if req.Name == "" {
+		http.Error(w, `{"error":"name is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Default scopes if not provided
+	scopes := req.Scopes
+	if len(scopes) == 0 {
+		scopes = []string{"read", "write"}
+	}
+
+	// Create the API key
+	apiKey := models.NewApiKey(req.Name, userID, scopes)
+
+	if err := d.DB.Create(apiKey).Error; err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"failed to create API key: %v"}`, err), http.StatusInternalServerError)
+		return
+	}
+
+	// Return the key with the token (only time it's sent in plain text)
+	response := &APIKeyResponse{
+		ApiKey: apiKey,
+		Token:  apiKey.Token,
+	}
 	
+	// Clear the token from the model to prevent accidental exposure
+	apiKey.Token = ""
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func handleListAPIKeys(w http.ResponseWriter, r *http.Request, d deps.Deps) {
+	userID, err := d.Session.GetUserID(r.Context())
+	if err != nil {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
+	var apiKeys []*models.ApiKey
+	if err := d.DB.Where("user_id = ?", userID).Order("created_at DESC").Find(&apiKeys).Error; err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"failed to fetch API keys: %v"}`, err), http.StatusInternalServerError)
+		return
+	}
+
+	// Convert to response format (without tokens)
+	var responses []*APIKeyResponse
+	for _, key := range apiKeys {
+		responses = append(responses, &APIKeyResponse{
+			ApiKey: key,
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(responses)
+}
+
+func handleRevokeAPIKey(w http.ResponseWriter, r *http.Request, d deps.Deps, keyID string) {
+	userID, err := d.Session.GetUserID(r.Context())
+	if err != nil {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
+	// Check if the API key exists and belongs to the user
+	var apiKey models.ApiKey
+	if err := d.DB.Where("id = ? AND user_id = ?", keyID, userID).First(&apiKey).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			http.Error(w, `{"error":"API key not found"}`, http.StatusNotFound)
+		} else {
+			http.Error(w, fmt.Sprintf(`{"error":"failed to fetch API key: %v"}`, err), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Deactivate the key instead of deleting it (for audit trail)
+	apiKey.IsActive = false
+	if err := d.DB.Save(&apiKey).Error; err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"failed to revoke API key: %v"}`, err), http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]interface{}{
+		"success": true,
+		"message": "API key revoked successfully",
+		"id":      keyID,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+
+func handleDeleteGroup(w http.ResponseWriter, r *http.Request, d deps.Deps, groupID string) {
+	userID, err := d.Session.GetUserID(r.Context())
+	if err != nil {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
+	// Check if user is an admin of the group
+	userRole, err := checkGroupMembership(d.DB, userID, groupID)
+	if err != nil {
+		http.Error(w, `{"error":"not a member of this group"}`, http.StatusForbidden)
+		return
+	}
+
+	if userRole != "admin" {
+		http.Error(w, `{"error":"only admins can delete groups"}`, http.StatusForbidden)
+		return
+	}
+
+	// Check if group exists
+	var group models.Group
+	if err := d.DB.Where("id = ?", groupID).First(&group).Error; err != nil {
+		http.Error(w, `{"error":"group not found"}`, http.StatusNotFound)
+		return
+	}
+
+	// Start transaction for cascade deletion
+	tx := d.DB.Begin()
+	if tx.Error != nil {
+		http.Error(w, `{"error":"failed to start transaction"}`, http.StatusInternalServerError)
+		return
+	}
+
+	// Delete all content in the group
+	if err := tx.Where("group_id = ?", groupID).Delete(&models.Content{}).Error; err != nil {
+		tx.Rollback()
+		http.Error(w, fmt.Sprintf(`{"error":"failed to delete group content: %v"}`, err), http.StatusInternalServerError)
+		return
+	}
+
+	// Delete all group memberships
+	if err := tx.Where("group_id = ?", groupID).Delete(&models.GroupMembership{}).Error; err != nil {
+		tx.Rollback()
+		http.Error(w, fmt.Sprintf(`{"error":"failed to delete group memberships: %v"}`, err), http.StatusInternalServerError)
+		return
+	}
+
+	// Delete the group
+	if err := tx.Delete(&group).Error; err != nil {
+		tx.Rollback()
+		http.Error(w, fmt.Sprintf(`{"error":"failed to delete group: %v"}`, err), http.StatusInternalServerError)
+		return
+	}
+
+	// Commit transaction
+	if err := tx.Commit().Error; err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"failed to commit transaction: %v"}`, err), http.StatusInternalServerError)
+		return
+	}
+
+	response := map[string]interface{}{
+		"success": true,
+		"message": "Group deleted successfully",
+		"id":      groupID,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }

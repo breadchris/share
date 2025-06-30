@@ -174,6 +174,36 @@ func (s *DB[T]) watchFiles() {
 	}
 }
 
+func LoadClaudeMD(dsn string) *gorm.DB {
+	var (
+		db  *gorm.DB
+		err error
+	)
+	if strings.HasPrefix(dsn, "postgres://") {
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		if err != nil {
+			log.Fatalf("Failed to create db: %v", err)
+		}
+	} else if strings.HasPrefix(dsn, "sqlite://") {
+		dsn = strings.TrimPrefix(dsn, "sqlite://")
+		db, err = gorm.Open(sqlite.Open(dsn), &gorm.Config{})
+		if err != nil {
+			log.Fatalf("Failed to create db: %v", err)
+		}
+	} else {
+		log.Fatalf("Unknown db: %s", dsn)
+	}
+
+	if err := db.AutoMigrate(
+		&models.ClaudeDoc{},
+		&models.ClaudeDocTag{},
+		&models.ClaudeDocStar{},
+	); err != nil {
+		log.Fatalf("Failed to migrate db: %v", err)
+	}
+	return db
+}
+
 func LoadDB(dsn string) *gorm.DB {
 	var (
 		db  *gorm.DB
@@ -215,6 +245,7 @@ func LoadDB(dsn string) *gorm.DB {
 		&models.ClaudeDoc{},
 		&models.ClaudeDocTag{},
 		&models.ClaudeDocStar{},
+		&models.ClaudeSession{},
 
 		// xctf models
 		&xmodels.Competition{},
