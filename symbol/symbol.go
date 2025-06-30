@@ -8,6 +8,7 @@
 //go:generate yaegi extract github.com/breadchris/share/session
 //go:generate yaegi extract github.com/breadchris/share/coderunner/claude
 //go:generate yaegi extract github.com/breadchris/share/breadchris/posts
+//go:generate yaegi extract github.com/breadchris/share/coderunner
 //go:generate yaegi extract github.com/gosimple/slug
 //go:generate yaegi extract github.com/samber/lo
 //go:generate yaegi extract github.com/yuin/goldmark

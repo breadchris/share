@@ -13,7 +13,7 @@ import type {
   GroupMembership
 } from '../types';
 
-const API_BASE = '/justshare/api';
+const API_BASE = '/api';
 
 class APIError extends Error {
   constructor(public status: number, message: string) {
