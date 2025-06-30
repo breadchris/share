@@ -44,8 +44,31 @@ type SaveFileRequest struct {
 func New(d deps.Deps) *http.ServeMux {
 	m := http.NewServeMux()
 
-	// Main coderunner page
+	// Main coderunner page - now shows Switch Homepage
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		DefaultLayout(
+			Div(
+				Id("switch-homepage"),
+			),
+			Script(Type("importmap"), Raw(`
+			{
+				"imports": {
+					"react": "https://esm.sh/react@18",
+					"react-dom": "https://esm.sh/react-dom@18",
+					"react-dom/client": "https://esm.sh/react-dom@18/client",
+					"react/jsx-runtime": "https://esm.sh/react@18/jsx-runtime"
+				}
+			}
+			`)),
+			Script(Src("https://cdn.tailwindcss.com")),
+			Script(Src("/coderunner/module/@breadchris/SwitchHomepage.tsx"), Type("module")),
+			Div(Id("root")),
+			LoadModule("@breadchris/SwitchHomepage.tsx", "SwitchHomepage"),
+		).RenderPage(w, r)
+	})
+
+	// Editor route - original CodeRunner
+	m.HandleFunc("/editor", func(w http.ResponseWriter, r *http.Request) {
 		DefaultLayout(
 			Div(
 				Id("code-runner"),
@@ -53,7 +76,30 @@ func New(d deps.Deps) *http.ServeMux {
 			),
 			Script(Src("https://cdn.tailwindcss.com")),
 			Script(Src("https://unpkg.com/esbuild-wasm@0.25.5/lib/browser.min.js")),
-			Script(Src("/module/coderunner/"), Type("module")),
+			Script(Src("/coderunner/module/coderunner/"), Type("module")),
+		).RenderPage(w, r)
+	})
+
+	// Browse route - Component Browser
+	m.HandleFunc("/browse", func(w http.ResponseWriter, r *http.Request) {
+		DefaultLayout(
+			Div(
+				Id("component-browser"),
+			),
+			Script(Type("importmap"), Raw(`
+			{
+				"imports": {
+					"react": "https://esm.sh/react@18",
+					"react-dom": "https://esm.sh/react-dom@18",
+					"react-dom/client": "https://esm.sh/react-dom@18/client",
+					"react/jsx-runtime": "https://esm.sh/react@18/jsx-runtime"
+				}
+			}
+			`)),
+			Script(Src("https://cdn.tailwindcss.com")),
+			Script(Src("/coderunner/module/@breadchris/ComponentBrowser.tsx"), Type("module")),
+			Div(Id("root")),
+			LoadModule("@breadchris/ComponentBrowser.tsx", "ComponentBrowser"),
 		).RenderPage(w, r)
 	})
 

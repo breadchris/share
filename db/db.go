@@ -204,6 +204,82 @@ func LoadClaudeMD(dsn string) *gorm.DB {
 	return db
 }
 
+// ConfigManager provides a simple interface for configuration management
+type ConfigManager[T any] struct {
+	db *DB[T]
+}
+
+// NewConfigManager creates a new configuration manager for type T
+func NewConfigManager[T any](configDir string) (*ConfigManager[T], error) {
+	db, err := NewDB[T](configDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create config manager: %w", err)
+	}
+	return &ConfigManager[T]{db: db}, nil
+}
+
+// GetConfig retrieves configuration by ID, returns default value if not found
+func (cm *ConfigManager[T]) GetConfig(id string, defaultValue T) T {
+	if value, exists := cm.db.Get(id); exists {
+		return value
+	}
+	return defaultValue
+}
+
+// SetConfig stores configuration by ID
+func (cm *ConfigManager[T]) SetConfig(id string, config T) error {
+	return cm.db.Set(id, config)
+}
+
+// UpdateConfig applies a transformation function to the existing config
+func (cm *ConfigManager[T]) UpdateConfig(id string, defaultValue T, updateFn func(T) T) error {
+	current := cm.GetConfig(id, defaultValue)
+	updated := updateFn(current)
+	return cm.SetConfig(id, updated)
+}
+
+// PinnedDocsConfig represents the pinned documents configuration
+type PinnedDocsConfig struct {
+	PinnedDocuments []string  `json:"pinnedDocuments"`
+	Version         string    `json:"version"`
+	LastUpdated     time.Time `json:"lastUpdated"`
+}
+
+// DefaultPinnedDocsConfig returns the default configuration for pinned documents
+func DefaultPinnedDocsConfig() PinnedDocsConfig {
+	return PinnedDocsConfig{
+		PinnedDocuments: []string{},
+		Version:         "1.0",
+		LastUpdated:     time.Now(),
+	}
+}
+
+// TogglePin adds or removes a document ID from the pinned list
+func (config *PinnedDocsConfig) TogglePin(docID string) bool {
+	for i, id := range config.PinnedDocuments {
+		if id == docID {
+			// Remove from pinned
+			config.PinnedDocuments = append(config.PinnedDocuments[:i], config.PinnedDocuments[i+1:]...)
+			config.LastUpdated = time.Now()
+			return false // was pinned, now unpinned
+		}
+	}
+	// Add to pinned
+	config.PinnedDocuments = append(config.PinnedDocuments, docID)
+	config.LastUpdated = time.Now()
+	return true // was unpinned, now pinned
+}
+
+// IsPinned checks if a document ID is in the pinned list
+func (config *PinnedDocsConfig) IsPinned(docID string) bool {
+	for _, id := range config.PinnedDocuments {
+		if id == docID {
+			return true
+		}
+	}
+	return false
+}
+
 func LoadDB(dsn string) *gorm.DB {
 	var (
 		db  *gorm.DB

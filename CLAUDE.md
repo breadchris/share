@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Uploading files will use the "/upload" endpoint to persist files located in main.go as func uploadHandler(w http.ResponseWriter, r *http.Request) {
 - Storing models in the database is managed in ./models/models.go, which uses GORM for ORM functionality.
 - The database is automatically migrated in the ./db/ package, which handles schema changes and updates.
+- The document store is in db/
 
 ## Tools
 - Use the browsermcp tool for debugging the currently opened web app when there are errors or when the user wants to inspect the current state of the application to make enhancements to rendered UI elements.
