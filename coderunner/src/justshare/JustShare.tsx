@@ -175,6 +175,10 @@ export const JustShare: React.FC = () => {
   }, []);
 
   const handleContentClick = useCallback((content: Content) => {
+    console.log('JustShare Debug - Content clicked:', content);
+    console.log('JustShare Debug - Content type at selection:', content.type);
+    console.log('JustShare Debug - Content type typeof:', typeof content.type);
+    console.log('JustShare Debug - Content type JSON:', JSON.stringify(content.type));
     setAppState(prev => ({ ...prev, selectedContent: content }));
   }, []);
 

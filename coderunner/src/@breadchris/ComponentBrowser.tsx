@@ -1300,7 +1300,6 @@ export const ComponentBrowser: React.FC = () => {
                                 </button>
                             </div>
                         </div>
-                    </div>
 
                     {/* Search and Filters */}
                     <div className="mt-4 flex flex-col sm:flex-row gap-4">

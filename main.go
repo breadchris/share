@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"path"
@@ -117,6 +118,11 @@ func startXCTF(port int) error {
 
 func startServer(useTLS bool, port int) {
 	appConfig := config2.New()
+
+	handler := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	})
+	slog.SetDefault(slog.New(handler))
 
 	loadJSON(dataFile, &entries)
 	var newEntries []Entry

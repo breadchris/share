@@ -7,6 +7,7 @@ interface ComponentCardProps {
     size?: 'small' | 'medium' | 'large';
     showPreview?: boolean;
     className?: string;
+    isPinned?: boolean;
 }
 
 export const ComponentCard: React.FC<ComponentCardProps> = ({
@@ -14,7 +15,8 @@ export const ComponentCard: React.FC<ComponentCardProps> = ({
     onClick,
     size = 'medium',
     showPreview = true,
-    className = ''
+    className = '',
+    isPinned = false
 }) => {
     const [isHovered, setIsHovered] = useState(false);
     const [previewLoaded, setPreviewLoaded] = useState(false);
@@ -129,13 +131,22 @@ export const ComponentCard: React.FC<ComponentCardProps> = ({
                     <span className={`${
                         size === 'large' ? 'text-2xl' : size === 'medium' ? 'text-xl' : 'text-lg'
                     }`}>{getCategoryIcon(component.category)}</span>
-                    {component.isFeatured && (
-                        <div className={`bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full font-bold ${
-                            size === 'large' ? 'text-sm' : 'text-xs'
-                        }`}>
-                            ⭐
-                        </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                        {isPinned && (
+                            <div className={`bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full font-bold ${
+                                size === 'large' ? 'text-sm' : 'text-xs'
+                            }`}>
+                                📌
+                            </div>
+                        )}
+                        {component.isFeatured && (
+                            <div className={`bg-blue-400 text-blue-900 px-2 py-1 rounded-full font-bold ${
+                                size === 'large' ? 'text-sm' : 'text-xs'
+                            }`}>
+                                ⭐
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Component Preview */}

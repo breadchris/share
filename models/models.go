@@ -445,3 +445,10 @@ type ClaudeSession struct {
 	Messages  JSONField[interface{}]             `json:"messages" gorm:"type:json"`
 	Metadata  *JSONField[map[string]interface{}] `json:"metadata,omitempty"`
 }
+
+type PinnedFile struct {
+	Model
+	UserID   string `json:"user_id" gorm:"index;not null;uniqueIndex:idx_user_file"`
+	FilePath string `json:"file_path" gorm:"not null;uniqueIndex:idx_user_file"`
+	User     *User  `gorm:"foreignKey:UserID"`
+}

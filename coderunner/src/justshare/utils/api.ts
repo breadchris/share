@@ -65,11 +65,50 @@ export async function getTimeline(
     offset: offset.toString(),
     limit: limit.toString(),
   });
-  return fetchJSON(`${API_BASE}/content?${params}`);
+  const response = await fetchJSON(`${API_BASE}/content?${params}`);
+  
+  // Debug logging for timeline responses
+  console.log('API Debug - Raw timeline response:', response);
+  
+  // Transform nested content structure to flat structure
+  if (response.content && Array.isArray(response.content)) {
+    console.log('API Debug - Transforming nested content structure');
+    response.content = response.content.map((item: any, index: number) => {
+      console.log(`API Debug - Before transform[${index}]:`, item);
+      
+      // Check if content is nested under .Content property
+      if (item.Content && typeof item.Content === 'object') {
+        const transformedContent = {
+          ...item.Content,          // Flatten content properties to top level
+          user_info: item.user_info // Keep user_info as nested property
+        };
+        console.log(`API Debug - After transform[${index}]:`, transformedContent);
+        console.log(`API Debug - Transformed type[${index}]:`, transformedContent.type, 'typeof:', typeof transformedContent.type);
+        return transformedContent;
+      }
+      
+      // If already flat structure, return as is
+      console.log(`API Debug - Content[${index}] already flat:`, item);
+      return item;
+    });
+  }
+  
+  return response;
 }
 
 export async function getContent(contentId: string): Promise<Content> {
-  return fetchJSON(`${API_BASE}/content/${contentId}`);
+  const response = await fetchJSON(`${API_BASE}/content/${contentId}`);
+  
+  // Transform nested content structure if needed
+  if (response.Content && typeof response.Content === 'object') {
+    console.log('API Debug - Transforming single content response');
+    return {
+      ...response.Content,
+      user_info: response.user_info
+    };
+  }
+  
+  return response;
 }
 
 export async function deleteContent(contentId: string): Promise<{ success: boolean; message: string; id: string }> {

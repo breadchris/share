@@ -198,6 +198,7 @@ func LoadClaudeMD(dsn string) *gorm.DB {
 		&models.ClaudeDoc{},
 		&models.ClaudeDocTag{},
 		&models.ClaudeDocStar{},
+		&models.PinnedFile{},
 	); err != nil {
 		log.Fatalf("Failed to migrate db: %v", err)
 	}

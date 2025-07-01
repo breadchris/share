@@ -157,7 +157,58 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
   };
 
   const renderContentLarge = () => {
-    switch (content.type) {
+    // Debug logging for content type investigation
+    console.log('ContentViewer Debug - Full content object:', content);
+    console.log('ContentViewer Debug - content.type value:', content.type);
+    console.log('ContentViewer Debug - content.type typeof:', typeof content.type);
+    console.log('ContentViewer Debug - content.type length:', content.type?.length);
+    console.log('ContentViewer Debug - content.type char codes:', content.type?.split('').map(c => c.charCodeAt(0)));
+    console.log('ContentViewer Debug - JSON.stringify(content.type):', JSON.stringify(content.type));
+    
+    // Normalize content type to handle potential whitespace issues
+    let normalizedType = typeof content.type === 'string' ? content.type.trim().toLowerCase() : '';
+    console.log('ContentViewer Debug - normalizedType:', normalizedType);
+    
+    // Additional validation for valid content types
+    const validTypes = ['text', 'image', 'audio', 'clipboard', 'file', 'url'];
+    const isValidType = typeof normalizedType === 'string' && validTypes.includes(normalizedType);
+    console.log('ContentViewer Debug - isValidType:', isValidType);
+    
+    // Fallback logic for invalid or missing content types
+    if (!isValidType) {
+      console.warn('ContentViewer Debug - Invalid content type detected, attempting fallback detection');
+      
+      // Try to infer content type from other properties
+      if (content.media_url && content.mime_type) {
+        if (content.mime_type.startsWith('image/')) {
+          normalizedType = 'image';
+          console.log('ContentViewer Debug - Inferred type as image from mime_type');
+        } else if (content.mime_type.startsWith('audio/')) {
+          normalizedType = 'audio';
+          console.log('ContentViewer Debug - Inferred type as audio from mime_type');
+        } else {
+          normalizedType = 'file';
+          console.log('ContentViewer Debug - Inferred type as file from mime_type');
+        }
+      } else if (content.data && typeof content.data === 'string') {
+        // Check if data looks like a URL
+        try {
+          new URL(content.data);
+          normalizedType = 'url';
+          console.log('ContentViewer Debug - Inferred type as url from data');
+        } catch {
+          // Assume text if it's just string data
+          normalizedType = 'text';
+          console.log('ContentViewer Debug - Inferred type as text from data');
+        }
+      } else {
+        // Ultimate fallback
+        normalizedType = 'text';
+        console.log('ContentViewer Debug - Using ultimate fallback: text');
+      }
+    }
+    
+    switch (normalizedType) {
       case 'text':
         return (
           <div className={`prose max-w-none ${isFullscreen ? 'text-white' : 'text-gray-900'}`}>
@@ -376,11 +427,117 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
           );
         }
 
+      case 'file':
+        const fileName = content.metadata?.filename || 'Unknown file';
+        const fileSize = content.file_size || content.metadata?.size;
+        const mimeType = content.mime_type || content.metadata?.mime_type;
+        
+        // Get file extension for icon
+        const fileExtension = fileName.split('.').pop()?.toLowerCase();
+        const getFileIcon = (extension?: string) => {
+          if (!extension) return '📄';
+          if (['pdf'].includes(extension)) return '📄';
+          if (['doc', 'docx'].includes(extension)) return '📝';
+          if (['xls', 'xlsx'].includes(extension)) return '📊';
+          if (['ppt', 'pptx'].includes(extension)) return '📊';
+          if (['zip', 'rar', '7z'].includes(extension)) return '🗜️';
+          if (['mp4', 'avi', 'mov', 'mkv', 'webm'].includes(extension)) return '🎬';
+          if (['mp3', 'wav', 'ogg', 'm4a'].includes(extension)) return '🎵';
+          if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension)) return '🖼️';
+          if (['txt', 'md', 'json', 'xml', 'csv'].includes(extension)) return '📄';
+          if (['js', 'ts', 'html', 'css', 'py', 'java', 'cpp', 'c', 'go', 'php', 'rb'].includes(extension)) return '💻';
+          return '📁';
+        };
+
+        const formatFileSize = (bytes?: number) => {
+          if (!bytes) return 'Unknown size';
+          const sizes = ['B', 'KB', 'MB', 'GB'];
+          const i = Math.floor(Math.log(bytes) / Math.log(1024));
+          return `${Math.round(bytes / Math.pow(1024, i) * 100) / 100} ${sizes[i]}`;
+        };
+
+        return (
+          <div className="space-y-6">
+            <div className="text-center">
+              <div className="text-8xl mb-4">{getFileIcon(fileExtension)}</div>
+              <h3 className={`text-xl font-medium break-words ${isFullscreen ? 'text-white' : 'text-gray-900'}`}>
+                {fileName}
+              </h3>
+              <div className={`text-sm space-y-1 mt-2 ${isFullscreen ? 'text-gray-300' : 'text-gray-600'}`}>
+                {fileSize && <p>Size: {formatFileSize(fileSize)}</p>}
+                {mimeType && <p>Type: {mimeType}</p>}
+                <p>Uploaded: {formatTimestamp(content.created_at)}</p>
+              </div>
+            </div>
+
+            {content.media_url && (
+              <div className="text-center space-y-4">
+                <div className="flex justify-center space-x-3">
+                  <a
+                    href={content.media_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`inline-flex items-center px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                      isFullscreen 
+                        ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                        : 'bg-blue-500 text-white hover:bg-blue-600'
+                    }`}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mr-2">
+                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                    </svg>
+                    Download File
+                  </a>
+                  
+                  <button
+                    onClick={() => navigator.clipboard?.writeText(content.media_url || '')}
+                    className={`inline-flex items-center px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
+                      isFullscreen 
+                        ? 'bg-white bg-opacity-20 text-white hover:bg-opacity-30' 
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mr-2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                      <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                    </svg>
+                    Copy Link
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Additional metadata */}
+            {content.metadata && Object.keys(content.metadata).filter(key => !['filename', 'size', 'mime_type'].includes(key)).length > 0 && (
+              <div className={`text-sm space-y-1 ${isFullscreen ? 'text-gray-300' : 'text-gray-600'}`}>
+                <h4 className="font-medium">Additional Details:</h4>
+                {Object.entries(content.metadata)
+                  .filter(([key]) => !['filename', 'size', 'mime_type'].includes(key))
+                  .map(([key, value]) => (
+                    <p key={key}>
+                      <span className="font-medium">{key}:</span> {String(value)}
+                    </p>
+                  ))}
+              </div>
+            )}
+          </div>
+        );
+
       default:
+        console.error('ContentViewer Debug - Reached default case!');
+        console.error('ContentViewer Debug - Original content.type:', content.type);
+        console.error('ContentViewer Debug - Normalized type:', normalizedType);
+        console.error('ContentViewer Debug - All valid types:', ['text', 'image', 'audio', 'clipboard', 'file', 'url']);
         return (
           <div className={`text-center ${isFullscreen ? 'text-white' : 'text-gray-500'}`}>
             <div className="text-6xl mb-4">❓</div>
-            <p>Unknown content type: {content.type}</p>
+            <p>Unknown content type: "{content.type}" (normalized: "{normalizedType}")</p>
+            <div className="mt-4 text-sm opacity-75 font-mono">
+              <p>Debug Info:</p>
+              <p>Type: {typeof content.type}</p>
+              <p>Length: {content.type?.length}</p>
+              <p>JSON: {JSON.stringify(content.type)}</p>
+            </div>
           </div>
         );
     }
@@ -424,11 +581,22 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
                  content.type === 'image' ? 'Image' :
                  content.type === 'audio' ? 'Audio Recording' :
                  content.type === 'clipboard' ? 'Clipboard' :
+                 content.type === 'file' ? 'File' :
                  content.type === 'url' ? (content.metadata?.isYouTube ? 'YouTube Video' : 'Link') : 'Content'}
               </h2>
-              <p className={`text-sm ${isFullscreen ? 'text-gray-300' : 'text-gray-600'}`}>
-                {formatTimestamp(content.created_at)}
-              </p>
+              <div className={`text-sm ${isFullscreen ? 'text-gray-300' : 'text-gray-600'}`}>
+                <p>{formatTimestamp(content.created_at)}</p>
+                {content.user_info && content.user_info.username && (
+                  <div className="flex items-center space-x-2 mt-1">
+                    <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs font-semibold">
+                        {content.user_info.username.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <span className="text-xs">by {content.user_info.username}</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex items-center space-x-2">

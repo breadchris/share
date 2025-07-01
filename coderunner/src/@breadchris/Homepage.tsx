@@ -32,6 +32,10 @@ export const Homepage: React.FC<HomepageProps> = ({
     // Touch gesture state
     const [touchStart, setTouchStart] = useState<number | null>(null);
     const [touchEnd, setTouchEnd] = useState<number | null>(null);
+    
+    // Pinned components state
+    const [pinnedFiles, setPinnedFiles] = useState<Set<string>>(new Set());
+    const [loadingPinned, setLoadingPinned] = useState(false);
 
     // Update time every minute
     useEffect(() => {
@@ -61,6 +65,30 @@ export const Homepage: React.FC<HomepageProps> = ({
         loadUserInfo();
     }, []);
 
+    // Load pinned files from API
+    const loadPinnedFiles = useCallback(async () => {
+        setLoadingPinned(true);
+        try {
+            const response = await fetch('/coderunner/api/config/pinned-files', {
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const config = await response.json();
+                setPinnedFiles(new Set(config.pinnedFiles || []));
+            }
+        } catch (error) {
+            console.error('Error loading pinned files:', error);
+        } finally {
+            setLoadingPinned(false);
+        }
+    }, []);
+
+    // Load pinned files on mount
+    useEffect(() => {
+        loadPinnedFiles();
+    }, [loadPinnedFiles]);
+
     // Get components to display
     const displayComponents = useMemo(() => {
         let componentsToShow: ComponentInfo[];
@@ -68,15 +96,34 @@ export const Homepage: React.FC<HomepageProps> = ({
         if (searchQuery.trim()) {
             componentsToShow = searchComponents(searchQuery);
         } else {
-            // Show featured components first, then recent ones
-            const featured = getFeaturedComponents();
-            const recent = getRecentComponents(15);
+            // Prioritize pinned components first, then featured, then recent
+            const allComponents = components;
+            const pinned = allComponents.filter(comp => pinnedFiles.has(comp.path));
+            const featured = getFeaturedComponents().filter(comp => !pinnedFiles.has(comp.path));
+            const recent = getRecentComponents(15).filter(comp => !pinnedFiles.has(comp.path));
             
-            // Combine and deduplicate
+            // Combine: pinned first, then featured, then recent
             const seen = new Set<string>();
             componentsToShow = [];
             
-            [...featured, ...recent].forEach(comp => {
+            // Add pinned components first
+            pinned.forEach(comp => {
+                if (!seen.has(comp.path)) {
+                    seen.add(comp.path);
+                    componentsToShow.push(comp);
+                }
+            });
+            
+            // Add featured components (not already pinned)
+            featured.forEach(comp => {
+                if (!seen.has(comp.path)) {
+                    seen.add(comp.path);
+                    componentsToShow.push(comp);
+                }
+            });
+            
+            // Add recent components (not already pinned or featured)
+            recent.forEach(comp => {
                 if (!seen.has(comp.path)) {
                     seen.add(comp.path);
                     componentsToShow.push(comp);
@@ -85,7 +132,7 @@ export const Homepage: React.FC<HomepageProps> = ({
         }
         
         return componentsToShow;
-    }, [components, searchQuery, getFeaturedComponents, getRecentComponents, searchComponents]);
+    }, [components, searchQuery, pinnedFiles, getFeaturedComponents, getRecentComponents, searchComponents]);
 
     // Split components into main grid (first 7) and overflow - Nintendo Switch style
     const mainGridComponents = displayComponents.slice(0, 7);
@@ -382,6 +429,7 @@ export const Homepage: React.FC<HomepageProps> = ({
                                     onClick={onComponentSelect}
                                     size="medium"
                                     showPreview={true}
+                                    isPinned={pinnedFiles.has(component.path)}
                                 />
                             </div>
                         ))}

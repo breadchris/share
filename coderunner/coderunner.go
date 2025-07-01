@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -13,11 +14,13 @@ import (
 	"github.com/breadchris/share/coderunner/claude"
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
+	"github.com/breadchris/share/models"
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/go-git/go-git/v5"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v66/github"
 	"github.com/gorilla/websocket"
+	"github.com/google/uuid"
 )
 
 type BuildCache struct {
@@ -350,9 +353,24 @@ func New(d deps.Deps) *http.ServeMux {
 		handleRenderComponent(w, r)
 	})
 
+	// Full renderer endpoint with CSS file support
+	m.HandleFunc("/fullrender/", func(w http.ResponseWriter, r *http.Request) {
+		handleFullRenderComponent(w, r)
+	})
+
 	// ES Module endpoint - serves compiled JavaScript as ES modules
 	m.HandleFunc("/module/", func(w http.ResponseWriter, r *http.Request) {
 		handleServeModule(w, r)
+	})
+
+	// CSS file serving endpoint for fullrender
+	m.HandleFunc("/fullrender/css/", func(w http.ResponseWriter, r *http.Request) {
+		handleServeCSS(w, r)
+	})
+
+	// JavaScript file serving endpoint for fullrender
+	m.HandleFunc("/fullrender/js/", func(w http.ResponseWriter, r *http.Request) {
+		handleServeJS(w, r)
 	})
 
 	// Claude endpoints
@@ -440,6 +458,113 @@ func New(d deps.Deps) *http.ServeMux {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(session)
+	})
+
+	// Pinned Files API endpoints
+	// GET /api/config/pinned-files - Get user's pinned files
+	m.HandleFunc("/api/config/pinned-files", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		// Get user ID from session
+		userID, err := d.Session.GetUserID(r.Context())
+		if err != nil {
+			http.Error(w, `{"error":"not authenticated"}`, http.StatusUnauthorized)
+			return
+		}
+
+		// Get pinned files from database
+		var pinnedFiles []models.PinnedFile
+		if err := d.DB.Where("user_id = ?", userID).Find(&pinnedFiles).Error; err != nil {
+			http.Error(w, fmt.Sprintf(`{"error":"failed to get pinned files: %v"}`, err), http.StatusInternalServerError)
+			return
+		}
+
+		// Extract file paths
+		filePaths := make([]string, len(pinnedFiles))
+		for i, pf := range pinnedFiles {
+			filePaths[i] = pf.FilePath
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		response := map[string][]string{
+			"pinnedFiles": filePaths,
+		}
+		json.NewEncoder(w).Encode(response)
+	})
+
+	// PUT /api/config/pinned-files/{filePath} - Toggle pin status for a file
+	m.HandleFunc("/api/config/pinned-files/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "PUT" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		// Get user ID from session
+		userID, err := d.Session.GetUserID(r.Context())
+		if err != nil {
+			http.Error(w, `{"error":"not authenticated"}`, http.StatusUnauthorized)
+			return
+		}
+
+		// Extract file path from URL
+		filePath := strings.TrimPrefix(r.URL.Path, "/api/config/pinned-files/")
+		if filePath == "" {
+			http.Error(w, `{"error":"file path is required"}`, http.StatusBadRequest)
+			return
+		}
+
+		// Decode URL-encoded file path
+		decodedPath, err := url.QueryUnescape(filePath)
+		if err != nil {
+			http.Error(w, `{"error":"invalid file path"}`, http.StatusBadRequest)
+			return
+		}
+
+		// Check if file is already pinned
+		var existingPin models.PinnedFile
+		err = d.DB.Where("user_id = ? AND file_path = ?", userID, decodedPath).First(&existingPin).Error
+		
+		if err != nil && err.Error() != "record not found" {
+			// Database error
+			http.Error(w, fmt.Sprintf(`{"error":"database error: %v"}`, err), http.StatusInternalServerError)
+			return
+		}
+
+		var isPinned bool
+		if err != nil && err.Error() == "record not found" {
+			// File not pinned, create new pin
+			newPin := models.PinnedFile{
+				Model: models.Model{
+					ID:        uuid.New().String(),
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+				UserID:   userID,
+				FilePath: decodedPath,
+			}
+			
+			if err := d.DB.Create(&newPin).Error; err != nil {
+				http.Error(w, fmt.Sprintf(`{"error":"failed to pin file: %v"}`, err), http.StatusInternalServerError)
+				return
+			}
+			isPinned = true
+		} else {
+			// File is pinned, remove pin
+			if err := d.DB.Delete(&existingPin).Error; err != nil {
+				http.Error(w, fmt.Sprintf(`{"error":"failed to unpin file: %v"}`, err), http.StatusInternalServerError)
+				return
+			}
+			isPinned = false
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		response := map[string]bool{
+			"isPinned": isPinned,
+		}
+		json.NewEncoder(w).Encode(response)
 	})
 
 	return m
@@ -1283,4 +1408,357 @@ func handleServeModule(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/javascript")
 	w.Header().Set("Cache-Control", "no-cache") // Prevent caching during development
 	w.Write([]byte(compiledJS))
+}
+
+// handleFullRenderComponent builds and renders a React component with separate CSS file output
+func handleFullRenderComponent(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract path from URL
+	componentPath := strings.TrimPrefix(r.URL.Path, "/fullrender/")
+	if componentPath == "" {
+		http.Error(w, "Component path is required", http.StatusBadRequest)
+		return
+	}
+
+	// Get component name from query parameter (optional)
+	componentName := r.URL.Query().Get("component")
+	if componentName == "" {
+		componentName = "App" // Default to App component
+	}
+
+	// Validate and sanitize the path
+	cleanPath := filepath.Clean(componentPath)
+	if strings.Contains(cleanPath, "..") {
+		http.Error(w, "Invalid path", http.StatusBadRequest)
+		return
+	}
+
+	// Build source path
+	srcPath := filepath.Join("./coderunner/src", cleanPath)
+
+	// Check if source file exists
+	if _, err := os.Stat(srcPath); os.IsNotExist(err) {
+		http.Error(w, "Source file not found", http.StatusNotFound)
+		return
+	}
+
+	// Create output directory for this component
+	outputDir := filepath.Join("./coderunner/build/fullrender", cleanPath)
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to create output directory: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Build with esbuild to output separate CSS files
+	result := api.Build(api.BuildOptions{
+		EntryPoints: []string{srcPath},
+		Outdir:      outputDir,
+		Loader: map[string]api.Loader{
+			".js":  api.LoaderJS,
+			".jsx": api.LoaderJSX,
+			".ts":  api.LoaderTS,
+			".tsx": api.LoaderTSX,
+			".css": api.LoaderCSS,
+		},
+		Format:          api.FormatESModule,
+		Bundle:          true,
+		Write:           true,
+		TreeShaking:     api.TreeShakingTrue,
+		Target:          api.ESNext,
+		JSX:             api.JSXAutomatic,
+		JSXImportSource: "react",
+		LogLevel:        api.LogLevelSilent,
+		External:        []string{"react", "react-dom", "react-dom/client", "react/jsx-runtime"},
+		AssetNames:      "[name]-[hash]",
+		EntryNames:      "[name]",
+		TsconfigRaw: `{
+			"compilerOptions": {
+				"jsx": "react-jsx",
+				"allowSyntheticDefaultImports": true,
+				"esModuleInterop": true,
+				"moduleResolution": "node",
+				"target": "ESNext",
+				"lib": ["ESNext", "DOM", "DOM.Iterable"],
+				"allowJs": true,
+				"skipLibCheck": true,
+				"strict": false,
+				"forceConsistentCasingInFileNames": true,
+				"noEmit": true,
+				"incremental": true,
+				"resolveJsonModule": true,
+				"isolatedModules": true
+			}
+		}`,
+	})
+
+	// Check for build errors
+	if len(result.Errors) > 0 {
+		errorMessages := make([]string, len(result.Errors))
+		for i, err := range result.Errors {
+			errorMessages[i] = fmt.Sprintf("%s:%d:%d: %s", err.Location.File, err.Location.Line, err.Location.Column, err.Text)
+		}
+
+		errorHTML := fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Build Error</title>
+    <style>
+        body { font-family: monospace; margin: 20px; background: #fff5f5; }
+        .error { background: #fed7d7; border: 1px solid #fc8181; padding: 15px; border-radius: 5px; }
+        .error h1 { color: #c53030; margin-top: 0; }
+        .error-list { margin: 10px 0; }
+        .error-item { margin: 5px 0; padding: 5px; background: #ffffff; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="error">
+        <h1>Build Error</h1>
+        <p>Failed to build component from <code>%s</code></p>
+        <div class="error-list">
+            %s
+        </div>
+    </div>
+</body>
+</html>`, componentPath, formatErrorMessages(errorMessages))
+
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(errorHTML))
+		return
+	}
+
+	// Find generated files in the output directory
+	files, err := os.ReadDir(outputDir)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to read output directory: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	var jsFile, cssFiles []string
+	for _, file := range files {
+		if !file.IsDir() {
+			fileName := file.Name()
+			ext := filepath.Ext(fileName)
+			if ext == ".js" {
+				jsFile = append(jsFile, fileName)
+			} else if ext == ".css" {
+				cssFiles = append(cssFiles, fileName)
+			}
+		}
+	}
+
+	if len(jsFile) == 0 {
+		http.Error(w, "No JavaScript output generated", http.StatusInternalServerError)
+		return
+	}
+
+	// Generate CSS link tags
+	cssLinks := ""
+	for _, cssFile := range cssFiles {
+		cssLinks += fmt.Sprintf(`    <link rel="stylesheet" type="text/css" href="/coderunner/fullrender/css/%s/%s">
+`, cleanPath, cssFile)
+	}
+
+	// Generate the HTML page that renders the component with CSS links
+	htmlPage := fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React Component - %s</title>
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18",
+            "react-dom": "https://esm.sh/react-dom@18",
+            "react-dom/client": "https://esm.sh/react-dom@18/client",
+            "react/jsx-runtime": "https://esm.sh/react@18/jsx-runtime"
+        }
+    }
+    </script>
+%s    <style>
+        body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        #root { width: 100%%; height: 100vh; }
+        .error { 
+            padding: 20px; 
+            color: #dc2626; 
+            background: #fef2f2; 
+            border: 1px solid #fecaca; 
+            margin: 20px; 
+            border-radius: 8px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="module">
+        try {
+            // Read the generated JavaScript file
+            const response = await fetch('/coderunner/fullrender/js/%s/%s');
+            const jsCode = await response.text();
+            
+            // Create a blob URL for the module
+            const blob = new Blob([jsCode], { type: 'application/javascript' });
+            const moduleUrl = URL.createObjectURL(blob);
+            
+            // Import the module
+            const componentModule = await import(moduleUrl);
+            
+            // Import React and ReactDOM
+            const React = await import('react');
+            const ReactDOM = await import('react-dom/client');
+            
+            // Try to get the component to render
+            let ComponentToRender;
+            
+            // First try the specified component name
+            if (componentModule.%s) {
+                console.log('Rendering component:', componentModule.%s);
+                ComponentToRender = componentModule.%s;
+            }
+            // Then try default export
+            else if (componentModule.default) {
+                console.log('Rendering default component:', componentModule.default);
+                ComponentToRender = componentModule.default;
+            }
+            else {
+                throw new Error('No component found. Make sure to export a component named "%s" or a default export.');
+            }
+            
+            // Render the component
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(React.createElement(ComponentToRender));
+            
+            // Clean up blob URL
+            URL.revokeObjectURL(moduleUrl);
+            
+        } catch (error) {
+            console.error('Runtime Error:', error);
+            document.getElementById('root').innerHTML = 
+                '<div class="error">' +
+                '<h3>Runtime Error:</h3>' +
+                '<pre>' + error.message + '</pre>' +
+                '<pre>' + (error.stack || '') + '</pre>' +
+                '</div>';
+        }
+    </script>
+</body>
+</html>`, componentName, cssLinks, cleanPath, jsFile[0], componentName, componentName, componentName, componentName)
+
+	// Return the HTML page
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(htmlPage))
+}
+
+// handleServeCSS serves CSS files from the fullrender build output
+func handleServeCSS(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract path from URL: /fullrender/css/component/path/filename.css
+	urlPath := strings.TrimPrefix(r.URL.Path, "/fullrender/css/")
+	if urlPath == "" {
+		http.Error(w, "CSS file path is required", http.StatusBadRequest)
+		return
+	}
+
+	// Validate and sanitize the path
+	cleanPath := filepath.Clean(urlPath)
+	if strings.Contains(cleanPath, "..") {
+		http.Error(w, "Invalid path", http.StatusBadRequest)
+		return
+	}
+
+	// Build full path to CSS file
+	cssPath := filepath.Join("./coderunner/build/fullrender", cleanPath)
+
+	// Check if file exists and is a CSS file
+	info, err := os.Stat(cssPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			http.Error(w, "CSS file not found", http.StatusNotFound)
+		} else {
+			http.Error(w, fmt.Sprintf("Error accessing CSS file: %v", err), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	if info.IsDir() || filepath.Ext(cssPath) != ".css" {
+		http.Error(w, "Path is not a CSS file", http.StatusBadRequest)
+		return
+	}
+
+	// Read and serve CSS file
+	cssContent, err := os.ReadFile(cssPath)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to read CSS file: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/css")
+	w.Header().Set("Cache-Control", "no-cache") // Prevent caching during development
+	w.Write(cssContent)
+}
+
+// handleServeJS serves JavaScript files from the fullrender build output
+func handleServeJS(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract path from URL: /fullrender/js/component/path/filename.js
+	urlPath := strings.TrimPrefix(r.URL.Path, "/fullrender/js/")
+	if urlPath == "" {
+		http.Error(w, "JavaScript file path is required", http.StatusBadRequest)
+		return
+	}
+
+	// Validate and sanitize the path
+	cleanPath := filepath.Clean(urlPath)
+	if strings.Contains(cleanPath, "..") {
+		http.Error(w, "Invalid path", http.StatusBadRequest)
+		return
+	}
+
+	// Build full path to JavaScript file
+	jsPath := filepath.Join("./coderunner/build/fullrender", cleanPath)
+
+	// Check if file exists and is a JavaScript file
+	info, err := os.Stat(jsPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			http.Error(w, "JavaScript file not found", http.StatusNotFound)
+		} else {
+			http.Error(w, fmt.Sprintf("Error accessing JavaScript file: %v", err), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	if info.IsDir() || filepath.Ext(jsPath) != ".js" {
+		http.Error(w, "Path is not a JavaScript file", http.StatusBadRequest)
+		return
+	}
+
+	// Read and serve JavaScript file
+	jsContent, err := os.ReadFile(jsPath)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to read JavaScript file: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/javascript")
+	w.Header().Set("Cache-Control", "no-cache") // Prevent caching during development
+	w.Write(jsContent)
 }
