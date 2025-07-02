@@ -7,7 +7,6 @@
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/coderunner/claude/claude.go" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/claude/claude.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/coderunner.go" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/coderunner.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/coderunner/src/supabase" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/supabase" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/coderunner/src/supabase/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/supabase/go.mod" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/coderunner/src/supabase/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/supabase/go.sum" afterDir="false" />
@@ -257,7 +256,7 @@
       <workItem from="1747973023098" duration="26954000" />
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
-      <workItem from="1750823408293" duration="167250000" />
+      <workItem from="1750823408293" duration="168514000" />
     </task>
     <servers />
   </component>

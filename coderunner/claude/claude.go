@@ -739,7 +739,7 @@ func (cs *ClaudeService) handleStdin(process *ClaudeProcess) {
 			process.logToDebugFile(process.stdinLogFile, "STDIN", m)
 
 			// Write to Claude's stdin
-			if _, err := fmt.Fprintln(process.stdin, message); err != nil {
+			if _, err := fmt.Fprintln(process.stdin, string(m)); err != nil {
 				slog.Error("Failed to write to Claude stdin",
 					"correlation_id", process.correlationID,
 					"user_id", process.userID,
@@ -869,6 +869,19 @@ func (cs *ClaudeService) ResumeSession(sessionID string, userID string) (*Claude
 		return nil, fmt.Errorf("failed to create stdout pipe: %w", err)
 	}
 
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		cancel()
+		slog.Error("Failed to create Claude stderr pipe for resume",
+			"correlation_id", correlationID,
+			"user_id", userID,
+			"session_id", sessionID,
+			"error", err,
+			"action", "resume_stderr_failed",
+		)
+		return nil, fmt.Errorf("failed to create stderr pipe: %w", err)
+	}
+
 	slog.Debug("Starting Claude CLI process for resume",
 		"correlation_id", correlationID,
 		"user_id", userID,
@@ -948,19 +961,6 @@ func (cs *ClaudeService) ResumeSession(sessionID string, userID string) (*Claude
 		"message_count", len(messages),
 		"action", "message_parse_success",
 	)
-
-	stderr, err := cmd.StderrPipe()
-	if err != nil {
-		cancel()
-		slog.Error("Failed to create Claude stderr pipe for resume",
-			"correlation_id", correlationID,
-			"user_id", userID,
-			"session_id", sessionID,
-			"error", err,
-			"action", "resume_stderr_failed",
-		)
-		return nil, fmt.Errorf("failed to create stderr pipe: %w", err)
-	}
 
 	process := &ClaudeProcess{
 		sessionID:     sessionID,
