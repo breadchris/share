@@ -402,6 +402,23 @@ func New(d deps.Deps) *http.ServeMux {
 	}
 
 	m.HandleFunc("/claude/ws", func(w http.ResponseWriter, r *http.Request) {
+		// Handle HEAD requests for authentication testing
+		if r.Method == "HEAD" {
+			_, err := d.Session.GetUserID(r.Context())
+			if err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		// Handle WebSocket upgrade requests
+		if r.Method != "GET" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
 		// Get user ID from session
 		userID, err := d.Session.GetUserID(r.Context())
 		if err != nil {

@@ -47,9 +47,10 @@ type ClaudeProcess struct {
 	stderrLogFile *os.File
 	isHealthy     bool
 	lastHeartbeat time.Time
-	inputChan     chan string        // Channel for sending messages to Claude
+	inputChan     chan ClaudeInput   // Channel for sending messages to Claude
 	outputChan    chan ClaudeMessage // Channel for receiving messages from Claude
 	initComplete  chan bool          // Signal when initialization is complete
+	errorChan     chan ClaudeMessage // Channel for forwarding stderr errors
 }
 
 type ClaudeMessage struct {
@@ -60,6 +61,21 @@ type ClaudeMessage struct {
 	ParentID  string          `json:"parent_tool_use_id,omitempty"`
 	Result    string          `json:"result,omitempty"`
 	IsError   bool            `json:"is_error,omitempty"`
+}
+
+type ClaudeInput struct {
+	Type    string             `json:"type"`
+	Message ClaudeInputMessage `json:"message"`
+}
+
+type ClaudeInputMessage struct {
+	Role    string                      `json:"role"`
+	Content []ClaudeInputMessageContent `json:"content"`
+}
+
+type ClaudeInputMessageContent struct {
+	Type string `json:"type"`
+	Text string `json:"text"`
 }
 
 type ClaudeInitMessage struct {
@@ -98,6 +114,42 @@ func (cs *ClaudeService) createDebugDirectory(correlationID string) (string, err
 		return "", fmt.Errorf("failed to create debug directory: %w", err)
 	}
 	return debugDir, nil
+}
+
+// formatUserError converts Claude CLI stderr messages into user-friendly error messages
+func (cs *ClaudeService) formatUserError(stderrLine string) string {
+	lowerLine := strings.ToLower(stderrLine)
+
+	// Handle JSON parsing errors
+	if strings.Contains(lowerLine, "syntaxerror") && strings.Contains(lowerLine, "json") {
+		if strings.Contains(stderrLine, "\"asdf\"") || strings.Contains(stderrLine, "'asdf'") {
+			return "Invalid input format. Please provide a valid question or command instead of random text."
+		}
+		return "Invalid input format. Please ensure your input is properly formatted text or valid JSON."
+	}
+
+	// Handle other common errors
+	if strings.Contains(lowerLine, "parsing") && strings.Contains(lowerLine, "error") {
+		return "Unable to process your input. Please check the format and try again."
+	}
+
+	if strings.Contains(lowerLine, "timeout") {
+		return "Request timed out. Please try again or simplify your request."
+	}
+
+	if strings.Contains(lowerLine, "failed") {
+		return "Command failed to execute. Please check your input and try again."
+	}
+
+	// Default error message for unrecognized errors
+	return "An error occurred while processing your request. Please try again."
+}
+
+// formatClaudeMessage converts user text into the proper Claude CLI input format
+func (cs *ClaudeService) formatClaudeMessage(userText string) string {
+	// Claude CLI expects plain text input, not JSON
+	// The JSON format is what Claude outputs, not what it expects as input
+	return userText
 }
 
 // openDebugFiles opens debug log files for stdin, stdout, and stderr
@@ -210,6 +262,35 @@ func (cs *ClaudeService) monitorStderr(process *ClaudeProcess) {
 				"error_line", line,
 				"action", "stderr_critical_error",
 			)
+
+			// Create user-friendly error message
+			userError := cs.formatUserError(line)
+			errorMsg := ClaudeMessage{
+				Type:      "error",
+				Subtype:   "process_error",
+				SessionID: process.sessionID,
+				Message: json.RawMessage(fmt.Sprintf(`{"error": "%s", "source": "claude_process", "timestamp": "%s", "details": "%s"}`,
+					userError, time.Now().Format(time.RFC3339), strings.ReplaceAll(line, `"`, `\"`))),
+				IsError: true,
+			}
+
+			// Send error to error channel (non-blocking)
+			select {
+			case process.errorChan <- errorMsg:
+				slog.Debug("Error message sent to error channel",
+					"correlation_id", process.correlationID,
+					"user_id", process.userID,
+					"session_id", process.sessionID,
+					"action", "error_forwarded",
+				)
+			default:
+				slog.Warn("Error channel full, dropping error message",
+					"correlation_id", process.correlationID,
+					"user_id", process.userID,
+					"session_id", process.sessionID,
+					"action", "error_dropped",
+				)
+			}
 
 			process.isHealthy = false
 		}
@@ -417,9 +498,10 @@ func (cs *ClaudeService) CreateSession(userID string) (*ClaudeProcess, error) {
 		stderrLogFile: stderrLogFile,
 		isHealthy:     true,
 		lastHeartbeat: time.Now(),
-		inputChan:     make(chan string, 10),        // Buffered channel for input
+		inputChan:     make(chan ClaudeInput, 10),   // Buffered channel for input
 		outputChan:    make(chan ClaudeMessage, 10), // Buffered channel for output
 		initComplete:  make(chan bool, 1),           // Signal channel for init
+		errorChan:     make(chan ClaudeMessage, 10), // Buffered channel for errors
 	}
 
 	// Start stderr monitoring in background
@@ -429,8 +511,18 @@ func (cs *ClaudeService) CreateSession(userID string) (*ClaudeProcess, error) {
 	go cs.handleStdout(process)
 	go cs.handleStdin(process)
 
-	// Send initial message to trigger Claude's initialization
-	initialMessage := `{"type":"user","message":{"role":"user","content":[{"type":"text","text":""}]}}`
+	initialMessage := ClaudeInput{
+		Type: "user",
+		Message: ClaudeInputMessage{
+			Role: "user",
+			Content: []ClaudeInputMessageContent{
+				{
+					Type: "text",
+					Text: "Hello, Claude! Initializing session.",
+				},
+			},
+		},
+	}
 	select {
 	case process.inputChan <- initialMessage:
 		slog.Debug("Sent initial message to trigger Claude init",
@@ -628,8 +720,23 @@ func (cs *ClaudeService) handleStdin(process *ClaudeProcess) {
 
 			messageCount++
 
+			var (
+				m   []byte
+				err error
+			)
+			if m, err = json.Marshal(message); err != nil {
+				slog.Error("Failed to marshal Claude input message",
+					"correlation_id", process.correlationID,
+					"user_id", process.userID,
+					"error", err,
+					"message_count", messageCount,
+					"action", "stdin_message_marshal_failed",
+				)
+				continue
+			}
+
 			// Log to debug file if enabled
-			process.logToDebugFile(process.stdinLogFile, "STDIN", []byte(message))
+			process.logToDebugFile(process.stdinLogFile, "STDIN", m)
 
 			// Write to Claude's stdin
 			if _, err := fmt.Fprintln(process.stdin, message); err != nil {
@@ -637,7 +744,6 @@ func (cs *ClaudeService) handleStdin(process *ClaudeProcess) {
 					"correlation_id", process.correlationID,
 					"user_id", process.userID,
 					"error", err,
-					"message_length", len(message),
 					"action", "stdin_write_failed",
 				)
 				return
@@ -646,7 +752,6 @@ func (cs *ClaudeService) handleStdin(process *ClaudeProcess) {
 			slog.Debug("Sent message to Claude",
 				"correlation_id", process.correlationID,
 				"user_id", process.userID,
-				"message_length", len(message),
 				"message_count", messageCount,
 				"action", "stdin_message_sent",
 			)
@@ -871,9 +976,10 @@ func (cs *ClaudeService) ResumeSession(sessionID string, userID string) (*Claude
 		startTime:     startTime,
 		correlationID: correlationID,
 		userID:        userID,
-		inputChan:     make(chan string, 10),
+		inputChan:     make(chan ClaudeInput, 10),
 		outputChan:    make(chan ClaudeMessage, 10),
 		initComplete:  make(chan bool, 1),
+		errorChan:     make(chan ClaudeMessage, 10),
 		isHealthy:     true,
 		lastHeartbeat: time.Now(),
 	}
@@ -1132,30 +1238,51 @@ func (cs *ClaudeService) HandleWebSocket(conn *websocket.Conn, userID string) {
 				"action", "prompt_send",
 			)
 
-			// Send prompt to Claude
-			if _, err := fmt.Fprintln(process.stdin, prompt.Prompt); err != nil {
-				slog.Error("Failed to send prompt to Claude process",
-					"correlation_id", correlationID,
-					"user_id", userID,
-					"session_id", process.sessionID,
-					"error", err,
-					"action", "prompt_send_failed",
-				)
+			formattedMessage := ClaudeInput{
+				Type: "user",
+				Message: ClaudeInputMessage{
+					Role: "user",
+					Content: []ClaudeInputMessageContent{
+						{
+							Type: "text",
+							Text: prompt.Prompt,
+						},
+					},
+				},
+			}
 
-				conn.WriteJSON(WSMessage{
-					Type:    "error",
-					Payload: json.RawMessage(fmt.Sprintf(`{"error": "failed to send prompt: %s"}`, err.Error())),
-				})
-			} else {
-				// Log to debug file if enabled
-				process.logToDebugFile(process.stdinLogFile, "PROMPT", []byte(prompt.Prompt))
-
+			select {
+			case process.inputChan <- formattedMessage:
 				slog.Debug("Prompt sent to Claude successfully",
 					"correlation_id", correlationID,
 					"user_id", userID,
 					"session_id", process.sessionID,
 					"action", "prompt_sent",
 				)
+			case <-time.After(5 * time.Second):
+				slog.Error("Timeout sending prompt to Claude process",
+					"correlation_id", correlationID,
+					"user_id", userID,
+					"session_id", process.sessionID,
+					"action", "prompt_send_timeout",
+				)
+
+				conn.WriteJSON(WSMessage{
+					Type:    "error",
+					Payload: json.RawMessage(`{"error": "timeout sending prompt"}`),
+				})
+			case <-process.ctx.Done():
+				slog.Error("Context cancelled while sending prompt",
+					"correlation_id", correlationID,
+					"user_id", userID,
+					"session_id", process.sessionID,
+					"action", "prompt_send_cancelled",
+				)
+
+				conn.WriteJSON(WSMessage{
+					Type:    "error",
+					Payload: json.RawMessage(`{"error": "session cancelled"}`),
+				})
 			}
 
 		case "stop":
@@ -1202,165 +1329,175 @@ func (cs *ClaudeService) streamFromClaude(process *ClaudeProcess, conn *websocke
 	messageCount := 0
 	totalBytesProcessed := 0
 
-	for process.stdoutScanner.Scan() {
-		line := process.stdoutScanner.Text()
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
+	for {
+		select {
+		case msg, ok := <-process.outputChan:
+			if !ok {
+				slog.Info("Claude output channel closed, stopping stream",
+					"correlation_id", process.correlationID,
+					"user_id", process.userID,
+					"session_id", process.sessionID,
+					"messages_processed", messageCount,
+					"action", "stream_channel_closed",
+				)
+				return
+			}
 
-		messageCount++
-		totalBytesProcessed += len(line)
+			messageCount++
+			if msgBytes, err := json.Marshal(msg); err == nil {
+				totalBytesProcessed += len(msgBytes)
+			}
 
-		// Log to debug file if enabled
-		process.logToDebugFile(process.stdoutLogFile, "STDOUT", []byte(line))
-
-		slog.Debug("Claude stream line received",
-			"correlation_id", process.correlationID,
-			"user_id", process.userID,
-			"session_id", process.sessionID,
-			"message_count", messageCount,
-			"line_length", len(line),
-			"total_bytes", totalBytesProcessed,
-			"action", "stream_line_received",
-		)
-
-		var msg ClaudeMessage
-		if err := json.Unmarshal([]byte(line), &msg); err != nil {
-			slog.Error("Failed to parse Claude JSON output",
+			slog.Debug("Claude stream message received",
 				"correlation_id", process.correlationID,
 				"user_id", process.userID,
 				"session_id", process.sessionID,
-				"error", err,
-				"raw_line", line,
-				"line_length", len(line),
 				"message_count", messageCount,
-				"action", "stream_parse_failed",
+				"message_type", msg.Type,
+				"total_bytes", totalBytesProcessed,
+				"action", "stream_message_received",
 			)
-			continue
-		}
 
-		// Extract key info for logging
-		contentPreview := ""
-		tokenUsage := map[string]interface{}{}
+			// Extract key info for logging
+			contentPreview := ""
+			tokenUsage := map[string]interface{}{}
 
-		if msg.Type == "assistant" && msg.Message != nil {
-			// Try to extract content and usage from assistant message
-			if msgBytes, err := json.Marshal(msg.Message); err == nil {
-				var assistantMsg map[string]interface{}
-				if err := json.Unmarshal(msgBytes, &assistantMsg); err == nil {
-					if content, ok := assistantMsg["content"].([]interface{}); ok && len(content) > 0 {
-						if textContent, ok := content[0].(map[string]interface{}); ok {
-							if text, ok := textContent["text"].(string); ok {
-								if len(text) > 100 {
-									contentPreview = text[:100] + "..."
-								} else {
-									contentPreview = text
+			if msg.Type == "assistant" && msg.Message != nil {
+				// Try to extract content and usage from assistant message
+				if msgBytes, err := json.Marshal(msg.Message); err == nil {
+					var assistantMsg map[string]interface{}
+					if err := json.Unmarshal(msgBytes, &assistantMsg); err == nil {
+						if content, ok := assistantMsg["content"].([]interface{}); ok && len(content) > 0 {
+							if textContent, ok := content[0].(map[string]interface{}); ok {
+								if text, ok := textContent["text"].(string); ok {
+									if len(text) > 100 {
+										contentPreview = text[:100] + "..."
+									} else {
+										contentPreview = text
+									}
 								}
 							}
 						}
-					}
-					if usage, ok := assistantMsg["usage"].(map[string]interface{}); ok {
-						tokenUsage = usage
+						if usage, ok := assistantMsg["usage"].(map[string]interface{}); ok {
+							tokenUsage = usage
+						}
 					}
 				}
 			}
-		}
 
-		slog.Info("Claude message parsed successfully",
-			"correlation_id", process.correlationID,
-			"user_id", process.userID,
-			"session_id", process.sessionID,
-			"message_type", msg.Type,
-			"message_subtype", msg.Subtype,
-			"content_preview", contentPreview,
-			"token_usage", tokenUsage,
-			"is_error", msg.IsError,
-			"message_count", messageCount,
-			"action", "stream_message_parsed",
-		)
-
-		// Store message
-		process.mu.Lock()
-		process.messages = append(process.messages, msg)
-		messageStoreCount := len(process.messages)
-		process.mu.Unlock()
-
-		slog.Debug("Message stored in process",
-			"correlation_id", process.correlationID,
-			"user_id", process.userID,
-			"session_id", process.sessionID,
-			"total_messages", messageStoreCount,
-			"action", "message_stored",
-		)
-
-		// Forward to WebSocket
-		jsonData, _ := json.Marshal(msg)
-		if err := conn.WriteJSON(WSMessage{
-			Type:    "message",
-			Payload: json.RawMessage(jsonData),
-		}); err != nil {
-			slog.Error("Failed to write message to WebSocket",
+			slog.Info("Claude message parsed successfully",
 				"correlation_id", process.correlationID,
 				"user_id", process.userID,
 				"session_id", process.sessionID,
-				"error", err,
 				"message_type", msg.Type,
-				"action", "websocket_write_failed",
-			)
-			break
-		}
-
-		slog.Debug("Message sent to WebSocket client",
-			"correlation_id", process.correlationID,
-			"user_id", process.userID,
-			"session_id", process.sessionID,
-			"message_type", msg.Type,
-			"payload_size", len(jsonData),
-			"action", "websocket_message_sent",
-		)
-
-		// Save to database periodically
-		if msg.Type == "result" {
-			slog.Debug("Saving session after result message",
-				"correlation_id", process.correlationID,
-				"user_id", process.userID,
-				"session_id", process.sessionID,
-				"action", "session_save_trigger",
+				"message_subtype", msg.Subtype,
+				"content_preview", contentPreview,
+				"token_usage", tokenUsage,
+				"is_error", msg.IsError,
+				"message_count", messageCount,
+				"action", "stream_message_parsed",
 			)
 
-			if err := cs.SaveSession(process); err != nil {
-				slog.Error("Failed to save session to database",
+			// Forward to WebSocket
+			jsonData, _ := json.Marshal(msg)
+			if err := conn.WriteJSON(WSMessage{
+				Type:    "message",
+				Payload: json.RawMessage(jsonData),
+			}); err != nil {
+				slog.Error("Failed to write message to WebSocket",
 					"correlation_id", process.correlationID,
 					"user_id", process.userID,
 					"session_id", process.sessionID,
 					"error", err,
-					"action", "session_save_failed",
+					"message_type", msg.Type,
+					"action", "websocket_write_failed",
+				)
+				return
+			}
+
+			slog.Debug("Message sent to WebSocket client",
+				"correlation_id", process.correlationID,
+				"user_id", process.userID,
+				"session_id", process.sessionID,
+				"message_type", msg.Type,
+				"payload_size", len(jsonData),
+				"action", "websocket_message_sent",
+			)
+
+			// Save to database periodically
+			if msg.Type == "result" {
+				slog.Debug("Saving session after result message",
+					"correlation_id", process.correlationID,
+					"user_id", process.userID,
+					"session_id", process.sessionID,
+					"action", "session_save_trigger",
+				)
+
+				if err := cs.SaveSession(process); err != nil {
+					slog.Error("Failed to save session to database",
+						"correlation_id", process.correlationID,
+						"user_id", process.userID,
+						"session_id", process.sessionID,
+						"error", err,
+						"action", "session_save_failed",
+					)
+				}
+			}
+
+		case errorMsg, ok := <-process.errorChan:
+			if !ok {
+				slog.Debug("Error channel closed",
+					"correlation_id", process.correlationID,
+					"user_id", process.userID,
+					"session_id", process.sessionID,
+					"action", "error_channel_closed",
+				)
+				// Continue with other channels
+			} else {
+				slog.Info("Forwarding error message to WebSocket client",
+					"correlation_id", process.correlationID,
+					"user_id", process.userID,
+					"session_id", process.sessionID,
+					"error_type", errorMsg.Type,
+					"action", "error_forwarded_to_client",
+				)
+
+				// Forward error to WebSocket client
+				jsonData, _ := json.Marshal(errorMsg)
+				if err := conn.WriteJSON(WSMessage{
+					Type:    "error",
+					Payload: json.RawMessage(jsonData),
+				}); err != nil {
+					slog.Error("Failed to write error message to WebSocket",
+						"correlation_id", process.correlationID,
+						"user_id", process.userID,
+						"session_id", process.sessionID,
+						"error", err,
+						"action", "error_websocket_write_failed",
+					)
+					return
+				}
+
+				slog.Debug("Error message sent to WebSocket client",
+					"correlation_id", process.correlationID,
+					"user_id", process.userID,
+					"session_id", process.sessionID,
+					"action", "error_websocket_sent",
 				)
 			}
-		}
-	}
 
-	if err := process.stdoutScanner.Err(); err != nil {
-		slog.Error("Claude stream scanner error",
-			"correlation_id", process.correlationID,
-			"user_id", process.userID,
-			"session_id", process.sessionID,
-			"error", err,
-			"messages_processed", messageCount,
-			"total_bytes", totalBytesProcessed,
-			"action", "stream_scanner_error",
-		)
-	} else {
-		slog.Info("Claude stream processing completed",
-			"correlation_id", process.correlationID,
-			"user_id", process.userID,
-			"session_id", process.sessionID,
-			"messages_processed", messageCount,
-			"total_bytes", totalBytesProcessed,
-			"duration_ms", time.Since(process.startTime).Milliseconds(),
-			"action", "stream_completed",
-		)
+		case <-process.ctx.Done():
+			slog.Info("Claude stream context cancelled",
+				"correlation_id", process.correlationID,
+				"user_id", process.userID,
+				"session_id", process.sessionID,
+				"messages_processed", messageCount,
+				"total_bytes", totalBytesProcessed,
+				"duration_ms", time.Since(process.startTime).Milliseconds(),
+				"action", "stream_cancelled",
+			)
+			return
+		}
 	}
 }
 
@@ -1476,6 +1613,15 @@ func (cs *ClaudeService) StopSession(sessionID string) {
 		process.closeDebugFiles()
 
 		process.cancel()
+
+		// Close channels to signal goroutines to stop
+		if process.inputChan != nil {
+			close(process.inputChan)
+		}
+		if process.errorChan != nil {
+			close(process.errorChan)
+		}
+		// Note: outputChan and initComplete are closed by the handleStdout goroutine
 
 		if process.stdin != nil {
 			process.stdin.Close()
