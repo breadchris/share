@@ -753,6 +753,7 @@ func (cs *ClaudeService) handleStdin(process *ClaudeProcess) {
 				"correlation_id", process.correlationID,
 				"user_id", process.userID,
 				"message_count", messageCount,
+				"message", string(m),
 				"action", "stdin_message_sent",
 			)
 
@@ -1172,21 +1173,21 @@ func (cs *ClaudeService) HandleWebSocket(conn *websocket.Conn, userID string) {
 			)
 
 			// Send existing messages
-			for i, msg := range process.messages {
-				jsonData, _ := json.Marshal(msg)
-				conn.WriteJSON(WSMessage{
-					Type:    "message",
-					Payload: json.RawMessage(jsonData),
-				})
-
-				slog.Debug("Replaying message to client",
-					"correlation_id", correlationID,
-					"user_id", userID,
-					"session_id", process.sessionID,
-					"message_index", i,
-					"message_type", msg.Type,
-				)
-			}
+			//for i, msg := range process.messages {
+			//	jsonData, _ := json.Marshal(msg)
+			//	conn.WriteJSON(WSMessage{
+			//		Type:    "message",
+			//		Payload: json.RawMessage(jsonData),
+			//	})
+			//
+			//	slog.Debug("Replaying message to client",
+			//		"correlation_id", correlationID,
+			//		"user_id", userID,
+			//		"session_id", process.sessionID,
+			//		"message_index", i,
+			//		"message_type", msg.Type,
+			//	)
+			//}
 
 			// Start reading from Claude
 			go cs.streamFromClaude(process, conn)
