@@ -19,8 +19,8 @@ import (
 	"github.com/go-git/go-git/v5"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v66/github"
-	"github.com/gorilla/websocket"
 	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
 )
 
 type BuildCache struct {
@@ -67,6 +67,24 @@ func New(d deps.Deps) *http.ServeMux {
 			Script(Src("/coderunner/module/@breadchris/SwitchHomepage.tsx"), Type("module")),
 			Div(Id("root")),
 			LoadModule("@breadchris/SwitchHomepage.tsx", "SwitchHomepage"),
+		).RenderPage(w, r)
+	})
+
+	m.HandleFunc("/claude", func(w http.ResponseWriter, r *http.Request) {
+		DefaultLayout(
+			Script(Type("importmap"), Raw(`
+			{
+				"imports": {
+					"react": "https://esm.sh/react@18",
+					"react-dom": "https://esm.sh/react-dom@18",
+					"react-dom/client": "https://esm.sh/react-dom@18/client",
+					"react/jsx-runtime": "https://esm.sh/react@18/jsx-runtime"
+				}
+			}
+			`)),
+			Script(Src("https://cdn.tailwindcss.com")),
+			Div(Id("root")),
+			LoadModule("claude/ClaudeWebInterface.tsx", "ClaudeWebInterface"),
 		).RenderPage(w, r)
 	})
 
@@ -374,7 +392,7 @@ func New(d deps.Deps) *http.ServeMux {
 	})
 
 	// Claude endpoints
-	claudeService := claude.NewClaudeService(d.DB)
+	claudeService := claude.NewClaudeService(d)
 
 	// WebSocket endpoint for Claude streaming
 	upgrader := websocket.Upgrader{
@@ -526,7 +544,7 @@ func New(d deps.Deps) *http.ServeMux {
 		// Check if file is already pinned
 		var existingPin models.PinnedFile
 		err = d.DB.Where("user_id = ? AND file_path = ?", userID, decodedPath).First(&existingPin).Error
-		
+
 		if err != nil && err.Error() != "record not found" {
 			// Database error
 			http.Error(w, fmt.Sprintf(`{"error":"database error: %v"}`, err), http.StatusInternalServerError)
@@ -545,7 +563,7 @@ func New(d deps.Deps) *http.ServeMux {
 				UserID:   userID,
 				FilePath: decodedPath,
 			}
-			
+
 			if err := d.DB.Create(&newPin).Error; err != nil {
 				http.Error(w, fmt.Sprintf(`{"error":"failed to pin file: %v"}`, err), http.StatusInternalServerError)
 				return
@@ -1166,35 +1184,9 @@ func handleRenderComponent(w http.ResponseWriter, r *http.Request) {
 			errorMessages[i] = fmt.Sprintf("%s:%d:%d: %s", err.Location.File, err.Location.Line, err.Location.Column, err.Text)
 		}
 
-		errorHTML := fmt.Sprintf(`
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Build Error</title>
-    <style>
-        body { font-family: monospace; margin: 20px; background: #fff5f5; }
-        .error { background: #fed7d7; border: 1px solid #fc8181; padding: 15px; border-radius: 5px; }
-        .error h1 { color: #c53030; margin-top: 0; }
-        .error-list { margin: 10px 0; }
-        .error-item { margin: 5px 0; padding: 5px; background: #ffffff; border-radius: 3px; }
-    </style>
-</head>
-<body>
-    <div class="error">
-        <h1>Build Error</h1>
-        <p>Failed to build component from <code>%s</code></p>
-        <div class="error-list">
-            %s
-        </div>
-    </div>
-</body>
-</html>`, componentPath, formatErrorMessages(errorMessages))
-
-		w.Header().Set("Content-Type", "text/html")
+		// Use the BuildErrorPage helper
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(errorHTML))
+		BuildErrorPage(componentPath, errorMessages).RenderPage(w, r)
 		return
 	}
 
@@ -1204,98 +1196,15 @@ func handleRenderComponent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate the HTML page that renders the component
-	htmlPage := `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>React Component - ` + componentName + `</title>
-    <script type="importmap">
-    {
-        "imports": {
-            "react": "https://esm.sh/react@18",
-            "react-dom": "https://esm.sh/react-dom@18",
-            "react-dom/client": "https://esm.sh/react-dom@18/client",
-            "react/jsx-runtime": "https://esm.sh/react@18/jsx-runtime"
-        }
-    }
-    </script>
-	<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daisyui@5">
-	<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <style>
-        body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-        #root { width: 100%%; height: 100vh; }
-        .error { 
-            padding: 20px; 
-            color: #dc2626; 
-            background: #fef2f2; 
-            border: 1px solid #fecaca; 
-            margin: 20px; 
-            border-radius: 8px;
-            font-family: monospace;
-        }
-    </style>
-</head>
-<body>
-    <div id="root"></div>
-    <script type="module">
-        try {
-            // Import the compiled component module from the /module/ endpoint
-            const componentModule = await import('/coderunner/module/` + componentPath + `');
-            
-            // Import React and ReactDOM
-            const React = await import('react');
-            const ReactDOM = await import('react-dom/client');
-            
-            // Try to get the component to render
-            let ComponentToRender;
-            
-            // First try the specified component name
-            if (componentModule.` + componentName + `) {
-				console.log('Rendering component:', componentModule.` + componentName + `);
-                ComponentToRender = componentModule.` + componentName + `;
-            }
-            // Then try default export
-            else if (componentModule.default) {
-				console.log('Rendering default component:', componentModule.default);
-                ComponentToRender = componentModule.default;
-            }
-            else {
-                throw new Error('No component found. Make sure to export a component named "` + componentName + `" or a default export.');
-            }
-            
-            // Render the component
-            const root = ReactDOM.createRoot(document.getElementById('root'));
-            root.render(React.createElement(ComponentToRender));
-            
-        } catch (error) {
-            console.error('Runtime Error:', error);
-            document.getElementById('root').innerHTML = 
-                '<div class="error">' +
-                '<h3>Runtime Error:</h3>' +
-                '<pre>' + error.message + '</pre>' +
-                '<pre>' + (error.stack || '') + '</pre>' +
-                '</div>';
-        }
-    </script>
-</body>
-</html>`
+	// Generate the HTML page using Go HTML format
+	page := ReactComponentPage(componentName,
+		ComponentLoader(componentPath, componentName, true),
+	)
 
-	// Return the HTML page
-	w.Header().Set("Content-Type", "text/html")
-	w.Write([]byte(htmlPage))
+	// Render the page
+	page.RenderPage(w, r)
 }
 
-// formatErrorMessages formats build error messages as HTML
-func formatErrorMessages(errors []string) string {
-	var formatted []string
-	for _, err := range errors {
-		formatted = append(formatted, fmt.Sprintf(`<div class="error-item">%s</div>`, err))
-	}
-	return strings.Join(formatted, "\n")
-}
 
 // handleServeModule builds and serves a React component as an ES module
 func handleServeModule(w http.ResponseWriter, r *http.Request) {
@@ -1502,35 +1411,9 @@ func handleFullRenderComponent(w http.ResponseWriter, r *http.Request) {
 			errorMessages[i] = fmt.Sprintf("%s:%d:%d: %s", err.Location.File, err.Location.Line, err.Location.Column, err.Text)
 		}
 
-		errorHTML := fmt.Sprintf(`
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Build Error</title>
-    <style>
-        body { font-family: monospace; margin: 20px; background: #fff5f5; }
-        .error { background: #fed7d7; border: 1px solid #fc8181; padding: 15px; border-radius: 5px; }
-        .error h1 { color: #c53030; margin-top: 0; }
-        .error-list { margin: 10px 0; }
-        .error-item { margin: 5px 0; padding: 5px; background: #ffffff; border-radius: 3px; }
-    </style>
-</head>
-<body>
-    <div class="error">
-        <h1>Build Error</h1>
-        <p>Failed to build component from <code>%s</code></p>
-        <div class="error-list">
-            %s
-        </div>
-    </div>
-</body>
-</html>`, componentPath, formatErrorMessages(errorMessages))
-
-		w.Header().Set("Content-Type", "text/html")
+		// Use the BuildErrorPage helper
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(errorHTML))
+		BuildErrorPage(componentPath, errorMessages).RenderPage(w, r)
 		return
 	}
 
@@ -1559,104 +1442,11 @@ func handleFullRenderComponent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Generate CSS link tags
-	cssLinks := ""
-	for _, cssFile := range cssFiles {
-		cssLinks += fmt.Sprintf(`    <link rel="stylesheet" type="text/css" href="/coderunner/fullrender/css/%s/%s">
-`, cleanPath, cssFile)
-	}
+	// Generate the HTML page using Go HTML format
+	page := ReactComponentPageWithCSS(componentName, cleanPath, jsFile[0], cssFiles)
 
-	// Generate the HTML page that renders the component with CSS links
-	htmlPage := fmt.Sprintf(`
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>React Component - %s</title>
-    <script type="importmap">
-    {
-        "imports": {
-            "react": "https://esm.sh/react@18",
-            "react-dom": "https://esm.sh/react-dom@18",
-            "react-dom/client": "https://esm.sh/react-dom@18/client",
-            "react/jsx-runtime": "https://esm.sh/react@18/jsx-runtime"
-        }
-    }
-    </script>
-%s    <style>
-        body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-        #root { width: 100%%; height: 100vh; }
-        .error { 
-            padding: 20px; 
-            color: #dc2626; 
-            background: #fef2f2; 
-            border: 1px solid #fecaca; 
-            margin: 20px; 
-            border-radius: 8px;
-            font-family: monospace;
-        }
-    </style>
-</head>
-<body>
-    <div id="root"></div>
-    <script type="module">
-        try {
-            // Read the generated JavaScript file
-            const response = await fetch('/coderunner/fullrender/js/%s/%s');
-            const jsCode = await response.text();
-            
-            // Create a blob URL for the module
-            const blob = new Blob([jsCode], { type: 'application/javascript' });
-            const moduleUrl = URL.createObjectURL(blob);
-            
-            // Import the module
-            const componentModule = await import(moduleUrl);
-            
-            // Import React and ReactDOM
-            const React = await import('react');
-            const ReactDOM = await import('react-dom/client');
-            
-            // Try to get the component to render
-            let ComponentToRender;
-            
-            // First try the specified component name
-            if (componentModule.%s) {
-                console.log('Rendering component:', componentModule.%s);
-                ComponentToRender = componentModule.%s;
-            }
-            // Then try default export
-            else if (componentModule.default) {
-                console.log('Rendering default component:', componentModule.default);
-                ComponentToRender = componentModule.default;
-            }
-            else {
-                throw new Error('No component found. Make sure to export a component named "%s" or a default export.');
-            }
-            
-            // Render the component
-            const root = ReactDOM.createRoot(document.getElementById('root'));
-            root.render(React.createElement(ComponentToRender));
-            
-            // Clean up blob URL
-            URL.revokeObjectURL(moduleUrl);
-            
-        } catch (error) {
-            console.error('Runtime Error:', error);
-            document.getElementById('root').innerHTML = 
-                '<div class="error">' +
-                '<h3>Runtime Error:</h3>' +
-                '<pre>' + error.message + '</pre>' +
-                '<pre>' + (error.stack || '') + '</pre>' +
-                '</div>';
-        }
-    </script>
-</body>
-</html>`, componentName, cssLinks, cleanPath, jsFile[0], componentName, componentName, componentName, componentName)
-
-	// Return the HTML page
-	w.Header().Set("Content-Type", "text/html")
-	w.Write([]byte(htmlPage))
+	// Render the page
+	page.RenderPage(w, r)
 }
 
 // handleServeCSS serves CSS files from the fullrender build output

@@ -1,8 +1,9 @@
 package main
 
-//go:generate npx buf generate proto
+//go:generate buf generate --path proto
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"log/slog"
@@ -26,6 +27,7 @@ import (
 	"github.com/breadchris/share/editor/config"
 	"github.com/breadchris/share/editor/leaps"
 	"github.com/breadchris/share/editor/playground"
+	"github.com/breadchris/share/example"
 	"github.com/breadchris/share/graph"
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/justshare"
@@ -35,6 +37,7 @@ import (
 	"github.com/breadchris/share/paint"
 	"github.com/breadchris/share/registry"
 	"github.com/breadchris/share/session"
+	"github.com/breadchris/share/slackbot"
 	"github.com/breadchris/share/sqlnotebook"
 	"github.com/breadchris/share/test"
 	"github.com/breadchris/share/user"
@@ -181,6 +184,18 @@ func startServer(useTLS bool, port int) {
 		},
 	}
 
+	// Initialize and start Slack bot if configured
+	if slackBot, err := slackbot.New(deps); err == nil {
+		go func() {
+			if err := slackBot.Start(context.Background()); err != nil {
+				slog.Error("Slack bot failed", "error", err)
+			}
+		}()
+		slog.Info("Slack bot started")
+	} else {
+		slog.Debug("Slack bot not started", "reason", err.Error())
+	}
+
 	shouldInterpret := true
 	//shouldInterpret := false
 	interpreted := func(f func(d deps2.Deps) *http.ServeMux, files ...string) *http.ServeMux {
@@ -272,6 +287,7 @@ func startServer(useTLS bool, port int) {
 	p("", interpreted(justshare.New))
 
 	p("/coderunner", interpreted(coderunner.New))
+	p("/example", interpreted(example.New))
 	p("/claudemd", interpreted(claudemd.New))
 	p("/docker", interpreted(docker.New))
 	p("/filecode", func() *http.ServeMux {

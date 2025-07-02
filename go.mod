@@ -23,6 +23,7 @@ require (
 	github.com/blevesearch/bleve v1.0.14
 	github.com/breadchris/scs/v2 v2.0.0-20230909081317-6125300685dd
 	github.com/breadchris/yaegi v0.0.4
+	github.com/bufbuild/connect-go v1.7.0
 	github.com/bwmarrin/discordgo v0.28.1
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/chromedp/cdproto v0.0.0-20240810084448-b931b754e476
@@ -90,6 +91,7 @@ require (
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
 	github.com/samber/lo v1.46.0
 	github.com/sashabaranov/go-openai v1.40.0
+	github.com/slack-go/slack v0.12.3
 	github.com/snabb/sitemap v1.0.4
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
@@ -119,6 +121,7 @@ require (
 	golang.org/x/text v0.23.0
 	golang.org/x/time v0.6.0
 	google.golang.org/api v0.191.0
+	google.golang.org/grpc v1.65.0
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/alexcesaro/statsd.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0
@@ -404,7 +407,6 @@ require (
 	golang.org/x/xerrors v0.0.0-20240716161551-93cc26a95ae9 // indirect
 	gonum.org/v1/gonum v0.15.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240812133136-8ffd90a71988 // indirect
-	google.golang.org/grpc v1.65.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gorm.io/driver/mysql v1.5.7 // indirect
 	lukechampine.com/blake3 v1.3.0 // indirect

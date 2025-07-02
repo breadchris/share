@@ -37,6 +37,7 @@ func init() {
 		"Ingredient":       reflect.ValueOf((*models.Ingredient)(nil)),
 		"Model":            reflect.ValueOf((*models.Model)(nil)),
 		"Page":             reflect.ValueOf((*models.Page)(nil)),
+		"PinnedFile":       reflect.ValueOf((*models.PinnedFile)(nil)),
 		"Prompt":           reflect.ValueOf((*models.Prompt)(nil)),
 		"PromptContext":    reflect.ValueOf((*models.PromptContext)(nil)),
 		"PromptRun":        reflect.ValueOf((*models.PromptRun)(nil)),
