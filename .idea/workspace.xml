@@ -5,23 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/auth/auth.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/auth/email.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/auth/factory.go" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/claudemd" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/claudemd/components/ClaudeSessionBrowser.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/components/ClaudeSessionBrowser.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/claudemd/components/ClaudeSessionViewer.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/components/ClaudeSessionViewer.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/claudemd/hooks/useSessions.ts" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/hooks/useSessions.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/claudemd/types/session.ts" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/types/session.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/AppSidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/justshare/components/AppSidebar.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/ContentViewer.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/justshare/components/ContentViewer.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/GroupSettings.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/justshare/components/GroupSettings.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/Timeline.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/justshare/components/Timeline.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/UserProfile.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/justshare/components/UserProfile.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/types/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/justshare/types/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/utils/api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/justshare/utils/api.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/example/handler.go" beforeDir="false" afterPath="$PROJECT_DIR$/example/handler.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/deps/deps.go" beforeDir="false" afterPath="$PROJECT_DIR$/deps/deps.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow" beforeDir="false" afterPath="$PROJECT_DIR$/flow" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/coderunner/ClaudeInterface.tsx" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/coderunner/CodeRunner.tsx" beforeDir="false" />
@@ -48,180 +37,6 @@
       <change beforePath="$PROJECT_DIR$/flow/worklet/docker.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/worklet/docker.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/worklet/handlers.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/worklet/handlers.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/worklet/manager.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/worklet/manager.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/justshare/justshare.go" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/justshare.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/list/list.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/list/list.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/llm/chatgpt.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/llm/chatgpt.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/models.go" beforeDir="false" afterPath="$PROJECT_DIR$/models/models.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/registry/registry.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/registry/registry.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/LICENSE" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/LICENSE" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/auth/auth.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/auth/auth.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/cmd/command.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/cmd/command.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/cmd/hash.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/cmd/hash.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/cmd/serve.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/cmd/serve.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/config/config.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/config/error.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/config/error.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/config/ip.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/config/ip.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/config/ipdns/dns.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/config/ipdns/dns.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/config/ipdns/provider.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/config/ipdns/provider.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/config/ipdns/static.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/config/ipdns/static.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/config/loglevel.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/config/loglevel.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/config/loglevel_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/config/loglevel_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/config/mode/mode.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/config/mode/mode.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/config/mode/mode_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/config/mode/mode_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/docs/.nojekyll" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/docs/.nojekyll" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/docs/CNAME" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/docs/CNAME" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/docs/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/docs/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/docs/_sidebar.md" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/docs/_sidebar.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/docs/apple-touch-icon.png" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/docs/apple-touch-icon.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/docs/config.md" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/docs/config.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/docs/development.md" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/docs/development.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/docs/faq.md" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/docs/faq.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/docs/favicon-16x16.png" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/docs/favicon-16x16.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/docs/favicon-32x32.png" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/docs/favicon-32x32.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/docs/favicon.ico" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/docs/favicon.ico" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/docs/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/docs/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/docs/install.md" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/docs/install.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/docs/logo.png" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/docs/logo.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/docs/logo.svg" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/docs/logo.svg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/docs/nat-traversal.md" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/docs/nat-traversal.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/docs/proxy.md" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/docs/proxy.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/logger/logger.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/logger/logger.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/router/router.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/router/router.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/screego.config.development" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/screego.config.development" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/screego.config.example" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/screego.config.example" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/server/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/server/server.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/server/server_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/server/server_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/turn/none.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/turn/none.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/turn/portrange.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/turn/portrange.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/turn/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/turn/server.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/.prettierrc" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/.prettierrc" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/build/apple-touch-icon.png" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/build/apple-touch-icon.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/build/assets/index-BNo5lOYn.css" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/build/assets/index-BNo5lOYn.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/build/assets/index-BwZWgZCf.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/build/assets/index-BwZWgZCf.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/build/favicon.ico" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/build/favicon.ico" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/build/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/build/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/build/logo.svg" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/build/logo.svg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/build/og-banner.png" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/build/og-banner.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/public/apple-touch-icon.png" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/public/apple-touch-icon.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/public/favicon.ico" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/public/favicon.ico" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/public/logo.svg" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/public/logo.svg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/public/og-banner.png" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/public/og-banner.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/serve.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/serve.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/src/LoginForm.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/src/LoginForm.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/src/NumberField.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/src/NumberField.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/src/Room.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/src/Room.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/src/RoomManage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/src/RoomManage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/src/Router.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/src/Router.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/src/SettingDialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/src/SettingDialog.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/src/Video.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/src/Video.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/src/global.css" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/src/global.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/src/index.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/src/index.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/src/logo.png" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/src/logo.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/src/message.ts" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/src/message.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/src/settings.ts" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/src/settings.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/src/url.ts" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/src/url.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/src/useConfig.ts" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/src/useConfig.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/src/useRoom.ts" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/src/useRoom.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/src/useRoomID.ts" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/src/useRoomID.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/src/vite-env.d.ts" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/src/vite-env.d.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/tsconfig.json" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/tsconfig.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/tsconfig.node.json" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/tsconfig.node.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ui/vite.config.mts" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/vite.config.mts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/users" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/users" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/util/password.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/util/password.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/util/sillyname.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/util/sillyname.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ws/client.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/client.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ws/event.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/event.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ws/event_clientanswer.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/event_clientanswer.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ws/event_clientice.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/event_clientice.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ws/event_connected.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/event_connected.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ws/event_create.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/event_create.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ws/event_disconnected.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/event_disconnected.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ws/event_health.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/event_health.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ws/event_hostice.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/event_hostice.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ws/event_hostoffer.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/event_hostoffer.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ws/event_join.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/event_join.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ws/event_name.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/event_name.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ws/event_share.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/event_share.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ws/event_stop_share.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/event_stop_share.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ws/once.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/once.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ws/once_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/once_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ws/outgoing/messages.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/outgoing/messages.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ws/prometheus.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/prometheus.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ws/readwrite.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/readwrite.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ws/room.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/room.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ws/rooms.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/rooms.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/screenshare/ws/rooms_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/rooms_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/coderunner/CodeRunner.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/coderunner/CodeRunner.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-calendar.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-coderunner.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-coderunner.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-llm.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-llm.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-models.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-models.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-evanw-esbuild-pkg-api.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-evanw-esbuild-pkg-api.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-go-git-go-git-v5.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-go-git-go-git-v5.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-kkdai-youtube-v2.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-kkdai-youtube-v2.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/symbol.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/symbol.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/something.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/test/something.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/test.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/test/test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/websocket/websocket.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/websocket/websocket.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yaegi/yaegi.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yaegi/yaegi.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/build_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/build_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/dist/entry.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/dist/entry.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/document.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/document.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/document_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/document_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/entry.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/entry.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/server.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/server.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/index.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/internals.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/internals.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/structs/AbstractStruct.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/structs/AbstractStruct.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/structs/ContentAny.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/structs/ContentAny.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/structs/ContentBinary.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/structs/ContentBinary.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/structs/ContentDeleted.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/structs/ContentDeleted.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/structs/ContentDoc.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/structs/ContentDoc.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/structs/ContentEmbed.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/structs/ContentEmbed.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/structs/ContentFormat.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/structs/ContentFormat.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/structs/ContentJSON.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/structs/ContentJSON.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/structs/ContentString.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/structs/ContentString.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/structs/ContentType.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/structs/ContentType.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/structs/GC.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/structs/GC.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/structs/Item.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/structs/Item.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/structs/Skip.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/structs/Skip.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/types/AbstractType.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/types/AbstractType.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/types/YArray.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/types/YArray.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/types/YMap.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/types/YMap.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/types/YText.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/types/YText.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/types/YXmlElement.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/types/YXmlElement.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/types/YXmlEvent.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/types/YXmlEvent.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/types/YXmlFragment.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/types/YXmlFragment.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/types/YXmlHook.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/types/YXmlHook.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/types/YXmlText.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/types/YXmlText.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/utils/AbstractConnector.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/utils/AbstractConnector.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/utils/DeleteSet.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/utils/DeleteSet.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/utils/Doc.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/utils/Doc.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/utils/EventHandler.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/utils/EventHandler.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/utils/ID.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/utils/ID.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/utils/PermanentUserData.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/utils/PermanentUserData.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/utils/RelativePosition.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/utils/RelativePosition.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/utils/Snapshot.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/utils/Snapshot.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/utils/StructStore.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/utils/StructStore.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/utils/Transaction.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/utils/Transaction.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/utils/UndoManager.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/utils/UndoManager.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/utils/UpdateDecoder.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/utils/UpdateDecoder.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/utils/UpdateEncoder.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/utils/UpdateEncoder.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/utils/YEvent.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/utils/YEvent.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/utils/encoding.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/utils/encoding.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/utils/isParentOf.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/utils/isParentOf.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/utils/logging.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/utils/logging.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/utils/updates.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/utils/updates.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yjs/src/y-pojo.ts" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/src/y-pojo.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -237,7 +52,7 @@
   </component>
   <component name="GOROOT" url="file:///opt/homebrew/opt/go/libexec" />
   <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/flow" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="g132qsae" />
@@ -479,7 +294,7 @@
       <workItem from="1747973023098" duration="26954000" />
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
-      <workItem from="1750823408293" duration="200492000" />
+      <workItem from="1750823408293" duration="200557000" />
     </task>
     <servers />
   </component>
