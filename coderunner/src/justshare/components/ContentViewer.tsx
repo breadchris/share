@@ -808,7 +808,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
             {replies.length > 0 && (
               <div className="space-y-3">
                 {replies.map((reply) => (
-                  <div key={reply.id} className="bg-gray-50 rounded-lg p-3 space-y-2">
+                  <div key={reply.Content.id} className="bg-gray-50 rounded-lg p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         {reply.user_info && reply.user_info.Username && (
@@ -822,12 +822,12 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
                           {reply.user_info?.Username || 'Anonymous'}
                         </span>
                         <span className="text-xs text-gray-500">
-                          {formatTimestamp(reply.created_at)}
+                          {formatTimestamp(reply.Content.created_at)}
                         </span>
                       </div>
                     </div>
                     <div className="text-sm text-gray-800 whitespace-pre-wrap">
-                      {reply.data}
+                      {reply.Content.data}
                     </div>
                   </div>
                 ))}

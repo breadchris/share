@@ -1,13 +1,16 @@
 package justshare
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -478,6 +481,11 @@ func handleCreateContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 
 	// Load content with tags and user for response
 	d.DB.Preload("Tags").Preload("User").First(content, "id = ?", content.ID)
+
+	// Check if content contains YouTube URL and process transcript asynchronously
+	if shouldProcessYouTubeTranscript(content) {
+		go processYouTubeTranscript(d, content)
+	}
 
 	// Create response with flattened structure to match frontend expectations
 	var tagNames []string
@@ -1603,4 +1611,233 @@ func handleDeleteGroup(w http.ResponseWriter, r *http.Request, d deps.Deps, grou
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// shouldProcessYouTubeTranscript checks if content contains a YouTube URL that should be processed
+func shouldProcessYouTubeTranscript(content *models.Content) bool {
+	if content == nil {
+		return false
+	}
+
+	// Check if content type is URL and contains YouTube URL
+	if content.Type == "url" {
+		return isYouTubeURL(content.Data)
+	}
+
+	// Check if text content contains YouTube URL
+	if content.Type == "text" {
+		return containsYouTubeURL(content.Data)
+	}
+
+	return false
+}
+
+// isYouTubeURL checks if a URL is a YouTube URL and extracts video ID
+func isYouTubeURL(urlStr string) bool {
+	videoID := extractYouTubeVideoID(urlStr)
+	return videoID != ""
+}
+
+// containsYouTubeURL checks if text contains a YouTube URL
+func containsYouTubeURL(text string) bool {
+	// Simple regex to find YouTube URLs in text
+	youtubeRegex := `(?i)(?:https?://)?(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/|youtube\.com/shorts/)([a-zA-Z0-9_-]{11})`
+	matched, _ := regexp.MatchString(youtubeRegex, text)
+	return matched
+}
+
+// extractYouTubeVideoID extracts the video ID from various YouTube URL formats
+func extractYouTubeVideoID(urlStr string) string {
+	if urlStr == "" {
+		return ""
+	}
+
+	// Handle various YouTube URL patterns
+	patterns := []string{
+		`(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/|youtube\.com/shorts/)([a-zA-Z0-9_-]{11})`,
+		`youtube\.com/watch.*[?&]v=([a-zA-Z0-9_-]{11})`,
+	}
+
+	for _, pattern := range patterns {
+		re := regexp.MustCompile(pattern)
+		matches := re.FindStringSubmatch(urlStr)
+		if len(matches) > 1 {
+			return matches[1]
+		}
+	}
+
+	return ""
+}
+
+// processYouTubeTranscript processes a YouTube video to extract transcript asynchronously
+func processYouTubeTranscript(d deps.Deps, content *models.Content) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("Panic in processYouTubeTranscript: %v\n", r)
+		}
+	}()
+
+	// Extract YouTube URL from content
+	var videoURL string
+	if content.Type == "url" {
+		videoURL = content.Data
+	} else if content.Type == "text" {
+		// Extract first YouTube URL from text
+		youtubeRegex := `(?i)(?:https?://)?(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/|youtube\.com/shorts/)([a-zA-Z0-9_-]{11})`
+		re := regexp.MustCompile(youtubeRegex)
+		matches := re.FindStringSubmatch(content.Data)
+		if len(matches) > 1 {
+			videoURL = fmt.Sprintf("https://www.youtube.com/watch?v=%s", matches[1])
+		}
+	}
+
+	if videoURL == "" {
+		fmt.Printf("No valid YouTube URL found in content %s\n", content.ID)
+		return
+	}
+
+	// Execute yt_transcript2.py script (following recipe.go pattern)
+	cmd := exec.Command("python", "yt_transcript2.py", videoURL)
+	cmd.Env = os.Environ()
+
+	output, err := cmd.CombinedOutput()
+	
+	var transcriptText strings.Builder
+	var videoTitle, channel string
+	var hasTranscript bool
+
+	if err != nil {
+		// Script failed - analyze the error to provide helpful feedback
+		errorOutput := string(output)
+		fmt.Printf("Failed to run yt_transcript2.py for content %s: %v\nOutput: %s\n", content.ID, err, errorOutput)
+		
+		// Set basic info for error case
+		videoTitle = "YouTube Video"
+		
+		// Provide specific error messages based on common failure patterns
+		transcriptText.WriteString(fmt.Sprintf("📹 %s\n", videoTitle))
+		transcriptText.WriteString(fmt.Sprintf("🔗 %s\n\n", videoURL))
+		transcriptText.WriteString("⚠️ Transcript Unavailable\n\n")
+		
+		if strings.Contains(errorOutput, "Video unavailable") {
+			transcriptText.WriteString("This video is not available (it may be private, deleted, or restricted in your region).")
+		} else if strings.Contains(errorOutput, "MalformedFileError") || strings.Contains(errorOutput, "Invalid format") {
+			transcriptText.WriteString("This video's captions are in an unsupported format or may be auto-generated captions that cannot be processed.")
+		} else if strings.Contains(errorOutput, "No such file or directory") {
+			transcriptText.WriteString("Transcript processing service is temporarily unavailable.")
+		} else if strings.Contains(errorOutput, "ERROR: Sign in") || strings.Contains(errorOutput, "Sign in to confirm") {
+			transcriptText.WriteString("This video requires sign-in to access captions.")
+		} else if strings.Contains(errorOutput, "Subtitles are disabled") || strings.Contains(errorOutput, "No subtitles") {
+			transcriptText.WriteString("This video does not have captions or subtitles available.")
+		} else {
+			transcriptText.WriteString("Unable to extract transcript due to technical limitations. This may happen with certain video types, restricted content, or temporary YouTube API issues.")
+		}
+		
+		hasTranscript = false
+	} else {
+		// Parse JSON output
+		start := bytes.IndexByte(output, '{')
+		if start == -1 {
+			fmt.Printf("No JSON found in yt_transcript2.py output for content %s\n", content.ID)
+			
+			// Fallback message when no JSON is found
+			transcriptText.WriteString("📹 YouTube Video\n")
+			transcriptText.WriteString(fmt.Sprintf("🔗 %s\n\n", videoURL))
+			transcriptText.WriteString("⚠️ Transcript processing failed - no valid output received.")
+			hasTranscript = false
+		} else {
+			output = output[start:]
+
+			var transcriptData struct {
+				Title      string `json:"title"`
+				Channel    string `json:"channel"`
+				Transcript []struct {
+					Text       string `json:"text"`
+					Offset     int    `json:"offset"`
+					OffsetText string `json:"offsetText"`
+					Duration   int    `json:"duration"`
+				} `json:"transcript"`
+			}
+
+			if err := json.Unmarshal(output, &transcriptData); err != nil {
+				fmt.Printf("Failed to parse yt_transcript2.py output for content %s: %v\n", content.ID, err)
+				
+				// Fallback message for JSON parsing errors
+				transcriptText.WriteString("📹 YouTube Video\n")
+				transcriptText.WriteString(fmt.Sprintf("🔗 %s\n\n", videoURL))
+				transcriptText.WriteString("⚠️ Transcript data could not be processed due to formatting issues.")
+				hasTranscript = false
+			} else {
+				// Success - format the transcript nicely
+				videoTitle = transcriptData.Title
+				channel = transcriptData.Channel
+				
+				if videoTitle == "" {
+					videoTitle = "YouTube Video"
+				}
+				
+				transcriptText.WriteString(fmt.Sprintf("📹 %s\n", videoTitle))
+				if channel != "" {
+					transcriptText.WriteString(fmt.Sprintf("👤 %s\n", channel))
+				}
+				transcriptText.WriteString(fmt.Sprintf("🔗 %s\n\n", videoURL))
+				
+				if len(transcriptData.Transcript) == 0 {
+					transcriptText.WriteString("⚠️ No transcript content available for this video.")
+					hasTranscript = false
+				} else {
+					transcriptText.WriteString("📝 Transcript:\n\n")
+					for _, segment := range transcriptData.Transcript {
+						transcriptText.WriteString(fmt.Sprintf("[%s] %s\n", segment.OffsetText, segment.Text))
+					}
+					hasTranscript = true
+				}
+			}
+		}
+	}
+
+	// Create reply content with transcript or error message
+	metadata := map[string]interface{}{
+		"source":        "youtube_transcript",
+		"video_url":     videoURL,
+		"has_transcript": hasTranscript,
+	}
+	
+	if videoTitle != "" {
+		metadata["video_title"] = videoTitle
+	}
+	if channel != "" {
+		metadata["channel"] = channel
+	}
+
+	replyContent := models.NewContentReply(
+		"text",
+		transcriptText.String(),
+		content.GroupID,
+		content.UserID,
+		content.ID,
+		metadata,
+	)
+
+	// Save reply content in database transaction
+	err = d.DB.Transaction(func(tx *gorm.DB) error {
+		// Create the reply content
+		if err := tx.Create(replyContent).Error; err != nil {
+			return err
+		}
+
+		// Increment parent's reply count
+		if err := tx.Model(&models.Content{}).Where("id = ?", content.ID).UpdateColumn("reply_count", gorm.Expr("reply_count + ?", 1)).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		fmt.Printf("Failed to save transcript reply for content %s: %v\n", content.ID, err)
+		return
+	}
+
+	fmt.Printf("Successfully processed YouTube transcript for content %s\n", content.ID)
 }

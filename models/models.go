@@ -102,7 +102,7 @@ type Identity struct {
 type Group struct {
 	ID        string             `gorm:"primaryKey" json:"id"`
 	CreatedAt time.Time          `json:"created_at"`
-	Name      string             `gorm:"unique;not null" json:"name"`
+	Name      string             `gorm:"not null" json:"name"`
 	JoinCode  string             `gorm:"unique" json:"join_code"`
 	Members   []*GroupMembership `gorm:"foreignKey:GroupID" json:"members,omitempty"`
 	Pages     []*Page            `gorm:"foreignKey:GroupID" json:"pages,omitempty"`
