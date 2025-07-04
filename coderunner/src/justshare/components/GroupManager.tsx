@@ -7,18 +7,25 @@ interface GroupManagerProps {
   onGroupJoined: (group: Group) => void;
   onClose: () => void;
   mode: 'create' | 'join';
+  initialJoinCode?: string;
 }
+
+// Helper function to format join code
+const formatJoinCode = (code: string): string => {
+  return code.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 6);
+};
 
 export const GroupManager: React.FC<GroupManagerProps> = ({
   onGroupCreated,
   onGroupJoined,
   onClose,
   mode: initialMode,
+  initialJoinCode,
 }) => {
   const [mode, setMode] = useState<'create' | 'join'>(initialMode);
   const [formData, setFormData] = useState({
     name: '',
-    joinCode: '',
+    joinCode: initialJoinCode ? formatJoinCode(initialJoinCode) : '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,9 +108,6 @@ export const GroupManager: React.FC<GroupManagerProps> = ({
     }
   };
 
-  const formatJoinCode = (code: string): string => {
-    return code.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 6);
-  };
 
   const handleJoinCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatJoinCode(e.target.value);
@@ -117,6 +121,18 @@ export const GroupManager: React.FC<GroupManagerProps> = ({
         // Could add a toast notification here
       } catch (error) {
         console.error('Failed to copy join code:', error);
+      }
+    }
+  };
+
+  const copyJoinLink = async () => {
+    if (createdGroup?.join_code && navigator.clipboard) {
+      try {
+        const joinLink = `${window.location.origin}/justshare/?join=${createdGroup.join_code}`;
+        await navigator.clipboard.writeText(joinLink);
+        // Could add a toast notification here
+      } catch (error) {
+        console.error('Failed to copy join link:', error);
       }
     }
   };
@@ -218,6 +234,20 @@ export const GroupManager: React.FC<GroupManagerProps> = ({
                     title="Copy join code"
                   >
                     📋
+                  </button>
+                </div>
+                
+                <div className="text-sm text-gray-600 mb-1 mt-3">Share Link</div>
+                <div className="flex items-center justify-center space-x-2">
+                  <span className="text-sm font-mono text-gray-700 bg-gray-100 px-2 py-1 rounded truncate max-w-xs">
+                    {`${window.location.origin}/justshare/?join=${createdGroup.join_code}`}
+                  </span>
+                  <button
+                    onClick={copyJoinLink}
+                    className="p-1 text-gray-400 hover:text-gray-600"
+                    title="Copy join link"
+                  >
+                    🔗
                   </button>
                 </div>
               </div>

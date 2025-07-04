@@ -1071,17 +1071,21 @@ func handleQRCodeJoin(w http.ResponseWriter, r *http.Request, d deps.Deps) {
             color: white;
             border: none;
             border-radius: 8px;
-            padding: 12px 24px;
+            padding: 16px 32px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
             text-decoration: none;
             display: inline-block;
-            transition: background 0.2s;
+            transition: all 0.2s;
             margin: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            min-width: 200px;
         }
         .button:hover {
             background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1);
         }
         .button.secondary {
             background: #6b7280;
@@ -1128,17 +1132,8 @@ func handleQRCodeJoin(w http.ResponseWriter, r *http.Request, d deps.Deps) {
             If you don't have the app, you can manually enter the join code above.
         </p>
     </div>
-    
-    <script>
-        // Auto-redirect to app after 3 seconds if user doesn't click
-        setTimeout(function() {
-            if (window.location.pathname !== '/justshare/') {
-                window.location.href = '/justshare/?join=%s';
-            }
-        }, 5000);
-    </script>
 </body>
-</html>`, group.Name, group.Name, joinCode, joinCode, joinCode)
+</html>`, group.Name, group.Name, joinCode, joinCode)
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)

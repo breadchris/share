@@ -42,6 +42,19 @@ export const JustShare: React.FC = () => {
     checkAuth();
   }, []);
 
+  // Handle URL parameters on mount (for join links)
+  const [initialJoinCode, setInitialJoinCode] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const joinCode = urlParams.get('join');
+    
+    if (joinCode) {
+      setInitialJoinCode(joinCode);
+      setShowGroupManager({ visible: true, mode: 'join' });
+    }
+  }, []);
+
   // Load user groups when authenticated
   useEffect(() => {
     if (authState.isAuthenticated && !authState.isLoading) {
@@ -362,6 +375,7 @@ export const JustShare: React.FC = () => {
           onGroupCreated={handleGroupCreated}
           onGroupJoined={handleGroupJoined}
           onClose={() => setShowGroupManager({ visible: false, mode: 'create' })}
+          initialJoinCode={initialJoinCode || undefined}
         />
       )}
 
