@@ -13,6 +13,7 @@ export const GroupSettings: React.FC<GroupSettingsProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState<'join_code' | 'share_url' | null>(null);
 
   // Load group settings
   const loadGroupSettings = useCallback(async () => {
@@ -57,9 +58,24 @@ export const GroupSettings: React.FC<GroupSettingsProps> = ({
 
     try {
       await navigator.clipboard.writeText(groupSettings.join_code);
-      // Could add a toast notification here
+      setCopyFeedback('join_code');
+      setTimeout(() => setCopyFeedback(null), 2000);
     } catch (err) {
       console.error('Failed to copy join code:', err);
+    }
+  }, [groupSettings]);
+
+  // Copy share URL to clipboard
+  const copyShareURL = useCallback(async () => {
+    if (!groupSettings) return;
+
+    try {
+      const shareURL = `${window.location.origin}/api/join?code=${groupSettings.join_code}`;
+      await navigator.clipboard.writeText(shareURL);
+      setCopyFeedback('share_url');
+      setTimeout(() => setCopyFeedback(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy share URL:', err);
     }
   }, [groupSettings]);
 
@@ -167,15 +183,57 @@ export const GroupSettings: React.FC<GroupSettingsProps> = ({
                     </code>
                     <button
                       onClick={copyJoinCode}
-                      className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
-                      title="Copy join code"
+                      className={`p-2 rounded transition-colors ${
+                        copyFeedback === 'join_code' 
+                          ? 'text-green-600 bg-green-100' 
+                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                      }`}
+                      title={copyFeedback === 'join_code' ? 'Copied!' : 'Copy join code'}
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                        <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-                      </svg>
+                      {copyFeedback === 'join_code' ? (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="20,6 9,17 4,12"/>
+                        </svg>
+                      ) : (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                          <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                        </svg>
+                      )}
                     </button>
                   </div>
+                </div>
+
+                <div>
+                  <label className="text-sm text-gray-600">Share URL</label>
+                  <div className="flex items-center space-x-2">
+                    <div className="flex-1 bg-white px-3 py-2 rounded border text-sm text-gray-700 truncate">
+                      {window.location.origin}/api/join?code={groupSettings.join_code}
+                    </div>
+                    <button
+                      onClick={copyShareURL}
+                      className={`p-2 rounded transition-colors ${
+                        copyFeedback === 'share_url' 
+                          ? 'text-green-600 bg-green-100' 
+                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                      }`}
+                      title={copyFeedback === 'share_url' ? 'Copied!' : 'Copy share URL'}
+                    >
+                      {copyFeedback === 'share_url' ? (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="20,6 9,17 4,12"/>
+                        </svg>
+                      ) : (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Share this URL with others to invite them to join this group
+                  </p>
                 </div>
 
                 <div>

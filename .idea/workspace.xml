@@ -5,19 +5,52 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/claude/claude.go" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/claude/claude.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/claude/ClaudeWebInterface.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/claude/ClaudeWebInterface.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/claude/components/InputArea.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/claude/components/InputArea.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/claude/components/MessageList.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/claude/components/MessageList.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/claude/components/SessionBrowser.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/claude/components/SessionBrowser.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/claude/components/StatusIndicator.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/claude/components/StatusIndicator.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/claude/types/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/claude/types/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/claude/utils/messageFormatting.ts" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/claude/utils/messageFormatting.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/coderunner/ClaudeInterface.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/coderunner/CodeRunner.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/coderunner/CollaborativeCodeRunner.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/coderunner/CollaborativeEntry.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/coderunner/DESIGN.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/coderunner/SharedComponents.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/coderunner/UserChat.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/coderunner/claude/README_E2E_TESTS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/coderunner/claude/README_TESTS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/coderunner/claude/claude.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/coderunner/claude/claude_integration_test.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/coderunner/coderunner.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/coderunner/html_helpers.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/coderunner/react.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/coderunner/react_test.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/config/config.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/deps/deps.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/deps/factory.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/models/models.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/proto/example/example.proto" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/slackbot/CLAUDE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/slackbot/config.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/slackbot/formatting.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/slackbot/handlers.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/slackbot/session.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/slackbot/slackbot.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/websocket/websocket.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/worklet/CLAUDE.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/worklet/claude.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/worklet/docker.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/worklet/git.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/worklet/handlers.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/worklet/manager.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/worklet/web.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/claudemd/worklet/worklet.go" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/coderunner/src/supabase" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/supabase" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/coderunner/src/supabase/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/supabase/go.mod" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/coderunner/src/supabase/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/supabase/go.sum" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/coderunner/src/supabase/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/supabase/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/flow/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/flow/go.sum" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -33,7 +66,7 @@
   </component>
   <component name="GOROOT" url="file:///opt/homebrew/opt/go/libexec" />
   <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/claudemd" />
   </component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="g132qsae" />
@@ -49,42 +82,42 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;DefaultGoTemplateProperty&quot;: &quot;Go File&quot;,
-    &quot;Go Build.share.executor&quot;: &quot;Debug&quot;,
-    &quot;Go Test.TestClaudeMigrate in github.com/breadchris/share/db.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.modules.automatic.dependencies.download&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
-    &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/hacked/Documents/GitHub/share/graph&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;Project&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;/Users/hacked/Documents/GitHub/share/node_modules/typescript/lib&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "DefaultGoTemplateProperty": "Go File",
+    "Go Build.share.executor": "Run",
+    "Go Test.TestClaudeMigrate in github.com/breadchris/share/db.executor": "Run",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.go.migrated.go.modules.settings": "true",
+    "RunOnceActivity.go.modules.automatic.dependencies.download": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "git-widget-placeholder": "master",
+    "go.import.settings.migrated": "true",
+    "go.sdk.automatically.set": "true",
+    "last_opened_file_path": "/Users/hacked/Documents/GitHub/share/graph",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "Project",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.2",
+    "settings.editor.selected.configurable": "preferences.keymap",
+    "ts.external.directory.path": "/Users/hacked/Documents/GitHub/share/node_modules/typescript/lib",
+    "vue.rearranger.settings.migration": "true"
   },
-  &quot;keyToStringList&quot;: {
-    &quot;DatabaseDriversLRU&quot;: [
-      &quot;sqlite&quot;,
-      &quot;postgresql&quot;
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "sqlite",
+      "postgresql"
     ]
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/graph" />
@@ -94,11 +127,11 @@
       <recent name="$PROJECT_DIR$/xctf/models" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/graveyard" />
       <recent name="$PROJECT_DIR$/coderunner" />
       <recent name="$PROJECT_DIR$/coderunner/src/coderunner" />
       <recent name="$PROJECT_DIR$/data/recipes" />
       <recent name="$PROJECT_DIR$/data/xctf/02d3d626-c37b-483f-9da1-5de9e03440bf/birbs" />
-      <recent name="$PROJECT_DIR$/xctf/docker/files/maze/delta_9424/charlie_3756/foxtrot_1762/delta_3752/alpha_233/charlie_4617/alpha_3547/delta_8625/charlie_7808/echo_2332/golf_5241/foxtrot_6344/foxtrot_8781/alpha_6515/foxtrot_3975/alpha_6910/bravo_3232/echo_7743/echo_1503/foxtrot_9473" />
     </key>
   </component>
   <component name="RunManager" selected="Go Build.share">
@@ -263,7 +296,7 @@
       <workItem from="1747973023098" duration="26954000" />
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
-      <workItem from="1750823408293" duration="178324000" />
+      <workItem from="1750823408293" duration="182358000" />
     </task>
     <servers />
   </component>
@@ -272,5 +305,9 @@
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
   </component>
 </project>
