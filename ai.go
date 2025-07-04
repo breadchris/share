@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/breadchris/share/deps"
+	"github.com/breadchris/share/graveyard/websocket"
 	. "github.com/breadchris/share/html"
-	"github.com/breadchris/share/websocket"
 	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
 )
