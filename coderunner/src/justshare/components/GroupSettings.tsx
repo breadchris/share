@@ -265,12 +265,12 @@ export const GroupSettings: React.FC<GroupSettingsProps> = ({
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
                         <span className="text-white text-sm font-semibold">
-                          {getInitials(member.user?.username || 'U')}
+                          {getInitials(member.user?.Username || 'U')}
                         </span>
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-900">
-                          {member.user?.username || 'Unknown User'}
+                          {member.user?.Username || 'Unknown User'}
                         </p>
                         <p className="text-xs text-gray-500">
                           Joined {formatTimeAgo(member.created_at)}

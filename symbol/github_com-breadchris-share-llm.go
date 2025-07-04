@@ -3,7 +3,7 @@
 package symbol
 
 import (
-	"github.com/breadchris/share/llm"
+	"github.com/breadchris/share/graveyard/llm"
 	"reflect"
 )
 

@@ -121,6 +121,7 @@ func init() {
 		"BuildContext":           reflect.ValueOf((*api.BuildContext)(nil)),
 		"BuildOptions":           reflect.ValueOf((*api.BuildOptions)(nil)),
 		"BuildResult":            reflect.ValueOf((*api.BuildResult)(nil)),
+		"CORSOptions":            reflect.ValueOf((*api.CORSOptions)(nil)),
 		"Charset":                reflect.ValueOf((*api.Charset)(nil)),
 		"ContextError":           reflect.ValueOf((*api.ContextError)(nil)),
 		"Drop":                   reflect.ValueOf((*api.Drop)(nil)),

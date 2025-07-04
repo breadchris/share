@@ -20,11 +20,12 @@ import (
 )
 
 type CreateContentRequest struct {
-	Type     string                 `json:"type"` // text, image, audio, clipboard, url
-	Data     string                 `json:"data"` // Text content or base64 for files
-	GroupID  string                 `json:"group_id"`
-	Tags     []string               `json:"tags,omitempty"`
-	Metadata map[string]interface{} `json:"metadata,omitempty"`
+	Type            string                 `json:"type"` // text, image, audio, clipboard, url
+	Data            string                 `json:"data"` // Text content or base64 for files
+	GroupID         string                 `json:"group_id"`
+	ParentContentID *string                `json:"parent_content_id,omitempty"` // For threading - nullable
+	Tags            []string               `json:"tags,omitempty"`
+	Metadata        map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type CreateGroupRequest struct {
@@ -207,6 +208,15 @@ func New(d deps.Deps) *http.ServeMux {
 		}
 	})
 
+	// Thread replies endpoint
+	m.HandleFunc("/api/content/{id}/replies", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			requireAuth(d, handleGetContentReplies)(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
 	// Group endpoints
 	m.HandleFunc("/api/groups", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -384,10 +394,49 @@ func handleCreateContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 		return
 	}
 
-	// Create content
-	content := models.NewContent(req.Type, req.Data, req.GroupID, userID, req.Metadata)
+	// Verify user has access to the group
+	_, err = checkGroupMembership(d.DB, userID, req.GroupID)
+	if err != nil {
+		http.Error(w, `{"error":"not a member of this group"}`, http.StatusForbidden)
+		return
+	}
 
-	if err := d.DB.Create(content).Error; err != nil {
+	var content *models.Content
+
+	// If this is a reply, validate parent content and create reply
+	if req.ParentContentID != nil && *req.ParentContentID != "" {
+		// Verify parent content exists and belongs to the same group
+		var parentContent models.Content
+		if err := d.DB.First(&parentContent, "id = ? AND group_id = ?", *req.ParentContentID, req.GroupID).Error; err != nil {
+			http.Error(w, `{"error":"parent content not found or not in the same group"}`, http.StatusBadRequest)
+			return
+		}
+
+		// Create reply content
+		content = models.NewContentReply(req.Type, req.Data, req.GroupID, userID, *req.ParentContentID, req.Metadata)
+	} else {
+		// Create regular content
+		content = models.NewContent(req.Type, req.Data, req.GroupID, userID, req.Metadata)
+	}
+
+	// Create the content in a transaction to handle reply count updates
+	err = d.DB.Transaction(func(tx *gorm.DB) error {
+		// Create the content
+		if err := tx.Create(content).Error; err != nil {
+			return err
+		}
+
+		// If this is a reply, increment the parent's reply count
+		if req.ParentContentID != nil && *req.ParentContentID != "" {
+			if err := tx.Model(&models.Content{}).Where("id = ?", *req.ParentContentID).UpdateColumn("reply_count", gorm.Expr("reply_count + ?", 1)).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
 		http.Error(w, fmt.Sprintf(`{"error":"failed to create content: %v"}`, err), http.StatusInternalServerError)
 		return
 	}
@@ -473,6 +522,7 @@ func handleGetTimeline(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 	groupID := r.URL.Query().Get("group_id")
 	offsetStr := r.URL.Query().Get("offset")
 	limitStr := r.URL.Query().Get("limit")
+	includeReplies := r.URL.Query().Get("include_replies") == "true"
 
 	if groupID == "" {
 		http.Error(w, `{"error":"group_id is required"}`, http.StatusBadRequest)
@@ -493,8 +543,14 @@ func handleGetTimeline(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 	}
 
 	var contents []*models.Content
-	query := d.DB.Where("group_id = ?", groupID).
-		Preload("Tags").
+	query := d.DB.Where("group_id = ?", groupID)
+	
+	// By default, exclude replies from the main timeline
+	if !includeReplies {
+		query = query.Where("parent_content_id IS NULL")
+	}
+	
+	query = query.Preload("Tags").
 		Preload("User").
 		Order("created_at DESC").
 		Limit(limit + 1). // Get one extra to check if there are more
@@ -514,7 +570,7 @@ func handleGetTimeline(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 	var contentResponses []*ContentResponse
 	for _, content := range contents {
 		response := &ContentResponse{
-			Content:  content,
+			Content:  *content,
 			UserInfo: content.User,
 		}
 		for _, tag := range content.Tags {
@@ -570,7 +626,7 @@ func handleGetContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 
 	// Create response
 	response := &ContentResponse{
-		Content:  &content,
+		Content:  content,
 		UserInfo: content.User,
 	}
 	for _, tag := range content.Tags {
@@ -642,6 +698,99 @@ func handleDeleteContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+func handleGetContentReplies(w http.ResponseWriter, r *http.Request, d deps.Deps) {
+	userID, err := getUserID(r.Context())
+	if err != nil {
+		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+	
+	// Check if API key has read permissions
+	if err := checkAPIKeyScope(r.Context(), "read"); err != nil {
+		http.Error(w, `{"error":"insufficient permissions"}`, http.StatusForbidden)
+		return
+	}
+
+	// Extract content ID from URL path
+	path := strings.TrimPrefix(r.URL.Path, "/api/content/")
+	parts := strings.Split(path, "/")
+	if len(parts) < 2 || parts[1] != "replies" {
+		http.Error(w, `{"error":"invalid URL format"}`, http.StatusBadRequest)
+		return
+	}
+	contentID := parts[0]
+
+	if contentID == "" {
+		http.Error(w, `{"error":"content ID is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Verify the parent content exists and user has access
+	var parentContent models.Content
+	if err := d.DB.First(&parentContent, "id = ?", contentID).Error; err != nil {
+		http.Error(w, `{"error":"content not found"}`, http.StatusNotFound)
+		return
+	}
+	
+	// Verify user has access to this content's group
+	_, err = checkGroupMembership(d.DB, userID, parentContent.GroupID)
+	if err != nil {
+		http.Error(w, `{"error":"access denied"}`, http.StatusForbidden)
+		return
+	}
+
+	// Parse pagination parameters
+	offsetStr := r.URL.Query().Get("offset")
+	limitStr := r.URL.Query().Get("limit")
+	offset, _ := strconv.Atoi(offsetStr)
+	limit, _ := strconv.Atoi(limitStr)
+	if limit <= 0 || limit > 100 {
+		limit = 20 // Default limit
+	}
+
+	// Query replies
+	var replies []*models.Content
+	query := d.DB.Where("parent_content_id = ?", contentID).
+		Preload("Tags").
+		Preload("User").
+		Order("created_at ASC"). // Replies in chronological order
+		Limit(limit + 1).        // Get one extra to check if there are more
+		Offset(offset)
+
+	if err := query.Find(&replies).Error; err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"failed to fetch replies: %v"}`, err), http.StatusInternalServerError)
+		return
+	}
+
+	hasMore := len(replies) > limit
+	if hasMore {
+		replies = replies[:limit]
+	}
+
+	// Convert to response format
+	var responses []*ContentResponse
+	for _, reply := range replies {
+		response := &ContentResponse{
+			Content:  *reply,
+			UserInfo: reply.User,
+		}
+		for _, tag := range reply.Tags {
+			response.TagNames = append(response.TagNames, tag.Name)
+		}
+		responses = append(responses, response)
+	}
+
+	// Create timeline-style response
+	timelineResponse := &TimelineResponse{
+		Content:    responses,
+		NextOffset: offset + len(responses),
+		HasMore:    hasMore,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(timelineResponse)
 }
 
 func handleGetDefaultGroup(w http.ResponseWriter, r *http.Request, d deps.Deps) {

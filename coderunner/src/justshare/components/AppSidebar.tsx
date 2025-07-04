@@ -264,15 +264,15 @@ export const AppSidebar: React.FC<AppSidebarProps> = ({
 
         {/* Footer */}
         <div className="p-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
-          {activeTab === 'profile' && currentUser && currentUser.username && (
+          {activeTab === 'profile' && currentUser && currentUser.Username && (
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                 <span className="text-white text-xs font-semibold">
-                  {getInitials(currentUser.username)}
+                  {getInitials(currentUser.Username)}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{currentUser.username}</p>
+                <p className="text-sm font-medium text-gray-900 truncate">{currentUser.Username}</p>
                 <p className="text-xs text-gray-500">Currently signed in</p>
               </div>
             </div>

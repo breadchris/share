@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"github.com/breadchris/share/graveyard/ainet"
 	"github.com/breadchris/share/graveyard/claudemd"
+	"github.com/breadchris/share/graveyard/list"
+	"github.com/breadchris/share/graveyard/llm"
 	"github.com/breadchris/share/graveyard/paint"
+	"github.com/breadchris/share/graveyard/registry"
 	"github.com/breadchris/share/graveyard/sqlnotebook"
 	"log"
 	"log/slog"
@@ -32,12 +35,8 @@ import (
 	"github.com/breadchris/share/graph"
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/justshare"
-	"github.com/breadchris/share/list"
-	"github.com/breadchris/share/llm"
 	"github.com/breadchris/share/op"
-	"github.com/breadchris/share/registry"
 	"github.com/breadchris/share/session"
-	"github.com/breadchris/share/test"
 	"github.com/breadchris/share/user"
 	"github.com/breadchris/share/wasmcode"
 	socket "github.com/breadchris/share/websocket"
@@ -244,7 +243,6 @@ func startServer(useTLS bool, port int) {
 		return socket.WebsocketUI(reg)
 	}))
 	p("/ainet", interpreted(ainet.New))
-	p("/test", interpreted(test.New))
 	p("/user", interpreted(user.New))
 	p("/paint", interpreted(paint.New))
 	p("/notes", interpreted(NewNotes))

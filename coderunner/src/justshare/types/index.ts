@@ -1,9 +1,14 @@
 // Core Types for JustShare
 
 export interface User {
-  id: string;
-  username: string;
-  created_at: string;
+  ID: string;
+  Username: string;
+  CreatedAt: string;
+  // Additional fields from API response (optional)
+  Identities?: any;
+  GroupMemberships?: any;
+  Secrets?: any;
+  Password?: string;
 }
 
 export interface Content {
@@ -15,11 +20,14 @@ export interface Content {
   file_size?: number;
   group_id: string;
   user_id: string;
+  parent_content_id?: string;  // For threading - null for root content
+  reply_count?: number;        // Cache of direct reply count
   created_at: string;
   updated_at: string;
   tag_names?: string[];
   metadata?: Record<string, any>;
   user_info?: User;
+  thread_replies?: Content[];  // Direct replies to this content (for local state)
 }
 
 export interface Group {
@@ -70,6 +78,7 @@ export interface CreateContentRequest {
   type: 'text' | 'image' | 'audio' | 'clipboard' | 'file' | 'url';
   data: string;
   group_id: string;
+  parent_content_id?: string;  // For threading - optional
   tags?: string[];
   metadata?: Record<string, any>;
 }

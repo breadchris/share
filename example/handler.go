@@ -29,7 +29,7 @@ func New(d deps.Deps) *http.ServeMux {
 	// Register the service with Connect interceptors
 	// examples https://github.com/justshare-io/justshare/blob/main/pkg/server/serve.go#L139
 	interceptors := connect.WithInterceptors(
-		// Add any interceptors you need (logging, auth, etc.)
+	// Add any interceptors you need (logging, auth, etc.)
 	)
 
 	// Create and mount the handler for API endpoints

@@ -117,6 +117,35 @@ export async function deleteContent(contentId: string): Promise<{ success: boole
   });
 }
 
+// Threading API
+export async function getReplies(
+  contentId: string,
+  offset = 0,
+  limit = 20
+): Promise<TimelineResponse> {
+  const params = new URLSearchParams({
+    offset: offset.toString(),
+    limit: limit.toString(),
+  });
+  
+  return fetchJSON(`${API_BASE}/content/${contentId}/replies?${params}`);
+}
+
+export async function createReply(
+  parentContentId: string,
+  request: Omit<CreateContentRequest, 'parent_content_id'>
+): Promise<Content> {
+  const replyRequest: CreateContentRequest = {
+    ...request,
+    parent_content_id: parentContentId,
+  };
+  
+  return fetchJSON(`${API_BASE}/content`, {
+    method: 'POST',
+    body: JSON.stringify(replyRequest),
+  });
+}
+
 // Group API
 export async function createGroup(request: CreateGroupRequest): Promise<Group> {
   return fetchJSON(`${API_BASE}/groups`, {

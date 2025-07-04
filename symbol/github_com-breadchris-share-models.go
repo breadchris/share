@@ -14,6 +14,7 @@ func init() {
 		"HashToken":       reflect.ValueOf(models.HashToken),
 		"NewApiKey":       reflect.ValueOf(models.NewApiKey),
 		"NewContent":      reflect.ValueOf(models.NewContent),
+		"NewContentReply": reflect.ValueOf(models.NewContentReply),
 
 		// type definitions
 		"AIRecipe":         reflect.ValueOf((*models.AIRecipe)(nil)),

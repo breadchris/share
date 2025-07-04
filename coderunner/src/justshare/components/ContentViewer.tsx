@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import type { ContentViewerProps, Content } from '../types';
 import { VideoPlayer } from './VideoPlayer';
 import { formatDomainForDisplay } from '../utils/url';
+import { getReplies, createReply, getErrorMessage } from '../utils/api';
 
 export const ContentViewer: React.FC<ContentViewerProps> = ({
   content,
@@ -12,6 +13,16 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showActions, setShowActions] = useState(true);
   const [viewportSize, setViewportSize] = useState({ width: window.innerWidth, height: window.innerHeight });
+  
+  // Threading state
+  const [replies, setReplies] = useState<Content[]>([]);
+  const [isLoadingReplies, setIsLoadingReplies] = useState(false);
+  const [hasMoreReplies, setHasMoreReplies] = useState(false);
+  const [repliesOffset, setRepliesOffset] = useState(0);
+  const [showReplyForm, setShowReplyForm] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+  const [threadError, setThreadError] = useState<string | null>(null);
 
   // Track viewport size for responsive video sizing
   useEffect(() => {
@@ -155,6 +166,60 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
       minute: '2-digit',
     });
   };
+
+  // Load replies for the current content
+  const loadReplies = useCallback(async (reset = false) => {
+    if (!content.id) return;
+    
+    setIsLoadingReplies(true);
+    setThreadError(null);
+    
+    const offset = reset ? 0 : repliesOffset;
+    
+    try {
+      const response = await getReplies(content.id, offset);
+      setReplies(prev => reset ? response.content : [...prev, ...response.content]);
+      setHasMoreReplies(response.has_more);
+      setRepliesOffset(response.next_offset);
+    } catch (error) {
+      setThreadError(getErrorMessage(error));
+    } finally {
+      setIsLoadingReplies(false);
+    }
+  }, [content.id, repliesOffset]);
+
+  // Load replies when component mounts (only if content has replies)
+  useEffect(() => {
+    if (content.reply_count && content.reply_count > 0) {
+      loadReplies(true);
+    }
+  }, [content.id]);
+
+  // Handle reply submission
+  const handleReplySubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!replyText.trim() || isSubmittingReply) return;
+    
+    setIsSubmittingReply(true);
+    setThreadError(null);
+    
+    try {
+      const newReply = await createReply(content.id, {
+        type: 'text',
+        data: replyText.trim(),
+        group_id: content.group_id,
+      });
+      
+      // Add the new reply to the local state
+      setReplies(prev => [...prev, newReply]);
+      setReplyText('');
+      setShowReplyForm(false);
+    } catch (error) {
+      setThreadError(getErrorMessage(error));
+    } finally {
+      setIsSubmittingReply(false);
+    }
+  }, [content.id, content.group_id, replyText, isSubmittingReply]);
 
   const renderContentLarge = () => {
     // Debug logging for content type investigation
@@ -586,14 +651,14 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
               </h2>
               <div className={`text-sm ${isFullscreen ? 'text-gray-300' : 'text-gray-600'}`}>
                 <p>{formatTimestamp(content.created_at)}</p>
-                {content.user_info && content.user_info.username && (
+                {content.user_info && content.user_info.Username && (
                   <div className="flex items-center space-x-2 mt-1">
                     <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
                       <span className="text-white text-xs font-semibold">
-                        {content.user_info.username.charAt(0).toUpperCase()}
+                        {content.user_info.Username.charAt(0).toUpperCase()}
                       </span>
                     </div>
-                    <span className="text-xs">by {content.user_info.username}</span>
+                    <span className="text-xs">by {content.user_info.Username}</span>
                   </div>
                 )}
               </div>
@@ -669,6 +734,118 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
         }`}>
           {renderContentLarge()}
         </div>
+
+        {/* Threading Section */}
+        {!isFullscreen && (
+          <div className="border-t border-gray-200 p-4 space-y-4 max-h-80 overflow-y-auto">
+            {/* Reply Count & Toggle */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <h4 className="text-sm font-medium text-gray-700">
+                  {content.reply_count > 0 ? `${content.reply_count} ${content.reply_count === 1 ? 'Reply' : 'Replies'}` : 'No replies yet'}
+                </h4>
+                {!content.reply_count && (
+                  <button
+                    onClick={() => setShowReplyForm(!showReplyForm)}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Be the first to reply
+                  </button>
+                )}
+              </div>
+              {(content.reply_count > 0 || showReplyForm) && (
+                <button
+                  onClick={() => setShowReplyForm(!showReplyForm)}
+                  className="px-3 py-1 text-sm bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
+                >
+                  Reply
+                </button>
+              )}
+            </div>
+
+            {/* Error Display */}
+            {threadError && (
+              <div className="p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                {threadError}
+              </div>
+            )}
+
+            {/* Reply Form */}
+            {showReplyForm && (
+              <form onSubmit={handleReplySubmit} className="space-y-3">
+                <textarea
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  placeholder="Write a reply..."
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  rows={3}
+                  disabled={isSubmittingReply}
+                />
+                <div className="flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowReplyForm(false);
+                      setReplyText('');
+                    }}
+                    className="px-3 py-1 text-sm text-gray-600 hover:text-gray-700"
+                    disabled={isSubmittingReply}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!replyText.trim() || isSubmittingReply}
+                    className="px-4 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    {isSubmittingReply ? 'Posting...' : 'Post Reply'}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Replies List */}
+            {replies.length > 0 && (
+              <div className="space-y-3">
+                {replies.map((reply) => (
+                  <div key={reply.id} className="bg-gray-50 rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        {reply.user_info && reply.user_info.Username && (
+                          <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-xs font-semibold">
+                              {reply.user_info.Username.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        <span className="text-sm font-medium text-gray-700">
+                          {reply.user_info?.Username || 'Anonymous'}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {formatTimestamp(reply.created_at)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-800 whitespace-pre-wrap">
+                      {reply.data}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Load More Button */}
+                {hasMoreReplies && (
+                  <button
+                    onClick={() => loadReplies(false)}
+                    disabled={isLoadingReplies}
+                    className="w-full py-2 text-sm text-blue-600 hover:text-blue-700 disabled:text-gray-400"
+                  >
+                    {isLoadingReplies ? 'Loading...' : 'Load more replies'}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Tags and Metadata */}
         {(!isFullscreen || showActions) && (content.tag_names?.length || content.metadata) && (

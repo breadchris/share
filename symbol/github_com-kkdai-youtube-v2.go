@@ -34,6 +34,7 @@ func init() {
 		"Size10Mb":                      reflect.ValueOf(constant.MakeFromLiteral("10485760", token.INT, 0)),
 		"Size1Kb":                       reflect.ValueOf(constant.MakeFromLiteral("1024", token.INT, 0)),
 		"Size1Mb":                       reflect.ValueOf(constant.MakeFromLiteral("1048576", token.INT, 0)),
+		"VisitorIdMaxAge":               reflect.ValueOf(&youtube.VisitorIdMaxAge).Elem(),
 		"WebClient":                     reflect.ValueOf(&youtube.WebClient).Elem(),
 
 		// type definitions

@@ -10,11 +10,21 @@ import (
 func init() {
 	Symbols["github.com/breadchris/share/coderunner/coderunner"] = map[string]reflect.Value{
 		// function, constant and variable definitions
-		"LoadModule":              reflect.ValueOf(coderunner.LoadModule),
-		"New":                     reflect.ValueOf(coderunner.New),
-		"ServeReactApp":           reflect.ValueOf(coderunner.ServeReactApp),
-		"ServeReactAppProduction": reflect.ValueOf(coderunner.ServeReactAppProduction),
-		"ServeReactAppWithProps":  reflect.ValueOf(coderunner.ServeReactAppWithProps),
+		"BuildErrorPage":            reflect.ValueOf(coderunner.BuildErrorPage),
+		"CSSLinks":                  reflect.ValueOf(coderunner.CSSLinks),
+		"ComponentErrorStyles":      reflect.ValueOf(coderunner.ComponentErrorStyles),
+		"ComponentLoader":           reflect.ValueOf(coderunner.ComponentLoader),
+		"ComponentPageLayout":       reflect.ValueOf(coderunner.ComponentPageLayout),
+		"ComponentRuntimeStyles":    reflect.ValueOf(coderunner.ComponentRuntimeStyles),
+		"ErrorDisplay":              reflect.ValueOf(coderunner.ErrorDisplay),
+		"LoadModule":                reflect.ValueOf(coderunner.LoadModule),
+		"New":                       reflect.ValueOf(coderunner.New),
+		"ReactComponentPage":        reflect.ValueOf(coderunner.ReactComponentPage),
+		"ReactComponentPageWithCSS": reflect.ValueOf(coderunner.ReactComponentPageWithCSS),
+		"ReactImportMap":            reflect.ValueOf(coderunner.ReactImportMap),
+		"ServeReactApp":             reflect.ValueOf(coderunner.ServeReactApp),
+		"ServeReactAppProduction":   reflect.ValueOf(coderunner.ServeReactAppProduction),
+		"ServeReactAppWithProps":    reflect.ValueOf(coderunner.ServeReactAppWithProps),
 
 		// type definitions
 		"BuildCache":      reflect.ValueOf((*coderunner.BuildCache)(nil)),

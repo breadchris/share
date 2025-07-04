@@ -293,17 +293,27 @@ const TimelineItem: React.FC<TimelineItemProps> = ({ content, onClick, onSelect,
         <div className="text-xs text-gray-400 italic">No tags</div>
       )}
 
+      {/* Reply Indicator */}
+      {content.reply_count && content.reply_count > 0 && (
+        <div className="flex items-center space-x-1 mb-2">
+          <div className="flex items-center space-x-1 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+            <span>💬</span>
+            <span>{content.reply_count} {content.reply_count === 1 ? 'reply' : 'replies'}</span>
+          </div>
+        </div>
+      )}
+
       {/* User Information and Timestamp */}
       <div className="flex items-center justify-between text-xs text-gray-500">
         <div className="flex items-center space-x-2">
-          {content.user_info && content.user_info.username && (
+          {content.user_info && content.user_info.Username && (
             <>
               <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                 <span className="text-white text-xs font-semibold">
-                  {content.user_info.username.charAt(0).toUpperCase()}
+                  {content.user_info.Username.charAt(0).toUpperCase()}
                 </span>
               </div>
-              <span className="font-medium">{content.user_info.username}</span>
+              <span className="font-medium">{content.user_info.Username}</span>
             </>
           )}
         </div>

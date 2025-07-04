@@ -281,17 +281,21 @@ type ContainerSession struct {
 
 type Content struct {
 	Model
-	Type     string                             `json:"type" gorm:"not null"`  // text, image, audio, clipboard
-	Data     string                             `json:"data" gorm:"type:text"` // Text content or file path
-	MediaURL string                             `json:"media_url,omitempty"`   // URL for media files
-	MimeType string                             `json:"mime_type,omitempty"`   // MIME type for media
-	FileSize int64                              `json:"file_size,omitempty"`   // File size in bytes
-	GroupID  string                             `json:"group_id" gorm:"index;not null"`
-	UserID   string                             `json:"user_id" gorm:"index;not null"`
-	Group    *Group                             `gorm:"foreignKey:GroupID"`
-	User     *User                              `gorm:"foreignKey:UserID"`
-	Tags     []*Tag                             `gorm:"many2many:content_tags;"`
-	Metadata *JSONField[map[string]interface{}] `json:"metadata,omitempty"` // Additional metadata
+	Type            string                             `json:"type" gorm:"not null"`  // text, image, audio, clipboard
+	Data            string                             `json:"data" gorm:"type:text"` // Text content or file path
+	MediaURL        string                             `json:"media_url,omitempty"`   // URL for media files
+	MimeType        string                             `json:"mime_type,omitempty"`   // MIME type for media
+	FileSize        int64                              `json:"file_size,omitempty"`   // File size in bytes
+	GroupID         string                             `json:"group_id" gorm:"index;not null"`
+	UserID          string                             `json:"user_id" gorm:"index;not null"`
+	ParentContentID *string                            `json:"parent_content_id,omitempty" gorm:"index"` // For threading - nullable for root content
+	ReplyCount      int                                `json:"reply_count" gorm:"default:0"`             // Cache of direct reply count
+	Group           *Group                             `gorm:"foreignKey:GroupID"`
+	User            *User                              `gorm:"foreignKey:UserID"`
+	ParentContent   *Content                           `gorm:"foreignKey:ParentContentID"`                          // Parent content for threads
+	ThreadReplies   []*Content                         `gorm:"foreignKey:ParentContentID"`                          // Direct replies to this content
+	Tags            []*Tag                             `gorm:"many2many:content_tags;"`
+	Metadata        *JSONField[map[string]interface{}] `json:"metadata,omitempty"` // Additional metadata
 }
 
 type Tag struct {
@@ -319,11 +323,30 @@ func NewContent(contentType, data, groupID, userID string, metadata map[string]i
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		},
-		Type:     contentType,
-		Data:     data,
-		GroupID:  groupID,
-		UserID:   userID,
-		Metadata: MakeJSONField(metadata),
+		Type:        contentType,
+		Data:        data,
+		GroupID:     groupID,
+		UserID:      userID,
+		ReplyCount:  0,
+		Metadata:    MakeJSONField(metadata),
+	}
+}
+
+// NewContentReply creates a new Content instance as a reply to parent content
+func NewContentReply(contentType, data, groupID, userID, parentContentID string, metadata map[string]interface{}) *Content {
+	return &Content{
+		Model: Model{
+			ID:        uuid.NewString(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
+		Type:            contentType,
+		Data:            data,
+		GroupID:         groupID,
+		UserID:          userID,
+		ParentContentID: &parentContentID,
+		ReplyCount:      0,
+		Metadata:        MakeJSONField(metadata),
 	}
 }
 

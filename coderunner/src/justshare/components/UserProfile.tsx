@@ -48,11 +48,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onClose, onLogou
       <div className="text-center">
         <div className="w-16 h-16 mx-auto mb-3 bg-blue-500 rounded-full flex items-center justify-center">
           <span className="text-white text-xl font-semibold">
-            {getInitials(user.username)}
+            {getInitials(user.Username)}
           </span>
         </div>
-        <h2 className="text-xl font-semibold text-gray-900">{user.username}</h2>
-        <p className="text-sm text-gray-600">Member since {formatDate(user.created_at)}</p>
+        <h2 className="text-xl font-semibold text-gray-900">{user.Username}</h2>
+        <p className="text-sm text-gray-600">Member since {formatDate(user.CreatedAt)}</p>
       </div>
 
       {/* Profile Stats */}
@@ -61,11 +61,11 @@ export const UserProfile: React.FC<UserProfileProps> = ({ user, onClose, onLogou
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600">User ID</span>
-            <span className="text-sm font-mono text-gray-900">{user.id}</span>
+            <span className="text-sm font-mono text-gray-900">{user.ID}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600">Username</span>
-            <span className="text-sm text-gray-900">{user.username}</span>
+            <span className="text-sm text-gray-900">{user.Username}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600">Account Type</span>
