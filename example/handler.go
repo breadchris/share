@@ -13,7 +13,7 @@ import (
 // Following the deps pattern used in the rest of the codebase
 func New(d deps.Deps) *http.ServeMux {
 	mux := http.NewServeMux()
-	
+
 	// Serve the React component at the root path
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
@@ -22,18 +22,19 @@ func New(d deps.Deps) *http.ServeMux {
 		}
 		http.NotFound(w, r)
 	})
-	
+
 	// Create service instance
 	service := NewService()
-	
+
 	// Register the service with Connect interceptors
+	// examples https://github.com/justshare-io/justshare/blob/main/pkg/server/serve.go#L139
 	interceptors := connect.WithInterceptors(
 		// Add any interceptors you need (logging, auth, etc.)
 	)
-	
+
 	// Create and mount the handler for API endpoints
 	path, handler := exampleconnect.NewExampleServiceHandler(service, interceptors)
 	mux.Handle(path, handler)
-	
+
 	return mux
 }

@@ -14,6 +14,7 @@ export const JoinCodeModal: React.FC<JoinCodeModalProps> = ({
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
+  const [urlCopied, setUrlCopied] = useState(false);
 
   // Close modal when clicking outside
   useEffect(() => {
@@ -55,6 +56,7 @@ export const JoinCodeModal: React.FC<JoinCodeModalProps> = ({
   useEffect(() => {
     if (!isOpen) {
       setCopied(false);
+      setUrlCopied(false);
     }
   }, [isOpen]);
 
@@ -76,6 +78,30 @@ export const JoinCodeModal: React.FC<JoinCodeModalProps> = ({
       document.body.removeChild(textArea);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleCopyJoinUrl = async () => {
+    if (!group?.join_code) return;
+
+    const currentDomain = window.location.origin;
+    const joinUrl = `${currentDomain}/justshare/?join=${encodeURIComponent(group.join_code)}`;
+
+    try {
+      await navigator.clipboard.writeText(joinUrl);
+      setUrlCopied(true);
+      setTimeout(() => setUrlCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy join URL:', err);
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = joinUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setUrlCopied(true);
+      setTimeout(() => setUrlCopied(false), 2000);
     }
   };
 
@@ -163,6 +189,36 @@ export const JoinCodeModal: React.FC<JoinCodeModalProps> = ({
               {copied && (
                 <div className="text-center">
                   <span className="text-sm text-green-600 font-medium">Copied to clipboard!</span>
+                </div>
+              )}
+
+              {/* Copy Join URL Button */}
+              <div className="text-center">
+                <button
+                  onClick={handleCopyJoinUrl}
+                  className={`px-4 py-2 rounded-lg transition-colors font-medium ${
+                    urlCopied 
+                      ? 'bg-green-100 text-green-700 border border-green-200' 
+                      : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
+                  }`}
+                  title={urlCopied ? 'Join URL copied!' : 'Copy join URL'}
+                >
+                  <div className="flex items-center justify-center space-x-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-current">
+                      {urlCopied ? (
+                        <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      ) : (
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      )}
+                    </svg>
+                    <span>{urlCopied ? 'Join URL Copied!' : 'Copy Join URL'}</span>
+                  </div>
+                </button>
+              </div>
+
+              {urlCopied && (
+                <div className="text-center">
+                  <span className="text-sm text-green-600 font-medium">Join URL copied to clipboard!</span>
                 </div>
               )}
             </div>

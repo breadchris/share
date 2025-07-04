@@ -3,7 +3,7 @@
 package symbol
 
 import (
-	"github.com/breadchris/share/calendar"
+	"github.com/breadchris/share/graveyard/calendar"
 	"reflect"
 )
 
