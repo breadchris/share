@@ -53,6 +53,7 @@ type ClaudeProcess struct {
 	errorChan     chan ClaudeMessage // Channel for forwarding stderr errors
 }
 
+// types https://raw.githubusercontent.com/anthropics/claude-code-sdk-python/refs/heads/main/src/claude_code_sdk/types.py
 type ClaudeMessage struct {
 	Type      string          `json:"type"`
 	Subtype   string          `json:"subtype,omitempty"`

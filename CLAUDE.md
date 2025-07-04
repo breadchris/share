@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## git repos
+- ./claudemd
+- ./flow
+only refer to the code in the git repo directory in isolation, this is a separate git repo and does not share code with the rest of the codebase.
+
 ## Go
 - Debug print statements should be fmt.Printf("Debug: %+v\n", variable)
 - Routes are mounted in `main.go` using the `p()` function. Each route handler is wrapped with `interpreted("/path")`

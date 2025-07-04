@@ -84,6 +84,11 @@ export interface MessageDisplayProps {
   index: number;
   darkMode: boolean;
   onCopy?: (text: string) => void;
+  isMobile?: boolean;
+  isTouchDevice?: boolean;
+  allMessages?: ClaudeMessage[];
+  isCondensed?: boolean;
+  onToggleExpand?: () => void;
 }
 
 export interface SessionBrowserProps {
@@ -91,10 +96,12 @@ export interface SessionBrowserProps {
   currentSessionId: string | null;
   loading: boolean;
   darkMode: boolean;
+  isMobile?: boolean;
   onSelectSession: (sessionId: string) => void;
   onNewSession: () => void;
   onDeleteSession?: (sessionId: string) => void;
   onExportSession?: (sessionId: string) => void;
+  onClose?: () => void;
 }
 
 export interface InputAreaProps {
@@ -107,6 +114,8 @@ export interface InputAreaProps {
   placeholder?: string;
   multiline?: boolean;
   onKeyDown?: (event: React.KeyboardEvent) => void;
+  isMobile?: boolean;
+  isTouchDevice?: boolean;
 }
 
 export interface StatusIndicatorProps {
@@ -114,6 +123,8 @@ export interface StatusIndicatorProps {
   currentSessionId: string | null;
   darkMode: boolean;
   compact?: boolean;
+  isMobile?: boolean;
+  sessionLoading?: boolean;
 }
 
 export interface ClaudeError {

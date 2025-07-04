@@ -5,6 +5,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/breadchris/share/graveyard/ainet"
+	"github.com/breadchris/share/coderunner/claude"
+	"github.com/breadchris/share/graveyard/paint"
+	"github.com/breadchris/share/graveyard/sqlnotebook"
 	"log"
 	"log/slog"
 	"net/http"
@@ -14,10 +18,8 @@ import (
 
 	"github.com/breadchris/share/ai"
 	"github.com/breadchris/share/aiapi"
-	"github.com/breadchris/share/ainet"
 	"github.com/breadchris/share/bread"
 	"github.com/breadchris/share/breadchris"
-	"github.com/breadchris/share/claudemd"
 	"github.com/breadchris/share/code"
 	"github.com/breadchris/share/coderunner"
 	config2 "github.com/breadchris/share/config"
@@ -34,11 +36,9 @@ import (
 	"github.com/breadchris/share/list"
 	"github.com/breadchris/share/llm"
 	"github.com/breadchris/share/op"
-	"github.com/breadchris/share/paint"
 	"github.com/breadchris/share/registry"
 	"github.com/breadchris/share/session"
 	"github.com/breadchris/share/slackbot"
-	"github.com/breadchris/share/sqlnotebook"
 	"github.com/breadchris/share/test"
 	"github.com/breadchris/share/user"
 	"github.com/breadchris/share/wasmcode"
@@ -288,7 +288,7 @@ func startServer(useTLS bool, port int) {
 
 	p("/coderunner", interpreted(coderunner.New))
 	p("/example", interpreted(example.New))
-	p("/claudemd", interpreted(claudemd.New))
+	p("/claudemd", interpreted(claude.New))
 	p("/docker", interpreted(docker.New))
 	p("/filecode", func() *http.ServeMux {
 		m := http.NewServeMux()

@@ -7,10 +7,12 @@ export const SessionBrowser: React.FC<SessionBrowserProps> = ({
   currentSessionId,
   loading,
   darkMode,
+  isMobile = false,
   onSelectSession,
   onNewSession,
   onDeleteSession,
   onExportSession,
+  onClose,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'updated' | 'created' | 'title'>('updated');
@@ -60,6 +62,14 @@ export const SessionBrowser: React.FC<SessionBrowserProps> = ({
     onExportSession?.(sessionId);
   };
 
+  const handleSessionSelect = (sessionId: string) => {
+    onSelectSession(sessionId);
+    // Auto-close sidebar on mobile after selection
+    if (isMobile && onClose) {
+      onClose();
+    }
+  };
+
   const getSessionPreview = (session: ClaudeSession): string => {
     const lastMessage = session.messages[session.messages.length - 1];
     if (lastMessage?.type === 'assistant' && lastMessage.message) {
@@ -89,14 +99,39 @@ export const SessionBrowser: React.FC<SessionBrowserProps> = ({
       {/* Header */}
       <div className={`p-4 border-b ${borderClass}`}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Claude Sessions</h2>
-          <button
-            onClick={onNewSession}
-            className="px-3 py-1 rounded bg-blue-500 text-white hover:bg-blue-600 transition-colors"
-            disabled={loading}
-          >
-            + New
-          </button>
+          <h2 className={`font-semibold ${isMobile ? 'text-base' : 'text-lg'}`}>Claude Sessions</h2>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onNewSession}
+              className={`rounded text-white transition-colors
+                ${isMobile ? 'px-2 py-1 text-sm' : 'px-3 py-1'}
+                ${loading 
+                  ? 'bg-gray-500 cursor-not-allowed' 
+                  : 'bg-blue-500 hover:bg-blue-600 active:bg-blue-700'
+                }
+              `}
+              disabled={loading}
+              style={isMobile ? { minHeight: '36px' } : undefined}
+            >
+              {loading ? (
+                <>
+                  <span className="inline-block animate-spin mr-1">🔄</span>
+                  {isMobile ? '...' : 'Creating...'}
+                </>
+              ) : (
+                isMobile ? '+' : '+ New'
+              )}
+            </button>
+            {isMobile && onClose && (
+              <button
+                onClick={onClose}
+                className={`p-1 rounded transition-colors ${hoverClass}`}
+                style={{ minHeight: '36px', minWidth: '36px' }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Search and sort */}
@@ -106,13 +141,19 @@ export const SessionBrowser: React.FC<SessionBrowserProps> = ({
             placeholder="Search sessions..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className={`w-full px-3 py-2 rounded border ${borderClass} ${inputBgClass} ${textClass} text-sm`}
+            className={`w-full rounded border ${borderClass} ${inputBgClass} ${textClass}
+              ${isMobile ? 'px-3 py-2 text-base' : 'px-3 py-2 text-sm'}
+            `}
+            style={isMobile ? { minHeight: '44px' } : undefined}
           />
           
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as 'updated' | 'created' | 'title')}
-            className={`w-full px-3 py-2 rounded border ${borderClass} ${inputBgClass} ${textClass} text-sm`}
+            className={`w-full rounded border ${borderClass} ${inputBgClass} ${textClass}
+              ${isMobile ? 'px-3 py-2 text-base' : 'px-3 py-2 text-sm'}
+            `}
+            style={isMobile ? { minHeight: '44px' } : undefined}
           >
             <option value="updated">Sort by Last Updated</option>
             <option value="created">Sort by Created</option>
@@ -159,13 +200,15 @@ export const SessionBrowser: React.FC<SessionBrowserProps> = ({
               return (
                 <div
                   key={session.id}
-                  onClick={() => onSelectSession(session.session_id)}
-                  className={`p-4 cursor-pointer transition-colors relative group
+                  onClick={() => handleSessionSelect(session.session_id)}
+                  className={`cursor-pointer transition-colors relative group touch-manipulation
+                    ${isMobile ? 'p-3' : 'p-4'}
                     ${isActive 
                       ? `${darkMode ? 'bg-blue-900' : 'bg-blue-50'} border-l-4 border-l-blue-500` 
                       : hoverClass
                     }
                   `}
+                  style={isMobile ? { minHeight: '60px' } : undefined}
                 >
                   {/* Session info */}
                   <div className="flex items-start justify-between mb-2">
@@ -175,12 +218,18 @@ export const SessionBrowser: React.FC<SessionBrowserProps> = ({
                       {session.title || generateSessionTitle(session.messages)}
                     </h3>
                     
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className={`flex items-center gap-1 transition-opacity
+                      ${isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
+                    `}>
                       {onExportSession && (
                         <button
                           onClick={(e) => handleExportClick(session.session_id, e)}
-                          className={`p-1 rounded text-xs hover:bg-gray-200 dark:hover:bg-gray-600`}
+                          className={`rounded text-xs transition-colors
+                            ${isMobile ? 'p-2' : 'p-1'}
+                            ${darkMode ? 'hover:bg-gray-600 active:bg-gray-500' : 'hover:bg-gray-200 active:bg-gray-300'}
+                          `}
                           title="Export session"
+                          style={isMobile ? { minHeight: '36px', minWidth: '36px' } : undefined}
                         >
                           📤
                         </button>
@@ -189,8 +238,12 @@ export const SessionBrowser: React.FC<SessionBrowserProps> = ({
                       {onDeleteSession && (
                         <button
                           onClick={(e) => handleDeleteClick(session.session_id, e)}
-                          className={`p-1 rounded text-xs hover:bg-red-100 dark:hover:bg-red-900 text-red-600`}
+                          className={`rounded text-xs text-red-600 transition-colors
+                            ${isMobile ? 'p-2' : 'p-1'}
+                            ${darkMode ? 'hover:bg-red-900 active:bg-red-800' : 'hover:bg-red-100 active:bg-red-200'}
+                          `}
                           title="Delete session"
+                          style={isMobile ? { minHeight: '36px', minWidth: '36px' } : undefined}
                         >
                           🗑️
                         </button>

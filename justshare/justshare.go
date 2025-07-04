@@ -431,13 +431,26 @@ func handleCreateContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 	// Load content with tags and user for response
 	d.DB.Preload("Tags").Preload("User").First(content, "id = ?", content.ID)
 
-	// Create response
-	response := &ContentResponse{
-		Content:  content,
-		UserInfo: content.User,
-	}
+	// Create response with flattened structure to match frontend expectations
+	var tagNames []string
 	for _, tag := range content.Tags {
-		response.TagNames = append(response.TagNames, tag.Name)
+		tagNames = append(tagNames, tag.Name)
+	}
+
+	// Create a map that combines content fields with additional fields
+	response := map[string]interface{}{
+		"id":          content.ID,
+		"type":        content.Type,
+		"data":        content.Data,
+		"group_id":    content.GroupID,
+		"user_id":     content.UserID,
+		"media_url":   content.MediaURL,
+		"mime_type":   content.MimeType,
+		"metadata":    content.Metadata,
+		"created_at":  content.CreatedAt,
+		"updated_at":  content.UpdatedAt,
+		"tag_names":   tagNames,
+		"user_info":   content.User,
 	}
 
 	w.Header().Set("Content-Type", "application/json")

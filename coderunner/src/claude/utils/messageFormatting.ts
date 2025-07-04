@@ -107,9 +107,9 @@ export const highlightCodeBlocks = (text: string): string => {
   // This is a basic implementation - for production, consider using a proper markdown parser
   return text
     .replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
-      return `<pre class="code-block" data-language="${language || 'text'}"><code>${escapeHtml(code.trim())}</code></pre>`;
+      return `<pre class="code-block overflow-x-auto max-w-full" data-language="${language || 'text'}" style="white-space: pre; overflow-wrap: normal; word-break: normal;"><code>${escapeHtml(code.trim())}</code></pre>`;
     })
-    .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+    .replace(/`([^`]+)`/g, '<code class="inline-code break-words">$1</code>');
 };
 
 export const escapeHtml = (text: string): string => {
@@ -202,4 +202,55 @@ export const isSystemMessage = (message: ClaudeMessage): boolean => {
 
 export const isResultMessage = (message: ClaudeMessage): boolean => {
   return message.type === 'result';
+};
+
+export const shouldCondenseMessage = (message: ClaudeMessage, index: number, messages: ClaudeMessage[]): boolean => {
+  // Never condense user messages
+  if (message.type === 'user') return false;
+  
+  // Never condense the last message (final result)
+  if (index === messages.length - 1) return false;
+  
+  // Always condense system messages except session initialization
+  if (message.type === 'system' && message.subtype !== 'init') return true;
+  
+  // Condense error messages that aren't the final result
+  if (message.is_error && index < messages.length - 1) return true;
+  
+  // Condense intermediate result messages (not the final one)
+  if (message.type === 'result' && index < messages.length - 1) return true;
+  
+  // For assistant messages, condense if there's another assistant message after it
+  if (message.type === 'assistant') {
+    for (let i = index + 1; i < messages.length; i++) {
+      if (messages[i].type === 'assistant') {
+        return true; // Condense this one since there's a later assistant message
+      }
+    }
+  }
+  
+  return false;
+};
+
+export const getCondensedMessagePreview = (message: ClaudeMessage, maxLength: number = 60): string => {
+  const fullText = getMessageDisplayText(message);
+  const firstLine = fullText.split('\n')[0];
+  return truncateText(firstLine, maxLength);
+};
+
+export const getMessageTypeLabel = (message: ClaudeMessage): string => {
+  switch (message.type) {
+    case 'assistant':
+      return 'Claude';
+    case 'system':
+      return message.subtype === 'init' ? 'Session Started' : 'System';
+    case 'error':
+      return 'Error';
+    case 'result':
+      return 'Result';
+    case 'user':
+      return 'You';
+    default:
+      return message.type.charAt(0).toUpperCase() + message.type.slice(1);
+  }
 };
