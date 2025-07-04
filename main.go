@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/breadchris/share/graveyard/ainet"
-	"github.com/breadchris/share/coderunner/claude"
+	"github.com/breadchris/share/graveyard/claudemd"
 	"github.com/breadchris/share/graveyard/paint"
 	"github.com/breadchris/share/graveyard/sqlnotebook"
 	"log"
@@ -288,7 +288,7 @@ func startServer(useTLS bool, port int) {
 
 	p("/coderunner", interpreted(coderunner.New))
 	p("/example", interpreted(example.New))
-	p("/claudemd", interpreted(claude.New))
+	p("/claudemd", interpreted(claudemd.New))
 	p("/docker", interpreted(docker.New))
 	p("/filecode", func() *http.ServeMux {
 		m := http.NewServeMux()
