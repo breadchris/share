@@ -5,12 +5,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/card.go" beforeDir="false" afterPath="$PROJECT_DIR$/card.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/card2.go" beforeDir="false" afterPath="$PROJECT_DIR$/card2.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cardsections.go" beforeDir="false" afterPath="$PROJECT_DIR$/cardsections.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/claudemd" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/claudemd/components/ClaudeSessionBrowser.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/components/ClaudeSessionBrowser.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/claudemd/components/ClaudeSessionViewer.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/components/ClaudeSessionViewer.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/claudemd/hooks/useSessions.ts" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/hooks/useSessions.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/claudemd/types/session.ts" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/types/session.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/deps/deps.go" beforeDir="false" afterPath="$PROJECT_DIR$/deps/deps.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/eventcalendar.go" beforeDir="false" afterPath="$PROJECT_DIR$/eventcalendar.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow" beforeDir="false" afterPath="$PROJECT_DIR$/flow" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/coderunner/ClaudeInterface.tsx" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/coderunner/CodeRunner.tsx" beforeDir="false" />
@@ -37,6 +41,13 @@
       <change beforePath="$PROJECT_DIR$/flow/worklet/docker.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/worklet/docker.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/worklet/handlers.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/worklet/handlers.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/worklet/manager.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/worklet/manager.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/justshare/justshare.go" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/justshare.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-deps.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-deps.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-llm.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/symbol.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/symbol.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tarot.go" beforeDir="false" afterPath="$PROJECT_DIR$/tarot.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/zine2.go" beforeDir="false" afterPath="$PROJECT_DIR$/zine2.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -121,7 +132,7 @@
       <recent name="$PROJECT_DIR$/coderunner/src/coderunner" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Build.flow">
+  <component name="RunManager" selected="Go Build.share">
     <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
       <module name="share" />
       <working_directory value="$PROJECT_DIR$" />
@@ -294,7 +305,7 @@
       <workItem from="1747973023098" duration="26954000" />
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
-      <workItem from="1750823408293" duration="200557000" />
+      <workItem from="1750823408293" duration="200951000" />
     </task>
     <servers />
   </component>

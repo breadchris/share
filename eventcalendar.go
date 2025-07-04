@@ -21,7 +21,6 @@ import (
 
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
-	"github.com/breadchris/share/websocket"
 )
 
 type Calendar struct {
@@ -791,30 +790,30 @@ func NewEverout(d deps.Deps) *http.ServeMux {
 	// topEventsDB.DeleteAll()
 	// eventsDB.DeleteAll()
 
-	d.WebsocketRegistry.Register2("like", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
-		eventsDB := d.Docs.WithCollection("events")
-		id := msgMap["id"].(string)
-
-		var event EverOutEvent
-		eventsDB.Get(id, &event)
-		if event.Liked {
-			event.Liked = false
-		} else {
-			event.Liked = true
-		}
-
-		eventsDB.Set(id, event)
-
-		cmdMsgs := []string{
-			LikeButton(id, event.Liked).Render(),
-		}
-		for _, msg := range cmdMsgs {
-			hub.Broadcast <- websocket.Message{
-				Room:    id,
-				Content:  []byte(msg),
-			}
-		}
-	})
+	//d.WebsocketRegistry.Register2("like", func(message string, hub *websocket.Hub, msgMap map[string]interface{}) {
+	//	eventsDB := d.Docs.WithCollection("events")
+	//	id := msgMap["id"].(string)
+	//
+	//	var event EverOutEvent
+	//	eventsDB.Get(id, &event)
+	//	if event.Liked {
+	//		event.Liked = false
+	//	} else {
+	//		event.Liked = true
+	//	}
+	//
+	//	eventsDB.Set(id, event)
+	//
+	//	cmdMsgs := []string{
+	//		LikeButton(id, event.Liked).Render(),
+	//	}
+	//	for _, msg := range cmdMsgs {
+	//		hub.Broadcast <- websocket.Message{
+	//			Room:    id,
+	//			Content: []byte(msg),
+	//		}
+	//	}
+	//})
 
 	m := http.NewServeMux()
 	m.HandleFunc("/ui", func(w http.ResponseWriter, r *http.Request) {
@@ -1306,7 +1305,7 @@ func ParseDoc(doc *goquery.Document, date string) []EverOutEvent {
 		everoutDate := stripChars(s.Find("div.event-date").Text(), "\n")
 		everoutDate = stripChars(everoutDate, " ")
 		event.EveroutDate = everoutDate
-		event.Date = date 
+		event.Date = date
 
 		fmt.Println("THE DATE IS: ", date)
 

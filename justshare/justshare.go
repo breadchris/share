@@ -49,21 +49,21 @@ type TimelineResponse struct {
 }
 
 type GroupMemberResponse struct {
-	ID        string    `json:"id"`
-	UserID    string    `json:"user_id"`
-	GroupID   string    `json:"group_id"`
-	Role      string    `json:"role"`
-	CreatedAt time.Time `json:"created_at"`
+	ID        string       `json:"id"`
+	UserID    string       `json:"user_id"`
+	GroupID   string       `json:"group_id"`
+	Role      string       `json:"role"`
+	CreatedAt time.Time    `json:"created_at"`
 	User      *models.User `json:"user,omitempty"`
 }
 
 type GroupSettingsResponse struct {
-	ID        string                  `json:"id"`
-	Name      string                  `json:"name"`
-	JoinCode  string                  `json:"join_code"`
-	CreatedAt time.Time               `json:"created_at"`
-	Members   []*GroupMemberResponse  `json:"members"`
-	UserRole  string                  `json:"user_role"`
+	ID        string                 `json:"id"`
+	Name      string                 `json:"name"`
+	JoinCode  string                 `json:"join_code"`
+	CreatedAt time.Time              `json:"created_at"`
+	Members   []*GroupMemberResponse `json:"members"`
+	UserRole  string                 `json:"user_role"`
 }
 
 type CreateAPIKeyRequest struct {
@@ -78,7 +78,7 @@ type APIKeyResponse struct {
 
 // Context keys for storing user information
 const (
-	UserContextKey = "user_id"
+	UserContextKey   = "user_id"
 	APIKeyContextKey = "api_key"
 )
 
@@ -88,24 +88,24 @@ func authenticateUser(r *http.Request, d deps.Deps) (string, *models.ApiKey, err
 	if userID, err := d.Session.GetUserID(r.Context()); err == nil {
 		return userID, nil, nil
 	}
-	
+
 	// Try API key authentication
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		return "", nil, fmt.Errorf("no authentication provided")
 	}
-	
+
 	// Check for Bearer token format
 	parts := strings.SplitN(authHeader, " ", 2)
 	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
 		return "", nil, fmt.Errorf("invalid authorization header format")
 	}
-	
+
 	token := parts[1]
 	if !strings.HasPrefix(token, "ak_") {
 		return "", nil, fmt.Errorf("invalid API key format")
 	}
-	
+
 	// Validate the API key
 	var apiKey models.ApiKey
 	tokenHash := models.HashToken(token)
@@ -113,16 +113,16 @@ func authenticateUser(r *http.Request, d deps.Deps) (string, *models.ApiKey, err
 	if err != nil {
 		return "", nil, fmt.Errorf("invalid or expired API key")
 	}
-	
+
 	// Check expiration
 	if apiKey.ExpiresAt != nil && apiKey.ExpiresAt.Before(time.Now()) {
 		return "", nil, fmt.Errorf("API key has expired")
 	}
-	
+
 	// Update last used timestamp
 	apiKey.UpdateLastUsed()
 	d.DB.Save(&apiKey)
-	
+
 	return apiKey.UserID, &apiKey, nil
 }
 
@@ -134,14 +134,14 @@ func requireAuth(d deps.Deps, handler func(http.ResponseWriter, *http.Request, d
 			http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 			return
 		}
-		
+
 		// Add user and API key info to context
 		ctx := context.WithValue(r.Context(), UserContextKey, userID)
 		if apiKey != nil {
 			ctx = context.WithValue(ctx, APIKeyContextKey, apiKey)
 		}
 		r = r.WithContext(ctx)
-		
+
 		handler(w, r, d)
 	}
 }
@@ -168,14 +168,13 @@ func checkAPIKeyScope(ctx context.Context, requiredScope string) error {
 		// Session auth - allow all operations
 		return nil
 	}
-	
+
 	if !apiKey.HasScope(requiredScope) {
 		return fmt.Errorf("insufficient permissions")
 	}
-	
+
 	return nil
 }
-
 
 func New(d deps.Deps) *http.ServeMux {
 	m := http.NewServeMux()
@@ -250,14 +249,14 @@ func New(d deps.Deps) *http.ServeMux {
 	m.HandleFunc("/api/groups/", func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimPrefix(r.URL.Path, "/api/groups/")
 		pathParts := strings.Split(path, "/")
-		
+
 		if len(pathParts) < 1 || pathParts[0] == "" {
 			http.Error(w, "Group ID required", http.StatusBadRequest)
 			return
 		}
-		
+
 		groupID := pathParts[0]
-		
+
 		if len(pathParts) == 1 {
 			// /api/groups/{groupID}
 			switch r.Method {
@@ -339,12 +338,12 @@ func New(d deps.Deps) *http.ServeMux {
 	m.HandleFunc("/api/auth/keys/", func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimPrefix(r.URL.Path, "/api/auth/keys/")
 		keyID := strings.Split(path, "/")[0]
-		
+
 		if keyID == "" {
 			http.Error(w, "API key ID required", http.StatusBadRequest)
 			return
 		}
-		
+
 		switch r.Method {
 		case "DELETE":
 			handleRevokeAPIKey(w, r, d, keyID)
@@ -362,7 +361,7 @@ func handleCreateContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 		return
 	}
-	
+
 	// Check if API key has write permissions
 	if err := checkAPIKeyScope(r.Context(), "write"); err != nil {
 		http.Error(w, `{"error":"insufficient permissions"}`, http.StatusForbidden)
@@ -488,18 +487,18 @@ func handleCreateContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 
 	// Create a map that combines content fields with additional fields
 	response := map[string]interface{}{
-		"id":          content.ID,
-		"type":        content.Type,
-		"data":        content.Data,
-		"group_id":    content.GroupID,
-		"user_id":     content.UserID,
-		"media_url":   content.MediaURL,
-		"mime_type":   content.MimeType,
-		"metadata":    content.Metadata,
-		"created_at":  content.CreatedAt,
-		"updated_at":  content.UpdatedAt,
-		"tag_names":   tagNames,
-		"user_info":   content.User,
+		"id":         content.ID,
+		"type":       content.Type,
+		"data":       content.Data,
+		"group_id":   content.GroupID,
+		"user_id":    content.UserID,
+		"media_url":  content.MediaURL,
+		"mime_type":  content.MimeType,
+		"metadata":   content.Metadata,
+		"created_at": content.CreatedAt,
+		"updated_at": content.UpdatedAt,
+		"tag_names":  tagNames,
+		"user_info":  content.User,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -512,7 +511,7 @@ func handleGetTimeline(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 		return
 	}
-	
+
 	// Check if API key has read permissions
 	if err := checkAPIKeyScope(r.Context(), "read"); err != nil {
 		http.Error(w, `{"error":"insufficient permissions"}`, http.StatusForbidden)
@@ -528,7 +527,7 @@ func handleGetTimeline(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 		http.Error(w, `{"error":"group_id is required"}`, http.StatusBadRequest)
 		return
 	}
-	
+
 	// Verify user has access to this group
 	_, err = checkGroupMembership(d.DB, userID, groupID)
 	if err != nil {
@@ -544,12 +543,12 @@ func handleGetTimeline(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 
 	var contents []*models.Content
 	query := d.DB.Where("group_id = ?", groupID)
-	
+
 	// By default, exclude replies from the main timeline
 	if !includeReplies {
 		query = query.Where("parent_content_id IS NULL")
 	}
-	
+
 	query = query.Preload("Tags").
 		Preload("User").
 		Order("created_at DESC").
@@ -570,7 +569,7 @@ func handleGetTimeline(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 	var contentResponses []*ContentResponse
 	for _, content := range contents {
 		response := &ContentResponse{
-			Content:  *content,
+			Content:  content,
 			UserInfo: content.User,
 		}
 		for _, tag := range content.Tags {
@@ -595,7 +594,7 @@ func handleGetContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 		return
 	}
-	
+
 	// Check if API key has read permissions
 	if err := checkAPIKeyScope(r.Context(), "read"); err != nil {
 		http.Error(w, `{"error":"insufficient permissions"}`, http.StatusForbidden)
@@ -616,7 +615,7 @@ func handleGetContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 		http.Error(w, `{"error":"content not found"}`, http.StatusNotFound)
 		return
 	}
-	
+
 	// Verify user has access to this content's group
 	_, err = checkGroupMembership(d.DB, userID, content.GroupID)
 	if err != nil {
@@ -626,7 +625,7 @@ func handleGetContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 
 	// Create response
 	response := &ContentResponse{
-		Content:  content,
+		Content:  &content,
 		UserInfo: content.User,
 	}
 	for _, tag := range content.Tags {
@@ -643,7 +642,7 @@ func handleDeleteContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 		return
 	}
-	
+
 	// Check if API key has write permissions
 	if err := checkAPIKeyScope(r.Context(), "write"); err != nil {
 		http.Error(w, `{"error":"insufficient permissions"}`, http.StatusForbidden)
@@ -706,7 +705,7 @@ func handleGetContentReplies(w http.ResponseWriter, r *http.Request, d deps.Deps
 		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 		return
 	}
-	
+
 	// Check if API key has read permissions
 	if err := checkAPIKeyScope(r.Context(), "read"); err != nil {
 		http.Error(w, `{"error":"insufficient permissions"}`, http.StatusForbidden)
@@ -733,7 +732,7 @@ func handleGetContentReplies(w http.ResponseWriter, r *http.Request, d deps.Deps
 		http.Error(w, `{"error":"content not found"}`, http.StatusNotFound)
 		return
 	}
-	
+
 	// Verify user has access to this content's group
 	_, err = checkGroupMembership(d.DB, userID, parentContent.GroupID)
 	if err != nil {
@@ -773,7 +772,7 @@ func handleGetContentReplies(w http.ResponseWriter, r *http.Request, d deps.Deps
 	var responses []*ContentResponse
 	for _, reply := range replies {
 		response := &ContentResponse{
-			Content:  *reply,
+			Content:  reply,
 			UserInfo: reply.User,
 		}
 		for _, tag := range reply.Tags {
@@ -799,7 +798,7 @@ func handleGetDefaultGroup(w http.ResponseWriter, r *http.Request, d deps.Deps) 
 		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 		return
 	}
-	
+
 	// Check if API key has read permissions
 	if err := checkAPIKeyScope(r.Context(), "read"); err != nil {
 		http.Error(w, `{"error":"insufficient permissions"}`, http.StatusForbidden)
@@ -812,7 +811,7 @@ func handleGetDefaultGroup(w http.ResponseWriter, r *http.Request, d deps.Deps) 
 		Preload("Group").
 		Order("created_at ASC").
 		First(&membership).Error
-	
+
 	if err != nil {
 		// If no personal group exists, create one
 		personalGroup := &models.Group{
@@ -856,7 +855,7 @@ func handleCreateGroup(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 		return
 	}
-	
+
 	// Check if API key has write permissions
 	if err := checkAPIKeyScope(r.Context(), "write"); err != nil {
 		http.Error(w, `{"error":"insufficient permissions"}`, http.StatusForbidden)
@@ -964,7 +963,7 @@ func handleGetUserGroups(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 		http.Error(w, `{"error":"unauthorized"}`, http.StatusUnauthorized)
 		return
 	}
-	
+
 	// Check if API key has read permissions
 	if err := checkAPIKeyScope(r.Context(), "read"); err != nil {
 		http.Error(w, `{"error":"insufficient permissions"}`, http.StatusForbidden)
@@ -1468,7 +1467,7 @@ func handleCreateAPIKey(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 		ApiKey: apiKey,
 		Token:  apiKey.Token,
 	}
-	
+
 	// Clear the token from the model to prevent accidental exposure
 	apiKey.Token = ""
 

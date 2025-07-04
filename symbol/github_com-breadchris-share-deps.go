@@ -9,14 +9,10 @@ import (
 
 func init() {
 	Symbols["github.com/breadchris/share/deps/deps"] = map[string]reflect.Value{
-		// function, constant and variable definitions
-		"NewDepsFactory": reflect.ValueOf(deps.NewDepsFactory),
-
 		// type definitions
 		"ContainerConfig": reflect.ValueOf((*deps.ContainerConfig)(nil)),
 		"ContainerInfo":   reflect.ValueOf((*deps.ContainerInfo)(nil)),
 		"Deps":            reflect.ValueOf((*deps.Deps)(nil)),
-		"DepsFactory":     reflect.ValueOf((*deps.DepsFactory)(nil)),
 		"DockerClient":    reflect.ValueOf((*deps.DockerClient)(nil)),
 		"DockerManager":   reflect.ValueOf((*deps.DockerManager)(nil)),
 		"SearchIndex":     reflect.ValueOf((*deps.SearchIndex)(nil)),

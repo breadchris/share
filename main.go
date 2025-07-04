@@ -39,7 +39,6 @@ import (
 	"github.com/breadchris/share/session"
 	"github.com/breadchris/share/user"
 	"github.com/breadchris/share/wasmcode"
-	socket "github.com/breadchris/share/websocket"
 	"github.com/breadchris/share/xctf"
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/google/uuid"
@@ -152,10 +151,6 @@ func startServer(useTLS bool, port int) {
 	//setupRecipe()
 	fileUpload()
 
-	// TODO breadchris enable this
-	//go scheduleScraping()
-	reg := socket.NewCommandRegistry()
-
 	recipeIdx, err := NewSearchIndex(smittenIndex)
 	if err != nil {
 		panic(err)
@@ -167,15 +162,14 @@ func startServer(useTLS bool, port int) {
 	aip := ai.New(appConfig, db)
 	dockerManager := docker.NewManager(db)
 	deps := deps2.Deps{
-		DB:                db,
-		Docs:              docs,
-		Session:           s,
-		Leaps:             lm,
-		AIProxy:           aip,
-		AI:                oai,
-		Config:            appConfig,
-		WebsocketRegistry: reg,
-		Docker:            dockerManager,
+		DB:      db,
+		Docs:    docs,
+		Session: s,
+		Leaps:   lm,
+		AIProxy: aip,
+		AI:      oai,
+		Config:  appConfig,
+		Docker:  dockerManager,
 		Search: deps2.SearchIndex{
 			Recipe: recipeIdx,
 		},
@@ -194,8 +188,6 @@ func startServer(useTLS bool, port int) {
 		})
 		return m
 	}
-
-	socket.SetupHandlers(reg)
 
 	//discord.NewConfig
 	//discord.NewDiscordSession
@@ -234,14 +226,10 @@ func startServer(useTLS bool, port int) {
 	p("/xctf", interpreted(xctf.New))
 	p("/recipe", interpreted(NewRecipe))
 	p("/articles", interpreted(NewArticle))
-	p("/zine", interpreted(NewZine))
 	// p("/card", interpreted(NewCard))
 	p("/ai", interpreted(aiapi.New))
-	p("/card", interpreted(NewCard2))
+	//p("/card", interpreted(NewCard2))
 	p("/op", interpreted(op.New))
-	p("/websocket", interpreted(func(deps deps2.Deps) *http.ServeMux {
-		return socket.WebsocketUI(reg)
-	}))
 	p("/ainet", interpreted(ainet.New))
 	p("/user", interpreted(user.New))
 	p("/paint", interpreted(paint.New))
@@ -253,7 +241,7 @@ func startServer(useTLS bool, port int) {
 	p("/leaps", lm.Mux)
 	p("/vote", interpreted(NewVote))
 	p("/breadchris", interpreted(breadchris.New))
-	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./eventcalendar.go", "./websocket/websocket.go", "./card.go", "./ai.go", "./tarot.go"}))
+	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./eventcalendar.go", "./card.go", "./ai.go", "./tarot.go"}))
 	p("/code", interpreted(wasmcode.New))
 	p("/extension", interpreted(NewExtension))
 	p("/git", interpreted(NewGit))
@@ -264,7 +252,6 @@ func startServer(useTLS bool, port int) {
 	p("/pipeport", interpreted(NewPipePort))
 	p("/nolanisslow", interpreted(NewNolan))
 	//p("/calendar", interpreted(calendar.NewCalendar))
-	p("/calendar", interpreted(NewCalendar))
 	p("/registry", interpreted(registry.New))
 	g := NewGithub(deps)
 	p("/github", interpreted(g.Routes))
