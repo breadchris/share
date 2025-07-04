@@ -5,33 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/sqldialects.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/share.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/share.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/calendar/calendar.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/calendar/calendar.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cdk/cdk.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/cdk/cdk.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cdk/cdk_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/cdk/cdk_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cdk/lambda.zip" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/cdk/lambda.zip" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cdk/lambda/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/cdk/lambda/main.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/claudemd" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/claudemd/components/ClaudeSessionBrowser.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/components/ClaudeSessionBrowser.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/claudemd/hooks/useSessions.ts" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/hooks/useSessions.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/build/@breadchris/MyComponent.tsx.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/build/fullrender/@breadchris/ComponentBrowser.tsx/ComponentBrowser.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/build/fullrender/@breadchris/ComponentCard.tsx/ComponentCard.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/build/fullrender/@breadchris/TestWithCSS.tsx/TestWithCSS.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/build/fullrender/@breadchris/TestWithCSS.tsx/TestWithCSS.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/claude/README_E2E_TESTS.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/claude/README_TESTS.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/claude/claude.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/claude/claude_e2e_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/claude/claude_integration_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/claude/claude_test_helpers.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/claude/claude_unit_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/claude/resume_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/JoinCodeModal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/justshare/components/JoinCodeModal.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/coderunner.go" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/coderunner.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/example/handler.go" beforeDir="false" afterPath="$PROJECT_DIR$/example/handler.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow" beforeDir="false" afterPath="$PROJECT_DIR$/flow" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/coderunner/ClaudeInterface.tsx" beforeDir="false" />
@@ -57,14 +35,7 @@
       <change beforePath="$PROJECT_DIR$/flow/worklet/docker.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/worklet/docker.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/worklet/handlers.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/worklet/handlers.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/worklet/manager.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/worklet/manager.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notes.go" beforeDir="false" afterPath="$PROJECT_DIR$/notes.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/slackbot/CLAUDE.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/slackbot/config.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/slackbot/formatting.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/slackbot/handlers.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/slackbot/session.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/slackbot/slackbot.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-calendar.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-calendar.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -80,7 +51,7 @@
   </component>
   <component name="GOROOT" url="file:///opt/homebrew/opt/go/libexec" />
   <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/flow" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="g132qsae" />
@@ -149,7 +120,7 @@
       <recent name="$PROJECT_DIR$/coderunner/src/coderunner" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Build.flow">
+  <component name="RunManager" selected="Go Build.share">
     <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
       <module name="share" />
       <working_directory value="$PROJECT_DIR$" />
@@ -322,7 +293,7 @@
       <workItem from="1747973023098" duration="26954000" />
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
-      <workItem from="1750823408293" duration="196318000" />
+      <workItem from="1750823408293" duration="196425000" />
     </task>
     <servers />
   </component>

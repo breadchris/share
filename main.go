@@ -3,7 +3,6 @@ package main
 //go:generate buf generate --path proto
 
 import (
-	"context"
 	"fmt"
 	"github.com/breadchris/share/graveyard/ainet"
 	"github.com/breadchris/share/graveyard/claudemd"
@@ -38,7 +37,6 @@ import (
 	"github.com/breadchris/share/op"
 	"github.com/breadchris/share/registry"
 	"github.com/breadchris/share/session"
-	"github.com/breadchris/share/slackbot"
 	"github.com/breadchris/share/test"
 	"github.com/breadchris/share/user"
 	"github.com/breadchris/share/wasmcode"
@@ -182,18 +180,6 @@ func startServer(useTLS bool, port int) {
 		Search: deps2.SearchIndex{
 			Recipe: recipeIdx,
 		},
-	}
-
-	// Initialize and start Slack bot if configured
-	if slackBot, err := slackbot.New(deps); err == nil {
-		go func() {
-			if err := slackBot.Start(context.Background()); err != nil {
-				slog.Error("Slack bot failed", "error", err)
-			}
-		}()
-		slog.Info("Slack bot started")
-	} else {
-		slog.Debug("Slack bot not started", "reason", err.Error())
 	}
 
 	shouldInterpret := true

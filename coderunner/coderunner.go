@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/breadchris/share/coderunner/claude"
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/models"
@@ -20,7 +19,6 @@ import (
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v66/github"
 	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
 )
 
 type BuildCache struct {
@@ -67,24 +65,6 @@ func New(d deps.Deps) *http.ServeMux {
 			Script(Src("/coderunner/module/@breadchris/SwitchHomepage.tsx"), Type("module")),
 			Div(Id("root")),
 			LoadModule("@breadchris/SwitchHomepage.tsx", "SwitchHomepage"),
-		).RenderPage(w, r)
-	})
-
-	m.HandleFunc("/claude", func(w http.ResponseWriter, r *http.Request) {
-		DefaultLayout(
-			Script(Type("importmap"), Raw(`
-			{
-				"imports": {
-					"react": "https://esm.sh/react@18",
-					"react-dom": "https://esm.sh/react-dom@18",
-					"react-dom/client": "https://esm.sh/react-dom@18/client",
-					"react/jsx-runtime": "https://esm.sh/react@18/jsx-runtime"
-				}
-			}
-			`)),
-			Script(Src("https://cdn.tailwindcss.com")),
-			Div(Id("root")),
-			LoadModule("claude/ClaudeWebInterface.tsx", "ClaudeWebInterface"),
 		).RenderPage(w, r)
 	})
 
@@ -389,110 +369,6 @@ func New(d deps.Deps) *http.ServeMux {
 	// JavaScript file serving endpoint for fullrender
 	m.HandleFunc("/fullrender/js/", func(w http.ResponseWriter, r *http.Request) {
 		handleServeJS(w, r)
-	})
-
-	// Claude endpoints
-	claudeService := claude.NewClaudeService(d)
-
-	// WebSocket endpoint for Claude streaming
-	upgrader := websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool {
-			return true // Allow all origins in development
-		},
-	}
-
-	m.HandleFunc("/claude/ws", func(w http.ResponseWriter, r *http.Request) {
-		// Handle HEAD requests for authentication testing
-		if r.Method == "HEAD" {
-			_, err := d.Session.GetUserID(r.Context())
-			if err != nil {
-				w.WriteHeader(http.StatusUnauthorized)
-				return
-			}
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		// Handle WebSocket upgrade requests
-		if r.Method != "GET" {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
-		// Get user ID from session
-		userID, err := d.Session.GetUserID(r.Context())
-		if err != nil {
-			// For WebSocket connections, we can't redirect, so return JSON error
-			// The frontend will handle this and redirect to login
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error":    "authentication_required",
-				"message":  "Please log in to access Claude",
-				"redirect": "/login",
-			})
-			return
-		}
-
-		conn, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			http.Error(w, "Failed to upgrade WebSocket", http.StatusInternalServerError)
-			return
-		}
-
-		claudeService.HandleWebSocket(conn, userID)
-	})
-
-	// List Claude sessions
-	m.HandleFunc("/claude/sessions", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
-		userID, err := d.Session.GetUserID(r.Context())
-		if err != nil {
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
-			return
-		}
-
-		sessions, err := claudeService.GetSessions(userID)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Failed to get sessions: %v", err), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(sessions)
-	})
-
-	// Get specific Claude session
-	m.HandleFunc("/claude/sessions/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-
-		userID, err := d.Session.GetUserID(r.Context())
-		if err != nil {
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
-			return
-		}
-
-		sessionID := strings.TrimPrefix(r.URL.Path, "/claude/sessions/")
-		if sessionID == "" {
-			http.Error(w, "Session ID required", http.StatusBadRequest)
-			return
-		}
-
-		session, err := claudeService.GetSession(sessionID, userID)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Failed to get session: %v", err), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(session)
 	})
 
 	// Pinned Files API endpoints
@@ -1221,7 +1097,6 @@ func handleRenderComponent(w http.ResponseWriter, r *http.Request) {
 	// Render the page
 	page.RenderPage(w, r)
 }
-
 
 // handleServeModule builds and serves a React component as an ES module
 func handleServeModule(w http.ResponseWriter, r *http.Request) {
