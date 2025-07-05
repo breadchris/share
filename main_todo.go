@@ -620,3 +620,24 @@ func pushRepo(repoPath, commitMessage string) error {
 	fmt.Printf("Debug: Successfully pushed changes in %s\n", repoPath)
 	return nil
 }
+
+// pullAndUpdate performs git pull and updates submodules recursively
+func pullAndUpdate() error {
+	fmt.Printf("Debug: Pulling latest changes and updating submodules\n")
+	
+	// Pull main repository
+	pullCmd := exec.Command("git", "pull")
+	if err := pullCmd.Run(); err != nil {
+		return fmt.Errorf("failed to pull main repository: %w", err)
+	}
+	fmt.Printf("Debug: Successfully pulled main repository\n")
+	
+	// Update submodules recursively and remotely
+	submoduleCmd := exec.Command("git", "submodule", "update", "--recursive", "--remote")
+	if err := submoduleCmd.Run(); err != nil {
+		return fmt.Errorf("failed to update submodules: %w", err)
+	}
+	fmt.Printf("Debug: Successfully updated submodules\n")
+	
+	return nil
+}

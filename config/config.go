@@ -39,24 +39,64 @@ type ProxyConfig struct {
 	SocksURL string `json:"socks_url"`
 }
 
+type DeploymentConfig struct {
+	Enabled           bool   `json:"enabled"`
+	WebhookSecret     string `json:"webhook_secret"`
+	WorkDir           string `json:"work_dir"`
+	ServerBinary      string `json:"server_binary"`
+	HealthTimeout     int    `json:"health_timeout"`     // seconds
+	GracefulTimeout   int    `json:"graceful_timeout"`   // seconds
+}
+
 type AppConfig struct {
-	OpenAIKey          string        `json:"openai_key"`
-	SMTP               SMTPConfig    `json:"smtp"`
-	Spotify            SpotifyConfig `json:"spotify"`
-	ExternalURL        string        `json:"external_url"`
-	SessionSecret      string        `json:"session_secret"`
-	GoogleClientID     string        `json:"google_client_id"`
-	GoogleClientSecret string        `json:"google_client_secret"`
-	Blog               BlogConfig    `json:"blog"`
-	Stripe             Stripe        `json:"stripe"`
-	Figma              string        `json:"figma"`
-	Github             GithubConfig  `json:"github"`
-	Proxy              ProxyConfig   `json:"proxy"`
-	Admins             []string      `json:"admins"`
-	DB                 string        `json:"db"`
-	JamsocketURL       string        `json:"jamsocket_url"`
-	SupabaseURL        string        `json:"supabase_url"`
-	ClaudeDebug        bool          `json:"claude_debug"`
+	OpenAIKey          string           `json:"openai_key"`
+	SMTP               SMTPConfig       `json:"smtp"`
+	Spotify            SpotifyConfig    `json:"spotify"`
+	ExternalURL        string           `json:"external_url"`
+	SessionSecret      string           `json:"session_secret"`
+	GoogleClientID     string           `json:"google_client_id"`
+	GoogleClientSecret string           `json:"google_client_secret"`
+	Blog               BlogConfig       `json:"blog"`
+	Stripe             Stripe           `json:"stripe"`
+	Figma              string           `json:"figma"`
+	Github             GithubConfig     `json:"github"`
+	Proxy              ProxyConfig      `json:"proxy"`
+	Deployment         DeploymentConfig `json:"deployment"`
+	Admins             []string         `json:"admins"`
+	DB                 string           `json:"db"`
+	JamsocketURL       string           `json:"jamsocket_url"`
+	SupabaseURL        string           `json:"supabase_url"`
+	ClaudeDebug        bool             `json:"claude_debug"`
+}
+
+// Deployment convenience methods
+func (c *AppConfig) DeploymentEnabled() bool {
+	return c.Deployment.Enabled
+}
+
+func (c *AppConfig) WebhookSecret() string {
+	return c.Deployment.WebhookSecret
+}
+
+func (c *AppConfig) DeploymentWorkDir() string {
+	if c.Deployment.WorkDir == "" {
+		return "/tmp/deployment"
+	}
+	return c.Deployment.WorkDir
+}
+
+func (c *AppConfig) DeploymentHealthTimeout() int {
+	if c.Deployment.HealthTimeout == 0 {
+		return 60 // Default 60 seconds
+	}
+	return c.Deployment.HealthTimeout
+}
+
+func (c *AppConfig) DeploymentGracefulTimeout() int {
+	if c.Deployment.GracefulTimeout == 0 {
+		return 30 // Default 30 seconds
+	}
+	return c.Deployment.GracefulTimeout
 }
 
 func NewFromFile(path string) AppConfig {

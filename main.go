@@ -3,6 +3,7 @@ package main
 //go:generate buf generate --path proto
 
 import (
+	"context"
 	"fmt"
 	"github.com/breadchris/share/graveyard/ainet"
 	"github.com/breadchris/share/graveyard/claudemd"
@@ -17,6 +18,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"time"
 
 	"github.com/breadchris/share/ai"
 	"github.com/breadchris/share/aiapi"
@@ -26,6 +28,7 @@ import (
 	"github.com/breadchris/share/coderunner"
 	config2 "github.com/breadchris/share/config"
 	. "github.com/breadchris/share/db"
+	"github.com/breadchris/share/deploy"
 	deps2 "github.com/breadchris/share/deps"
 	"github.com/breadchris/share/docker"
 	"github.com/breadchris/share/editor/config"
@@ -46,6 +49,13 @@ import (
 	"github.com/protoflow-labs/protoflow/pkg/util/reload"
 	"github.com/sashabaranov/go-openai"
 	"github.com/urfave/cli/v2"
+
+	// Flow module imports
+	flow_code "github.com/breadchris/flow/code"
+	flow_config "github.com/breadchris/flow/config"
+	flow_deps "github.com/breadchris/flow/deps"
+	flow_slackbot "github.com/breadchris/flow/slackbot"
+	flow_worklet "github.com/breadchris/flow/worklet"
 )
 
 var upgrader = websocket.Upgrader{
@@ -255,6 +265,24 @@ func startServer(useTLS bool, port int) {
 	p("/registry", interpreted(registry.New))
 	g := NewGithub(deps)
 	p("/github", interpreted(g.Routes))
+
+	// Mount flow module routes under /flow prefix
+	flowCfg := flow_config.LoadConfig()
+	flowDeps := flow_deps.NewDepsFactory(flowCfg).CreateDeps()
+
+	// Mount worklet API at /flow/api/worklet using interpreted pattern
+	p("/flow/api/worklet", interpreted(func(d deps2.Deps) *http.ServeMux {
+		return flow_worklet.New(&flowDeps)
+	}))
+
+	// Mount code package at /flow/code using interpreted pattern
+	p("/flow/code", interpreted(func(d deps2.Deps) *http.ServeMux {
+		return flow_code.New(flowDeps)
+	}))
+
+	// Mount deployment management at /deploy
+	p("/deploy", interpreted(deploy.New))
+
 	p("", interpreted(justshare.New))
 
 	p("/coderunner", interpreted(coderunner.New))
@@ -285,6 +313,13 @@ func startServer(useTLS bool, port int) {
 		})
 		return m
 	}))
+
+	// Global health check endpoint for deployment system
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"healthy","service":"share","timestamp":"` + time.Now().Format(time.RFC3339) + `"}`))
+	})
 
 	http.HandleFunc("/register", a.handleRegister)
 	http.HandleFunc("/account", a.accountHandler)
@@ -503,6 +538,25 @@ func startServer(useTLS bool, port int) {
 		}
 	}()
 
+	// Start Slack bot from flow module (non-blocking)
+	go func() {
+		if flowDeps.Config.IsSlackBotEnabled() {
+			slog.Info("Starting Flow Slack bot...")
+			bot, err := flow_slackbot.New(flowDeps)
+			if err != nil {
+				slog.Error("Failed to create Flow Slack bot", "error", err)
+				return
+			}
+
+			ctx := context.Background()
+			if err := bot.Start(ctx); err != nil {
+				slog.Error("Failed to start Flow Slack bot", "error", err)
+			}
+		} else {
+			slog.Info("Flow Slack bot is disabled")
+		}
+	}()
+
 	dir := "data/justshare.io-ssl-bundle"
 	interCertFile := path.Join(dir, "intermediate.cert.pem")
 	certFile := path.Join(dir, "domain.cert.pem")
@@ -619,17 +673,40 @@ func main() {
 				},
 			},
 			{
-				Name: "push",
+				Name:  "push",
 				Usage: "Push changes to git submodules and main repo",
 				Action: func(c *cli.Context) error {
 					repos := []string{"claudemd", "flow", "."}
 					commitMessage := "update"
-					
+
 					for _, repo := range repos {
 						if err := pushRepo(repo, commitMessage); err != nil {
 							fmt.Printf("Failed to push %s: %v\n", repo, err)
 						}
 					}
+					return nil
+				},
+			},
+			{
+				Name:  "pull",
+				Usage: "Pull changes from git and update submodules, then start server",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name: "tls",
+					},
+					&cli.IntFlag{
+						Name:  "port",
+						Value: 8080,
+					},
+				},
+				Action: func(c *cli.Context) error {
+					// First pull and update repositories
+					if err := pullAndUpdate(); err != nil {
+						return fmt.Errorf("failed to pull and update: %w", err)
+					}
+
+					// Then start the server
+					startServer(c.Bool("tls"), c.Int("port"))
 					return nil
 				},
 			},

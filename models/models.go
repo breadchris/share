@@ -475,3 +475,19 @@ type PinnedFile struct {
 	FilePath string `json:"file_path" gorm:"not null;uniqueIndex:idx_user_file"`
 	User     *User  `gorm:"foreignKey:UserID"`
 }
+
+// Deployment Models
+
+type Deployment struct {
+	Model
+	CommitHash  string     `json:"commit_hash" gorm:"not null"`
+	Status      string     `json:"status" gorm:"not null"` // pending, building, deploying, success, failed, rolled_back
+	StartTime   time.Time  `json:"start_time" gorm:"not null"`
+	EndTime     *time.Time `json:"end_time,omitempty"`
+	Logs        string     `json:"logs" gorm:"type:text"`
+	ProcessID   int        `json:"process_id"`
+	Port        int        `json:"port"`
+	HealthURL   string     `json:"health_url"`
+	UserID      string     `json:"user_id" gorm:"index;not null"` // Who triggered the deployment
+	User        *User      `gorm:"foreignKey:UserID"`
+}

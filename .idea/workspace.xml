@@ -7,13 +7,14 @@
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/claudemd" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/claudemd/components/ClaudeSessionBrowser.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/components/ClaudeSessionBrowser.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/claudemd/components/ClaudeSessionViewer.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/components/ClaudeSessionViewer.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/claudemd/hooks/useSessions.ts" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/hooks/useSessions.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/claudemd/types/session.ts" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/types/session.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow" beforeDir="false" afterPath="$PROJECT_DIR$/flow" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/slackbot/handlers.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/handlers.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/slackbot/session.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/session.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/slackbot/slackbot.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/slackbot.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/worklet/handlers.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/worklet/handlers.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main_todo.go" beforeDir="false" afterPath="$PROJECT_DIR$/main_todo.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/models.go" beforeDir="false" afterPath="$PROJECT_DIR$/models/models.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,7 +30,7 @@
   </component>
   <component name="GOROOT" url="file:///opt/homebrew/opt/go/libexec" />
   <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/flow" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="g132qsae" />
@@ -100,7 +101,7 @@
       <recent name="$PROJECT_DIR$/coderunner/src/coderunner" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Build.flow">
+  <component name="RunManager" selected="Go Build.share">
     <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
       <module name="share" />
       <working_directory value="$PROJECT_DIR$" />
@@ -275,7 +276,7 @@
       <workItem from="1747973023098" duration="26954000" />
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
-      <workItem from="1750823408293" duration="218252000" />
+      <workItem from="1750823408293" duration="221853000" />
     </task>
     <servers />
   </component>
