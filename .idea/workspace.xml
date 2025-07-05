@@ -5,14 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.CLAUDE.md.swp" beforeDir="false" afterPath="$PROJECT_DIR$/.CLAUDE.md.swp" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/flow/code/code.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/claudemd" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/claudemd/components/ClaudeSessionBrowser.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/components/ClaudeSessionBrowser.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/claudemd/components/ClaudeSessionViewer.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/components/ClaudeSessionViewer.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/claudemd/hooks/useSessions.ts" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/hooks/useSessions.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/claudemd/types/session.ts" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/types/session.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/ContentViewer.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/justshare/components/ContentViewer.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow" beforeDir="false" afterPath="$PROJECT_DIR$/flow" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/coderunner/ClaudeInterface.tsx" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/coderunner/CodeRunner.tsx" beforeDir="false" />
@@ -26,8 +25,8 @@
       <change beforePath="$PROJECT_DIR$/flow/coderunner/claude/claude.go" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/coderunner/claude/claude_integration_test.go" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/coderunner/coderunner.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/coderunner/html_helpers.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/coderunner/react.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/coderunner/html_helpers.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/code/html_helpers.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/coderunner/react.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/code/react.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/coderunner/react_test.go" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/config/config.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/deps/factory.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/deps/factory.go" afterDir="false" />
@@ -49,7 +48,6 @@
       <change beforePath="$PROJECT_DIR$/flow/worklet/handlers.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/worklet/handlers.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/worklet/manager.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/worklet/manager.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/justshare/justshare.go" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/justshare.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/models.go" beforeDir="false" afterPath="$PROJECT_DIR$/models/models.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -65,7 +63,7 @@
   </component>
   <component name="GOROOT" url="file:///opt/homebrew/opt/go/libexec" />
   <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/flow" />
   </component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="g132qsae" />
@@ -81,52 +79,52 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;DefaultGoTemplateProperty&quot;: &quot;Go File&quot;,
-    &quot;Go Build.flow.executor&quot;: &quot;Run&quot;,
-    &quot;Go Build.share.executor&quot;: &quot;Run&quot;,
-    &quot;Go Test.TestClaudeBasicFileModification in github.com/breadchris/flow/worklet.executor&quot;: &quot;Run&quot;,
-    &quot;Go Test.TestClaudeIntegrationDemo in github.com/breadchris/flow/worklet.executor&quot;: &quot;Run&quot;,
-    &quot;Go Test.TestClaudeMigrate in github.com/breadchris/share/db.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.go.modules.automatic.dependencies.download&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
-    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
-    &quot;go.sdk.automatically.set&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/hacked/Documents/GitHub/share/graph&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;Project&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.keymap&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;/Users/hacked/Documents/GitHub/share/node_modules/typescript/lib&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "DefaultGoTemplateProperty": "Go File",
+    "Go Build.flow.executor": "Run",
+    "Go Build.share.executor": "Run",
+    "Go Test.TestClaudeBasicFileModification in github.com/breadchris/flow/worklet.executor": "Run",
+    "Go Test.TestClaudeIntegrationDemo in github.com/breadchris/flow/worklet.executor": "Run",
+    "Go Test.TestClaudeMigrate in github.com/breadchris/share/db.executor": "Run",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.go.migrated.go.modules.settings": "true",
+    "RunOnceActivity.go.modules.automatic.dependencies.download": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "git-widget-placeholder": "master",
+    "go.import.settings.migrated": "true",
+    "go.sdk.automatically.set": "true",
+    "last_opened_file_path": "/Users/hacked/Documents/GitHub/share/flow/code",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "Project",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.2",
+    "settings.editor.selected.configurable": "preferences.keymap",
+    "ts.external.directory.path": "/Users/hacked/Documents/GitHub/share/node_modules/typescript/lib",
+    "vue.rearranger.settings.migration": "true"
   },
-  &quot;keyToStringList&quot;: {
-    &quot;DatabaseDriversLRU&quot;: [
-      &quot;sqlite&quot;,
-      &quot;postgresql&quot;
+  "keyToStringList": {
+    "DatabaseDriversLRU": [
+      "sqlite",
+      "postgresql"
     ]
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/flow/code" />
       <recent name="$PROJECT_DIR$/graph" />
       <recent name="$PROJECT_DIR$/ysweet/justshare/components" />
       <recent name="$PROJECT_DIR$/hmr/client" />
       <recent name="$PROJECT_DIR$/xctf" />
-      <recent name="$PROJECT_DIR$/xctf/models" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/graveyard" />
@@ -311,7 +309,7 @@
       <workItem from="1747973023098" duration="26954000" />
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
-      <workItem from="1750823408293" duration="209971000" />
+      <workItem from="1750823408293" duration="211341000" />
     </task>
     <servers />
   </component>

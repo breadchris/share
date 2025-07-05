@@ -40,9 +40,9 @@ type JoinGroupRequest struct {
 }
 
 type ContentResponse struct {
-	*models.Content
-	TagNames []string     `json:"tag_names,omitempty"`
-	UserInfo *models.User `json:"user_info,omitempty"`
+	Content  *models.Content `json:"Content"`
+	TagNames []string        `json:"tag_names,omitempty"`
+	UserInfo *models.User    `json:"user_info,omitempty"`
 }
 
 type TimelineResponse struct {
