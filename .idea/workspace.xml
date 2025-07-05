@@ -5,7 +5,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/flow/code/code.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/claudemd" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/claudemd/components/ClaudeSessionBrowser.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/components/ClaudeSessionBrowser.tsx" afterDir="false" />
@@ -13,41 +12,6 @@
       <change beforePath="$PROJECT_DIR$/claudemd/hooks/useSessions.ts" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/hooks/useSessions.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/claudemd/types/session.ts" beforeDir="false" afterPath="$PROJECT_DIR$/claudemd/types/session.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow" beforeDir="false" afterPath="$PROJECT_DIR$/flow" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/coderunner/ClaudeInterface.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/coderunner/CodeRunner.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/coderunner/CollaborativeCodeRunner.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/coderunner/CollaborativeEntry.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/coderunner/DESIGN.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/coderunner/SharedComponents.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/coderunner/UserChat.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/coderunner/claude/README_E2E_TESTS.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/coderunner/claude/README_TESTS.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/coderunner/claude/claude.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/coderunner/claude/claude_integration_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/coderunner/coderunner.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/coderunner/html_helpers.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/code/html_helpers.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/coderunner/react.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/code/react.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/coderunner/react_test.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/config/config.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/deps/factory.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/deps/factory.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/flow/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/html/html.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/scs/codec.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/scs/data.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/scs/session.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/scs/store.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/session/session.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/session/session.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/slackbot/formatting.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/formatting.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/slackbot/handlers.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/handlers.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/slackbot/session.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/session.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/slackbot/slackbot.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/slackbot.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/websocket/websocket.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/worklet/claude.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/worklet/claude.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/worklet/docker.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/worklet/docker.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/worklet/handlers.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/worklet/handlers.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/worklet/manager.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/worklet/manager.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/justshare/justshare.go" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/justshare.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -309,7 +273,7 @@
       <workItem from="1747973023098" duration="26954000" />
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
-      <workItem from="1750823408293" duration="211341000" />
+      <workItem from="1750823408293" duration="211975000" />
     </task>
     <servers />
   </component>
