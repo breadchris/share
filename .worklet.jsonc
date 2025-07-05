@@ -1,0 +1,26 @@
+{
+  "fork": {
+    "name": "my-project",
+    "description": "Testing new features",
+    "includeGit": true,     // Include .git directory (default: true)
+    "exclude": [            // Patterns to exclude from fork
+      "node_modules",
+      "*.log",
+      ".DS_Store",
+      "dist",
+      "build",
+      "data"
+    ]
+  },
+  "run": {
+    "image": "golang",              // Docker image to use
+    "isolation": "full",                 // "full" or "shared"
+    "command": ["sh"],                   // Command to run
+    "environment": {                     // Environment variables
+      "DOCKER_TLS_CERTDIR": "",
+      "DOCKER_DRIVER": "overlay2"
+    },
+    "volumes": [],                       // Additional volume mounts
+    "privileged": true                   // Required for Docker-in-Docker
+  }
+}

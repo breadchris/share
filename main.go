@@ -618,6 +618,21 @@ func main() {
 					return nil
 				},
 			},
+			{
+				Name: "push",
+				Usage: "Push changes to git submodules and main repo",
+				Action: func(c *cli.Context) error {
+					repos := []string{"claudemd", "flow", "."}
+					commitMessage := "update"
+					
+					for _, repo := range repos {
+						if err := pushRepo(repo, commitMessage); err != nil {
+							fmt.Printf("Failed to push %s: %v\n", repo, err)
+						}
+					}
+					return nil
+				},
+			},
 			NewPipePortCli(),
 		},
 	}

@@ -561,3 +561,62 @@ func generateETag(info os.FileInfo) string {
 	io.WriteString(h, info.ModTime().String())
 	return `"` + hex.EncodeToString(h.Sum(nil)) + `"`
 }
+
+// pushRepo adds all modified files, commits with the given message, and pushes to origin
+func pushRepo(repoPath, commitMessage string) error {
+	fmt.Printf("Debug: Processing repo at %s\n", repoPath)
+	
+	// Check if directory exists
+	if _, err := os.Stat(repoPath); os.IsNotExist(err) {
+		return fmt.Errorf("repository path does not exist: %s", repoPath)
+	}
+	
+	// Change to repo directory
+	originalDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current directory: %w", err)
+	}
+	defer os.Chdir(originalDir)
+	
+	if err := os.Chdir(repoPath); err != nil {
+		return fmt.Errorf("failed to change to repo directory %s: %w", repoPath, err)
+	}
+	
+	// Check if it's a git repository
+	if _, err := os.Stat(".git"); os.IsNotExist(err) {
+		return fmt.Errorf("not a git repository: %s", repoPath)
+	}
+	
+	// Check if there are any changes
+	statusCmd := exec.Command("git", "status", "--porcelain")
+	statusOutput, err := statusCmd.Output()
+	if err != nil {
+		return fmt.Errorf("failed to check git status: %w", err)
+	}
+	
+	if len(statusOutput) == 0 {
+		fmt.Printf("Debug: No changes to commit in %s\n", repoPath)
+		return nil
+	}
+	
+	// Add all modified files
+	addCmd := exec.Command("git", "add", ".")
+	if err := addCmd.Run(); err != nil {
+		return fmt.Errorf("failed to add files: %w", err)
+	}
+	
+	// Commit changes
+	commitCmd := exec.Command("git", "commit", "-m", commitMessage)
+	if err := commitCmd.Run(); err != nil {
+		return fmt.Errorf("failed to commit changes: %w", err)
+	}
+	
+	// Push to origin
+	pushCmd := exec.Command("git", "push")
+	if err := pushCmd.Run(); err != nil {
+		return fmt.Errorf("failed to push changes: %w", err)
+	}
+	
+	fmt.Printf("Debug: Successfully pushed changes in %s\n", repoPath)
+	return nil
+}

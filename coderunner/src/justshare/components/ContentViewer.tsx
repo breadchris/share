@@ -741,9 +741,11 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
             {/* Reply Count & Toggle */}
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <h4 className="text-sm font-medium text-gray-700">
-                  {content.reply_count > 0 ? `${content.reply_count} ${content.reply_count === 1 ? 'Reply' : 'Replies'}` : 'No replies yet'}
-                </h4>
+                {content.reply_count > 0 && (
+                  <h4 className="text-sm font-medium text-gray-700">
+                    {content.reply_count} {content.reply_count === 1 ? 'Reply' : 'Replies'}
+                  </h4>
+                )}
                 {!content.reply_count && (
                   <button
                     onClick={() => setShowReplyForm(!showReplyForm)}
