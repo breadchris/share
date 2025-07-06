@@ -600,19 +600,28 @@ func pushRepo(repoPath, commitMessage string) error {
 	}
 	
 	// Add all modified files
+	fmt.Printf("Running: git add .\n")
 	addCmd := exec.Command("git", "add", ".")
+	addCmd.Stdout = os.Stdout
+	addCmd.Stderr = os.Stderr
 	if err := addCmd.Run(); err != nil {
 		return fmt.Errorf("failed to add files: %w", err)
 	}
 	
 	// Commit changes
+	fmt.Printf("Running: git commit -m \"%s\"\n", commitMessage)
 	commitCmd := exec.Command("git", "commit", "-m", commitMessage)
+	commitCmd.Stdout = os.Stdout
+	commitCmd.Stderr = os.Stderr
 	if err := commitCmd.Run(); err != nil {
 		return fmt.Errorf("failed to commit changes: %w", err)
 	}
 	
 	// Push to origin
+	fmt.Printf("Running: git push\n")
 	pushCmd := exec.Command("git", "push")
+	pushCmd.Stdout = os.Stdout
+	pushCmd.Stderr = os.Stderr
 	if err := pushCmd.Run(); err != nil {
 		return fmt.Errorf("failed to push changes: %w", err)
 	}
@@ -626,18 +635,71 @@ func pullAndUpdate() error {
 	fmt.Printf("Debug: Pulling latest changes and updating submodules\n")
 	
 	// Pull main repository
+	fmt.Printf("Running: git pull\n")
 	pullCmd := exec.Command("git", "pull")
+	pullCmd.Stdout = os.Stdout
+	pullCmd.Stderr = os.Stderr
 	if err := pullCmd.Run(); err != nil {
 		return fmt.Errorf("failed to pull main repository: %w", err)
 	}
 	fmt.Printf("Debug: Successfully pulled main repository\n")
 	
 	// Update submodules recursively and remotely
+	fmt.Printf("Running: git submodule update --recursive --remote\n")
 	submoduleCmd := exec.Command("git", "submodule", "update", "--recursive", "--remote")
+	submoduleCmd.Stdout = os.Stdout
+	submoduleCmd.Stderr = os.Stderr
 	if err := submoduleCmd.Run(); err != nil {
 		return fmt.Errorf("failed to update submodules: %w", err)
 	}
 	fmt.Printf("Debug: Successfully updated submodules\n")
 	
 	return nil
+}
+
+// verifyCompilation checks if the current code compiles successfully
+func verifyCompilation() error {
+	fmt.Printf("Running: go build .\n")
+	buildCmd := exec.Command("go", "build", ".")
+	buildCmd.Stdout = os.Stdout
+	buildCmd.Stderr = os.Stderr
+	if err := buildCmd.Run(); err != nil {
+		return fmt.Errorf("compilation failed: %w", err)
+	}
+	fmt.Printf("Debug: Code compilation successful\n")
+	return nil
+}
+
+// restartProcess rebuilds and starts a new independent process with the updated code
+func restartProcess(useTLS bool, port int) error {
+	// First verify the code compiles
+	if err := verifyCompilation(); err != nil {
+		return err
+	}
+	
+	// Construct the command arguments for the new process
+	args := []string{"go", "run", ".", "start", "--port", fmt.Sprintf("%d", port)}
+	if useTLS {
+		args = append(args, "--tls")
+	}
+	
+	fmt.Printf("Starting new process: %s\n", strings.Join(args, " "))
+	
+	// Create the command for the new process
+	cmd := exec.Command(args[0], args[1:]...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	cmd.Env = os.Environ()
+	
+	// Start the new process
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("failed to start new process: %w", err)
+	}
+	
+	fmt.Printf("Debug: New process started with PID %d, exiting current process\n", cmd.Process.Pid)
+	
+	// Exit the current process to avoid running two instances
+	os.Exit(0)
+	return nil // This line will never be reached
 }

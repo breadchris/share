@@ -704,10 +704,9 @@ func main() {
 					if err := pullAndUpdate(); err != nil {
 						return fmt.Errorf("failed to pull and update: %w", err)
 					}
-
-					// Then start the server
-					startServer(c.Bool("tls"), c.Int("port"))
-					return nil
+					
+					// Restart the process with updated code
+					return restartProcess(c.Bool("tls"), c.Int("port"))
 				},
 			},
 			NewPipePortCli(),
