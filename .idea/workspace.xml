@@ -5,15 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow" beforeDir="false" afterPath="$PROJECT_DIR$/flow" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/flow/CLAUDE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/claude/claude.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/claude/claude.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/slackbot/db_service.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/db_service.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/slackbot/session_activity_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/session_activity_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/slackbot/slackbot.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/slackbot.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/kanban/service.go" beforeDir="false" afterPath="$PROJECT_DIR$/kanban/service.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -276,7 +270,7 @@
       <workItem from="1747973023098" duration="26954000" />
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
-      <workItem from="1750823408293" duration="254106000" />
+      <workItem from="1750823408293" duration="254477000" />
     </task>
     <servers />
   </component>
