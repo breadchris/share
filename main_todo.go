@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	. "github.com/breadchris/share/html"
 	"github.com/fsnotify/fsnotify"
@@ -670,36 +671,158 @@ func verifyCompilation() error {
 	return nil
 }
 
-// restartProcess rebuilds and starts a new independent process with the updated code
+// restartProcess rebuilds and starts a new independent process with safe transition
 func restartProcess(useTLS bool, port int) error {
 	// First verify the code compiles
 	if err := verifyCompilation(); err != nil {
 		return err
 	}
 	
-	// Construct the command arguments for the new process
-	args := []string{"go", "run", ".", "start", "--port", fmt.Sprintf("%d", port)}
+	// Build new binary to temporary location
+	timestamp := fmt.Sprintf("%d", time.Now().Unix())
+	tempBinary := fmt.Sprintf("/tmp/app-new-%s", timestamp)
+	
+	fmt.Printf("Building new binary: %s\n", tempBinary)
+	buildCmd := exec.Command("go", "build", "-o", tempBinary, ".")
+	buildCmd.Stdout = os.Stdout
+	buildCmd.Stderr = os.Stderr
+	if err := buildCmd.Run(); err != nil {
+		return fmt.Errorf("failed to build new binary: %w", err)
+	}
+	
+	// Calculate staging port (add 1000 to avoid conflicts)
+	stagingPort := port + 1000
+	
+	// Construct arguments for new process on staging port
+	args := []string{tempBinary, "start", "--port", fmt.Sprintf("%d", stagingPort), "--staging"}
 	if useTLS {
 		args = append(args, "--tls")
 	}
 	
-	fmt.Printf("Starting new process: %s\n", strings.Join(args, " "))
+	fmt.Printf("Starting new process on staging port %d: %s\n", stagingPort, strings.Join(args, " "))
 	
-	// Create the command for the new process
+	// Start the new process
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
 	cmd.Env = os.Environ()
 	
-	// Start the new process
 	if err := cmd.Start(); err != nil {
+		// Clean up binary if start failed
+		os.Remove(tempBinary)
 		return fmt.Errorf("failed to start new process: %w", err)
 	}
 	
-	fmt.Printf("Debug: New process started with PID %d, exiting current process\n", cmd.Process.Pid)
+	fmt.Printf("New process started with PID %d on port %d\n", cmd.Process.Pid, stagingPort)
 	
-	// Exit the current process to avoid running two instances
+	// Wait for new process to be healthy
+	if err := waitForHealth(stagingPort, 30*time.Second); err != nil {
+		// Kill the new process and clean up
+		cmd.Process.Kill()
+		cmd.Wait()
+		os.Remove(tempBinary)
+		return fmt.Errorf("new process failed health check: %w", err)
+	}
+	
+	// Prompt user for cutover
+	fmt.Printf("\n✓ New version is ready and healthy!\n")
+	fmt.Printf("  Test at: http://localhost:%d\n", stagingPort)
+	fmt.Printf("  Switch traffic to new version? [y/N]: ")
+	
+	var response string
+	fmt.Scanln(&response)
+	
+	if strings.ToLower(strings.TrimSpace(response)) != "y" {
+		fmt.Printf("Cutover cancelled. Shutting down staging process...\n")
+		cmd.Process.Kill()
+		cmd.Wait()
+		os.Remove(tempBinary)
+		return fmt.Errorf("cutover cancelled by user")
+	}
+	
+	// Perform cutover
+	return performCutover(cmd, tempBinary, useTLS, port, stagingPort)
+}
+
+// waitForHealth checks if the new process is healthy and ready to serve traffic
+func waitForHealth(port int, timeout time.Duration) error {
+	healthURL := fmt.Sprintf("http://localhost:%d/health", port)
+	client := &http.Client{Timeout: 5 * time.Second}
+	
+	fmt.Printf("Waiting for health check at %s", healthURL)
+	start := time.Now()
+	
+	for time.Since(start) < timeout {
+		resp, err := client.Get(healthURL)
+		if err == nil && resp.StatusCode == 200 {
+			resp.Body.Close()
+			fmt.Printf(" ✓\n")
+			return nil
+		}
+		if resp != nil {
+			resp.Body.Close()
+		}
+		
+		fmt.Printf(".")
+		time.Sleep(2 * time.Second)
+	}
+	
+	fmt.Printf(" ✗\n")
+	return fmt.Errorf("health check timeout after %v", timeout)
+}
+
+// performCutover executes the actual cutover from old to new process
+func performCutover(newCmd *exec.Cmd, tempBinary string, useTLS bool, originalPort, stagingPort int) error {
+	fmt.Printf("Performing cutover...\n")
+	
+	// Step 1: Start another instance of the new process on the original port
+	productionArgs := []string{tempBinary, "start", "--port", fmt.Sprintf("%d", originalPort)}
+	if useTLS {
+		productionArgs = append(productionArgs, "--tls")
+	}
+	
+	fmt.Printf("Starting production process on port %d\n", originalPort)
+	prodCmd := exec.Command(productionArgs[0], productionArgs[1:]...)
+	prodCmd.Stdout = os.Stdout
+	prodCmd.Stderr = os.Stderr
+	prodCmd.Env = os.Environ()
+	
+	if err := prodCmd.Start(); err != nil {
+		return fmt.Errorf("failed to start production process: %w", err)
+	}
+	
+	// Step 2: Wait a moment for the production process to start
+	time.Sleep(2 * time.Second)
+	
+	// Step 3: Verify production process health
+	if err := waitForHealth(originalPort, 15*time.Second); err != nil {
+		// Kill production process and return error
+		prodCmd.Process.Kill()
+		prodCmd.Wait()
+		return fmt.Errorf("production process failed health check: %w", err)
+	}
+	
+	fmt.Printf("✓ Production process is healthy on port %d\n", originalPort)
+	
+	// Step 4: Kill the staging process (no longer needed)
+	fmt.Printf("Shutting down staging process...\n")
+	if err := newCmd.Process.Kill(); err != nil {
+		fmt.Printf("Warning: failed to kill staging process: %v\n", err)
+	}
+	newCmd.Wait()
+	
+	// Step 5: Clean up temporary binary
+	defer func() {
+		if err := os.Remove(tempBinary); err != nil {
+			fmt.Printf("Warning: failed to remove temporary binary %s: %v\n", tempBinary, err)
+		}
+	}()
+	
+	fmt.Printf("✓ Cutover completed successfully!\n")
+	fmt.Printf("  New process serving on port %d\n", originalPort)
+	fmt.Printf("  Old process will now exit\n")
+	
+	// Step 6: Exit current process gracefully
 	os.Exit(0)
 	return nil // This line will never be reached
 }

@@ -623,8 +623,15 @@ func main() {
 						Name:  "port",
 						Value: 8080,
 					},
+					&cli.BoolFlag{
+						Name:  "staging",
+						Usage: "Run in staging mode (for safe deployment transitions)",
+					},
 				},
 				Action: func(c *cli.Context) error {
+					if c.Bool("staging") {
+						fmt.Printf("Starting in staging mode on port %d\n", c.Int("port"))
+					}
 					startServer(c.Bool("tls"), c.Int("port"))
 					return nil
 				},

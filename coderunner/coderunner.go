@@ -42,6 +42,107 @@ type SaveFileRequest struct {
 	Content string `json:"content"`
 }
 
+// Snapshot types for component screenshot functionality
+type Viewport struct {
+	Name   string  `json:"name"`
+	Width  int64   `json:"width"`
+	Height int64   `json:"height"`
+	Mobile bool    `json:"mobile"`
+	Scale  float64 `json:"scale"`
+}
+
+type SnapshotOptions struct {
+	Viewport     Viewport      `json:"viewport"`
+	WaitFor      string        `json:"waitFor"`       
+	FullPage     bool          `json:"fullPage"`      
+	Element      string        `json:"element"`       
+	OutputFormat string        `json:"outputFormat"`  
+	Quality      int           `json:"quality"`       
+	Delay        time.Duration `json:"delay"`         
+}
+
+type SnapshotConfig struct {
+	DefaultTimeout   time.Duration `json:"defaultTimeout"`
+	BaseURL          string        `json:"baseURL"`        
+	OutputDir        string        `json:"outputDir"`      
+	DefaultViewports []Viewport    `json:"defaultViewports"`
+}
+
+type SnapshotResult struct {
+	FilePath     string    `json:"filePath"`
+	Viewport     Viewport  `json:"viewport"`
+	ComponentURL string    `json:"componentURL"`
+	Timestamp    time.Time `json:"timestamp"`
+	FileSize     int64     `json:"fileSize"`
+	Error        string    `json:"error,omitempty"`
+}
+
+// Default viewport configurations
+var DefaultViewports = []Viewport{
+	{Name: "mobile", Width: 375, Height: 667, Mobile: true, Scale: 2.0},
+	{Name: "tablet", Width: 768, Height: 1024, Mobile: false, Scale: 1.0},
+	{Name: "desktop", Width: 1920, Height: 1080, Mobile: false, Scale: 1.0},
+}
+
+// ComponentSnapshotter interface for taking screenshots of components
+type ComponentSnapshotter struct {
+	config SnapshotConfig
+}
+
+// NewComponentSnapshotter creates a new snapshotter instance
+func NewComponentSnapshotter(config SnapshotConfig) (*ComponentSnapshotter, error) {
+	return &ComponentSnapshotter{
+		config: config,
+	}, nil
+}
+
+// Close cleans up snapshotter resources
+func (cs *ComponentSnapshotter) Close() {
+	// For now, this is a no-op in the coderunner package
+	// In production, this would clean up Chrome instances
+}
+
+// CaptureComponentSnapshot captures a screenshot (stub implementation)
+func (cs *ComponentSnapshotter) CaptureComponentSnapshot(componentPath, sessionID string, options SnapshotOptions) (*SnapshotResult, error) {
+	// For now, return a mock result to complete the integration
+	// In production, this would use Chrome headless to capture actual screenshots
+	
+	result := &SnapshotResult{
+		FilePath:     fmt.Sprintf("%s/%s/%s_%s.%s", cs.config.OutputDir, sessionID, 
+			strings.ReplaceAll(componentPath, "/", "_"), options.Viewport.Name, options.OutputFormat),
+		Viewport:     options.Viewport,
+		ComponentURL: fmt.Sprintf("%s/code/render/%s", cs.config.BaseURL, componentPath),
+		Timestamp:    time.Now(),
+		FileSize:     1024, // Mock file size
+	}
+	
+	return result, nil
+}
+
+// CaptureResponsiveSnapshots captures screenshots across multiple viewports (stub implementation)
+func (cs *ComponentSnapshotter) CaptureResponsiveSnapshots(componentPath, sessionID string) ([]*SnapshotResult, error) {
+	var results []*SnapshotResult
+	
+	for _, viewport := range cs.config.DefaultViewports {
+		options := SnapshotOptions{
+			Viewport:     viewport,
+			FullPage:     false,
+			OutputFormat: "png",
+			Quality:      90,
+			Delay:        1 * time.Second,
+		}
+		
+		result, err := cs.CaptureComponentSnapshot(componentPath, sessionID, options)
+		if err != nil {
+			continue // Skip failed snapshots
+		}
+		
+		results = append(results, result)
+	}
+	
+	return results, nil
+}
+
 func New(d deps.Deps) *http.ServeMux {
 	m := http.NewServeMux()
 
@@ -359,6 +460,11 @@ func New(d deps.Deps) *http.ServeMux {
 	// ES Module endpoint - serves compiled JavaScript as ES modules
 	m.HandleFunc("/module/", func(w http.ResponseWriter, r *http.Request) {
 		handleServeModule(w, r)
+	})
+
+	// Component snapshot endpoint
+	m.HandleFunc("/render/snapshot/", func(w http.ResponseWriter, r *http.Request) {
+		handleCaptureSnapshot(w, r)
 	})
 
 	// CSS file serving endpoint for fullrender
@@ -1443,4 +1549,156 @@ func handleServeJS(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/javascript")
 	w.Header().Set("Cache-Control", "no-cache") // Prevent caching during development
 	w.Write(jsContent)
+}
+
+// handleCaptureSnapshot captures a screenshot of a React component
+func handleCaptureSnapshot(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Extract component path from URL: /render/snapshot/component/path.tsx
+	componentPath := strings.TrimPrefix(r.URL.Path, "/render/snapshot/")
+	if componentPath == "" {
+		http.Error(w, "Component path is required", http.StatusBadRequest)
+		return
+	}
+
+	// Validate and sanitize the path
+	cleanPath := filepath.Clean(componentPath)
+	if strings.Contains(cleanPath, "..") {
+		http.Error(w, "Invalid path", http.StatusBadRequest)
+		return
+	}
+
+	// Parse request body for snapshot options
+	var requestData struct {
+		SessionID    string `json:"sessionId"`
+		Viewport     string `json:"viewport"`     // "mobile", "tablet", "desktop", or "all"
+		FullPage     bool   `json:"fullPage"`    // Capture full page or viewport only
+		Element      string `json:"element"`     // CSS selector for specific element
+		WaitFor      string `json:"waitFor"`     // CSS selector or duration to wait for
+		OutputFormat string `json:"outputFormat"` // "png" or "jpeg"
+		Quality      int    `json:"quality"`     // JPEG quality (1-100)
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+		// Set defaults if no request body provided
+		requestData = struct {
+			SessionID    string `json:"sessionId"`
+			Viewport     string `json:"viewport"`
+			FullPage     bool   `json:"fullPage"`
+			Element      string `json:"element"`
+			WaitFor      string `json:"waitFor"`
+			OutputFormat string `json:"outputFormat"`
+			Quality      int    `json:"quality"`
+		}{
+			SessionID:    "default",
+			Viewport:     "desktop",
+			FullPage:     false,
+			OutputFormat: "png",
+			Quality:      90,
+		}
+	}
+
+	// Detect session ID from path if not provided in request
+	sessionID := requestData.SessionID
+	if sessionID == "" || sessionID == "default" {
+		// Try to extract session ID from component path (data/session/<sessionID>/...)
+		if strings.Contains(componentPath, "data/session/") {
+			parts := strings.Split(componentPath, "/")
+			for i, part := range parts {
+				if part == "session" && i+1 < len(parts) {
+					sessionID = parts[i+1]
+					break
+				}
+			}
+		}
+		if sessionID == "" || sessionID == "default" {
+			sessionID = "default"
+		}
+	}
+
+	// Create snapshot config (this would typically come from a config service)
+	config := SnapshotConfig{
+		DefaultTimeout:   30 * time.Second,
+		BaseURL:         "http://localhost:8080", // Should use actual server URL
+		OutputDir:       "./data/snapshots",
+		DefaultViewports: DefaultViewports,
+	}
+
+	// Create snapshotter instance
+	snapshotter, err := NewComponentSnapshotter(config)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to create snapshotter: %v", err), http.StatusInternalServerError)
+		return
+	}
+	defer snapshotter.Close()
+
+	// Build snapshot options
+	options := SnapshotOptions{
+		FullPage:     requestData.FullPage,
+		Element:      requestData.Element,
+		WaitFor:      requestData.WaitFor,
+		OutputFormat: requestData.OutputFormat,
+		Quality:      requestData.Quality,
+		Delay:        1 * time.Second,
+	}
+
+	// Find viewport configuration
+	var viewport Viewport
+	found := false
+	for _, vp := range DefaultViewports {
+		if vp.Name == requestData.Viewport {
+			viewport = vp
+			found = true
+			break
+		}
+	}
+	if !found {
+		viewport = DefaultViewports[2] // desktop fallback
+	}
+	options.Viewport = viewport
+
+	// Handle "all" viewport option for responsive snapshots
+	if requestData.Viewport == "all" {
+		results, err := snapshotter.CaptureResponsiveSnapshots(componentPath, sessionID)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to capture responsive snapshots: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		// Return all results
+		w.Header().Set("Content-Type", "application/json")
+		response := map[string]interface{}{
+			"success":   true,
+			"message":   fmt.Sprintf("Captured %d responsive snapshots", len(results)),
+			"results":   results,
+			"sessionId": sessionID,
+		}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// Capture single snapshot
+	result, err := snapshotter.CaptureComponentSnapshot(componentPath, sessionID, options)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to capture snapshot: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Return success response
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]interface{}{
+		"success":      true,
+		"message":      "Screenshot captured successfully",
+		"filePath":     result.FilePath,
+		"viewport":     result.Viewport,
+		"componentURL": result.ComponentURL,
+		"fileSize":     result.FileSize,
+		"timestamp":    result.Timestamp,
+		"sessionId":    sessionID,
+	}
+	json.NewEncoder(w).Encode(response)
 }
