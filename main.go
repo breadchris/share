@@ -681,6 +681,7 @@ func main() {
 					commitMessage := "update"
 
 					for _, repo := range repos {
+						println("pushing", repo)
 						if err := pushRepo(repo, commitMessage); err != nil {
 							fmt.Printf("Failed to push %s: %v\n", repo, err)
 						}
