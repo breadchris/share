@@ -5,11 +5,11 @@ managed:
     default: github.com/breadchris/share/gen
 plugins:
   - plugin: buf.build/protocolbuffers/go
-    out: ./gen
+    out: ./kanban/gen
     opt:
       - paths=source_relative
   - plugin: buf.build/bufbuild/connect-go
-    out: ./gen
+    out: ./kanban/gen
     opt:
       - paths=source_relative
       - reflect-protocol=grpc-v1

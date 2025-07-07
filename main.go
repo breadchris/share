@@ -38,10 +38,10 @@ import (
 	"github.com/breadchris/share/graph"
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/justshare"
+	"github.com/breadchris/share/kanban"
 	"github.com/breadchris/share/op"
 	"github.com/breadchris/share/session"
 	"github.com/breadchris/share/user"
-	"github.com/breadchris/share/wasmcode"
 	"github.com/breadchris/share/xctf"
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/google/uuid"
@@ -252,7 +252,7 @@ func startServer(useTLS bool, port int) {
 	p("/vote", interpreted(NewVote))
 	p("/breadchris", interpreted(breadchris.New))
 	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./eventcalendar.go", "./card.go", "./ai.go", "./tarot.go"}))
-	p("/code", interpreted(wasmcode.New))
+	//p("/code", interpreted(wasmcode.New))
 	p("/extension", interpreted(NewExtension))
 	p("/git", interpreted(NewGit))
 	p("/music", interpreted(NewMusic))
@@ -276,7 +276,7 @@ func startServer(useTLS bool, port int) {
 	}))
 
 	// Mount code package at /flow/code using interpreted pattern
-	p("/flow/code", interpreted(func(d deps2.Deps) *http.ServeMux {
+	p("/code", interpreted(func(d deps2.Deps) *http.ServeMux {
 		return flow_code.New(flowDeps)
 	}))
 
@@ -287,6 +287,7 @@ func startServer(useTLS bool, port int) {
 
 	p("/coderunner", interpreted(coderunner.New))
 	p("/example", interpreted(example.New))
+	p("/kanban", interpreted(kanban.New))
 	p("/claudemd", interpreted(claudemd.New))
 	p("/docker", interpreted(docker.New))
 	p("/filecode", func() *http.ServeMux {
@@ -704,7 +705,7 @@ func main() {
 					if err := pullAndUpdate(); err != nil {
 						return fmt.Errorf("failed to pull and update: %w", err)
 					}
-					
+
 					// Restart the process with updated code
 					return restartProcess(c.Bool("tls"), c.Int("port"))
 				},

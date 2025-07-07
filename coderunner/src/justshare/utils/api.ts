@@ -80,7 +80,8 @@ export async function getTimeline(
       if (item.Content && typeof item.Content === 'object') {
         const transformedContent = {
           ...item.Content,          // Flatten content properties to top level
-          user_info: item.user_info // Keep user_info as nested property
+          user_info: item.user_info, // Keep user_info as nested property
+          tag_names: item.tag_names // Keep tag_names from the response
         };
         console.log(`API Debug - After transform[${index}]:`, transformedContent);
         console.log(`API Debug - Transformed type[${index}]:`, transformedContent.type, 'typeof:', typeof transformedContent.type);
@@ -104,7 +105,8 @@ export async function getContent(contentId: string): Promise<Content> {
     console.log('API Debug - Transforming single content response');
     return {
       ...response.Content,
-      user_info: response.user_info
+      user_info: response.user_info,
+      tag_names: response.tag_names
     };
   }
   

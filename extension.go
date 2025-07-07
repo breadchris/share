@@ -6,15 +6,14 @@ import (
 	"fmt"
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
+	"github.com/breadchris/share/models"
 	"github.com/go-shiori/dom"
 	"github.com/go-shiori/go-readability"
-	"github.com/google/uuid"
+	"gorm.io/gorm"
 	"log/slog"
 	"net/http"
 	"net/url"
-	"sort"
 	"strings"
-	"time"
 )
 
 type PageInfo struct {
@@ -27,21 +26,23 @@ type PageInfo struct {
 	HitCount  int    `json:"hit_count"`
 }
 
-type State struct {
-	PageInfos map[string]PageInfo `json:"page_infos"`
-}
-
 func NewExtension(d deps.Deps) *http.ServeMux {
 	m := http.NewServeMux()
 
-	var state State
-	if err := d.Docs.Get("extension", &state); err != nil {
-		state = State{
-			PageInfos: make(map[string]PageInfo),
-		}
-		if err := d.Docs.Set("extension", state); err != nil {
-			slog.Error("failed to initialize extension state", "error", err)
-		}
+	// Get default user and group for extension usage
+	defaultUserID := "extension-user"
+	defaultGroupID := "extension-group"
+
+	// Ensure default user exists
+	var user models.User
+	if err := d.DB.FirstOrCreate(&user, models.User{ID: defaultUserID, Username: "extension"}).Error; err != nil {
+		slog.Error("failed to create default user", "error", err)
+	}
+
+	// Ensure default group exists
+	var group models.Group
+	if err := d.DB.FirstOrCreate(&group, models.Group{ID: defaultGroupID, Name: "Extension Pages"}).Error; err != nil {
+		slog.Error("failed to create default group", "error", err)
 	}
 
 	m.HandleFunc("/save", func(w http.ResponseWriter, r *http.Request) {
@@ -62,8 +63,6 @@ func NewExtension(d deps.Deps) *http.ServeMux {
 			} else {
 				pageInfo.URL = ur
 			}
-
-			pageInfo.CreatedAt = time.Now().Unix()
 
 			getArticle := func(pageInfo PageInfo) (*readability.Article, error) {
 				r := strings.NewReader(pageInfo.HTML)
@@ -89,22 +88,60 @@ func NewExtension(d deps.Deps) *http.ServeMux {
 				pageInfo.Article = article.TextContent
 			}
 
-			prevPageInfo, ok := state.PageInfos[pageInfo.URL]
-			if ok {
-				pageInfo.HitCount = prevPageInfo.HitCount + 1
-			} else {
-				pageInfo.HitCount = 1
+			// Check if page already exists
+			var existingContent models.Content
+			result := d.DB.Where("type = ? AND group_id = ? AND data LIKE ?", "page", defaultGroupID, "%"+pageInfo.URL+"%").First(&existingContent)
+			
+			hitCount := 1
+			if result.Error == nil {
+				// Page exists, increment hit count
+				if existingContent.Metadata != nil {
+					if count, ok := existingContent.Metadata.Data["hit_count"].(float64); ok {
+						hitCount = int(count) + 1
+					}
+				}
 			}
-			pageInfo.ID = uuid.NewString()
-			state.PageInfos[pageInfo.URL] = pageInfo
 
-			if err := d.Docs.Set("extension", state); err != nil {
-				http.Error(w, fmt.Sprintf("Failed to save state: %v", err), http.StatusInternalServerError)
-				return
+			// Create metadata for the page
+			metadata := map[string]interface{}{
+				"url":       pageInfo.URL,
+				"title":     pageInfo.Title,
+				"html":      pageInfo.HTML,
+				"hit_count": hitCount,
+			}
+
+			// Create or update content
+			content := models.NewContent("page", pageInfo.Article, defaultGroupID, defaultUserID, metadata)
+
+			if result.Error == nil {
+				// Update existing content
+				content.ID = existingContent.ID
+				content.CreatedAt = existingContent.CreatedAt
+				if err := d.DB.Save(content).Error; err != nil {
+					http.Error(w, fmt.Sprintf("Failed to update content: %v", err), http.StatusInternalServerError)
+					return
+				}
+			} else {
+				// Create new content
+				if err := d.DB.Create(content).Error; err != nil {
+					http.Error(w, fmt.Sprintf("Failed to create content: %v", err), http.StatusInternalServerError)
+					return
+				}
+			}
+
+			// Convert back to PageInfo for response
+			responsePageInfo := PageInfo{
+				ID:        content.ID,
+				URL:       pageInfo.URL,
+				Title:     pageInfo.Title,
+				HTML:      pageInfo.HTML,
+				CreatedAt: content.CreatedAt.Unix(),
+				Article:   pageInfo.Article,
+				HitCount:  hitCount,
 			}
 
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(pageInfo)
+			json.NewEncoder(w).Encode(responsePageInfo)
 		} else {
 			http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		}
@@ -117,24 +154,24 @@ func NewExtension(d deps.Deps) *http.ServeMux {
 		switch r.Method {
 		case http.MethodGet:
 			if id != "" {
-				var pi PageInfo
-				for _, pageInfo := range state.PageInfos {
-					if pageInfo.ID == id {
-						pi = pageInfo
-						break
-					}
-				}
-
-				if pi.ID == "" {
+				var content models.Content
+				if err := d.DB.Where("id = ? AND type = ?", id, "page").First(&content).Error; err != nil {
 					http.Error(w, "Page not found", http.StatusNotFound)
 					return
+				}
+
+				title := "Page"
+				if content.Metadata != nil {
+					if t, ok := content.Metadata.Data["title"].(string); ok {
+						title = t
+					}
 				}
 
 				DefaultLayout(
 					Div(
 						Class("mx-auto w-3/4 pt-6 space-y-6"),
-						P(Class("text-xl"), T(pi.Title)),
-						P(Raw(pi.Article)),
+						P(Class("text-xl"), T(title)),
+						P(Raw(content.Data)),
 					),
 				).RenderPageCtx(ctx, w, r)
 				return
@@ -159,7 +196,7 @@ func NewExtension(d deps.Deps) *http.ServeMux {
 							),
 						),
 					),
-					RenderMasonry(state),
+					RenderMasonry(d.DB, defaultGroupID),
 				),
 			).RenderPageCtx(ctx, w, r)
 			return
@@ -169,45 +206,50 @@ func NewExtension(d deps.Deps) *http.ServeMux {
 	return m
 }
 
-func RenderMasonry(state State) *Node {
+func RenderMasonry(db *gorm.DB, groupID string) *Node {
 	var cards []*Node
-	var pi []PageInfo
-	for _, pageInfo := range state.PageInfos {
-		pi = append(pi, pageInfo)
+	var contents []models.Content
+	
+	// Get all page contents from the database
+	if err := db.Where("type = ? AND group_id = ?", "page", groupID).Order("created_at DESC").Find(&contents).Error; err != nil {
+		slog.Error("failed to fetch page contents", "error", err)
+		return Div(Class("board-grid justify-center mt-6 space-y-6"))
 	}
-	sort.Slice(pi, func(i, j int) bool {
-		return pi[i].CreatedAt > pi[j].CreatedAt
-	})
-	for _, pageInfo := range pi {
-		ur, err := url.Parse(pageInfo.URL)
+
+	for _, content := range contents {
+		if content.Metadata == nil {
+			continue
+		}
+		
+		pageURL, _ := content.Metadata.Data["url"].(string)
+		pageTitle, _ := content.Metadata.Data["title"].(string)
+		
+		if pageURL == "" {
+			continue
+		}
+		
+		ur, err := url.Parse(pageURL)
 		if err != nil {
 			slog.Error("failed to parse URL", "error", err)
 			continue
 		}
+		
 		card := Div(
 			Div(
 				Class("flex flex-col"),
-				A(Href(pageInfo.URL), Class("text-md font-bold leading-6"), T(pageInfo.Title)),
+				A(Href(pageURL), Class("text-md font-bold leading-6"), T(pageTitle)),
 				Div(
 					Class("text-sm text-gray-500 ml-2 "),
-					T(fmt.Sprintf("%s %s", time.Unix(pageInfo.CreatedAt, 0).Format("2006-01-02"), ur.Hostname())),
+					T(fmt.Sprintf("%s %s", content.CreatedAt.Format("2006-01-02"), ur.Hostname())),
 				),
-				If(pageInfo.Article != "",
+				If(content.Data != "",
 					Div(
 						Class("w-full p-4"),
-						A(Href("/"+pageInfo.ID), T(shortText(200, pageInfo.Article))),
+						A(Href("/"+content.ID), T(shortText(200, content.Data))),
 					),
 					Nil(),
 				),
 			),
-			//Class(""),
-			//	Div(
-			//		Class("text-gray-800 p-2 basis-14"),
-			//		Div(
-			//			Class("flex justify-between"),
-			//		),
-			//	),
-			//),
 		)
 		cards = append(cards, card)
 	}

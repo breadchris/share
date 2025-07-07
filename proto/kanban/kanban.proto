@@ -1,0 +1,192 @@
+syntax = "proto3";
+
+package kanban;
+
+option go_package = "github.com/breadchris/share/gen/proto/kanban";
+
+import "google/protobuf/timestamp.proto";
+
+// The Kanban service provides methods for managing kanban boards
+service KanbanService {
+  // Board operations
+  rpc CreateBoard(CreateBoardRequest) returns (CreateBoardResponse);
+  rpc GetBoard(GetBoardRequest) returns (GetBoardResponse);
+  rpc ListBoards(ListBoardsRequest) returns (ListBoardsResponse);
+  rpc UpdateBoard(UpdateBoardRequest) returns (UpdateBoardResponse);
+  rpc DeleteBoard(DeleteBoardRequest) returns (DeleteBoardResponse);
+  
+  // Column operations
+  rpc CreateColumn(CreateColumnRequest) returns (CreateColumnResponse);
+  rpc UpdateColumn(UpdateColumnRequest) returns (UpdateColumnResponse);
+  rpc DeleteColumn(DeleteColumnRequest) returns (DeleteColumnResponse);
+  rpc MoveColumn(MoveColumnRequest) returns (MoveColumnResponse);
+  
+  // Card operations
+  rpc CreateCard(CreateCardRequest) returns (CreateCardResponse);
+  rpc UpdateCard(UpdateCardRequest) returns (UpdateCardResponse);
+  rpc DeleteCard(DeleteCardRequest) returns (DeleteCardResponse);
+  rpc MoveCard(MoveCardRequest) returns (MoveCardResponse);
+}
+
+// Core data models
+message Board {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string user_id = 4;
+  repeated Column columns = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+message Column {
+  string id = 1;
+  string title = 2;
+  int32 position = 3;
+  string board_id = 4;
+  repeated Card cards = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+message Card {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  int32 position = 4;
+  string column_id = 5;
+  string assignee_id = 6;
+  repeated string labels = 7;
+  google.protobuf.Timestamp due_date = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+}
+
+// Board operations
+message CreateBoardRequest {
+  string name = 1;
+  string description = 2;
+}
+
+message CreateBoardResponse {
+  Board board = 1;
+}
+
+message GetBoardRequest {
+  string id = 1;
+}
+
+message GetBoardResponse {
+  Board board = 1;
+}
+
+message ListBoardsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+}
+
+message ListBoardsResponse {
+  repeated Board boards = 1;
+  string next_page_token = 2;
+}
+
+message UpdateBoardRequest {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+}
+
+message UpdateBoardResponse {
+  Board board = 1;
+}
+
+message DeleteBoardRequest {
+  string id = 1;
+}
+
+message DeleteBoardResponse {
+  bool success = 1;
+}
+
+// Column operations
+message CreateColumnRequest {
+  string board_id = 1;
+  string title = 2;
+  int32 position = 3;
+}
+
+message CreateColumnResponse {
+  Column column = 1;
+}
+
+message UpdateColumnRequest {
+  string id = 1;
+  string title = 2;
+}
+
+message UpdateColumnResponse {
+  Column column = 1;
+}
+
+message DeleteColumnRequest {
+  string id = 1;
+}
+
+message DeleteColumnResponse {
+  bool success = 1;
+}
+
+message MoveColumnRequest {
+  string id = 1;
+  int32 new_position = 2;
+}
+
+message MoveColumnResponse {
+  Column column = 1;
+}
+
+// Card operations
+message CreateCardRequest {
+  string column_id = 1;
+  string title = 2;
+  string description = 3;
+  int32 position = 4;
+  string assignee_id = 5;
+  repeated string labels = 6;
+  google.protobuf.Timestamp due_date = 7;
+}
+
+message CreateCardResponse {
+  Card card = 1;
+}
+
+message UpdateCardRequest {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  string assignee_id = 4;
+  repeated string labels = 5;
+  google.protobuf.Timestamp due_date = 6;
+}
+
+message UpdateCardResponse {
+  Card card = 1;
+}
+
+message DeleteCardRequest {
+  string id = 1;
+}
+
+message DeleteCardResponse {
+  bool success = 1;
+}
+
+message MoveCardRequest {
+  string id = 1;
+  string target_column_id = 2;
+  int32 new_position = 3;
+}
+
+message MoveCardResponse {
+  Card card = 1;
+}

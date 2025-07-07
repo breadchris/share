@@ -1049,7 +1049,7 @@ func handleRenderComponent(w http.ResponseWriter, r *http.Request) {
 		JSX:             api.JSXAutomatic,
 		JSXImportSource: "react",
 		LogLevel:        api.LogLevelSilent,
-		External:        []string{"react", "react-dom", "react-player"},
+		External:        []string{"react", "react-dom", "react-dom/client", "react/jsx-runtime", "@connectrpc/connect", "@connectrpc/connect-web"},
 		TsconfigRaw: `{
 			"compilerOptions": {
 				"jsx": "react-jsx",
@@ -1158,7 +1158,7 @@ func handleServeModule(w http.ResponseWriter, r *http.Request) {
 		JSX:             api.JSXAutomatic,
 		JSXImportSource: "react",
 		LogLevel:        api.LogLevelSilent,
-		External:        []string{"react", "react-dom", "react-dom/client", "react/jsx-runtime"},
+		External:        []string{"react", "react-dom", "react-dom/client", "react/jsx-runtime", "@connectrpc/connect", "@connectrpc/connect-web"},
 		TsconfigRaw: `{
 			"compilerOptions": {
 				"jsx": "react-jsx",

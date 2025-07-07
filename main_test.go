@@ -3,14 +3,107 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/breadchris/share/deps"
+	"github.com/breadchris/share/graveyard/yaegi"
+	"github.com/breadchris/share/kanban"
+	"github.com/breadchris/share/symbol"
+	"github.com/breadchris/yaegi/interp"
+	"github.com/breadchris/yaegi/stdlib"
 	"html/template"
 	"io"
 	"io/ioutil"
 	"log"
+	"log/slog"
+	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
+	"runtime"
+	"strings"
 	"testing"
 )
+
+func testDynamic(f func(d deps.Deps) *http.ServeMux, files ...string) func(deps.Deps) *http.ServeMux {
+	pc := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Entry()
+	fnp := runtime.FuncForPC(pc)
+	file, _ := fnp.FileLine(pc)
+	function := runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
+
+	// TODO breadchris fix packages
+	parts := strings.Split(function, "/")
+	if len(parts) > 1 {
+		file = "./" + filepath.Base(filepath.Dir(file))
+		function = strings.Split(parts[len(parts)-1], ".")[1]
+		//function = parts[len(parts)-1]
+	}
+
+	i := interp.New(interp.Options{
+		GoPath: "./kanban/",
+	})
+
+	i.Use(stdlib.Symbols)
+	i.Use(symbol.Symbols)
+	customSymbols := map[string]map[string]reflect.Value{}
+	customSymbols["github.com/breadchris/share/yaegi/yaegi"] = map[string]reflect.Value{
+		"GetStack": reflect.ValueOf(yaegi.Debug{
+			Interp: i,
+		}.DoGetStack),
+	}
+	i.Use(customSymbols)
+
+	for _, fi := range files {
+		_, err := i.CompilePath(fi)
+		if err != nil {
+			slog.Warn("failed to eval path", "error", err)
+			return f
+		}
+	}
+
+	_, err := i.EvalPath(file)
+	if err != nil {
+		slog.Warn("failed to eval path", "error", err)
+		return f
+	}
+
+	// TODO breadchris not ideal, should figure out how to
+	// do this properly
+	var fr reflect.Value
+	if strings.HasPrefix(file, "/") {
+		fr, err = i.Eval(function)
+		if err != nil {
+			slog.Warn("failed to eval function", "error", err)
+			return f
+		}
+	} else {
+		sym := i.Symbols(file)
+		//for k, v := range sym {
+		//	println(k, v)
+		//}
+		s, ok := sym[file]
+		if !ok {
+			slog.Warn("failed to get symbols", "file", file)
+			return f
+		}
+
+		fr, ok = s[function]
+		if !ok {
+			slog.Warn("failed to eval function", "error", err, "file", file, "function", function)
+			return f
+		}
+	}
+
+	fn, ok := fr.Interface().(func(db deps.Deps) *http.ServeMux)
+	if ok {
+		return fn
+	}
+	slog.Warn("failed to convert function to func() *http.ServeMux")
+	return f
+}
+
+func TestKanban(t *testing.T) {
+	f := testDynamic(kanban.New)
+	fmt.Printf("%+v\n", f(deps.Deps{}))
+}
 
 func loadJSONFiles(dir string) ([]interface{}, error) {
 	var recipes []interface{}

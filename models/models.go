@@ -292,8 +292,8 @@ type Content struct {
 	ReplyCount      int                                `json:"reply_count" gorm:"default:0"`             // Cache of direct reply count
 	Group           *Group                             `gorm:"foreignKey:GroupID"`
 	User            *User                              `gorm:"foreignKey:UserID"`
-	ParentContent   *Content                           `gorm:"foreignKey:ParentContentID"`                          // Parent content for threads
-	ThreadReplies   []*Content                         `gorm:"foreignKey:ParentContentID"`                          // Direct replies to this content
+	ParentContent   *Content                           `gorm:"foreignKey:ParentContentID"` // Parent content for threads
+	ThreadReplies   []*Content                         `gorm:"foreignKey:ParentContentID"` // Direct replies to this content
 	Tags            []*Tag                             `gorm:"many2many:content_tags;"`
 	Metadata        *JSONField[map[string]interface{}] `json:"metadata,omitempty"` // Additional metadata
 }
@@ -323,12 +323,12 @@ func NewContent(contentType, data, groupID, userID string, metadata map[string]i
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		},
-		Type:        contentType,
-		Data:        data,
-		GroupID:     groupID,
-		UserID:      userID,
-		ReplyCount:  0,
-		Metadata:    MakeJSONField(metadata),
+		Type:       contentType,
+		Data:       data,
+		GroupID:    groupID,
+		UserID:     userID,
+		ReplyCount: 0,
+		Metadata:   MakeJSONField(metadata),
 	}
 }
 
@@ -354,15 +354,15 @@ func NewContentReply(contentType, data, groupID, userID, parentContentID string,
 
 type ApiKey struct {
 	Model
-	Name        string    `json:"name" gorm:"not null"`                    // Human-readable name for the key
-	Token       string    `json:"token,omitempty" gorm:"unique;not null"`  // The actual API key token
-	TokenHash   string    `json:"-" gorm:"not null"`                       // Hashed version stored in DB
-	UserID      string    `json:"user_id" gorm:"index;not null"`
-	LastUsedAt  *time.Time `json:"last_used_at,omitempty"`
-	ExpiresAt   *time.Time `json:"expires_at,omitempty"`
-	IsActive    bool      `json:"is_active" gorm:"default:true"`
-	Scopes      string    `json:"scopes" gorm:"default:'read,write'"`       // Comma-separated permissions
-	User        *User     `gorm:"foreignKey:UserID"`
+	Name       string     `json:"name" gorm:"not null"`                   // Human-readable name for the key
+	Token      string     `json:"token,omitempty" gorm:"unique;not null"` // The actual API key token
+	TokenHash  string     `json:"-" gorm:"not null"`                      // Hashed version stored in DB
+	UserID     string     `json:"user_id" gorm:"index;not null"`
+	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
+	ExpiresAt  *time.Time `json:"expires_at,omitempty"`
+	IsActive   bool       `json:"is_active" gorm:"default:true"`
+	Scopes     string     `json:"scopes" gorm:"default:'read,write'"` // Comma-separated permissions
+	User       *User      `gorm:"foreignKey:UserID"`
 }
 
 // NewApiKey creates a new API key with secure token generation
@@ -480,14 +480,47 @@ type PinnedFile struct {
 
 type Deployment struct {
 	Model
-	CommitHash  string     `json:"commit_hash" gorm:"not null"`
-	Status      string     `json:"status" gorm:"not null"` // pending, building, deploying, success, failed, rolled_back
-	StartTime   time.Time  `json:"start_time" gorm:"not null"`
-	EndTime     *time.Time `json:"end_time,omitempty"`
-	Logs        string     `json:"logs" gorm:"type:text"`
-	ProcessID   int        `json:"process_id"`
-	Port        int        `json:"port"`
-	HealthURL   string     `json:"health_url"`
-	UserID      string     `json:"user_id" gorm:"index;not null"` // Who triggered the deployment
-	User        *User      `gorm:"foreignKey:UserID"`
+	CommitHash string     `json:"commit_hash" gorm:"not null"`
+	Status     string     `json:"status" gorm:"not null"` // pending, building, deploying, success, failed, rolled_back
+	StartTime  time.Time  `json:"start_time" gorm:"not null"`
+	EndTime    *time.Time `json:"end_time,omitempty"`
+	Logs       string     `json:"logs" gorm:"type:text"`
+	ProcessID  int        `json:"process_id"`
+	Port       int        `json:"port"`
+	HealthURL  string     `json:"health_url"`
+	UserID     string     `json:"user_id" gorm:"index;not null"` // Who triggered the deployment
+	User       *User      `gorm:"foreignKey:UserID"`
+}
+
+// Kanban Models
+
+type KanbanBoard struct {
+	Model
+	Name        string         `json:"name" gorm:"not null"`
+	Description string         `json:"description"`
+	UserID      string         `json:"user_id" gorm:"index;not null"`
+	User        *User          `gorm:"foreignKey:UserID"`
+	Columns     []KanbanColumn `gorm:"foreignKey:BoardID;constraint:OnDelete:CASCADE"`
+}
+
+type KanbanColumn struct {
+	Model
+	Title    string       `json:"title" gorm:"not null"`
+	Position int          `json:"position" gorm:"not null"`
+	BoardID  string       `json:"board_id" gorm:"index;not null"`
+	Board    *KanbanBoard `gorm:"foreignKey:BoardID"`
+	Cards    []KanbanCard `gorm:"foreignKey:ColumnID;constraint:OnDelete:CASCADE"`
+}
+
+type KanbanCard struct {
+	Model
+	Title       string        `json:"title" gorm:"not null"`
+	Description string        `json:"description"`
+	Position    int           `json:"position" gorm:"not null"`
+	ColumnID    string        `json:"column_id" gorm:"index;not null"`
+	Column      *KanbanColumn `gorm:"foreignKey:ColumnID"`
+	AssigneeID  string        `json:"assignee_id"`
+	Assignee    *User         `gorm:"foreignKey:AssigneeID"`
+	Labels      []string      `json:"labels" gorm:"type:json"`
+	DueDate     time.Time     `json:"due_date"`
 }

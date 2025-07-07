@@ -12,7 +12,9 @@ func ReactImportMap() *Node {
             "react": "https://esm.sh/react@18",
             "react-dom": "https://esm.sh/react-dom@18",
             "react-dom/client": "https://esm.sh/react-dom@18/client",
-            "react/jsx-runtime": "https://esm.sh/react@18/jsx-runtime"
+            "react/jsx-runtime": "https://esm.sh/react@18/jsx-runtime",
+			"@connectrpc/connect": "https://esm.sh/@connectrpc/connect",
+			"@connectrpc/connect-web": "https://esm.sh/@connectrpc/connect-web"
         }
     }
     `))
@@ -223,7 +225,7 @@ func ReactComponentPage(componentName string, additionalHeadNodes ...*Node) *Nod
 // ReactComponentPageWithCSS creates a page that renders a React component with additional CSS files
 func ReactComponentPageWithCSS(componentName, componentPath string, jsFileName string, cssFiles []string) *Node {
 	cssLinks := CSSLinks(componentPath, cssFiles)
-	
+
 	headNodes := []*Node{
 		Meta(Charset("UTF-8")),
 		Meta(Name("viewport"), Content("width=device-width, initial-scale=1.0")),

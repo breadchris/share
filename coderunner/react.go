@@ -293,7 +293,7 @@ func LoadModule(componentPath, componentName string) *Node {
 	return Script(Type("module"), Raw(`
         try {
             // Import the compiled component module from the /module/ endpoint
-            const componentModule = await import('/coderunner/module/`+componentPath+`');
+            const componentModule = await import('/code/module/`+componentPath+`');
             
             // Import React and ReactDOM
             const React = await import('react');

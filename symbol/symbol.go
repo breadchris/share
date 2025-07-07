@@ -54,6 +54,8 @@
 //go:generate yaegi extract github.com/dsoprea/go-jpeg-image-structure/v2
 //go:generate yaegi extract github.com/breadchris/share/db
 //go:generate yaegi extract github.com/evanw/esbuild/pkg/api
+//go:generate yaegi extract github.com/breadchris/share/gen/proto/kanban/kanbanconnect
+//go:generate yaegi extract github.com/breadchris/share/gen/proto/kanban
 
 /*
 TODO breadchris, problematic collision of http package name

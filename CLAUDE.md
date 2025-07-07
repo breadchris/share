@@ -7,6 +7,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ./flow
 only refer to the code in the git repo directory in isolation, this is a separate git repo and does not share code with the rest of the codebase.
 
+## Proto / GRPC
+- Proto files are located in the `proto/` directory
+- Use go generate . to generate Go and Typescript from proto files
+- Refer to ./buf.gen.yaml for the code generation configuration
+
 ## Go
 - Debug print statements should be fmt.Printf("Debug: %+v\n", variable)
 - Routes are mounted in `main.go` using the `p()` function. Each route handler is wrapped with `interpreted("/path")`
