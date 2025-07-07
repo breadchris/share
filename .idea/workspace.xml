@@ -5,47 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/coderunner/src/gen/proto/kanban/kanban_connect.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/coderunner/src/gen/proto/kanban/kanban_pb.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gen/proto/kanban/kanban.pb.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gen/proto/kanban/kanban_grpc.pb.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/gen/proto/kanban/kanbanconnect/kanban.connect.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/kanban/KanbanBoard.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/kanban/handler.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/kanban/service.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/proto/kanban/kanban.proto" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.CLAUDE.md.swp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/buf.gen.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/buf.gen.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/coderunner.go" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/coderunner.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/html_helpers.go" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/html_helpers.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/react.go" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/react.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/gen/proto/example/example_connect.ts" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/gen/proto/example/example_connect.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/utils/api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/justshare/utils/api.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/example_usage.go" beforeDir="false" afterPath="$PROJECT_DIR$/example_usage.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension.go" beforeDir="false" afterPath="$PROJECT_DIR$/extension.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow" beforeDir="false" afterPath="$PROJECT_DIR$/flow" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/flow/CLAUDE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/flow/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/claude/claude.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/claude/claude.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/config/config.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/config/environment.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/config/environment.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/db/db.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/db/db.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/deps/deps.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/deps/deps.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/deps/factory.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/deps/factory.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/flow" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/models/models.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/models/models.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/flow/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/slackbot/handlers.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/handlers.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/slackbot/session.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/session.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/slackbot/slackbot.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/slackbot.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/main_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/models.go" beforeDir="false" afterPath="$PROJECT_DIR$/models/models.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/symbol.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/symbol.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/kanban/service.go" beforeDir="false" afterPath="$PROJECT_DIR$/kanban/service.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -308,7 +268,7 @@
       <workItem from="1747973023098" duration="26954000" />
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
-      <workItem from="1750823408293" duration="249530000" />
+      <workItem from="1750823408293" duration="250407000" />
     </task>
     <servers />
   </component>
