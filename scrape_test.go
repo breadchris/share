@@ -12,12 +12,16 @@ import (
 	"github.com/breadchris/share/models"
 	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"
+	"io"
 	"io/fs"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestScrape(t *testing.T) {
@@ -251,4 +255,243 @@ func TestLoadAllRecipesSmitten(t *testing.T) {
 	if err = index.Batch(batch); err != nil {
 		fmt.Println("Error:", err)
 	}
+}
+
+func TestScrapeMobbinMidjourney(t *testing.T) {
+	// Create scraper with Chrome configuration for dynamic content
+	scraperConfig := ScrapeConfig{
+		Client:   ClientChrome,
+		Fallback: true,
+		UseCache: false,
+	}
+	
+	scraper := NewScraper(scraperConfig)
+	
+	// Mobbin Midjourney design gallery URL
+	targetURL := "https://mobbin.com/apps/midjourney"
+	
+	// Create directory for downloaded images
+	outputDir := "data/mobbin/midjourney"
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		t.Fatalf("Failed to create output directory: %v", err)
+	}
+	
+	// Scrape the page
+	resp, err := scraper.Scrape(targetURL)
+	if err != nil {
+		t.Fatalf("Failed to scrape %s: %v", targetURL, err)
+	}
+	
+	// Save the HTML content for debugging
+	htmlFile := filepath.Join(outputDir, "page_content.html")
+	if err := os.WriteFile(htmlFile, []byte(resp.Content), 0644); err != nil {
+		fmt.Printf("Warning: Failed to save HTML content: %v\n", err)
+	} else {
+		fmt.Printf("Saved page content to: %s\n", htmlFile)
+	}
+	
+	// Parse HTML to extract image URLs
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(resp.Content))
+	if err != nil {
+		t.Fatalf("Failed to parse HTML: %v", err)
+	}
+	
+	// Log page title and some basic info
+	title := doc.Find("title").Text()
+	fmt.Printf("Page title: %s\n", title)
+	
+	// Count all images on the page for debugging
+	allImgCount := doc.Find("img").Length()
+	fmt.Printf("Total img elements found: %d\n", allImgCount)
+	
+	// Track downloaded images
+	downloadedCount := 0
+	
+	// Find image elements (adjust selector based on actual Mobbin structure)
+	// Common patterns: img tags, background images in style attributes
+	doc.Find("img").Each(func(i int, s *goquery.Selection) {
+		imgURL, exists := s.Attr("src")
+		if !exists {
+			// Try data-src for lazy loaded images
+			imgURL, exists = s.Attr("data-src")
+			if !exists {
+				// Try srcset attribute
+				imgURL, exists = s.Attr("srcset")
+				if !exists {
+					return
+				}
+				// Extract first URL from srcset
+				parts := strings.Split(imgURL, ",")
+				if len(parts) > 0 {
+					imgURL = strings.TrimSpace(strings.Split(parts[0], " ")[0])
+				}
+			}
+		}
+		
+		// Log all images for debugging (first 10)
+		if i < 10 {
+			alt, _ := s.Attr("alt")
+			fmt.Printf("Image %d: URL=%s, Alt=%s\n", i, imgURL, alt)
+		}
+		
+		// Skip small images (likely icons/logos)
+		if strings.Contains(imgURL, "icon") || strings.Contains(imgURL, "logo") {
+			return
+		}
+		
+		// Skip if empty or data URL
+		if imgURL == "" || strings.HasPrefix(imgURL, "data:") {
+			return
+		}
+		
+		// Make URL absolute if needed
+		if !strings.HasPrefix(imgURL, "http") {
+			baseURL, _ := url.Parse(targetURL)
+			imgURLParsed, err := baseURL.Parse(imgURL)
+			if err != nil {
+				fmt.Printf("Error parsing relative URL %s: %v\n", imgURL, err)
+				return
+			}
+			imgURL = imgURLParsed.String()
+		}
+		
+		// Download the image
+		if err := downloadImage(imgURL, outputDir, fmt.Sprintf("midjourney_design_%d", i)); err != nil {
+			fmt.Printf("Failed to download image %s: %v\n", imgURL, err)
+		} else {
+			downloadedCount++
+			fmt.Printf("Downloaded: %s\n", imgURL)
+		}
+	})
+	
+	// Also check for background images in div elements
+	doc.Find("div[style*='background-image']").Each(func(i int, s *goquery.Selection) {
+		style, _ := s.Attr("style")
+		// Extract URL from background-image: url(...)
+		re := regexp.MustCompile(`url\(['"]?([^'"]+)['"]?\)`)
+		matches := re.FindStringSubmatch(style)
+		if len(matches) > 1 {
+			imgURL := matches[1]
+			
+			// Make URL absolute if needed
+			if !strings.HasPrefix(imgURL, "http") {
+				baseURL, _ := url.Parse(targetURL)
+				imgURLParsed, err := baseURL.Parse(imgURL)
+				if err != nil {
+					fmt.Printf("Error parsing relative URL %s: %v\n", imgURL, err)
+					return
+				}
+				imgURL = imgURLParsed.String()
+			}
+			
+			// Download the image
+			if err := downloadImage(imgURL, outputDir, fmt.Sprintf("midjourney_bg_%d", i)); err != nil {
+				fmt.Printf("Failed to download background image %s: %v\n", imgURL, err)
+			} else {
+				downloadedCount++
+				fmt.Printf("Downloaded background image: %s\n", imgURL)
+			}
+		}
+	})
+	
+	// Also try to find images in other common patterns for modern web apps
+	doc.Find("div[data-testid*='image'], div[class*='image'], figure img, picture img").Each(func(i int, s *goquery.Selection) {
+		imgURL, exists := s.Attr("src")
+		if !exists {
+			imgURL, exists = s.Attr("data-src")
+			if !exists {
+				return
+			}
+		}
+		
+		if imgURL != "" && !strings.HasPrefix(imgURL, "data:") {
+			fmt.Printf("Alternative selector image %d: %s\n", i, imgURL)
+			
+			// Make URL absolute if needed
+			if !strings.HasPrefix(imgURL, "http") {
+				baseURL, _ := url.Parse(targetURL)
+				imgURLParsed, err := baseURL.Parse(imgURL)
+				if err != nil {
+					fmt.Printf("Error parsing relative URL %s: %v\n", imgURL, err)
+					return
+				}
+				imgURL = imgURLParsed.String()
+			}
+			
+			// Download the image
+			if err := downloadImage(imgURL, outputDir, fmt.Sprintf("alt_selector_%d", i)); err != nil {
+				fmt.Printf("Failed to download alt selector image %s: %v\n", imgURL, err)
+			} else {
+				downloadedCount++
+				fmt.Printf("Downloaded (alt selector): %s\n", imgURL)
+			}
+		}
+	})
+	
+	// Check if page has login/auth indicators
+	loginIndicators := []string{"login", "sign in", "authentication", "auth", "register"}
+	bodyText := strings.ToLower(doc.Find("body").Text())
+	for _, indicator := range loginIndicators {
+		if strings.Contains(bodyText, indicator) {
+			fmt.Printf("⚠️  Page may require authentication (found: %s)\n", indicator)
+			break
+		}
+	}
+	
+	fmt.Printf("\nTotal images downloaded: %d\n", downloadedCount)
+	
+	// Don't fail the test if no images found - just report results
+	if downloadedCount == 0 {
+		fmt.Println("ℹ️  No images were downloaded. Check the saved HTML file to understand the page structure.")
+		fmt.Printf("📁 Check: %s\n", htmlFile)
+	}
+}
+
+// Helper function to download images
+func downloadImage(url, outputDir, filename string) error {
+	// Create HTTP client with timeout
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+	
+	// Make request
+	resp, err := client.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("bad status: %s", resp.Status)
+	}
+	
+	// Determine file extension from content type or URL
+	ext := filepath.Ext(url)
+	if ext == "" {
+		contentType := resp.Header.Get("Content-Type")
+		switch contentType {
+		case "image/jpeg", "image/jpg":
+			ext = ".jpg"
+		case "image/png":
+			ext = ".png"
+		case "image/gif":
+			ext = ".gif"
+		case "image/webp":
+			ext = ".webp"
+		default:
+			ext = ".jpg" // default
+		}
+	}
+	
+	// Create file
+	filePath := filepath.Join(outputDir, filename+ext)
+	file, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	
+	// Copy response body to file
+	_, err = io.Copy(file, resp.Body)
+	return err
 }
