@@ -5,23 +5,35 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/README_scraper_test.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/component_snapshot.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/coderunner/coderunner.go" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/coderunner.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/component_snapshot.go" beforeDir="false" afterPath="$PROJECT_DIR$/component_snapshot.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/component_watcher.go" beforeDir="false" afterPath="$PROJECT_DIR$/component_watcher.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension.go" beforeDir="false" afterPath="$PROJECT_DIR$/extension.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/background.js" beforeDir="false" afterPath="$PROJECT_DIR$/extension/background.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/extension/manifest.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/options.html" beforeDir="false" afterPath="$PROJECT_DIR$/extension/options.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/options.js" beforeDir="false" afterPath="$PROJECT_DIR$/extension/options.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow" beforeDir="false" afterPath="$PROJECT_DIR$/flow" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/flow/CLAUDE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/claude/claude.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/claude/claude.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/database.types.ts" beforeDir="false" afterPath="$PROJECT_DIR$/flow/database.types.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/db/db.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/db/db.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/models/models.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/models/models.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/slackbot/handlers.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/handlers.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/slackbot/session.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/session.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/slackbot/slackbot.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/slackbot.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/kanban/service.go" beforeDir="false" afterPath="$PROJECT_DIR$/kanban/service.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main_todo.go" beforeDir="false" afterPath="$PROJECT_DIR$/main_todo.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scrape_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/scrape_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/share/ext/Base.lproj/MainInterface.storyboard" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/share/ext/Info.plist" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/share/ext/ShareViewController.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/share/share.xcodeproj/project.pbxproj" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/share/share.xcodeproj/project.xcworkspace/contents.xcworkspacedata" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/share/share.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/share/share.xcodeproj/project.xcworkspace/xcuserdata/hacked.xcuserdatad/UserInterfaceState.xcuserstate" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/share/share.xcodeproj/xcuserdata/hacked.xcuserdatad/xcschemes/xcschememanagement.plist" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/share/share/Assets.xcassets/AccentColor.colorset/Contents.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/share/share/Assets.xcassets/AppIcon.appiconset/Contents.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/share/share/Assets.xcassets/Contents.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/share/share/ContentView.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/share/share/Preview Content/Preview Assets.xcassets/Contents.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/share/share/shareApp.swift" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -37,7 +49,7 @@
   </component>
   <component name="GOROOT" url="file:///opt/homebrew/opt/go/libexec" />
   <component name="Git.Settings">
-    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/flow" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="g132qsae" />
@@ -102,10 +114,10 @@
       <recent name="$PROJECT_DIR$/hmr/client" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/flow" />
       <recent name="$PROJECT_DIR$/kanban/src/vendor/github.com/breadchris/share/kanban" />
       <recent name="$PROJECT_DIR$/kanban/src" />
       <recent name="$PROJECT_DIR$/graveyard" />
-      <recent name="$PROJECT_DIR$/flow" />
       <recent name="$PROJECT_DIR$/claudemd/migrations" />
     </key>
   </component>
@@ -284,7 +296,7 @@
       <workItem from="1747973023098" duration="26954000" />
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
-      <workItem from="1750823408293" duration="261308000" />
+      <workItem from="1750823408293" duration="273942000" />
     </task>
     <servers />
   </component>

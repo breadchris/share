@@ -10,7 +10,9 @@
     "scripting",
     "tabs",
     "storage",
-    "notifications"
+    "notifications",
+    "cookies",
+    "tabCapture"
   ],
   "devtools_page": "devtools.html",
   "background": {
@@ -21,7 +23,9 @@
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
-    }
+    },
+    "default_popup": "popup.html",
+    "default_title": "Share Extension"
   },
   "options_page": "options.html",
   "content_scripts": [

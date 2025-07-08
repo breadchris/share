@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/breadchris/share/snapshot"
 	"context"
 	"fmt"
 	"log/slog"
@@ -13,70 +14,20 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Viewport represents a device viewport configuration
-type Viewport struct {
-	Name   string `json:"name"`
-	Width  int64  `json:"width"`
-	Height int64  `json:"height"`
-	Mobile bool   `json:"mobile"`
-	Scale  float64 `json:"scale"`
-}
 
-// Interaction represents a user interaction to perform before capturing
-type Interaction struct {
-	Type     string `json:"type"`     // "click", "hover", "scroll", "wait"
-	Selector string `json:"selector"` // CSS selector for target element
-	Duration string `json:"duration"` // For wait actions
-	Value    string `json:"value"`    // For input actions
-}
 
-// SnapshotOptions configures how a snapshot should be captured
-type SnapshotOptions struct {
-	Viewport      Viewport      `json:"viewport"`
-	WaitFor       string        `json:"waitFor"`       // CSS selector or time duration
-	Interactions  []Interaction `json:"interactions"`  // User interactions before capture
-	FullPage      bool          `json:"fullPage"`      // Capture full page or viewport only
-	Element       string        `json:"element"`       // CSS selector for specific element
-	OutputFormat  string        `json:"outputFormat"`  // "png" or "jpeg"
-	Quality       int           `json:"quality"`       // JPEG quality (1-100)
-	Delay         time.Duration `json:"delay"`         // Additional delay before capture
-}
 
-// SnapshotConfig configures the snapshot service
-type SnapshotConfig struct {
-	ChromeFlags    []string      `json:"chromeFlags"`
-	DefaultTimeout time.Duration `json:"defaultTimeout"`
-	BaseURL        string        `json:"baseURL"`        // Base URL for component rendering
-	OutputDir      string        `json:"outputDir"`      // Base directory for snapshots
-	DefaultViewports []Viewport  `json:"defaultViewports"`
-}
 
-// SnapshotResult contains information about a captured snapshot
-type SnapshotResult struct {
-	FilePath    string    `json:"filePath"`
-	Viewport    Viewport  `json:"viewport"`
-	ComponentURL string   `json:"componentURL"`
-	Timestamp   time.Time `json:"timestamp"`
-	FileSize    int64     `json:"fileSize"`
-	Error       string    `json:"error,omitempty"`
-}
 
 // ComponentSnapshotter handles capturing screenshots of React components
 type ComponentSnapshotter struct {
-	config    SnapshotConfig
+	config    snapshot.SnapshotConfig
 	chromeCtx context.Context
 	cancel    context.CancelFunc
 }
 
-// DefaultViewports provides common device viewport configurations
-var DefaultViewports = []Viewport{
-	{Name: "mobile", Width: 375, Height: 667, Mobile: true, Scale: 2.0},
-	{Name: "tablet", Width: 768, Height: 1024, Mobile: false, Scale: 1.0},
-	{Name: "desktop", Width: 1920, Height: 1080, Mobile: false, Scale: 1.0},
-}
-
 // NewComponentSnapshotter creates a new component snapshotter instance
-func NewComponentSnapshotter(config SnapshotConfig) (*ComponentSnapshotter, error) {
+func NewComponentSnapshotter(config snapshot.SnapshotConfig) (*ComponentSnapshotter, error) {
 	// Set default values
 	if config.DefaultTimeout == 0 {
 		config.DefaultTimeout = 30 * time.Second
@@ -88,7 +39,7 @@ func NewComponentSnapshotter(config SnapshotConfig) (*ComponentSnapshotter, erro
 		config.OutputDir = "./data/snapshots"
 	}
 	if len(config.DefaultViewports) == 0 {
-		config.DefaultViewports = DefaultViewports
+		config.DefaultViewports = snapshot.DefaultViewports
 	}
 
 	// Ensure output directory exists
@@ -132,7 +83,7 @@ func (cs *ComponentSnapshotter) Close() {
 }
 
 // CaptureComponentSnapshot captures a single screenshot of a component
-func (cs *ComponentSnapshotter) CaptureComponentSnapshot(componentPath, sessionID string, options SnapshotOptions) (*SnapshotResult, error) {
+func (cs *ComponentSnapshotter) CaptureComponentSnapshot(componentPath, sessionID string, options snapshot.SnapshotOptions) (*snapshot.SnapshotResult, error) {
 	// Build component URL
 	componentURL := fmt.Sprintf("%s/code/render/data/session/%s/%s", cs.config.BaseURL, sessionID, componentPath)
 	
@@ -246,7 +197,7 @@ func (cs *ComponentSnapshotter) CaptureComponentSnapshot(componentPath, sessionI
 		"file_size", fileInfo.Size(),
 	)
 
-	return &SnapshotResult{
+	return &snapshot.SnapshotResult{
 		FilePath:     outputPath,
 		Viewport:     options.Viewport,
 		ComponentURL: componentURL,
@@ -256,12 +207,12 @@ func (cs *ComponentSnapshotter) CaptureComponentSnapshot(componentPath, sessionI
 }
 
 // CaptureResponsiveSnapshots captures screenshots across multiple viewports
-func (cs *ComponentSnapshotter) CaptureResponsiveSnapshots(componentPath, sessionID string) ([]*SnapshotResult, error) {
-	var results []*SnapshotResult
+func (cs *ComponentSnapshotter) CaptureResponsiveSnapshots(componentPath, sessionID string) ([]*snapshot.SnapshotResult, error) {
+	var results []*snapshot.SnapshotResult
 	var errors []error
 
 	for _, viewport := range cs.config.DefaultViewports {
-		options := SnapshotOptions{
+		options := snapshot.SnapshotOptions{
 			Viewport:     viewport,
 			FullPage:     false,
 			OutputFormat: "png",
@@ -292,7 +243,7 @@ func (cs *ComponentSnapshotter) CaptureResponsiveSnapshots(componentPath, sessio
 }
 
 // createInteractionAction converts an Interaction to a chromedp Action
-func (cs *ComponentSnapshotter) createInteractionAction(interaction Interaction) chromedp.Action {
+func (cs *ComponentSnapshotter) createInteractionAction(interaction snapshot.Interaction) chromedp.Action {
 	switch interaction.Type {
 	case "click":
 		return chromedp.Click(interaction.Selector)
@@ -316,9 +267,9 @@ func (cs *ComponentSnapshotter) createInteractionAction(interaction Interaction)
 }
 
 // GetSnapshotMetadata returns metadata about snapshots for a session
-func (cs *ComponentSnapshotter) GetSnapshotMetadata(sessionID string) (map[string][]SnapshotResult, error) {
+func (cs *ComponentSnapshotter) GetSnapshotMetadata(sessionID string) (map[string][]snapshot.SnapshotResult, error) {
 	sessionDir := filepath.Join(cs.config.OutputDir, sessionID)
-	metadata := make(map[string][]SnapshotResult)
+	metadata := make(map[string][]snapshot.SnapshotResult)
 
 	// Check if session directory exists
 	if _, err := os.Stat(sessionDir); os.IsNotExist(err) {
@@ -340,11 +291,11 @@ func (cs *ComponentSnapshotter) GetSnapshotMetadata(sessionID string) (map[strin
 				viewportName = "default"
 			}
 
-			result := SnapshotResult{
+			result := snapshot.SnapshotResult{
 				FilePath:  path,
 				Timestamp: info.ModTime(),
 				FileSize:  info.Size(),
-				Viewport:  Viewport{Name: viewportName},
+				Viewport:  snapshot.Viewport{Name: viewportName},
 			}
 
 			metadata[viewportName] = append(metadata[viewportName], result)

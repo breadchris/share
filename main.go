@@ -41,6 +41,7 @@ import (
 	"github.com/breadchris/share/kanban"
 	"github.com/breadchris/share/op"
 	"github.com/breadchris/share/session"
+	"github.com/breadchris/share/snapshot"
 	"github.com/breadchris/share/user"
 	"github.com/breadchris/share/xctf"
 	"github.com/evanw/esbuild/pkg/api"
@@ -119,7 +120,25 @@ func startXCTF(port int) error {
 	http.HandleFunc("/static/", serveFiles("static"))
 	http.HandleFunc("/data/", serveFiles("data"))
 
-	h := s.LoadAndSave(http.DefaultServeMux)
+	// Add CSP middleware to allow Google Identity scripts
+	cspMiddleware := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// CSP policy that allows Google Identity scripts and other required resources
+			csp := "default-src 'self'; " +
+				"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://accounts.google.com https://apis.google.com blob: data:; " +
+				"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+				"font-src 'self' https://fonts.gstatic.com data:; " +
+				"img-src 'self' data: https:; " +
+				"connect-src 'self' https://accounts.google.com https://www.googleapis.com; " +
+				"frame-src 'self' https://accounts.google.com; " +
+				"form-action 'self'"
+
+			w.Header().Set("Content-Security-Policy", csp)
+			next.ServeHTTP(w, r)
+		})
+	}
+
+	h := cspMiddleware(s.LoadAndSave(http.DefaultServeMux))
 
 	log.Printf("Starting HTTP server on port: %d", port)
 	return http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), h)
@@ -290,6 +309,7 @@ func startServer(useTLS bool, port int) {
 	p("/kanban", interpreted(kanban.New))
 	p("/claudemd", interpreted(claudemd.New))
 	p("/docker", interpreted(docker.New))
+	p("/browser", interpreted(NewBrowser))
 	p("/filecode", func() *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -558,12 +578,67 @@ func startServer(useTLS bool, port int) {
 		}
 	}()
 
+	// Initialize component snapshot service
+	snapshotConfig := snapshot.SnapshotConfig{
+		DefaultTimeout:   30 * time.Second,
+		BaseURL:          appConfig.ExternalURL,
+		OutputDir:        "./data/snapshots",
+		DefaultViewports: snapshot.DefaultViewports,
+	}
+
+	if snapshotConfig.BaseURL == "" {
+		snapshotConfig.BaseURL = fmt.Sprintf("http://localhost:%d", port)
+	}
+
+	snapshotter, err := NewComponentSnapshotter(snapshotConfig)
+	if err != nil {
+		log.Printf("Failed to create component snapshotter: %v", err)
+	} else {
+		// Initialize component watcher
+		watcherConfig := snapshot.DefaultComponentWatcherConfig()
+		watcher, err := NewComponentWatcher(snapshotter, watcherConfig)
+		if err != nil {
+			log.Printf("Failed to create component watcher: %v", err)
+		} else {
+			// Start component watcher in background
+			if err := watcher.Start(); err != nil {
+				log.Printf("Failed to start component watcher: %v", err)
+			} else {
+				log.Printf("Component watcher started, monitoring session directories for .tsx changes")
+
+				// Add graceful shutdown handling for watcher
+				go func() {
+					// This is a simple approach - in production you'd want proper signal handling
+					// For now, the watcher will stop when the main process exits
+				}()
+			}
+		}
+	}
+
 	dir := "data/justshare.io-ssl-bundle"
 	interCertFile := path.Join(dir, "intermediate.cert.pem")
 	certFile := path.Join(dir, "domain.cert.pem")
 	keyFile := path.Join(dir, "private.key.pem")
 
-	h := s.LoadAndSave(http.DefaultServeMux)
+	// Add CSP middleware to allow Google Identity scripts
+	cspMiddleware := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// CSP policy that allows Google Identity scripts and other required resources
+			csp := "default-src 'self'; " +
+				"script-src 'self' 'unsafe-inline' 'unsafe-eval' *; " +
+				"style-src 'self' 'unsafe-inline' *; " +
+				"font-src 'self' *; " +
+				"img-src 'self' *; " +
+				"connect-src 'self' *; " +
+				"frame-src 'self' *; " +
+				"form-action 'self' *;"
+
+			w.Header().Set("Content-Security-Policy", csp)
+			next.ServeHTTP(w, r)
+		})
+	}
+
+	h := cspMiddleware(s.LoadAndSave(http.DefaultServeMux))
 
 	if useTLS {
 		tlsConfig := NewTLSConfig(interCertFile, certFile, keyFile)
@@ -718,6 +793,30 @@ func main() {
 				},
 			},
 			NewPipePortCli(),
+			{
+				Name:  "browser",
+				Usage: "Load URL in browser and detect errors from console/network",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "url",
+						Usage:    "URL to load in browser",
+						Required: true,
+					},
+					&cli.IntFlag{
+						Name:  "timeout",
+						Usage: "Timeout in seconds for page load",
+						Value: 30,
+					},
+					&cli.BoolFlag{
+						Name:  "headless",
+						Usage: "Run browser in headless mode",
+						Value: true,
+					},
+				},
+				Action: func(c *cli.Context) error {
+					return runBrowserCommand(c.String("url"), c.Int("timeout"), c.Bool("headless"))
+				},
+			},
 		},
 	}
 

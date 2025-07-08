@@ -14,6 +14,7 @@ import (
 	"github.com/breadchris/share/deps"
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/models"
+	"github.com/breadchris/share/snapshot"
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/go-git/go-git/v5"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
@@ -42,55 +43,14 @@ type SaveFileRequest struct {
 	Content string `json:"content"`
 }
 
-// Snapshot types for component screenshot functionality
-type Viewport struct {
-	Name   string  `json:"name"`
-	Width  int64   `json:"width"`
-	Height int64   `json:"height"`
-	Mobile bool    `json:"mobile"`
-	Scale  float64 `json:"scale"`
-}
-
-type SnapshotOptions struct {
-	Viewport     Viewport      `json:"viewport"`
-	WaitFor      string        `json:"waitFor"`       
-	FullPage     bool          `json:"fullPage"`      
-	Element      string        `json:"element"`       
-	OutputFormat string        `json:"outputFormat"`  
-	Quality      int           `json:"quality"`       
-	Delay        time.Duration `json:"delay"`         
-}
-
-type SnapshotConfig struct {
-	DefaultTimeout   time.Duration `json:"defaultTimeout"`
-	BaseURL          string        `json:"baseURL"`        
-	OutputDir        string        `json:"outputDir"`      
-	DefaultViewports []Viewport    `json:"defaultViewports"`
-}
-
-type SnapshotResult struct {
-	FilePath     string    `json:"filePath"`
-	Viewport     Viewport  `json:"viewport"`
-	ComponentURL string    `json:"componentURL"`
-	Timestamp    time.Time `json:"timestamp"`
-	FileSize     int64     `json:"fileSize"`
-	Error        string    `json:"error,omitempty"`
-}
-
-// Default viewport configurations
-var DefaultViewports = []Viewport{
-	{Name: "mobile", Width: 375, Height: 667, Mobile: true, Scale: 2.0},
-	{Name: "tablet", Width: 768, Height: 1024, Mobile: false, Scale: 1.0},
-	{Name: "desktop", Width: 1920, Height: 1080, Mobile: false, Scale: 1.0},
-}
 
 // ComponentSnapshotter interface for taking screenshots of components
 type ComponentSnapshotter struct {
-	config SnapshotConfig
+	config snapshot.SnapshotConfig
 }
 
 // NewComponentSnapshotter creates a new snapshotter instance
-func NewComponentSnapshotter(config SnapshotConfig) (*ComponentSnapshotter, error) {
+func NewComponentSnapshotter(config snapshot.SnapshotConfig) (*ComponentSnapshotter, error) {
 	return &ComponentSnapshotter{
 		config: config,
 	}, nil
@@ -103,11 +63,11 @@ func (cs *ComponentSnapshotter) Close() {
 }
 
 // CaptureComponentSnapshot captures a screenshot (stub implementation)
-func (cs *ComponentSnapshotter) CaptureComponentSnapshot(componentPath, sessionID string, options SnapshotOptions) (*SnapshotResult, error) {
+func (cs *ComponentSnapshotter) CaptureComponentSnapshot(componentPath, sessionID string, options snapshot.SnapshotOptions) (*snapshot.SnapshotResult, error) {
 	// For now, return a mock result to complete the integration
 	// In production, this would use Chrome headless to capture actual screenshots
 	
-	result := &SnapshotResult{
+	result := &snapshot.SnapshotResult{
 		FilePath:     fmt.Sprintf("%s/%s/%s_%s.%s", cs.config.OutputDir, sessionID, 
 			strings.ReplaceAll(componentPath, "/", "_"), options.Viewport.Name, options.OutputFormat),
 		Viewport:     options.Viewport,
@@ -120,11 +80,11 @@ func (cs *ComponentSnapshotter) CaptureComponentSnapshot(componentPath, sessionI
 }
 
 // CaptureResponsiveSnapshots captures screenshots across multiple viewports (stub implementation)
-func (cs *ComponentSnapshotter) CaptureResponsiveSnapshots(componentPath, sessionID string) ([]*SnapshotResult, error) {
-	var results []*SnapshotResult
+func (cs *ComponentSnapshotter) CaptureResponsiveSnapshots(componentPath, sessionID string) ([]*snapshot.SnapshotResult, error) {
+	var results []*snapshot.SnapshotResult
 	
 	for _, viewport := range cs.config.DefaultViewports {
-		options := SnapshotOptions{
+		options := snapshot.SnapshotOptions{
 			Viewport:     viewport,
 			FullPage:     false,
 			OutputFormat: "png",
@@ -1621,11 +1581,11 @@ func handleCaptureSnapshot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create snapshot config (this would typically come from a config service)
-	config := SnapshotConfig{
+	config := snapshot.SnapshotConfig{
 		DefaultTimeout:   30 * time.Second,
 		BaseURL:         "http://localhost:8080", // Should use actual server URL
 		OutputDir:       "./data/snapshots",
-		DefaultViewports: DefaultViewports,
+		DefaultViewports: snapshot.DefaultViewports,
 	}
 
 	// Create snapshotter instance
@@ -1637,7 +1597,7 @@ func handleCaptureSnapshot(w http.ResponseWriter, r *http.Request) {
 	defer snapshotter.Close()
 
 	// Build snapshot options
-	options := SnapshotOptions{
+	options := snapshot.SnapshotOptions{
 		FullPage:     requestData.FullPage,
 		Element:      requestData.Element,
 		WaitFor:      requestData.WaitFor,
@@ -1647,9 +1607,9 @@ func handleCaptureSnapshot(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Find viewport configuration
-	var viewport Viewport
+	var viewport snapshot.Viewport
 	found := false
-	for _, vp := range DefaultViewports {
+	for _, vp := range snapshot.DefaultViewports {
 		if vp.Name == requestData.Viewport {
 			viewport = vp
 			found = true
@@ -1657,7 +1617,7 @@ func handleCaptureSnapshot(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if !found {
-		viewport = DefaultViewports[2] // desktop fallback
+		viewport = snapshot.DefaultViewports[2] // desktop fallback
 	}
 	options.Viewport = viewport
 

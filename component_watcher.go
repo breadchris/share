@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/breadchris/share/snapshot"
 	"context"
 	"fmt"
 	"log/slog"
@@ -21,22 +22,11 @@ type ComponentWatcher struct {
 	mu             sync.RWMutex
 	ctx            context.Context
 	cancel         context.CancelFunc
-	config         ComponentWatcherConfig
+	config         snapshot.ComponentWatcherConfig
 	snapshotQueue  chan SnapshotTask
 	processingWG   sync.WaitGroup
 }
 
-// ComponentWatcherConfig configures the component watcher
-type ComponentWatcherConfig struct {
-	SessionBaseDir      string        `json:"sessionBaseDir"`      // Base directory for sessions (e.g., "./data/session")
-	DebounceDelay       time.Duration `json:"debounceDelay"`       // Delay before triggering snapshot after file change
-	AutoSnapshot        bool          `json:"autoSnapshot"`        // Whether to automatically capture snapshots
-	SnapshotViewports   []string      `json:"snapshotViewports"`   // Viewports to capture ("mobile", "tablet", "desktop")
-	MaxConcurrentTasks  int           `json:"maxConcurrentTasks"`  // Maximum concurrent snapshot tasks
-	FileExtensions      []string      `json:"fileExtensions"`      // File extensions to watch (e.g., [".tsx", ".ts"])
-	IgnorePatterns      []string      `json:"ignorePatterns"`      // Patterns to ignore (e.g., ["node_modules", ".git"])
-	SnapshotDelay       time.Duration `json:"snapshotDelay"`       // Additional delay before capturing snapshot
-}
 
 // SnapshotTask represents a queued snapshot task
 type SnapshotTask struct {
@@ -46,22 +36,9 @@ type SnapshotTask struct {
 	Timestamp     time.Time
 }
 
-// DefaultComponentWatcherConfig returns sensible defaults
-func DefaultComponentWatcherConfig() ComponentWatcherConfig {
-	return ComponentWatcherConfig{
-		SessionBaseDir:     "./data/session",
-		DebounceDelay:      2 * time.Second,
-		AutoSnapshot:       true,
-		SnapshotViewports:  []string{"desktop"}, // Default to desktop only for performance
-		MaxConcurrentTasks: 3,
-		FileExtensions:     []string{".tsx", ".ts"},
-		IgnorePatterns:     []string{"node_modules", ".git", ".DS_Store", "*.log"},
-		SnapshotDelay:      3 * time.Second, // Wait for file to stabilize
-	}
-}
 
 // NewComponentWatcher creates a new component file watcher
-func NewComponentWatcher(snapshotter *ComponentSnapshotter, config ComponentWatcherConfig) (*ComponentWatcher, error) {
+func NewComponentWatcher(snapshotter *ComponentSnapshotter, config snapshot.ComponentWatcherConfig) (*ComponentWatcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create file watcher: %w", err)
@@ -426,7 +403,7 @@ func (cw *ComponentWatcher) processSnapshotTask(workerID int, task SnapshotTask)
 	
 	for _, viewportName := range cw.config.SnapshotViewports {
 		// Find viewport configuration
-		var viewport Viewport
+		var viewport snapshot.Viewport
 		found := false
 		for _, vp := range cw.snapshotter.config.DefaultViewports {
 			if vp.Name == viewportName {
@@ -445,7 +422,7 @@ func (cw *ComponentWatcher) processSnapshotTask(workerID int, task SnapshotTask)
 		}
 		
 		// Prepare snapshot options
-		options := SnapshotOptions{
+		options := snapshot.SnapshotOptions{
 			Viewport:     viewport,
 			FullPage:     false,
 			OutputFormat: "png",
