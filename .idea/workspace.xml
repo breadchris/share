@@ -6,34 +6,31 @@
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/coderunner.go" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/coderunner.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/component_snapshot.go" beforeDir="false" afterPath="$PROJECT_DIR$/component_snapshot.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/component_watcher.go" beforeDir="false" afterPath="$PROJECT_DIR$/component_watcher.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension.go" beforeDir="false" afterPath="$PROJECT_DIR$/extension.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/background.js" beforeDir="false" afterPath="$PROJECT_DIR$/extension/background.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/extension/manifest.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/options.html" beforeDir="false" afterPath="$PROJECT_DIR$/extension/options.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/options.js" beforeDir="false" afterPath="$PROJECT_DIR$/extension/options.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/CLAUDE.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/JustShare.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/JustShare.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/AppSidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/AppSidebar.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/ConfirmationDialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/ConfirmationDialog.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/ContentCapture.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/ContentCapture.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/ContentViewer.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/ContentViewer.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/GroupManager.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/GroupManager.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/GroupMenu.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/GroupMenu.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/GroupSelector.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/GroupSelector.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/GroupSettings.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/GroupSettings.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/JoinCodeModal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/JoinCodeModal.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/LoginPrompt.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/LoginPrompt.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/SwipeableContentItem.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/SwipeableContentItem.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/TagInput.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/TagInput.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/Timeline.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/Timeline.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/UserProfile.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/UserProfile.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/VideoPlayer.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/VideoPlayer.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/YouTubePlayer.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/YouTubePlayer.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/types/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/types/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/utils/api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/utils/api.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/utils/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/utils/auth.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/utils/media.ts" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/utils/media.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/utils/url.ts" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/utils/url.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow" beforeDir="false" afterPath="$PROJECT_DIR$/flow" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/slackbot/handlers.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/handlers.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/slackbot/slackbot.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/slackbot.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/kanban/service.go" beforeDir="false" afterPath="$PROJECT_DIR$/kanban/service.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scrape_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/scrape_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/share/ext/Base.lproj/MainInterface.storyboard" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/share/ext/Info.plist" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/share/ext/ShareViewController.swift" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/share/share.xcodeproj/project.pbxproj" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/share/share.xcodeproj/project.xcworkspace/contents.xcworkspacedata" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/share/share.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/share/share.xcodeproj/project.xcworkspace/xcuserdata/hacked.xcuserdatad/UserInterfaceState.xcuserstate" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/share/share.xcodeproj/xcuserdata/hacked.xcuserdatad/xcschemes/xcschememanagement.plist" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/share/share/Assets.xcassets/AccentColor.colorset/Contents.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/share/share/Assets.xcassets/AppIcon.appiconset/Contents.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/share/share/Assets.xcassets/Contents.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/share/share/ContentView.swift" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/share/share/Preview Content/Preview Assets.xcassets/Contents.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/share/share/shareApp.swift" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -114,11 +111,11 @@
       <recent name="$PROJECT_DIR$/hmr/client" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/justshare" />
       <recent name="$PROJECT_DIR$/flow" />
       <recent name="$PROJECT_DIR$/kanban/src/vendor/github.com/breadchris/share/kanban" />
       <recent name="$PROJECT_DIR$/kanban/src" />
       <recent name="$PROJECT_DIR$/graveyard" />
-      <recent name="$PROJECT_DIR$/claudemd/migrations" />
     </key>
   </component>
   <component name="RunManager" selected="Go Build.share">
@@ -296,7 +293,7 @@
       <workItem from="1747973023098" duration="26954000" />
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
-      <workItem from="1750823408293" duration="273942000" />
+      <workItem from="1750823408293" duration="274617000" />
     </task>
     <servers />
   </component>
