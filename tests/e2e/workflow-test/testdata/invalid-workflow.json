@@ -1,0 +1,50 @@
+[
+  {
+    "name": "invalid-cycle-workflow",
+    "description": "Workflow with intentional validation errors for testing",
+    "entrypoint": "start",
+    "nodes": [
+      {
+        "id": "start",
+        "type": "lambda",
+        "config": {
+          "lambda": {
+            "functionName": "start-function"
+          }
+        }
+      },
+      {
+        "id": "middle",
+        "type": "lambda",
+        "config": {
+          "lambda": {
+            "functionName": "middle-function"
+          }
+        }
+      },
+      {
+        "id": "end",
+        "type": "lambda",
+        "config": {
+          "lambda": {
+            "functionName": "end-function"
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "from": "start",
+        "to": "middle"
+      },
+      {
+        "from": "middle",
+        "to": "end"
+      },
+      {
+        "from": "end",
+        "to": "start"
+      }
+    ]
+  }
+]

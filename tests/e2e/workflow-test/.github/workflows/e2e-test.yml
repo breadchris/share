@@ -1,0 +1,351 @@
+name: End-to-End Workflow Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      aws_region:
+        description: 'AWS Region for testing'
+        required: false
+        default: 'us-east-1'
+      cleanup_on_exit:
+        description: 'Clean up resources after test'
+        required: false
+        default: 'true'
+        type: boolean
+      max_execution_time:
+        description: 'Maximum test execution time (seconds)'
+        required: false
+        default: '1800'
+      test_environment:
+        description: 'Test environment identifier'
+        required: false
+        default: 'ci'
+
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'infra/lambda-docker/**'
+      - 'tests/e2e/workflow-test/**'
+      - '.github/workflows/e2e-test.yml'
+
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'infra/lambda-docker/**'
+      - 'tests/e2e/workflow-test/**'
+
+env:
+  AWS_REGION: ${{ github.event.inputs.aws_region || 'us-east-1' }}
+  CLEANUP_ON_EXIT: ${{ github.event.inputs.cleanup_on_exit || 'true' }}
+  MAX_EXECUTION_TIME: ${{ github.event.inputs.max_execution_time || '1800' }}
+  TEST_ENVIRONMENT: ${{ github.event.inputs.test_environment || 'ci' }}
+
+jobs:
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run security scan
+        uses: securecodewarrior/github-action-add-sarif@v1
+        with:
+          sarif-file: 'security-scan-results.sarif'
+
+  pre-flight-checks:
+    name: Pre-flight Checks
+    runs-on: ubuntu-latest
+    outputs:
+      should_run_tests: ${{ steps.check_changes.outputs.should_run }}
+      test_name: ${{ steps.generate_test_name.outputs.test_name }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check for relevant changes
+        id: check_changes
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            # Check if workflow-related files have changed
+            if git diff --name-only HEAD~1 HEAD | grep -E "(infra/lambda-docker|tests/e2e/workflow-test)" > /dev/null; then
+              echo "should_run=true" >> $GITHUB_OUTPUT
+            else
+              echo "should_run=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Generate test name
+        id: generate_test_name
+        run: |
+          TEST_NAME="e2e-${{ env.TEST_ENVIRONMENT }}-$(date +%Y%m%d-%H%M%S)-${{ github.run_number }}"
+          echo "test_name=$TEST_NAME" >> $GITHUB_OUTPUT
+
+      - name: Validate test configuration
+        run: |
+          echo "Test Configuration:"
+          echo "  AWS Region: ${{ env.AWS_REGION }}"
+          echo "  Cleanup: ${{ env.CLEANUP_ON_EXIT }}"
+          echo "  Max Time: ${{ env.MAX_EXECUTION_TIME }}s"
+          echo "  Test Name: ${{ steps.generate_test_name.outputs.test_name }}"
+
+  run-e2e-tests:
+    name: End-to-End Tests
+    runs-on: ubuntu-latest
+    needs: pre-flight-checks
+    if: needs.pre-flight-checks.outputs.should_run_tests == 'true'
+    timeout-minutes: 45
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      TEST_NAME: ${{ needs.pre-flight-checks.outputs.test_name }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Setup Pulumi
+        uses: pulumi/actions@v4
+        with:
+          pulumi-version: latest
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: GitHubActions-E2E-${{ env.TEST_NAME }}
+
+      - name: Verify AWS credentials
+        run: |
+          aws sts get-caller-identity
+          aws configure list
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl
+          
+          # Install additional tools if needed
+          go version
+          pulumi version
+
+      - name: Set up test environment
+        run: |
+          echo "Setting up test environment: $TEST_NAME"
+          mkdir -p /tmp/e2e-test-output
+          echo "TEST_OUTPUT_DIR=/tmp/e2e-test-output" >> $GITHUB_ENV
+
+      - name: Run end-to-end tests
+        working-directory: tests/e2e/workflow-test
+        run: |
+          # Set environment variables for the test
+          export TEST_NAME="${{ env.TEST_NAME }}"
+          export AWS_REGION="${{ env.AWS_REGION }}"
+          export CLEANUP_ON_EXIT="${{ env.CLEANUP_ON_EXIT }}"
+          export MAX_EXECUTION_TIME="${{ env.MAX_EXECUTION_TIME }}"
+          export TEST_OUTPUT_DIR="${{ env.TEST_OUTPUT_DIR }}"
+          
+          # Make test script executable
+          chmod +x scripts/run_e2e_test.sh
+          
+          # Run the tests
+          ./scripts/run_e2e_test.sh
+
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: e2e-test-results-${{ env.TEST_NAME }}
+          path: |
+            ${{ env.TEST_OUTPUT_DIR }}/**
+            tests/e2e/workflow-test/output/**
+          retention-days: 30
+
+      - name: Upload test logs
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: e2e-test-logs-${{ env.TEST_NAME }}
+          path: |
+            ${{ env.TEST_OUTPUT_DIR }}/*.log
+            tests/e2e/workflow-test/output/**/*.log
+          retention-days: 7
+
+      - name: Parse test results
+        if: always()
+        run: |
+          # Parse test results for GitHub Actions summary
+          if [ -f "${{ env.TEST_OUTPUT_DIR }}/test-report.json" ]; then
+            cat "${{ env.TEST_OUTPUT_DIR }}/test-report.json" | jq '.' > test-summary.json
+            
+            # Extract key metrics
+            STATUS=$(jq -r '.status' test-summary.json)
+            DURATION=$(jq -r '.duration' test-summary.json)
+            
+            echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+            echo "- **Status**: $STATUS" >> $GITHUB_STEP_SUMMARY
+            echo "- **Duration**: ${DURATION}s" >> $GITHUB_STEP_SUMMARY
+            echo "- **Test Name**: ${{ env.TEST_NAME }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **AWS Region**: ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
+            
+            if [ "$STATUS" = "FAILED" ]; then
+              echo "❌ End-to-end tests failed" >> $GITHUB_STEP_SUMMARY
+              exit 1
+            else
+              echo "✅ End-to-end tests passed" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ Test report not found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Cleanup on failure
+        if: failure() && env.CLEANUP_ON_EXIT == 'true'
+        run: |
+          echo "Cleaning up resources after test failure..."
+          cd tests/e2e/workflow-test
+          chmod +x scripts/cleanup_aws_resources.sh
+          ./scripts/cleanup_aws_resources.sh "${{ env.TEST_NAME }}" || true
+
+  security-check:
+    name: Security Validation
+    runs-on: ubuntu-latest
+    needs: pre-flight-checks
+    if: needs.pre-flight-checks.outputs.should_run_tests == 'true'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run security linting
+        run: |
+          # Check for hardcoded credentials
+          if grep -r "AKIA\|aws_access_key\|aws_secret" --include="*.go" --include="*.json" --include="*.yaml" . ; then
+            echo "❌ Found potential hardcoded AWS credentials"
+            exit 1
+          fi
+          
+          # Check for insecure configurations
+          if grep -r "public-read\|public-read-write" --include="*.go" --include="*.json" . ; then
+            echo "❌ Found potentially insecure S3 configurations"
+            exit 1
+          fi
+          
+          echo "✅ Security checks passed"
+
+  cost-monitoring:
+    name: Cost Monitoring
+    runs-on: ubuntu-latest
+    needs: [pre-flight-checks, run-e2e-tests]
+    if: always() && needs.pre-flight-checks.outputs.should_run_tests == 'true'
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Check test costs
+        run: |
+          # Get cost data for the test period
+          TEST_START=$(date -d '1 hour ago' -u +%Y-%m-%dT%H:%M:%SZ)
+          TEST_END=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          
+          # This would require AWS Cost Explorer API
+          echo "Monitoring costs for test period: $TEST_START to $TEST_END"
+          echo "Test resources tagged with: test-name=${{ needs.pre-flight-checks.outputs.test_name }}"
+          
+          # Alert if costs exceed threshold
+          # (Implementation would depend on your cost monitoring setup)
+
+  notification:
+    name: Notification
+    runs-on: ubuntu-latest
+    needs: [pre-flight-checks, run-e2e-tests, security-check]
+    if: always() && needs.pre-flight-checks.outputs.should_run_tests == 'true'
+    steps:
+      - name: Determine overall status
+        id: status
+        run: |
+          if [ "${{ needs.run-e2e-tests.result }}" == "success" ] && [ "${{ needs.security-check.result }}" == "success" ]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "message=✅ All end-to-end tests passed successfully" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+            echo "message=❌ End-to-end tests failed" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub issue on failure
+        if: steps.status.outputs.status == 'failure' && github.event_name != 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const title = `E2E Test Failure: ${{ needs.pre-flight-checks.outputs.test_name }}`;
+            const body = `
+            ## End-to-End Test Failure Report
+            
+            **Test Name**: ${{ needs.pre-flight-checks.outputs.test_name }}
+            **Workflow Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            **Branch**: ${{ github.ref_name }}
+            **Commit**: ${{ github.sha }}
+            
+            **Test Results**:
+            - E2E Tests: ${{ needs.run-e2e-tests.result }}
+            - Security Check: ${{ needs.security-check.result }}
+            
+            **Environment**:
+            - AWS Region: ${{ env.AWS_REGION }}
+            - Test Environment: ${{ env.TEST_ENVIRONMENT }}
+            
+            Please check the workflow logs and test artifacts for more details.
+            `;
+            
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['bug', 'e2e-test-failure', 'needs-investigation']
+            });
+
+      - name: Post summary comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const status = '${{ steps.status.outputs.status }}';
+            const message = '${{ steps.status.outputs.message }}';
+            const testName = '${{ needs.pre-flight-checks.outputs.test_name }}';
+            
+            const body = `
+            ## 🧪 End-to-End Test Results
+            
+            ${message}
+            
+            **Test Details**:
+            - Test Name: \`${testName}\`
+            - AWS Region: \`${{ env.AWS_REGION }}\`
+            - Duration: See workflow logs
+            
+            [View full test results](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });

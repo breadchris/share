@@ -1,0 +1,17 @@
+name: workflow-e2e-test
+runtime: go
+description: End-to-end test infrastructure for workflow system
+
+config:
+  projectName:
+    type: string
+    description: Name of the test project
+    default: "workflow-e2e-test"
+  region:
+    type: string
+    description: AWS region for deployment
+    default: "us-east-1"
+  workflows:
+    type: string
+    description: JSON configuration for test workflows
+    secret: false

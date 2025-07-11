@@ -1,0 +1,136 @@
+config:
+  projectName: workflow-scraper
+  region: us-east-1
+  workflows: |
+    [{
+      "name": "scraping-pipeline",
+      "description": "A workflow that scrapes web pages, processes the data, and stores results",
+      "nodes": [
+        {
+          "id": "scraper",
+          "type": "lambda",
+          "config": {
+            "lambda": {
+              "name": "web-scraper",
+              "baseImage": "chromedp/headless-shell:latest",
+              "buildContext": "./",
+              "dockerfile": "Dockerfile.scraper",
+              "environment": {
+                "CHROME_BIN": "/usr/bin/chromium-browser",
+                "CHROME_PATH": "/usr/bin/chromium-browser"
+              },
+              "timeout": 300,
+              "memorySize": 1024,
+              "policies": [
+                "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            }
+          }
+        },
+        {
+          "id": "processing-queue",
+          "type": "sqs",
+          "config": {
+            "sqs": {
+              "visibilityTimeoutSeconds": 300,
+              "messageRetentionSeconds": 1209600,
+              "maxReceiveCount": 3
+            }
+          }
+        },
+        {
+          "id": "processor",
+          "type": "lambda",
+          "config": {
+            "lambda": {
+              "name": "data-processor",
+              "baseImage": "python:3.9-slim",
+              "buildContext": "./",
+              "dockerfile": "Dockerfile.processor",
+              "timeout": 180,
+              "memorySize": 512,
+              "policies": [
+                "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ]
+            }
+          }
+        },
+        {
+          "id": "storage",
+          "type": "s3-bucket",
+          "config": {
+            "s3": {
+              "bucketName": "scraped-data-bucket",
+              "versioning": true,
+              "encryption": true,
+              "publicAccess": false,
+              "lifecycleRules": [
+                {
+                  "transitionDays": 30,
+                  "storageClass": "STANDARD_IA"
+                },
+                {
+                  "transitionDays": 90,
+                  "storageClass": "GLACIER"
+                },
+                {
+                  "expirationDays": 365
+                }
+              ],
+              "tags": {
+                "Environment": "production",
+                "Purpose": "web-scraping"
+              }
+            },
+            "runtime": {
+              "bucketName": "scraped-data-bucket",
+              "keyPrefix": "scraped-data/",
+              "operation": "put",
+              "storageClass": "STANDARD_IA",
+              "contentType": "application/json",
+              "encryption": "AES256",
+              "metadata": {
+                "source": "web-scraper",
+                "version": "1.0"
+              },
+              "tags": {
+                "Environment": "production",
+                "Purpose": "web-scraping"
+              }
+            }
+          }
+        }
+      ],
+      "edges": [
+        {
+          "from": "scraper",
+          "to": "processing-queue",
+          "condition": "success",
+          "transform": "$.data"
+        },
+        {
+          "from": "processing-queue",
+          "to": "processor",
+          "metadata": {
+            "eventSource": true
+          }
+        },
+        {
+          "from": "processor",
+          "to": "storage",
+          "condition": "success",
+          "transform": "$.processedData",
+          "metadata": {
+            "s3Operation": "put",
+            "keyPrefix": "processed-data/{{.date}}/",
+            "contentType": "application/json"
+          }
+        }
+      ],
+      "entrypoint": "scraper",
+      "variables": {
+        "bucket": "scraped-data-bucket",
+        "region": "us-east-1",
+        "storageClass": "STANDARD_IA"
+      }
+    }]

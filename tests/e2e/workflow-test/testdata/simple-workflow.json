@@ -1,0 +1,37 @@
+[
+  {
+    "name": "simple-s3-workflow",
+    "description": "Minimal workflow with just S3 storage",
+    "entrypoint": "data-input",
+    "nodes": [
+      {
+        "id": "data-input",
+        "type": "lambda",
+        "config": {
+          "lambda": {
+            "functionName": "data-input-handler",
+            "runtime": "nodejs18.x",
+            "timeout": 60
+          }
+        }
+      },
+      {
+        "id": "data-store",
+        "type": "s3-bucket",
+        "config": {
+          "s3": {
+            "bucketName": "simple-data-store",
+            "operation": "put",
+            "storageClass": "STANDARD"
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "from": "data-input",
+        "to": "data-store"
+      }
+    ]
+  }
+]

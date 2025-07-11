@@ -2,11 +2,10 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/browsermcp" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/claudemd" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/coderunner/src/supabase" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/flow" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/gotty" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/hmr" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/item-collector" vcs="Git" />
   </component>
 </project>

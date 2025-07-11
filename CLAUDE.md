@@ -19,6 +19,15 @@ only refer to the code in the git repo directory in isolation, this is a separat
 - Utility functions have been moved to `main_todo.go` to keep main.go focused on core server setup
 - Never try to run the apps yourself
 
+## Yaegi Integration
+- **Hot Reloading**: This project uses Yaegi for dynamic HTTP handler interpretation and hot reloading
+- **Documentation**: See `YAEGI.md` for comprehensive documentation on yaegi integration
+- **Development Mode**: Use `shouldInterpret = true` in main.go for hot reloading during development
+- **Symbol System**: Add new packages to `symbol/symbol.go` and run `go generate .` to extract symbols
+- **Handler Wrapping**: All routes use the `interpreted()` function to enable yaegi interpretation
+- **Performance**: Yaegi adds overhead, use `shouldInterpret = false` for production
+- **Debugging**: Access yaegi debug capabilities through the debug interface
+
 ## React
 - React apps are built using TypeScript and React, with components stored in `.tsx` files.
 - Components use esmodules are available 
@@ -36,6 +45,18 @@ only refer to the code in the git repo directory in isolation, this is a separat
 - The api for the coderunner is in ./coderunner/coderunner.go
 - ./data/coderunner/src/ is where components are stored
 - Components are written in TypeScript/React and compiled with esbuild. They use tailwindcss for styling.
+
+## Awesome List Crawler
+- **Package**: `./awesomelist/awesomelist.go` - Crawls GitHub awesome lists and extracts links
+- **Storage**: Uses the existing `Content` model with `type="awesome-list"` for main lists and `type="awesome-link"` for individual items
+- **Data Directory**: `./data/awesomelist/` - Stores cloned repositories
+- **GitHub Integration**: Uses GitHub API with personal access token from config (`github.client_secret`)
+- **Features**: README.md parsing, link extraction, repository metadata, duplicate detection
+- **Access**: Available at `/awesomelist` endpoint with web UI for crawling and browsing
+- **Content Types**: 
+  - `awesome-list`: Main awesome list repositories with metadata (stars, forks, description)
+  - `awesome-link`: Individual links from awesome lists with category and description
+- **Metadata Storage**: Uses `JSONField` for storing GitHub metadata, categories, and link counts
 
 ––––––––––––––––––––––––
 By following this layered thought-process—starting from purpose and use cases, down through props, state, visuals, and tests—you ensure your component is both well-defined and resilient to future change.

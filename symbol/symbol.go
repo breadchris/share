@@ -57,6 +57,23 @@
 //go:generate yaegi extract github.com/breadchris/share/gen/proto/kanban/kanbanconnect
 //go:generate yaegi extract github.com/breadchris/share/gen/proto/kanban
 
+// Slack and Flow module dependencies for yaegi interpretation
+//go:generate yaegi extract github.com/slack-go/slack
+//go:generate yaegi extract github.com/slack-go/slack/slackevents
+//go:generate yaegi extract github.com/slack-go/slack/socketmode
+//go:generate yaegi extract github.com/breadchris/flow/claude
+//go:generate yaegi extract github.com/breadchris/flow/config
+//go:generate yaegi extract github.com/breadchris/flow/deps
+//go:generate yaegi extract github.com/breadchris/flow/worklet
+//go:generate yaegi extract github.com/breadchris/flow/slackbot
+//go:generate yaegi extract context
+//go:generate yaegi extract sync
+//go:generate yaegi extract time
+//go:generate yaegi extract encoding/json
+//go:generate yaegi extract strings
+//go:generate yaegi extract fmt
+//go:generate yaegi extract log/slog
+
 /*
 TODO breadchris, problematic collision of http package name
 go:generate yaegi extract github.com/go-git/go-git/v5/plumbing/transport/http

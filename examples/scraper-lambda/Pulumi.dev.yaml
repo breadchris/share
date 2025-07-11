@@ -1,0 +1,24 @@
+config:
+  projectName: scraper-lambda
+  region: us-east-1
+  lambdas: |
+    [{
+      "name": "web-scraper",
+      "baseImage": "chromedp/headless-shell:latest",
+      "buildContext": "./",
+      "dockerfile": "Dockerfile",
+      "environment": {
+        "CHROME_BIN": "/usr/bin/chromium-browser",
+        "CHROME_PATH": "/usr/bin/chromium-browser",
+        "DISPLAY": ":99"
+      },
+      "timeout": 300,
+      "memorySize": 1024,
+      "architecture": "x86_64",
+      "policies": [
+        "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      ],
+      "inlinePolicies": {
+        "S3Access": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"s3:GetObject\",\"s3:PutObject\"],\"Resource\":\"arn:aws:s3:::*\"}]}"
+      }
+    }]

@@ -1,0 +1,80 @@
+[
+  {
+    "name": "data-pipeline",
+    "description": "Simple data processing pipeline for testing",
+    "entrypoint": "scraper",
+    "nodes": [
+      {
+        "id": "scraper",
+        "type": "lambda",
+        "config": {
+          "lambda": {
+            "functionName": "data-scraper",
+            "runtime": "nodejs18.x",
+            "timeout": 300,
+            "memorySize": 512,
+            "environment": {
+              "NODE_ENV": "production"
+            }
+          }
+        }
+      },
+      {
+        "id": "storage",
+        "type": "s3-bucket",
+        "config": {
+          "s3": {
+            "bucketName": "scraped-data-bucket",
+            "versioning": true,
+            "encryption": "AES256",
+            "storageClass": "STANDARD",
+            "operation": "put",
+            "keyPrefix": "scraped-data/",
+            "metadata": {
+              "source": "scraper",
+              "type": "raw-data"
+            }
+          }
+        }
+      },
+      {
+        "id": "processor",
+        "type": "lambda",
+        "config": {
+          "lambda": {
+            "functionName": "data-processor",
+            "runtime": "python3.10",
+            "timeout": 120,
+            "memorySize": 256
+          }
+        }
+      },
+      {
+        "id": "queue",
+        "type": "sqs-queue",
+        "config": {
+          "sqs": {
+            "queueName": "processing-queue",
+            "visibilityTimeoutSeconds": 300,
+            "messageRetentionSeconds": 1209600,
+            "maxReceiveCount": 3
+          }
+        }
+      }
+    ],
+    "edges": [
+      {
+        "from": "scraper",
+        "to": "storage"
+      },
+      {
+        "from": "scraper",
+        "to": "queue"
+      },
+      {
+        "from": "queue",
+        "to": "processor"
+      }
+    ]
+  }
+]

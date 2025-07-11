@@ -1,0 +1,69 @@
+# Multi-stage Docker build for scraper workflow Lambda
+FROM golang:1.21-alpine AS go-builder
+
+# Install build dependencies
+RUN apk add --no-cache git ca-certificates tzdata
+
+# Set working directory
+WORKDIR /build
+
+# Copy go mod files
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build the Go binary for Lambda
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o bootstrap ./cmd/lambda
+
+# Runtime stage - ChromeDP headless shell
+ARG BASE_IMAGE=chromedp/headless-shell:latest
+FROM ${BASE_IMAGE}
+
+# Switch to root for installation
+USER root
+
+# Install AWS Lambda Runtime Interface Emulator
+RUN apt-get update && apt-get install -y \
+    curl \
+    ca-certificates \
+    && curl -sSL https://github.com/aws/aws-lambda-runtime-interface-emulator/releases/latest/download/aws-lambda-rie -o /usr/local/bin/aws-lambda-rie \
+    && chmod +x /usr/local/bin/aws-lambda-rie \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set Lambda runtime directory
+ENV LAMBDA_RUNTIME_DIR=/var/runtime
+
+# Create runtime directory
+RUN mkdir -p ${LAMBDA_RUNTIME_DIR}
+
+# Copy the built binary from build stage
+COPY --from=go-builder /build/bootstrap ${LAMBDA_RUNTIME_DIR}/bootstrap
+
+# Copy entry point script
+COPY entry.sh /entry.sh
+RUN chmod +x /entry.sh
+
+# Set Chrome binary path for chromedp
+ENV CHROME_BIN=/usr/bin/chromium-browser
+ENV CHROME_PATH=/usr/bin/chromium-browser
+
+# Set workflow-specific environment variables
+ENV EVENT_TYPE=direct
+ENV WORKFLOW_NAME=scraping-pipeline
+ENV NODE_ID=scraper
+
+# Create non-root user for Chrome
+RUN groupadd -r chrome && useradd -r -g chrome -G audio,video chrome \
+    && mkdir -p /home/chrome/Downloads \
+    && chown -R chrome:chrome /home/chrome
+
+# Switch back to chrome user
+USER chrome
+
+# Set the CMD to entry point
+CMD ["/entry.sh"]

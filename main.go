@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/breadchris/share/graveyard/ainet"
 	"github.com/breadchris/share/graveyard/claudemd"
@@ -18,10 +19,12 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/breadchris/share/ai"
 	"github.com/breadchris/share/aiapi"
+	"github.com/breadchris/share/awesomelist"
 	"github.com/breadchris/share/bread"
 	"github.com/breadchris/share/breadchris"
 	"github.com/breadchris/share/code"
@@ -41,7 +44,6 @@ import (
 	"github.com/breadchris/share/kanban"
 	"github.com/breadchris/share/op"
 	"github.com/breadchris/share/session"
-	"github.com/breadchris/share/snapshot"
 	"github.com/breadchris/share/user"
 	"github.com/breadchris/share/xctf"
 	"github.com/evanw/esbuild/pkg/api"
@@ -117,8 +119,89 @@ func startXCTF(port int) error {
 	http.HandleFunc("/logout", a.handleLogout)
 	http.HandleFunc("/auth/google", a.startGoogleAuth)
 	http.HandleFunc("/auth/google/callback", a.handleGoogleCallback)
+	http.HandleFunc("/api/auth/google/token", handleGoogleTokenExchange)
 	http.HandleFunc("/static/", serveFiles("static"))
 	http.HandleFunc("/data/", serveFiles("data"))
+
+	// Initialize snapshot manager
+	snapshotManager := NewSnapshotManager(&appConfig, db)
+	if err := snapshotManager.Start(port); err != nil {
+		log.Printf("Failed to start snapshot manager: %v", err)
+	}
+
+	// Add snapshot control API endpoints
+	http.HandleFunc("/api/snapshot/status", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(snapshotManager.GetStatus())
+	})
+
+	http.HandleFunc("/api/snapshot/start", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := snapshotManager.Start(port); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+
+		json.NewEncoder(w).Encode(map[string]string{"status": "started"})
+	})
+
+	http.HandleFunc("/api/snapshot/stop", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := snapshotManager.Stop(); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+
+		json.NewEncoder(w).Encode(map[string]string{"status": "stopped"})
+	})
+
+	http.HandleFunc("/api/snapshot/session/", func(w http.ResponseWriter, r *http.Request) {
+		// Extract session ID from URL path
+		path := strings.TrimPrefix(r.URL.Path, "/api/snapshot/session/")
+		parts := strings.Split(path, "/")
+		if len(parts) < 2 {
+			http.Error(w, "Invalid session endpoint", http.StatusBadRequest)
+			return
+		}
+
+		sessionID := parts[0]
+		action := parts[1]
+
+		w.Header().Set("Content-Type", "application/json")
+
+		switch action {
+		case "monitor":
+			if r.Method != "POST" {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			snapshotManager.AddSessionToMonitor(sessionID)
+			json.NewEncoder(w).Encode(map[string]string{"status": "monitoring", "session": sessionID})
+
+		case "unmonitor":
+			if r.Method != "POST" {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			snapshotManager.RemoveSessionFromMonitor(sessionID)
+			json.NewEncoder(w).Encode(map[string]string{"status": "not monitoring", "session": sessionID})
+
+		default:
+			http.Error(w, "Invalid action", http.StatusBadRequest)
+		}
+	})
 
 	// Add CSP middleware to allow Google Identity scripts
 	cspMiddleware := func(next http.Handler) http.Handler {
@@ -302,6 +385,15 @@ func startServer(useTLS bool, port int) {
 	// Mount deployment management at /deploy
 	p("/deploy", interpreted(deploy.New))
 
+	// Mount slackbot event handler registry for yaegi interpretation
+	p("/flow/slackbot", interpreted(func(d deps2.Deps) *http.ServeMux {
+		// Import the slackbot yaegi integration function
+		return flow_slackbot.YaegiIntegrationMux(flow_deps.Deps{
+			Config: flowDeps.Config,
+			DB:     flowDeps.DB,
+		})
+	}))
+
 	p("", interpreted(justshare.New))
 
 	p("/coderunner", interpreted(coderunner.New))
@@ -310,6 +402,7 @@ func startServer(useTLS bool, port int) {
 	p("/claudemd", interpreted(claudemd.New))
 	p("/docker", interpreted(docker.New))
 	p("/browser", interpreted(NewBrowser))
+	p("/awesomelist", interpreted(awesomelist.New))
 	p("/filecode", func() *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -349,6 +442,7 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/invite", a.handleInvite)
 	http.HandleFunc("/auth/google", a.startGoogleAuth)
 	http.HandleFunc("/auth/google/callback", a.handleGoogleCallback)
+	http.HandleFunc("/api/auth/google/token", handleGoogleTokenExchange)
 	http.HandleFunc("/blog/react", a.reactHandler)
 	http.HandleFunc("/blog/{id...}", a.blogHandler)
 	http.HandleFunc("/files", fileHandler)
@@ -578,42 +672,85 @@ func startServer(useTLS bool, port int) {
 		}
 	}()
 
-	// Initialize component snapshot service
-	snapshotConfig := snapshot.SnapshotConfig{
-		DefaultTimeout:   30 * time.Second,
-		BaseURL:          appConfig.ExternalURL,
-		OutputDir:        "./data/snapshots",
-		DefaultViewports: snapshot.DefaultViewports,
+	// Initialize snapshot manager
+	snapshotManager := NewSnapshotManager(&appConfig, db)
+	if err := snapshotManager.Start(port); err != nil {
+		log.Printf("Failed to start snapshot manager: %v", err)
 	}
 
-	if snapshotConfig.BaseURL == "" {
-		snapshotConfig.BaseURL = fmt.Sprintf("http://localhost:%d", port)
-	}
+	// Add snapshot control API endpoints
+	http.HandleFunc("/api/snapshot/status", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(snapshotManager.GetStatus())
+	})
 
-	snapshotter, err := NewComponentSnapshotter(snapshotConfig)
-	if err != nil {
-		log.Printf("Failed to create component snapshotter: %v", err)
-	} else {
-		// Initialize component watcher
-		watcherConfig := snapshot.DefaultComponentWatcherConfig()
-		watcher, err := NewComponentWatcher(snapshotter, watcherConfig)
-		if err != nil {
-			log.Printf("Failed to create component watcher: %v", err)
-		} else {
-			// Start component watcher in background
-			if err := watcher.Start(); err != nil {
-				log.Printf("Failed to start component watcher: %v", err)
-			} else {
-				log.Printf("Component watcher started, monitoring session directories for .tsx changes")
-
-				// Add graceful shutdown handling for watcher
-				go func() {
-					// This is a simple approach - in production you'd want proper signal handling
-					// For now, the watcher will stop when the main process exits
-				}()
-			}
+	http.HandleFunc("/api/snapshot/start", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
 		}
-	}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := snapshotManager.Start(port); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+
+		json.NewEncoder(w).Encode(map[string]string{"status": "started"})
+	})
+
+	http.HandleFunc("/api/snapshot/stop", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := snapshotManager.Stop(); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+
+		json.NewEncoder(w).Encode(map[string]string{"status": "stopped"})
+	})
+
+	http.HandleFunc("/api/snapshot/session/", func(w http.ResponseWriter, r *http.Request) {
+		// Extract session ID from URL path
+		path := strings.TrimPrefix(r.URL.Path, "/api/snapshot/session/")
+		parts := strings.Split(path, "/")
+		if len(parts) < 2 {
+			http.Error(w, "Invalid session endpoint", http.StatusBadRequest)
+			return
+		}
+
+		sessionID := parts[0]
+		action := parts[1]
+
+		w.Header().Set("Content-Type", "application/json")
+
+		switch action {
+		case "monitor":
+			if r.Method != "POST" {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			snapshotManager.AddSessionToMonitor(sessionID)
+			json.NewEncoder(w).Encode(map[string]string{"status": "monitoring", "session": sessionID})
+
+		case "unmonitor":
+			if r.Method != "POST" {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+				return
+			}
+			snapshotManager.RemoveSessionFromMonitor(sessionID)
+			json.NewEncoder(w).Encode(map[string]string{"status": "not monitoring", "session": sessionID})
+
+		default:
+			http.Error(w, "Invalid action", http.StatusBadRequest)
+		}
+	})
 
 	dir := "data/justshare.io-ssl-bundle"
 	interCertFile := path.Join(dir, "intermediate.cert.pem")

@@ -5,32 +5,45 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/CLAUDE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/JustShare.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/JustShare.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/AppSidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/AppSidebar.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/ConfirmationDialog.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/ConfirmationDialog.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/ContentCapture.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/ContentCapture.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/ContentViewer.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/ContentViewer.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/GroupManager.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/GroupManager.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/GroupMenu.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/GroupMenu.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/GroupSelector.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/GroupSelector.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/GroupSettings.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/GroupSettings.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/JoinCodeModal.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/JoinCodeModal.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/LoginPrompt.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/LoginPrompt.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/SwipeableContentItem.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/SwipeableContentItem.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/TagInput.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/TagInput.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/Timeline.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/Timeline.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/UserProfile.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/UserProfile.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/VideoPlayer.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/VideoPlayer.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/components/YouTubePlayer.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/YouTubePlayer.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/types/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/types/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/utils/api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/utils/api.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/utils/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/utils/auth.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/utils/media.ts" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/utils/media.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/src/justshare/utils/url.ts" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/utils/url.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/browsermcp/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/browsermcp/LICENSE" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/browsermcp/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/browsermcp/package.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/browsermcp/src/context.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/browsermcp/src/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/browsermcp/src/resources/resource.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/browsermcp/src/server.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/browsermcp/src/tools/common.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/browsermcp/src/tools/custom.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/browsermcp/src/tools/snapshot.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/browsermcp/src/tools/tool.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/browsermcp/src/utils/aria-snapshot.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/browsermcp/src/utils/log.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/browsermcp/src/utils/port.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/browsermcp/src/ws.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/browsermcp/tsconfig.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/component_watcher.go" beforeDir="false" afterPath="$PROJECT_DIR$/component_watcher.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow" beforeDir="false" afterPath="$PROJECT_DIR$/flow" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/flow/CLAUDE.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/code/code.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/code/code.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/code/html_helpers.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/code/html_helpers.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/database.types.ts" beforeDir="false" afterPath="$PROJECT_DIR$/flow/database.types.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/db/db.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/db/db.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/db/db_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/db/db_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/db/dbany.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/db/doc.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/models/models.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/models/models.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/slackbot/handlers.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/handlers.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/supabase-kv.ts" beforeDir="false" afterPath="$PROJECT_DIR$/flow/supabase-kv.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/graveyard/yjs/dist/entry.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/dist/entry.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/kanban/service.go" beforeDir="false" afterPath="$PROJECT_DIR$/kanban/service.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/symbol.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/symbol.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -71,6 +84,7 @@
     "Go Test.TestClaudeIntegrationDemo in github.com/breadchris/flow/worklet.executor": "Run",
     "Go Test.TestClaudeMigrate in github.com/breadchris/share/db.executor": "Run",
     "Go Test.TestKanban in github.com/breadchris/share.executor": "Debug",
+    "Go Test.TestMigrate in github.com/breadchris/flow/db.executor": "Run",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
@@ -111,11 +125,11 @@
       <recent name="$PROJECT_DIR$/hmr/client" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/flow/db" />
       <recent name="$PROJECT_DIR$/justshare" />
       <recent name="$PROJECT_DIR$/flow" />
       <recent name="$PROJECT_DIR$/kanban/src/vendor/github.com/breadchris/share/kanban" />
       <recent name="$PROJECT_DIR$/kanban/src" />
-      <recent name="$PROJECT_DIR$/graveyard" />
     </key>
   </component>
   <component name="RunManager" selected="Go Build.share">
@@ -206,15 +220,16 @@
       <pattern value="^\QTestKanban\E$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestLoadDB in github.com/breadchris/share" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestMigrate in github.com/breadchris/flow/db" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="share" />
-      <working_directory value="$PROJECT_DIR$" />
+      <working_directory value="$PROJECT_DIR$/flow/" />
+      <root_directory value="$PROJECT_DIR$/flow" />
       <kind value="PACKAGE" />
-      <package value="github.com/breadchris/share" />
+      <package value="github.com/breadchris/flow/db" />
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
-      <pattern value="^\QTestLoadDB\E$" />
+      <pattern value="^\QTestMigrate\E$" />
       <method v="2" />
     </configuration>
     <configuration default="true" type="GoTestRunConfiguration" factoryName="Go Test">
@@ -232,18 +247,18 @@
       <item itemvalue="Go Build.flow" />
       <item itemvalue="Go Build.xctf" />
       <item itemvalue="Go Test.TestKanban in github.com/breadchris/share" />
+      <item itemvalue="Go Test.TestMigrate in github.com/breadchris/flow/db" />
       <item itemvalue="Go Test.TestClaudeBasicFileModification in github.com/breadchris/flow/worklet" />
       <item itemvalue="Go Test.TestClaudeIntegrationDemo in github.com/breadchris/flow/worklet" />
       <item itemvalue="Go Test.TestClaudeMigrate in github.com/breadchris/share/db" />
-      <item itemvalue="Go Test.TestLoadDB in github.com/breadchris/share" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Test.TestMigrate in github.com/breadchris/flow/db" />
         <item itemvalue="Go Test.TestKanban in github.com/breadchris/share" />
         <item itemvalue="Go Test.TestClaudeIntegrationDemo in github.com/breadchris/flow/worklet" />
         <item itemvalue="Go Test.TestClaudeBasicFileModification in github.com/breadchris/flow/worklet" />
         <item itemvalue="Go Test.TestClaudeMigrate in github.com/breadchris/share/db" />
-        <item itemvalue="Go Test.TestLoadDB in github.com/breadchris/share" />
       </list>
     </recent_temporary>
   </component>
@@ -293,7 +308,7 @@
       <workItem from="1747973023098" duration="26954000" />
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
-      <workItem from="1750823408293" duration="274617000" />
+      <workItem from="1750823408293" duration="302889000" />
     </task>
     <servers />
   </component>

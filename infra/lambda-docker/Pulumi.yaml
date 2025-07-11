@@ -1,0 +1,17 @@
+name: lambda-docker-infra
+runtime: go
+description: Generalized infrastructure for deploying Go Lambda functions with custom Docker containers
+
+config:
+  projectName:
+    type: string
+    description: Name of the project (defaults to stack name)
+    default: ""
+  region:
+    type: string
+    description: AWS region to deploy to
+    default: "us-east-1"
+  lambdas:
+    type: string
+    description: JSON configuration for Lambda functions
+    secret: false

@@ -25,6 +25,7 @@ type ComponentWatcher struct {
 	config         snapshot.ComponentWatcherConfig
 	snapshotQueue  chan SnapshotTask
 	processingWG   sync.WaitGroup
+	sessionFilter  map[string]bool // sessionID -> should monitor (nil means monitor all)
 }
 
 
@@ -54,6 +55,7 @@ func NewComponentWatcher(snapshotter *ComponentSnapshotter, config snapshot.Comp
 		cancel:        cancel,
 		config:        config,
 		snapshotQueue: make(chan SnapshotTask, 100), // Buffered queue
+		sessionFilter: nil, // nil means monitor all sessions
 	}
 
 	// Start worker goroutines for processing snapshot tasks
@@ -63,6 +65,59 @@ func NewComponentWatcher(snapshotter *ComponentSnapshotter, config snapshot.Comp
 	}
 
 	return cw, nil
+}
+
+// SetSessionFilter sets which sessions to monitor (nil means monitor all)
+func (cw *ComponentWatcher) SetSessionFilter(sessionIDs []string) {
+	cw.mu.Lock()
+	defer cw.mu.Unlock()
+	
+	if sessionIDs == nil {
+		cw.sessionFilter = nil
+	} else {
+		cw.sessionFilter = make(map[string]bool)
+		for _, sessionID := range sessionIDs {
+			cw.sessionFilter[sessionID] = true
+		}
+	}
+	
+	slog.Info("Session filter updated", "sessions", sessionIDs)
+}
+
+// AddSessionToFilter adds a session to the filter
+func (cw *ComponentWatcher) AddSessionToFilter(sessionID string) {
+	cw.mu.Lock()
+	defer cw.mu.Unlock()
+	
+	if cw.sessionFilter == nil {
+		cw.sessionFilter = make(map[string]bool)
+	}
+	cw.sessionFilter[sessionID] = true
+	
+	slog.Info("Session added to filter", "session", sessionID)
+}
+
+// RemoveSessionFromFilter removes a session from the filter
+func (cw *ComponentWatcher) RemoveSessionFromFilter(sessionID string) {
+	cw.mu.Lock()
+	defer cw.mu.Unlock()
+	
+	if cw.sessionFilter != nil {
+		delete(cw.sessionFilter, sessionID)
+		slog.Info("Session removed from filter", "session", sessionID)
+	}
+}
+
+// shouldMonitorSession checks if a session should be monitored
+func (cw *ComponentWatcher) shouldMonitorSession(sessionID string) bool {
+	cw.mu.RLock()
+	defer cw.mu.RUnlock()
+	
+	if cw.sessionFilter == nil {
+		return true // Monitor all sessions if no filter is set
+	}
+	
+	return cw.sessionFilter[sessionID]
 }
 
 // Start begins watching for component file changes
@@ -287,6 +342,14 @@ func (cw *ComponentWatcher) handleFileEvent(event fsnotify.Event) {
 	// Extract session ID from file path
 	sessionID := cw.extractSessionID(event.Name)
 	if sessionID == "" {
+		return
+	}
+	
+	// Check if this session should be monitored
+	if !cw.shouldMonitorSession(sessionID) {
+		slog.Debug("Ignoring file event for filtered session", 
+			"session", sessionID, 
+			"file", event.Name)
 		return
 	}
 	

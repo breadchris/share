@@ -48,6 +48,13 @@ type DeploymentConfig struct {
 	GracefulTimeout   int    `json:"graceful_timeout"`   // seconds
 }
 
+type SnapshotConfig struct {
+	Enabled           bool     `json:"enabled"`            // Master on/off switch
+	Mode              string   `json:"mode"`               // "disabled", "always", "claude-session"
+	SessionFilter     []string `json:"session_filter"`     // Specific session IDs to monitor
+	ClaudeSessionOnly bool     `json:"claude_session_only"` // Only monitor when Claude sessions are active
+}
+
 type AppConfig struct {
 	OpenAIKey          string           `json:"openai_key"`
 	SMTP               SMTPConfig       `json:"smtp"`
@@ -62,6 +69,7 @@ type AppConfig struct {
 	Github             GithubConfig     `json:"github"`
 	Proxy              ProxyConfig      `json:"proxy"`
 	Deployment         DeploymentConfig `json:"deployment"`
+	Snapshot           SnapshotConfig   `json:"snapshot"`
 	Admins             []string         `json:"admins"`
 	DB                 string           `json:"db"`
 	JamsocketURL       string           `json:"jamsocket_url"`
@@ -97,6 +105,22 @@ func (c *AppConfig) DeploymentGracefulTimeout() int {
 		return 30 // Default 30 seconds
 	}
 	return c.Deployment.GracefulTimeout
+}
+
+// Snapshot convenience methods
+func (c *AppConfig) SnapshotEnabled() bool {
+	return c.Snapshot.Enabled
+}
+
+func (c *AppConfig) SnapshotMode() string {
+	if c.Snapshot.Mode == "" {
+		return "disabled" // Default mode
+	}
+	return c.Snapshot.Mode
+}
+
+func (c *AppConfig) ShouldStartSnapshotWorkers() bool {
+	return c.Snapshot.Enabled && c.Snapshot.Mode != "disabled"
 }
 
 func NewFromFile(path string) AppConfig {
