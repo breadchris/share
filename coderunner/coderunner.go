@@ -22,6 +22,63 @@ import (
 	"github.com/google/uuid"
 )
 
+// Configuration constants for directory paths
+// 
+// The coderunner now supports configurable source and build directories:
+// - BASE_SOURCE_DIR: Root directory for component source files (default: current directory)
+// - BASE_BUILD_DIR: Directory for compiled build outputs (default: ./coderunner/build)
+//
+// Environment variables:
+// - CODERUNNER_SOURCE_DIR: Override the source directory (useful for Docker or different repo structures)
+// - CODERUNNER_BUILD_DIR: Override the build directory
+//
+// Examples:
+//   CODERUNNER_SOURCE_DIR=./src CODERUNNER_BUILD_DIR=./build ./app
+//   CODERUNNER_SOURCE_DIR=/app/components ./app
+var (
+	// BASE_SOURCE_DIR is the root directory for component source files
+	// Can be overridden with CODERUNNER_SOURCE_DIR environment variable
+	BASE_SOURCE_DIR = getEnvOrDefault("CODERUNNER_SOURCE_DIR", ".")
+	
+	// BASE_BUILD_DIR is the directory for compiled build outputs
+	// Can be overridden with CODERUNNER_BUILD_DIR environment variable
+	BASE_BUILD_DIR = getEnvOrDefault("CODERUNNER_BUILD_DIR", "./coderunner/build")
+)
+
+// getEnvOrDefault returns environment variable value or default if not set
+func getEnvOrDefault(envKey, defaultValue string) string {
+	if value := os.Getenv(envKey); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
+// ensureDirectoryExists creates the directory if it doesn't exist
+func ensureDirectoryExists(dir string) error {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		return os.MkdirAll(dir, 0755)
+	}
+	return nil
+}
+
+// init ensures the base directories exist
+func init() {
+	// Log the configured directories
+	fmt.Printf("CodeRunner configuration:\n")
+	fmt.Printf("  Source directory: %s\n", BASE_SOURCE_DIR)
+	fmt.Printf("  Build directory:  %s\n", BASE_BUILD_DIR)
+	
+	// Ensure BASE_SOURCE_DIR exists
+	if err := ensureDirectoryExists(BASE_SOURCE_DIR); err != nil {
+		fmt.Printf("Warning: Failed to create source directory %s: %v\n", BASE_SOURCE_DIR, err)
+	}
+	
+	// Ensure BASE_BUILD_DIR exists
+	if err := ensureDirectoryExists(BASE_BUILD_DIR); err != nil {
+		fmt.Printf("Warning: Failed to create build directory %s: %v\n", BASE_BUILD_DIR, err)
+	}
+}
+
 type BuildCache struct {
 	BuiltAt    time.Time `json:"builtAt"`
 	SourcePath string    `json:"sourcePath"`
@@ -324,8 +381,8 @@ func New(d deps.Deps) *http.ServeMux {
 		repoName := repoParts[1]
 		repoURL := fmt.Sprintf("https://github.com/%s.git", gitHubUser.Repo)
 
-		// Create user directory path: ./coderunner/src/@username/repositories/reponame
-		userDir := fmt.Sprintf("./coderunner/src/@%s", gitHubUser.GithubUsername)
+		// Create user directory path: {BASE_SOURCE_DIR}/@username/repositories/reponame
+		userDir := filepath.Join(BASE_SOURCE_DIR, fmt.Sprintf("@%s", gitHubUser.GithubUsername))
 		repoDir := filepath.Join(userDir, "repositories", repoName)
 
 		// Ensure the user and repositories directory exists
@@ -561,7 +618,7 @@ func handleFiles(w http.ResponseWriter, r *http.Request) {
 
 // handleListFiles returns the directory structure as JSON
 func handleListFiles(w http.ResponseWriter, r *http.Request) {
-	srcDir := "./coderunner/src"
+	srcDir := BASE_SOURCE_DIR
 
 	// Check for path parameter to list specific directory
 	queryPath := r.URL.Query().Get("path")
@@ -616,7 +673,7 @@ func handleSaveFile(w http.ResponseWriter, r *http.Request) {
 	// Ensure path starts with username (e.g., "@breadchris/")
 
 	// Build full path
-	fullPath := filepath.Join("./coderunner/src", cleanPath)
+	fullPath := filepath.Join(BASE_SOURCE_DIR, cleanPath)
 
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(fullPath)
@@ -664,7 +721,7 @@ func handleFileContent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build full path
-	fullPath := filepath.Join("./coderunner/src", cleanPath)
+	fullPath := filepath.Join(BASE_SOURCE_DIR, cleanPath)
 
 	// Check if file exists and is not a directory
 	info, err := os.Stat(fullPath)
@@ -731,8 +788,8 @@ func handleBuild(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build source and output paths
-	srcPath := filepath.Join("./coderunner/src", cleanPath)
-	buildDir := "./coderunner/build"
+	srcPath := filepath.Join(BASE_SOURCE_DIR, cleanPath)
+	buildDir := BASE_BUILD_DIR
 	outputPath := filepath.Join(buildDir, cleanPath+".js")
 
 	println("Building file:", srcPath, "to", outputPath)
@@ -1013,7 +1070,7 @@ func handleDeleteFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build full path
-	fullPath := filepath.Join("./coderunner/src", cleanPath)
+	fullPath := filepath.Join(BASE_SOURCE_DIR, cleanPath)
 
 	// Check if file exists
 	info, err := os.Stat(fullPath)
@@ -1077,7 +1134,7 @@ func handleRenderComponent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build source path
-	srcPath := filepath.Join("./coderunner/src", cleanPath)
+	srcPath := filepath.Join(BASE_SOURCE_DIR, cleanPath)
 
 	// Check if source file exists
 	if _, err := os.Stat(srcPath); os.IsNotExist(err) {
@@ -1186,7 +1243,7 @@ func handleServeModule(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build source path
-	srcPath := filepath.Join("./coderunner/src", cleanPath)
+	srcPath := filepath.Join(BASE_SOURCE_DIR, cleanPath)
 
 	// Check if source file exists
 	if _, err := os.Stat(srcPath); os.IsNotExist(err) {
@@ -1305,7 +1362,7 @@ func handleFullRenderComponent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build source path
-	srcPath := filepath.Join("./coderunner/src", cleanPath)
+	srcPath := filepath.Join(BASE_SOURCE_DIR, cleanPath)
 
 	// Check if source file exists
 	if _, err := os.Stat(srcPath); os.IsNotExist(err) {
@@ -1314,7 +1371,7 @@ func handleFullRenderComponent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create output directory for this component
-	outputDir := filepath.Join("./coderunner/build/fullrender", cleanPath)
+	outputDir := filepath.Join(BASE_BUILD_DIR, "fullrender", cleanPath)
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to create output directory: %v", err), http.StatusInternalServerError)
 		return
@@ -1429,7 +1486,7 @@ func handleServeCSS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build full path to CSS file
-	cssPath := filepath.Join("./coderunner/build/fullrender", cleanPath)
+	cssPath := filepath.Join(BASE_BUILD_DIR, "fullrender", cleanPath)
 
 	// Check if file exists and is a CSS file
 	info, err := os.Stat(cssPath)
@@ -1481,7 +1538,7 @@ func handleServeJS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build full path to JavaScript file
-	jsPath := filepath.Join("./coderunner/build/fullrender", cleanPath)
+	jsPath := filepath.Join(BASE_BUILD_DIR, "fullrender", cleanPath)
 
 	// Check if file exists and is a JavaScript file
 	info, err := os.Stat(jsPath)

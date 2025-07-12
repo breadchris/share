@@ -7,6 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ./flow
 only refer to the code in the git repo directory in isolation, this is a separate git repo and does not share code with the rest of the codebase.
 
+## Config
+Environment variables will not be used, instead use the `config/config.go` file to set configuration options.
+
 ## Proto / GRPC
 - Proto files are located in the `proto/` directory
 - Use go generate . to generate Go and Typescript from proto files

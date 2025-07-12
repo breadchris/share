@@ -1,10 +1,17 @@
 package aiapi
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
+	"image"
+	"image/jpeg"
+	"image/png"
 	"io"
 	"net/http"
 	"reflect"
+	"strings"
 
 	"github.com/breadchris/share/deps"
 	"github.com/sashabaranov/go-openai"
@@ -19,6 +26,49 @@ type JSONSchema struct {
 	AdditionalProperties *bool                  `json:"additionalProperties,omitempty"`
 	Description          string                 `json:"description,omitempty"`
 	Examples             []interface{}          `json:"examples,omitempty"`
+}
+
+// ImageAnalysisResponse represents the response from image analysis
+type ImageAnalysisResponse struct {
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Confidence  float64 `json:"confidence"`
+}
+
+// resizeImage resizes an image to fit within maxDimension while maintaining aspect ratio
+func resizeImage(img image.Image, maxDimension int) image.Image {
+	bounds := img.Bounds()
+	width := bounds.Dx()
+	height := bounds.Dy()
+
+	// Check if resizing is needed
+	if width <= maxDimension && height <= maxDimension {
+		return img
+	}
+
+	// Calculate new dimensions while maintaining aspect ratio
+	var newWidth, newHeight int
+	if width > height {
+		newWidth = maxDimension
+		newHeight = (height * maxDimension) / width
+	} else {
+		newHeight = maxDimension
+		newWidth = (width * maxDimension) / height
+	}
+
+	// Create new image with calculated dimensions
+	newImg := image.NewRGBA(image.Rect(0, 0, newWidth, newHeight))
+
+	// Simple nearest neighbor resizing
+	for y := 0; y < newHeight; y++ {
+		for x := 0; x < newWidth; x++ {
+			srcX := (x * width) / newWidth
+			srcY := (y * height) / newHeight
+			newImg.Set(x, y, img.At(srcX, srcY))
+		}
+	}
+
+	return newImg
 }
 
 // generateJSONSchema creates a JSON schema from an arbitrary JSON object
@@ -156,6 +206,185 @@ func New(deps deps.Deps) *http.ServeMux {
 		})
 		`
 		w.Write([]byte(code))
+	})
+	
+	m.HandleFunc("/analyze-image", func(w http.ResponseWriter, r *http.Request) {
+		// Set CORS headers
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// Handle preflight OPTIONS request
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		if r.Method != "POST" {
+			http.Error(w, `{"error":"Method not allowed"}`, http.StatusMethodNotAllowed)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+
+		// Parse multipart form (max 10MB)
+		err := r.ParseMultipartForm(10 << 20)
+		if err != nil {
+			http.Error(w, `{"error":"Failed to parse form data"}`, http.StatusBadRequest)
+			return
+		}
+
+		// Get the uploaded file
+		file, header, err := r.FormFile("image")
+		if err != nil {
+			http.Error(w, `{"error":"No image file provided"}`, http.StatusBadRequest)
+			return
+		}
+		defer file.Close()
+
+		// Validate file type
+		contentType := header.Header.Get("Content-Type")
+		if !strings.HasPrefix(contentType, "image/") {
+			http.Error(w, `{"error":"Invalid file type. Please upload an image"}`, http.StatusBadRequest)
+			return
+		}
+
+		// Read file data
+		fileData, err := io.ReadAll(file)
+		if err != nil {
+			http.Error(w, `{"error":"Failed to read image file"}`, http.StatusInternalServerError)
+			return
+		}
+
+		// Decode image
+		var img image.Image
+		if strings.Contains(contentType, "jpeg") || strings.Contains(contentType, "jpg") {
+			img, err = jpeg.Decode(bytes.NewReader(fileData))
+		} else if strings.Contains(contentType, "png") {
+			img, err = png.Decode(bytes.NewReader(fileData))
+		} else {
+			// Try generic decode
+			img, _, err = image.Decode(bytes.NewReader(fileData))
+		}
+
+		if err != nil {
+			http.Error(w, `{"error":"Failed to decode image"}`, http.StatusBadRequest)
+			return
+		}
+
+		// Resize image if needed (max 1024px)
+		resizedImg := resizeImage(img, 1024)
+
+		// Convert to JPEG and base64
+		var jpegData bytes.Buffer
+		err = jpeg.Encode(&jpegData, resizedImg, &jpeg.Options{Quality: 85})
+		if err != nil {
+			http.Error(w, `{"error":"Failed to encode image"}`, http.StatusInternalServerError)
+			return
+		}
+
+		base64Data := base64.StdEncoding.EncodeToString(jpegData.Bytes())
+		dataURI := fmt.Sprintf("data:image/jpeg;base64,%s", base64Data)
+
+		// Create OpenAI request for image analysis
+		req := openai.ChatCompletionRequest{
+			Model: openai.GPT4Dot1Mini,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role: openai.ChatMessageRoleUser,
+					MultiContent: []openai.ChatMessagePart{
+						{
+							Type: openai.ChatMessagePartTypeText,
+							Text: "Analyze this photo and identify the main item. Provide a concise name and brief description suitable for inventory. Return only JSON in this exact format: {\"name\": \"item name\", \"description\": \"brief description\"}",
+						},
+						{
+							Type: openai.ChatMessagePartTypeImageURL,
+							ImageURL: &openai.ChatMessageImageURL{
+								URL:    dataURI,
+								Detail: openai.ImageURLDetailLow,
+							},
+						},
+					},
+				},
+			},
+			MaxTokens:   150,
+			Temperature: 0.3,
+		}
+
+		// Call OpenAI API
+		resp, err := deps.AI.CreateChatCompletion(r.Context(), req)
+		if err != nil {
+			http.Error(w, fmt.Sprintf(`{"error":"AI analysis failed: %s"}`, err.Error()), http.StatusInternalServerError)
+			return
+		}
+
+		if len(resp.Choices) == 0 {
+			http.Error(w, `{"error":"No response from AI"}`, http.StatusInternalServerError)
+			return
+		}
+
+		// Parse AI response
+		aiResponse := resp.Choices[0].Message.Content
+		
+		// Try to extract JSON from response
+		var analysisResult struct {
+			Name        string `json:"name"`
+			Description string `json:"description"`
+		}
+
+		// Clean up the response - remove markdown code blocks if present
+		cleanResponse := aiResponse
+		if strings.Contains(aiResponse, "```json") {
+			start := strings.Index(aiResponse, "```json") + 7
+			end := strings.Index(aiResponse[start:], "```")
+			if end > 0 {
+				cleanResponse = aiResponse[start : start+end]
+			}
+		} else if strings.Contains(aiResponse, "```") {
+			start := strings.Index(aiResponse, "```") + 3
+			end := strings.Index(aiResponse[start:], "```")
+			if end > 0 {
+				cleanResponse = aiResponse[start : start+end]
+			}
+		}
+
+		cleanResponse = strings.TrimSpace(cleanResponse)
+
+		err = json.Unmarshal([]byte(cleanResponse), &analysisResult)
+		if err != nil {
+			// Fallback: try to extract information from plain text
+			lines := strings.Split(aiResponse, "\n")
+			analysisResult.Name = "Detected Item"
+			analysisResult.Description = "Item identified from image"
+			
+			// Simple heuristic to find name and description
+			for _, line := range lines {
+				line = strings.TrimSpace(line)
+				if line != "" && analysisResult.Name == "Detected Item" {
+					analysisResult.Name = line
+				} else if line != "" && analysisResult.Description == "Item identified from image" {
+					analysisResult.Description = line
+					break
+				}
+			}
+		}
+
+		// Ensure we have valid data
+		if analysisResult.Name == "" {
+			analysisResult.Name = "Unknown Item"
+		}
+		if analysisResult.Description == "" {
+			analysisResult.Description = "No description available"
+		}
+
+		// Create response
+		response := ImageAnalysisResponse{
+			Name:        analysisResult.Name,
+			Description: analysisResult.Description,
+			Confidence:  0.8, // Static confidence for now
+		}
+
+		json.NewEncoder(w).Encode(response)
 	})
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// Set CORS headers to accept requests from all domains

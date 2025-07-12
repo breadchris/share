@@ -8,42 +8,18 @@
       <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/browsermcp/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/browsermcp/LICENSE" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/browsermcp/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/browsermcp/package.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/browsermcp/src/context.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/browsermcp/src/index.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/browsermcp/src/resources/resource.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/browsermcp/src/server.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/browsermcp/src/tools/common.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/browsermcp/src/tools/custom.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/browsermcp/src/tools/snapshot.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/browsermcp/src/tools/tool.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/browsermcp/src/utils/aria-snapshot.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/browsermcp/src/utils/log.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/browsermcp/src/utils/port.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/browsermcp/src/ws.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/browsermcp/tsconfig.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/component_watcher.go" beforeDir="false" afterPath="$PROJECT_DIR$/component_watcher.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/aiapi/aiapi.go" beforeDir="false" afterPath="$PROJECT_DIR$/aiapi/aiapi.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/auth.go" beforeDir="false" afterPath="$PROJECT_DIR$/auth.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/coderunner.go" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/coderunner.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/db.go" beforeDir="false" afterPath="$PROJECT_DIR$/db/db.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow" beforeDir="false" afterPath="$PROJECT_DIR$/flow" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/flow/CLAUDE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/code/code.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/code/code.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/code/html_helpers.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/code/html_helpers.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/database.types.ts" beforeDir="false" afterPath="$PROJECT_DIR$/flow/database.types.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/db/db.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/db/db.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/db/db_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/db/db_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/db/dbany.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/db/doc.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/models/models.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/models/models.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/config/environment.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/config/environment.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/slackbot/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/CLAUDE.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/slackbot/handlers.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/handlers.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/supabase-kv.ts" beforeDir="false" afterPath="$PROJECT_DIR$/flow/supabase-kv.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/yjs/dist/entry.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/yjs/dist/entry.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/kanban/service.go" beforeDir="false" afterPath="$PROJECT_DIR$/kanban/service.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/slackbot/slackbot_integration_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/slackbot_integration_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/google_auth.go" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/symbol.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/symbol.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/models.go" beforeDir="false" afterPath="$PROJECT_DIR$/models/models.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -308,7 +284,7 @@
       <workItem from="1747973023098" duration="26954000" />
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
-      <workItem from="1750823408293" duration="302889000" />
+      <workItem from="1750823408293" duration="320509000" />
     </task>
     <servers />
   </component>
@@ -322,9 +298,9 @@
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" type="DlvLineBreakpoint">
-          <url>file://$USER_HOME$/go/pkg/mod/github.com/breadchris/yaegi@v0.0.4/interp/src.go</url>
-          <line>198</line>
-          <option name="timeStamp" value="9" />
+          <url>file://$PROJECT_DIR$/flow/slackbot/slackbot.go</url>
+          <line>523</line>
+          <option name="timeStamp" value="11" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

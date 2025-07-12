@@ -16,6 +16,7 @@ import (
 	"gorm.io/gorm"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -61,7 +62,7 @@ func NewAuth(
 					c.GoogleClientID,
 					c.GoogleClientSecret,
 					fmt.Sprintf("%s/auth/google/callback", c.ExternalURL),
-					"email", "profile"),
+					"email", "profile", "https://www.googleapis.com/auth/drive"),
 				github.New(
 					c.Github.ClientID,
 					c.Github.ClientSecret,
@@ -75,6 +76,18 @@ func NewAuth(
 
 func (a *Auth) startGoogleAuth(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
+
+	// Store the final redirect URL in session if provided
+	finalRedirect := r.URL.Query().Get("final_redirect")
+	if finalRedirect != "" {
+		// Store in session for retrieval in callback
+		sessionData := map[string]interface{}{
+			"final_redirect": finalRedirect,
+		}
+		for key, value := range sessionData {
+			a.s.Put(r.Context(), key, value)
+		}
+	}
 
 	q.Set("provider", "google")
 	q.Set("redirect_to", fmt.Sprintf("%s/auth/google/callback", a.cfg.ExternalURL))
@@ -111,7 +124,29 @@ func (a *Auth) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	a.s.SetUserID(r.Context(), user.ID)
-	http.Redirect(w, r, "/", http.StatusFound)
+
+	// Get the final redirect URL from session, fallback to "/"
+	finalRedirect := "/"
+	if storedRedirect := a.s.GetString(r.Context(), "final_redirect"); storedRedirect != "" {
+		finalRedirect = storedRedirect
+		// Clean up the session after use
+		a.s.Remove(r.Context(), "final_redirect")
+	}
+
+	// Append access token to redirect URL
+	redirectURL, err := url.Parse(finalRedirect)
+	if err != nil {
+		// If URL parsing fails, fallback to original redirect
+		http.Redirect(w, r, finalRedirect, http.StatusFound)
+		return
+	}
+
+	// Add access token as query parameter
+	query := redirectURL.Query()
+	query.Set("access_token", u.AccessToken)
+	redirectURL.RawQuery = query.Encode()
+
+	http.Redirect(w, r, redirectURL.String(), http.StatusFound)
 }
 
 func (s *Auth) handleInvite(w http.ResponseWriter, r *http.Request) {

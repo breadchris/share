@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/breadchris/share/graveyard/ainet"
 	"github.com/breadchris/share/graveyard/claudemd"
 	"github.com/breadchris/share/graveyard/list"
 	"github.com/breadchris/share/graveyard/llm"
@@ -67,6 +66,23 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
+func cspMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// CSP policy that allows Google Identity scripts and other required resources
+		csp := "default-src 'self'; " +
+			"script-src 'self' 'unsafe-inline' 'unsafe-eval' *; " +
+			"style-src 'self' 'unsafe-inline' *; " +
+			"font-src 'self' *; " +
+			"img-src 'self' data: *; " +
+			"connect-src 'self' *; " +
+			"frame-src 'self' *; " +
+			"form-action 'self' *;"
+
+		w.Header().Set("Content-Security-Policy", csp)
+		next.ServeHTTP(w, r)
+	})
+}
+
 func startXCTF(port int) error {
 	appConfig := config2.New()
 
@@ -119,7 +135,6 @@ func startXCTF(port int) error {
 	http.HandleFunc("/logout", a.handleLogout)
 	http.HandleFunc("/auth/google", a.startGoogleAuth)
 	http.HandleFunc("/auth/google/callback", a.handleGoogleCallback)
-	http.HandleFunc("/api/auth/google/token", handleGoogleTokenExchange)
 	http.HandleFunc("/static/", serveFiles("static"))
 	http.HandleFunc("/data/", serveFiles("data"))
 
@@ -204,23 +219,6 @@ func startXCTF(port int) error {
 	})
 
 	// Add CSP middleware to allow Google Identity scripts
-	cspMiddleware := func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// CSP policy that allows Google Identity scripts and other required resources
-			csp := "default-src 'self'; " +
-				"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://accounts.google.com https://apis.google.com blob: data:; " +
-				"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-				"font-src 'self' https://fonts.gstatic.com data:; " +
-				"img-src 'self' data: https:; " +
-				"connect-src 'self' https://accounts.google.com https://www.googleapis.com; " +
-				"frame-src 'self' https://accounts.google.com; " +
-				"form-action 'self'"
-
-			w.Header().Set("Content-Security-Policy", csp)
-			next.ServeHTTP(w, r)
-		})
-	}
-
 	h := cspMiddleware(s.LoadAndSave(http.DefaultServeMux))
 
 	log.Printf("Starting HTTP server on port: %d", port)
@@ -342,7 +340,7 @@ func startServer(useTLS bool, port int) {
 	p("/ai", interpreted(aiapi.New))
 	//p("/card", interpreted(NewCard2))
 	p("/op", interpreted(op.New))
-	p("/ainet", interpreted(ainet.New))
+	//p("/ainet", interpreted(ainet.New))
 	p("/user", interpreted(user.New))
 	p("/paint", interpreted(paint.New))
 	p("/notes", interpreted(NewNotes))
@@ -442,7 +440,6 @@ func startServer(useTLS bool, port int) {
 	http.HandleFunc("/invite", a.handleInvite)
 	http.HandleFunc("/auth/google", a.startGoogleAuth)
 	http.HandleFunc("/auth/google/callback", a.handleGoogleCallback)
-	http.HandleFunc("/api/auth/google/token", handleGoogleTokenExchange)
 	http.HandleFunc("/blog/react", a.reactHandler)
 	http.HandleFunc("/blog/{id...}", a.blogHandler)
 	http.HandleFunc("/files", fileHandler)
@@ -758,23 +755,6 @@ func startServer(useTLS bool, port int) {
 	keyFile := path.Join(dir, "private.key.pem")
 
 	// Add CSP middleware to allow Google Identity scripts
-	cspMiddleware := func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// CSP policy that allows Google Identity scripts and other required resources
-			csp := "default-src 'self'; " +
-				"script-src 'self' 'unsafe-inline' 'unsafe-eval' *; " +
-				"style-src 'self' 'unsafe-inline' *; " +
-				"font-src 'self' *; " +
-				"img-src 'self' *; " +
-				"connect-src 'self' *; " +
-				"frame-src 'self' *; " +
-				"form-action 'self' *;"
-
-			w.Header().Set("Content-Security-Policy", csp)
-			next.ServeHTTP(w, r)
-		})
-	}
-
 	h := cspMiddleware(s.LoadAndSave(http.DefaultServeMux))
 
 	if useTLS {

@@ -524,3 +524,109 @@ type KanbanCard struct {
 	Labels      []string      `json:"labels" gorm:"type:json"`
 	DueDate     time.Time     `json:"due_date"`
 }
+
+// Vibe Kanban Models
+
+type VibeProject struct {
+	Model
+	Name          string                             `json:"name" gorm:"not null"`
+	GitRepoPath   string                             `json:"git_repo_path" gorm:"not null"` // Local git repository path
+	SetupScript   string                             `json:"setup_script"`                   // Script to run for project setup
+	DevScript     string                             `json:"dev_script"`                     // Script to run dev server
+	DefaultBranch string                             `json:"default_branch" gorm:"default:'main'"`
+	UserID        string                             `json:"user_id" gorm:"index;not null"`
+	User          *User                              `gorm:"foreignKey:UserID"`
+	Tasks         []VibeTask                         `gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE"`
+	Config        *JSONField[map[string]interface{}] `json:"config,omitempty"` // Project-specific configuration
+}
+
+type VibeTask struct {
+	Model
+	Title       string                             `json:"title" gorm:"not null"`
+	Description string                             `json:"description" gorm:"type:text"`
+	Status      string                             `json:"status" gorm:"not null;default:'todo'"` // todo, inprogress, inreview, done, cancelled
+	Priority    string                             `json:"priority" gorm:"default:'medium'"`       // low, medium, high
+	ProjectID   string                             `json:"project_id" gorm:"index;not null"`
+	Project     *VibeProject                       `gorm:"foreignKey:ProjectID"`
+	UserID      string                             `json:"user_id" gorm:"index;not null"`
+	User        *User                              `gorm:"foreignKey:UserID"`
+	Attempts    []VibeTaskAttempt                  `gorm:"foreignKey:TaskID;constraint:OnDelete:CASCADE"`
+	Labels      []string                           `json:"labels" gorm:"type:json"`
+	Metadata    *JSONField[map[string]interface{}] `json:"metadata,omitempty"`
+}
+
+type VibeTaskAttempt struct {
+	Model
+	TaskID        string                             `json:"task_id" gorm:"index;not null"`
+	Task          *VibeTask                          `gorm:"foreignKey:TaskID"`
+	WorktreePath  string                             `json:"worktree_path"`                       // Git worktree path for isolated execution
+	Branch        string                             `json:"branch"`                              // Git branch for this attempt
+	BaseBranch    string                             `json:"base_branch"`                         // Branch this was created from
+	MergeCommit   string                             `json:"merge_commit"`                        // Commit hash if merged
+	Executor      string                             `json:"executor"`                            // AI agent used (claude, gemini, etc)
+	Status        string                             `json:"status" gorm:"default:'pending'"`     // pending, running, completed, failed
+	PRURL         string                             `json:"pr_url"`                              // GitHub PR URL if created
+	StartTime     *time.Time                         `json:"start_time"`
+	EndTime       *time.Time                         `json:"end_time"`
+	UserID        string                             `json:"user_id" gorm:"index;not null"`
+	User          *User                              `gorm:"foreignKey:UserID"`
+	Processes     []VibeExecutionProcess             `gorm:"foreignKey:AttemptID;constraint:OnDelete:CASCADE"`
+	Sessions      []VibeExecutorSession              `gorm:"foreignKey:AttemptID;constraint:OnDelete:CASCADE"`
+	GitDiff       string                             `json:"git_diff" gorm:"type:text"`          // Cached git diff
+	Metadata      *JSONField[map[string]interface{}] `json:"metadata,omitempty"`                 // Execution metadata
+	Configuration *JSONField[map[string]interface{}] `json:"configuration,omitempty"`            // Attempt-specific config
+}
+
+type VibeExecutionProcess struct {
+	Model
+	AttemptID   string                             `json:"attempt_id" gorm:"index;not null"`
+	Attempt     *VibeTaskAttempt                   `gorm:"foreignKey:AttemptID"`
+	Type        string                             `json:"type" gorm:"not null"` // setupscript, codingagent, devserver
+	Status      string                             `json:"status" gorm:"not null;default:'pending'"`
+	Command     string                             `json:"command" gorm:"type:text"`
+	ProcessID   int                                `json:"process_id"`
+	StartTime   *time.Time                         `json:"start_time"`
+	EndTime     *time.Time                         `json:"end_time"`
+	StdOut      string                             `json:"stdout" gorm:"type:text"`
+	StdErr      string                             `json:"stderr" gorm:"type:text"`
+	ExitCode    *int                               `json:"exit_code"`
+	Port        int                                `json:"port"`        // For dev servers
+	URL         string                             `json:"url"`         // For dev servers
+	Metadata    *JSONField[map[string]interface{}] `json:"metadata,omitempty"`
+}
+
+type VibeExecutorSession struct {
+	Model
+	AttemptID string                             `json:"attempt_id" gorm:"index;not null"`
+	Attempt   *VibeTaskAttempt                   `gorm:"foreignKey:AttemptID"`
+	SessionID string                             `json:"session_id" gorm:"unique;not null;index"`
+	Executor  string                             `json:"executor" gorm:"not null"` // claude, gemini, etc
+	Prompt    string                             `json:"prompt" gorm:"type:text"`
+	Summary   string                             `json:"summary" gorm:"type:text"`
+	Messages  *JSONField[[]interface{}]          `json:"messages" gorm:"type:json"` // Full conversation history
+	Metadata  *JSONField[map[string]interface{}] `json:"metadata,omitempty"`
+}
+
+// Configuration models for AI agents and MCP servers
+
+type VibeAgentConfig struct {
+	Model
+	Name        string                             `json:"name" gorm:"unique;not null"`
+	Type        string                             `json:"type" gorm:"not null"` // claude, gemini, amp, opencode, echo
+	Command     string                             `json:"command" gorm:"type:text"`
+	Environment *JSONField[map[string]string]      `json:"environment,omitempty"`
+	MCPServers  *JSONField[map[string]interface{}] `json:"mcp_servers,omitempty"`
+	IsDefault   bool                               `json:"is_default"`
+	UserID      string                             `json:"user_id" gorm:"index;not null"`
+	User        *User                              `gorm:"foreignKey:UserID"`
+}
+
+type VibeMCPServer struct {
+	Model
+	Name        string                        `json:"name" gorm:"unique;not null"`
+	Command     string                        `json:"command" gorm:"type:text"`
+	Arguments   []string                      `json:"arguments" gorm:"type:json"`
+	Environment *JSONField[map[string]string] `json:"environment,omitempty"`
+	UserID      string                        `json:"user_id" gorm:"index;not null"`
+	User        *User                         `gorm:"foreignKey:UserID"`
+}

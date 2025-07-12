@@ -324,6 +324,15 @@ func LoadDB(dsn string) *gorm.DB {
 		&models.ClaudeDocStar{},
 		&models.ClaudeSession{},
 
+		// Vibe Kanban models
+		&models.VibeProject{},
+		&models.VibeTask{},
+		&models.VibeTaskAttempt{},
+		&models.VibeExecutionProcess{},
+		&models.VibeExecutorSession{},
+		&models.VibeAgentConfig{},
+		&models.VibeMCPServer{},
+
 		// xctf models
 		&xmodels.Competition{},
 		&xmodels.CompetitionGroup{},
