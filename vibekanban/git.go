@@ -10,7 +10,6 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/google/uuid"
 )
 
@@ -33,8 +32,8 @@ func (g *GitService) CreateWorktree(repoPath, baseBranch string) (string, string
 	worktreePath := filepath.Join(g.baseWorkdir, worktreeID)
 	branchName := fmt.Sprintf("vibe-task-%s", worktreeID[:8])
 
-	// Open the main repository
-	repo, err := git.PlainOpen(repoPath)
+	// Open the main repository (for validation)
+	_, err := git.PlainOpen(repoPath)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to open repository: %w", err)
 	}
@@ -196,8 +195,8 @@ func (g *GitService) MergeBranch(repoPath, branchName, baseBranch string) (strin
 		return "", fmt.Errorf("failed to checkout base branch: %w", err)
 	}
 
-	// Get the branch reference to merge
-	branchRef, err := repo.Reference(plumbing.ReferenceName("refs/heads/"+branchName), true)
+	// Get the branch reference to merge (for validation)
+	_, err = repo.Reference(plumbing.ReferenceName("refs/heads/"+branchName), true)
 	if err != nil {
 		return "", fmt.Errorf("failed to get branch reference: %w", err)
 	}

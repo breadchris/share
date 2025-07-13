@@ -1,12 +1,13 @@
 package vibekanban
 
 import (
-	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -20,6 +21,18 @@ type ProcessManager struct {
 	db        *gorm.DB
 	processes map[string]*ManagedProcess
 	mu        sync.RWMutex
+}
+
+// DelegationContext represents context for process delegation after setup completion
+type DelegationContext struct {
+	DelegateTo      string                 `json:"delegate_to"`
+	OperationParams map[string]interface{} `json:"operation_params"`
+}
+
+// AutoSetupConfig represents configuration for automatic setup detection
+type AutoSetupConfig struct {
+	Operation       string                 `json:"operation"`
+	OperationParams map[string]interface{} `json:"operation_params,omitempty"`
 }
 
 type ManagedProcess struct {
@@ -449,4 +462,494 @@ func (cw *channelWriter) Write(p []byte) (n int, err error) {
 		// Channel is full, skip
 	}
 	return len(p), nil
+}
+
+// AutoSetupAndExecute automatically runs setup if needed, then continues with the specified operation
+func (pm *ProcessManager) AutoSetupAndExecute(attemptID, taskID, projectID, operation string, operationParams map[string]interface{}) error {
+	// Check if setup is completed for this worktree
+	setupCompleted, err := pm.IsSetupCompleted(attemptID)
+	if err != nil {
+		return fmt.Errorf("failed to check setup status: %w", err)
+	}
+
+	// Get project to check if setup script exists
+	var project models.VibeProject
+	if err := pm.db.First(&project, "id = ?", projectID).Error; err != nil {
+		return fmt.Errorf("project not found: %w", err)
+	}
+
+	needsSetup := pm.ShouldRunSetupScript(&project) && !setupCompleted
+
+	if needsSetup {
+		// Run setup with delegation to the original operation
+		return pm.ExecuteSetupWithDelegation(attemptID, taskID, projectID, operation, operationParams)
+	} else {
+		// Setup not needed or already completed, continue with original operation
+		return pm.ExecuteOperation(attemptID, taskID, projectID, operation, operationParams)
+	}
+}
+
+// ExecuteSetupWithDelegation executes setup script with delegation context for continuing after completion
+func (pm *ProcessManager) ExecuteSetupWithDelegation(attemptID, taskID, projectID, delegateTo string, operationParams map[string]interface{}) error {
+	// Get project and task attempt
+	var project models.VibeProject
+	if err := pm.db.First(&project, "id = ?", projectID).Error; err != nil {
+		return fmt.Errorf("project not found: %w", err)
+	}
+
+	var attempt models.VibeTaskAttempt
+	if err := pm.db.First(&attempt, "id = ?", attemptID).Error; err != nil {
+		return fmt.Errorf("task attempt not found: %w", err)
+	}
+
+	// Create delegation context
+	delegationContext := DelegationContext{
+		DelegateTo: delegateTo,
+		OperationParams: map[string]interface{}{
+			"task_id":     taskID,
+			"project_id":  projectID,
+			"attempt_id":  attemptID,
+			"additional": operationParams,
+		},
+	}
+
+	// Start setup script with delegation context
+	if project.SetupScript == "" {
+		return fmt.Errorf("no setup script configured")
+	}
+
+	_, err := pm.StartSetupScriptWithDelegation(attemptID, project.SetupScript, attempt.WorktreePath, delegationContext)
+	return err
+}
+
+// StartSetupScriptWithDelegation starts setup script with delegation context
+func (pm *ProcessManager) StartSetupScriptWithDelegation(attemptID, script, workDir string, delegation DelegationContext) (*models.VibeExecutionProcess, error) {
+	if script == "" {
+		return nil, fmt.Errorf("setup script is empty")
+	}
+
+	processID := uuid.NewString()
+	
+	// Serialize delegation context
+	delegationJSON, err := json.Marshal(delegation)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize delegation context: %w", err)
+	}
+
+	// Create database record with delegation context in metadata
+	dbProcess := &models.VibeExecutionProcess{
+		Model: models.Model{
+			ID: processID,
+		},
+		AttemptID: attemptID,
+		Type:      "setupscript",
+		Command:   script,
+		Status:    "pending",
+		Metadata:  &models.JSONField[map[string]interface{}]{
+			Data: map[string]interface{}{
+				"delegation_context": string(delegationJSON),
+			},
+		},
+	}
+	
+	if err := pm.db.Create(dbProcess).Error; err != nil {
+		return nil, fmt.Errorf("failed to create process record: %w", err)
+	}
+
+	// Create managed process
+	managedProcess := &ManagedProcess{
+		ID:        processID,
+		AttemptID: attemptID,
+		Type:      "setupscript", 
+		Command:   "/bin/bash",
+		Args:      []string{"-c", script},
+		WorkDir:   workDir,
+		Status:    "pending",
+		stdout:    NewProcessOutput(),
+		stderr:    NewProcessOutput(),
+	}
+
+	pm.mu.Lock()
+	pm.processes[processID] = managedProcess
+	pm.mu.Unlock()
+
+	// Start the process
+	go pm.runProcessWithDelegation(managedProcess, delegation)
+
+	return dbProcess, nil
+}
+
+// runProcessWithDelegation executes a process with delegation handling
+func (pm *ProcessManager) runProcessWithDelegation(mp *ManagedProcess, delegation DelegationContext) {
+	// Run the process normally first
+	pm.runProcess(mp)
+
+	// After completion, check if we need to delegate
+	if mp.Status == "completed" && mp.ExitCode != nil && *mp.ExitCode == 0 {
+		// Mark setup as completed
+		pm.MarkSetupCompleted(mp.AttemptID)
+
+		// Execute the delegated operation
+		params := delegation.OperationParams
+		delegateAttemptID, _ := params["attempt_id"].(string)
+		taskID, _ := params["task_id"].(string)
+		projectID, _ := params["project_id"].(string)
+		additional, _ := params["additional"].(map[string]interface{})
+
+		if delegateAttemptID != "" && taskID != "" && projectID != "" {
+			go func() {
+				// Small delay to ensure setup completion is recorded
+				time.Sleep(1 * time.Second)
+				if err := pm.ExecuteOperation(delegateAttemptID, taskID, projectID, delegation.DelegateTo, additional); err != nil {
+					fmt.Printf("Debug: Failed to execute delegated operation %s: %v\n", delegation.DelegateTo, err)
+				}
+			}()
+		}
+	}
+}
+
+// ExecuteOperation executes the specified operation
+func (pm *ProcessManager) ExecuteOperation(attemptID, taskID, projectID, operation string, operationParams map[string]interface{}) error {
+	switch operation {
+	case "dev_server":
+		return pm.StartDevServerDirect(attemptID, taskID, projectID)
+	case "coding_agent":
+		return pm.StartCodingAgentDirect(attemptID, taskID, projectID)
+	case "followup":
+		prompt, _ := operationParams["prompt"].(string)
+		return pm.StartFollowupExecutionDirect(attemptID, taskID, projectID, prompt)
+	default:
+		return fmt.Errorf("unknown operation: %s", operation)
+	}
+}
+
+// StartCodingAgentDirect starts a coding agent directly without setup check
+func (pm *ProcessManager) StartCodingAgentDirect(attemptID, taskID, projectID string) error {
+	// Get task attempt to determine executor and worktree
+	var attempt models.VibeTaskAttempt
+	if err := pm.db.First(&attempt, "id = ?", attemptID).Error; err != nil {
+		return fmt.Errorf("task attempt not found: %w", err)
+	}
+
+	// Determine executor config
+	executorConfig := pm.ResolveExecutorConfig(&attempt.Executor)
+
+	// Start the coding agent process
+	return pm.StartProcessExecution(attemptID, taskID, CodingAgentType{ExecutorConfig: executorConfig}, "Starting executor", attempt.WorktreePath)
+}
+
+// StartDevServerDirect starts a dev server directly without setup check
+func (pm *ProcessManager) StartDevServerDirect(attemptID, taskID, projectID string) error {
+	// Get project and attempt
+	var project models.VibeProject
+	if err := pm.db.First(&project, "id = ?", projectID).Error; err != nil {
+		return fmt.Errorf("project not found: %w", err)
+	}
+
+	var attempt models.VibeTaskAttempt
+	if err := pm.db.First(&attempt, "id = ?", attemptID).Error; err != nil {
+		return fmt.Errorf("task attempt not found: %w", err)
+	}
+
+	if project.DevScript == "" {
+		return fmt.Errorf("no dev script configured for this project")
+	}
+
+	// Start dev server
+	return pm.StartProcessExecution(attemptID, taskID, DevServerType{Script: project.DevScript}, "Starting dev server", attempt.WorktreePath)
+}
+
+// StartFollowupExecutionDirect starts a follow-up execution directly
+func (pm *ProcessManager) StartFollowupExecutionDirect(attemptID, taskID, projectID, prompt string) error {
+	// Get the most recent coding agent execution to find session
+	var processes []models.VibeExecutionProcess
+	if err := pm.db.Where("attempt_id = ? AND type = ?", attemptID, "claude").Order("created_at DESC").Find(&processes).Error; err != nil {
+		return fmt.Errorf("failed to find previous executions: %w", err)
+	}
+
+	if len(processes) == 0 {
+		return fmt.Errorf("no previous coding agent execution found for follow-up")
+	}
+
+	recentProcess := processes[0]
+
+	// Get executor session to find session ID
+	var session models.VibeExecutorSession
+	if err := pm.db.First(&session, "execution_process_id = ?", recentProcess.ID).Error; err != nil {
+		// No session found, start new session
+		return pm.StartCodingAgentDirect(attemptID, taskID, projectID)
+	}
+
+	// Get task attempt
+	var attempt models.VibeTaskAttempt
+	if err := pm.db.First(&attempt, "id = ?", attemptID).Error; err != nil {
+		return fmt.Errorf("task attempt not found: %w", err)
+	}
+
+	// Determine executor config from the stored process type or attempt executor
+	executorConfig := pm.ResolveExecutorConfigFromString(recentProcess.Type)
+
+	// Create follow-up executor with session continuity
+	followupType := FollowupCodingAgentType{
+		ExecutorConfig: executorConfig,
+		SessionID:      session.SessionID,
+		Prompt:         prompt,
+	}
+
+	return pm.StartProcessExecution(attemptID, taskID, followupType, "Starting follow-up executor", attempt.WorktreePath)
+}
+
+// StartProcessExecution starts a process execution with the new executor interface
+func (pm *ProcessManager) StartProcessExecution(attemptID, taskID string, executorType ExecutorType, activityNote, worktreePath string) error {
+	processID := uuid.NewString()
+
+	// Create execution process record
+	_, err := pm.CreateExecutionProcessRecord(attemptID, processID, executorType, worktreePath)
+	if err != nil {
+		return fmt.Errorf("failed to create process record: %w", err)
+	}
+
+	// Create executor session for coding agents
+	if !executorType.IsFollowup() {
+		if _, ok := executorType.(CodingAgentType); ok {
+			if err := pm.CreateExecutorSessionRecord(attemptID, taskID, processID); err != nil {
+				return fmt.Errorf("failed to create session record: %w", err)
+			}
+		}
+	}
+
+	// Create and start the executor
+	executor := pm.CreateExecutorFromType(executorType)
+	ctx := context.Background()
+	cmd, err := executor.Spawn(ctx, uuid.MustParse(taskID), worktreePath)
+	if err != nil {
+		return fmt.Errorf("failed to spawn executor: %w", err)
+	}
+
+	// Create managed process for monitoring
+	managedProcess := &ManagedProcess{
+		ID:        processID,
+		AttemptID: attemptID,
+		Type:      executorType.Config().String(),
+		Command:   cmd.Path,
+		Args:      cmd.Args[1:], // Skip the command itself
+		WorkDir:   worktreePath,
+		Status:    "running",
+		StartTime: time.Now(),
+		cmd:       cmd,
+		stdout:    NewProcessOutput(),
+		stderr:    NewProcessOutput(),
+	}
+
+	// Set up output capture
+	cmd.Stdout = managedProcess.stdout
+	cmd.Stderr = managedProcess.stderr
+
+	pm.mu.Lock()
+	pm.processes[processID] = managedProcess
+	pm.mu.Unlock()
+
+	// Monitor the process
+	go pm.monitorExecutorProcess(managedProcess, executor)
+
+	return nil
+}
+
+// monitorExecutorProcess monitors an executor process and handles session extraction
+func (pm *ProcessManager) monitorExecutorProcess(mp *ManagedProcess, executor Executor) {
+	// Start the command
+	err := mp.cmd.Start()
+	if err != nil {
+		mp.Status = "failed"
+		now := time.Now()
+		mp.EndTime = &now
+		pm.updateProcessInDB(mp)
+		return
+	}
+
+	// Wait for completion
+	err = mp.cmd.Wait()
+	now := time.Now()
+	mp.EndTime = &now
+
+	if err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			if status, ok := exitError.Sys().(syscall.WaitStatus); ok {
+				exitCode := status.ExitStatus()
+				mp.ExitCode = &exitCode
+			}
+		}
+		mp.Status = "failed"
+	} else {
+		exitCode := 0
+		mp.ExitCode = &exitCode
+		mp.Status = "completed"
+	}
+
+	// Extract normalized conversation and session if this is a coding agent
+	if strings.Contains(mp.Type, "coding") || mp.Type == "claude" {
+		go pm.extractSessionFromLogs(mp, executor)
+	}
+
+	pm.updateProcessInDB(mp)
+}
+
+// extractSessionFromLogs extracts session information from executor logs
+func (pm *ProcessManager) extractSessionFromLogs(mp *ManagedProcess, executor Executor) {
+	logs := mp.stdout.GetOutput()
+	if logs == "" {
+		return
+	}
+
+	// Normalize logs using the executor
+	conversation, err := executor.NormalizeLogs(logs, mp.WorkDir)
+	if err != nil {
+		fmt.Printf("Debug: Failed to normalize logs for process %s: %v\n", mp.ID, err)
+		return
+	}
+
+	// Update executor session with session ID and conversation
+	if conversation.SessionID != nil {
+		var session models.VibeExecutorSession
+		if err := pm.db.First(&session, "attempt_id = ?", mp.AttemptID).Error; err == nil {
+			session.SessionID = *conversation.SessionID
+			if conversationJSON, err := json.Marshal(conversation); err == nil {
+				// Store conversation in metadata since ConversationLog field doesn't exist
+				if session.Metadata == nil {
+					session.Metadata = &models.JSONField[map[string]interface{}]{
+						Data: make(map[string]interface{}),
+					}
+				}
+				session.Metadata.Data["conversation"] = string(conversationJSON)
+			}
+			pm.db.Save(&session)
+		}
+	}
+}
+
+// Utility methods for setup and executor management
+
+// IsSetupCompleted checks if setup is completed for a task attempt
+func (pm *ProcessManager) IsSetupCompleted(attemptID string) (bool, error) {
+	// Check if there's a completed setup process for this attempt
+	var process models.VibeExecutionProcess
+	err := pm.db.Where("attempt_id = ? AND type = ? AND status = ?", attemptID, "setupscript", "completed").First(&process).Error
+	if err == nil {
+		return true, nil
+	}
+	return false, nil
+}
+
+// MarkSetupCompleted marks setup as completed for a task attempt
+func (pm *ProcessManager) MarkSetupCompleted(attemptID string) error {
+	// This is handled by the process status itself - no need to update a separate field
+	// The IsSetupCompleted method checks for completed setup processes
+	return nil
+}
+
+// ShouldRunSetupScript checks if setup script should be executed
+func (pm *ProcessManager) ShouldRunSetupScript(project *models.VibeProject) bool {
+	return strings.TrimSpace(project.SetupScript) != ""
+}
+
+// ResolveExecutorConfig resolves executor configuration from string name
+func (pm *ProcessManager) ResolveExecutorConfig(executorName *string) ExecutorConfig {
+	if executorName == nil {
+		return ExecutorEcho
+	}
+	return pm.ResolveExecutorConfigFromString(*executorName)
+}
+
+// ResolveExecutorConfigFromString resolves executor configuration from string
+func (pm *ProcessManager) ResolveExecutorConfigFromString(executorName string) ExecutorConfig {
+	switch strings.ToLower(executorName) {
+	case "claude":
+		return ExecutorClaude
+	case "amp":
+		return ExecutorAmp
+	case "gemini":
+		return ExecutorGemini
+	case "opencode":
+		return ExecutorOpencode
+	default:
+		return ExecutorEcho
+	}
+}
+
+// CreateExecutorFromType creates an executor instance from executor type
+func (pm *ProcessManager) CreateExecutorFromType(executorType ExecutorType) Executor {
+	switch et := executorType.(type) {
+	case CodingAgentType:
+		return CreateExecutor(et.ExecutorConfig)
+	case FollowupCodingAgentType:
+		return CreateFollowupExecutor(et.ExecutorConfig, et.SessionID, et.Prompt)
+	default:
+		return CreateExecutor(ExecutorEcho)
+	}
+}
+
+// CreateExecutionProcessRecord creates a database record for an execution process
+func (pm *ProcessManager) CreateExecutionProcessRecord(attemptID, processID string, executorType ExecutorType, worktreePath string) (*models.VibeExecutionProcess, error) {
+	var command string
+	var processType string
+
+	switch et := executorType.(type) {
+	case CodingAgentType:
+		command = "executor"
+		processType = et.ExecutorConfig.String()
+	case FollowupCodingAgentType:
+		command = "followup_executor"
+		processType = et.ExecutorConfig.String()
+	case SetupScriptType:
+		command = "setup_script"
+		processType = "setupscript"
+	case DevServerType:
+		command = "dev_server"
+		processType = "devserver"
+	default:
+		command = "unknown"
+		processType = "unknown"
+	}
+
+	dbProcess := &models.VibeExecutionProcess{
+		Model: models.Model{
+			ID: processID,
+		},
+		AttemptID: attemptID,
+		Type:      processType,
+		Command:   command,
+		Status:    "pending",
+	}
+
+	return dbProcess, pm.db.Create(dbProcess).Error
+}
+
+// CreateExecutorSessionRecord creates a session record for coding agents
+func (pm *ProcessManager) CreateExecutorSessionRecord(attemptID, taskID, processID string) error {
+	// Get task to create prompt
+	var task models.VibeTask
+	if err := pm.db.First(&task, "id = ?", taskID).Error; err != nil {
+		return fmt.Errorf("task not found: %w", err)
+	}
+
+	// Create prompt from task
+	var prompt string
+	if task.Description != "" {
+		prompt = fmt.Sprintf("%s\n\n%s", task.Title, task.Description)
+	} else {
+		prompt = task.Title
+	}
+
+	sessionID := uuid.NewString()
+	session := &models.VibeExecutorSession{
+		Model: models.Model{
+			ID: sessionID,
+		},
+		AttemptID: attemptID,
+		SessionID: sessionID, // Use the same ID for both
+		Executor:  "claude",  // default executor
+		Prompt:    prompt,
+	}
+
+	return pm.db.Create(session).Error
 }

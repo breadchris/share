@@ -5,21 +5,20 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/aiapi/aiapi.go" beforeDir="false" afterPath="$PROJECT_DIR$/aiapi/aiapi.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/auth.go" beforeDir="false" afterPath="$PROJECT_DIR$/auth.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/coderunner.go" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/coderunner.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/db.go" beforeDir="false" afterPath="$PROJECT_DIR$/db/db.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow" beforeDir="false" afterPath="$PROJECT_DIR$/flow" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/config/environment.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/config/environment.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/slackbot/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/CLAUDE.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/slackbot/handlers.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/handlers.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/slackbot/session_activity_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/session_activity_test.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/slackbot/slackbot_integration_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/slackbot_integration_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/google_auth.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.work.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.work.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/item-collector" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/models.go" beforeDir="false" afterPath="$PROJECT_DIR$/models/models.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/share/share.xcodeproj/project.xcworkspace/xcuserdata/hacked.xcuserdatad/UserInterfaceState.xcuserstate" beforeDir="false" afterPath="$PROJECT_DIR$/share/share.xcodeproj/project.xcworkspace/xcuserdata/hacked.xcuserdatad/UserInterfaceState.xcuserstate" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vibekanban/git.go" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/git.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vibekanban/process.go" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/process.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vibekanban/vibekanban.go" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/vibekanban.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -61,6 +60,7 @@
     "Go Test.TestClaudeMigrate in github.com/breadchris/share/db.executor": "Run",
     "Go Test.TestKanban in github.com/breadchris/share.executor": "Debug",
     "Go Test.TestMigrate in github.com/breadchris/flow/db.executor": "Run",
+    "Go Test.TestSlackBot_PreprocessMessage in github.com/breadchris/flow/slackbot.executor": "Run",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
@@ -101,11 +101,11 @@
       <recent name="$PROJECT_DIR$/hmr/client" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/sheet" />
       <recent name="$PROJECT_DIR$/flow/db" />
       <recent name="$PROJECT_DIR$/justshare" />
       <recent name="$PROJECT_DIR$/flow" />
       <recent name="$PROJECT_DIR$/kanban/src/vendor/github.com/breadchris/share/kanban" />
-      <recent name="$PROJECT_DIR$/kanban/src" />
     </key>
   </component>
   <component name="RunManager" selected="Go Build.share">
@@ -173,18 +173,6 @@
       <pattern value="^\QTestClaudeIntegrationDemo\E$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestClaudeMigrate in github.com/breadchris/share/db" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
-      <module name="share" />
-      <working_directory value="$PROJECT_DIR$/db" />
-      <root_directory value="$PROJECT_DIR$" />
-      <kind value="PACKAGE" />
-      <package value="github.com/breadchris/share/db" />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$" />
-      <framework value="gotest" />
-      <pattern value="^\QTestClaudeMigrate\E$" />
-      <method v="2" />
-    </configuration>
     <configuration name="TestKanban in github.com/breadchris/share" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="share" />
       <working_directory value="$PROJECT_DIR$" />
@@ -208,6 +196,18 @@
       <pattern value="^\QTestMigrate\E$" />
       <method v="2" />
     </configuration>
+    <configuration name="TestSlackBot_PreprocessMessage in github.com/breadchris/flow/slackbot" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="share" />
+      <working_directory value="$PROJECT_DIR$/flow/slackbot" />
+      <root_directory value="$PROJECT_DIR$/flow" />
+      <kind value="PACKAGE" />
+      <package value="github.com/breadchris/flow/slackbot" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestSlackBot_PreprocessMessage\E$" />
+      <method v="2" />
+    </configuration>
     <configuration default="true" type="GoTestRunConfiguration" factoryName="Go Test">
       <module name="share" />
       <working_directory value="$PROJECT_DIR$" />
@@ -222,19 +222,19 @@
       <item itemvalue="Go Build.share" />
       <item itemvalue="Go Build.flow" />
       <item itemvalue="Go Build.xctf" />
+      <item itemvalue="Go Test.TestSlackBot_PreprocessMessage in github.com/breadchris/flow/slackbot" />
       <item itemvalue="Go Test.TestKanban in github.com/breadchris/share" />
       <item itemvalue="Go Test.TestMigrate in github.com/breadchris/flow/db" />
       <item itemvalue="Go Test.TestClaudeBasicFileModification in github.com/breadchris/flow/worklet" />
       <item itemvalue="Go Test.TestClaudeIntegrationDemo in github.com/breadchris/flow/worklet" />
-      <item itemvalue="Go Test.TestClaudeMigrate in github.com/breadchris/share/db" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Go Test.TestSlackBot_PreprocessMessage in github.com/breadchris/flow/slackbot" />
         <item itemvalue="Go Test.TestMigrate in github.com/breadchris/flow/db" />
         <item itemvalue="Go Test.TestKanban in github.com/breadchris/share" />
         <item itemvalue="Go Test.TestClaudeIntegrationDemo in github.com/breadchris/flow/worklet" />
         <item itemvalue="Go Test.TestClaudeBasicFileModification in github.com/breadchris/flow/worklet" />
-        <item itemvalue="Go Test.TestClaudeMigrate in github.com/breadchris/share/db" />
       </list>
     </recent_temporary>
   </component>
@@ -284,7 +284,7 @@
       <workItem from="1747973023098" duration="26954000" />
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
-      <workItem from="1750823408293" duration="320509000" />
+      <workItem from="1750823408293" duration="328555000" />
     </task>
     <servers />
   </component>

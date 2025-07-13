@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/breadchris/share/graveyard/claudemd"
 	"github.com/breadchris/share/graveyard/list"
 	"github.com/breadchris/share/graveyard/llm"
 	"github.com/breadchris/share/graveyard/paint"
@@ -70,7 +69,7 @@ func cspMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// CSP policy that allows Google Identity scripts and other required resources
 		csp := "default-src 'self'; " +
-			"script-src 'self' 'unsafe-inline' 'unsafe-eval' *; " +
+			"script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: *; " +
 			"style-src 'self' 'unsafe-inline' *; " +
 			"font-src 'self' *; " +
 			"img-src 'self' data: *; " +
@@ -397,7 +396,7 @@ func startServer(useTLS bool, port int) {
 	p("/coderunner", interpreted(coderunner.New))
 	p("/example", interpreted(example.New))
 	p("/kanban", interpreted(kanban.New))
-	p("/claudemd", interpreted(claudemd.New))
+	//p("/claudemd", interpreted(claudemd.New))
 	p("/docker", interpreted(docker.New))
 	p("/browser", interpreted(NewBrowser))
 	p("/awesomelist", interpreted(awesomelist.New))

@@ -1,15 +1,11 @@
 package vibekanban
 
 import (
-	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"path/filepath"
-	"strconv"
 	"time"
 
-	"github.com/breadchris/share/db"
 	"github.com/breadchris/share/models"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -576,7 +572,7 @@ func (s *VibeKanbanService) StartTaskAttempt(c *gin.Context) {
 }
 
 func (s *VibeKanbanService) GetAttemptDiff(c *gin.Context) {
-	projectID := c.Param("project_id")
+	_ = c.Param("project_id")
 	taskID := c.Param("task_id")
 	attemptID := c.Param("attempt_id")
 	userID := c.GetString("user_id")
@@ -611,7 +607,7 @@ func (s *VibeKanbanService) GetAttemptDiff(c *gin.Context) {
 }
 
 func (s *VibeKanbanService) MergeAttempt(c *gin.Context) {
-	projectID := c.Param("project_id")
+	_ = c.Param("project_id")
 	taskID := c.Param("task_id")
 	attemptID := c.Param("attempt_id")
 	userID := c.GetString("user_id")
@@ -684,7 +680,7 @@ func (s *VibeKanbanService) MergeAttempt(c *gin.Context) {
 // Process Management endpoints
 
 func (s *VibeKanbanService) StartSetupScript(c *gin.Context) {
-	projectID := c.Param("project_id")
+	_ = c.Param("project_id")
 	taskID := c.Param("task_id")
 	attemptID := c.Param("attempt_id")
 	userID := c.GetString("user_id")
@@ -723,7 +719,7 @@ func (s *VibeKanbanService) StartSetupScript(c *gin.Context) {
 }
 
 func (s *VibeKanbanService) StartCodingAgent(c *gin.Context) {
-	projectID := c.Param("project_id")
+	_ = c.Param("project_id")
 	taskID := c.Param("task_id")
 	attemptID := c.Param("attempt_id")
 	userID := c.GetString("user_id")
@@ -757,23 +753,26 @@ func (s *VibeKanbanService) StartCodingAgent(c *gin.Context) {
 		return
 	}
 
-	process, err := s.processManager.StartCodingAgent(
+	// Use new executor system with automatic setup
+	err := s.processManager.AutoSetupAndExecute(
 		attemptID,
-		attempt.Executor,
-		req.Prompt,
-		attempt.WorktreePath,
-		nil, // env vars
+		taskID,
+		attempt.Task.ProjectID,
+		"coding_agent",
+		map[string]interface{}{
+			"prompt": req.Prompt,
+		},
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to start coding agent: %v", err)})
 		return
 	}
 
-	c.JSON(http.StatusOK, process)
+	c.JSON(http.StatusOK, gin.H{"message": "Coding agent started successfully"})
 }
 
 func (s *VibeKanbanService) StartDevServer(c *gin.Context) {
-	projectID := c.Param("project_id")
+	_ = c.Param("project_id")
 	taskID := c.Param("task_id")
 	attemptID := c.Param("attempt_id")
 	userID := c.GetString("user_id")
@@ -812,22 +811,73 @@ func (s *VibeKanbanService) StartDevServer(c *gin.Context) {
 		port = 3000 // default port
 	}
 
-	process, err := s.processManager.StartDevServer(
+	// Use new executor system with automatic setup
+	err := s.processManager.AutoSetupAndExecute(
 		attemptID,
-		attempt.Task.Project.DevScript,
-		attempt.WorktreePath,
-		port,
+		taskID,
+		attempt.Task.ProjectID,
+		"dev_server",
+		map[string]interface{}{
+			"port": port,
+		},
 	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to start dev server: %v", err)})
 		return
 	}
 
-	c.JSON(http.StatusOK, process)
+	c.JSON(http.StatusOK, gin.H{"message": "Dev server started successfully", "port": port})
+}
+
+func (s *VibeKanbanService) StartFollowupExecution(c *gin.Context) {
+	_ = c.Param("project_id")
+	taskID := c.Param("task_id")
+	attemptID := c.Param("attempt_id")
+	userID := c.GetString("user_id")
+
+	var req struct {
+		Prompt string `json:"prompt" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var attempt models.VibeTaskAttempt
+	result := s.db.Where("id = ? AND task_id = ? AND user_id = ?", attemptID, taskID, userID).
+		Preload("Task").
+		First(&attempt)
+
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Attempt not found"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify attempt"})
+		}
+		return
+	}
+
+	// Use new executor system with follow-up support
+	err := s.processManager.AutoSetupAndExecute(
+		attemptID,
+		taskID,
+		attempt.Task.ProjectID,
+		"followup",
+		map[string]interface{}{
+			"prompt": req.Prompt,
+		},
+	)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to start follow-up execution: %v", err)})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Follow-up execution started successfully"})
 }
 
 func (s *VibeKanbanService) GetProcesses(c *gin.Context) {
-	projectID := c.Param("project_id")
+	_ = c.Param("project_id")
 	taskID := c.Param("task_id")
 	attemptID := c.Param("attempt_id")
 	userID := c.GetString("user_id")
@@ -954,8 +1004,25 @@ func (s *VibeKanbanService) RegisterRoutes(r *gin.RouterGroup) {
 				attempts.POST("/:attempt_id/start", s.StartTaskAttempt)
 				attempts.GET("/:attempt_id/diff", s.GetAttemptDiff)
 				attempts.POST("/:attempt_id/merge", s.MergeAttempt)
+
+				// Process management for attempts
+				processes := attempts.Group("/:attempt_id/processes")
+				{
+					processes.GET("", s.GetProcesses)
+					processes.POST("/setup", s.StartSetupScript)
+					processes.POST("/agent", s.StartCodingAgent)
+					processes.POST("/devserver", s.StartDevServer)
+					processes.POST("/followup", s.StartFollowupExecution)
+				}
 			}
 		}
+	}
+
+	// Process management (for any process by ID)
+	processes := r.Group("/processes")
+	{
+		processes.DELETE("/:process_id", s.KillProcess)
+		processes.GET("/:process_id/output", s.GetProcessOutput)
 	}
 }
 
