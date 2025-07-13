@@ -1,6 +1,19 @@
 // Authentication utilities for JustShare
 import { getErrorMessage } from './api';
 
+// Type declarations for iOS WebKit message handlers
+declare global {
+  interface Window {
+    webkit?: {
+      messageHandlers?: {
+        authHandler?: {
+          postMessage: (message: any) => void;
+        };
+      };
+    };
+  }
+}
+
 const API_BASE = '/api';
 
 export interface User {
@@ -52,11 +65,24 @@ export async function checkAuthStatus(): Promise<AuthState> {
 
 /**
  * Initiate Google OAuth login by redirecting to the auth endpoint
+ * Detects if running in iOS WebView and triggers native authentication
  */
 export function loginWithGoogle(): void {
-  // Redirect to Google OAuth endpoint
-  // The backend will handle the OAuth flow and redirect back to the app
-  window.location.href = '/auth/google';
+  // Check if running in iOS WebView with our native message handlers
+  if (window.webkit?.messageHandlers?.authHandler) {
+    console.log('Detected iOS WebView, triggering native authentication');
+    
+    // Trigger native iOS authentication flow
+    window.webkit.messageHandlers.authHandler.postMessage({
+      type: 'googleAuth',
+      authURL: '/auth/google'
+    });
+  } else {
+    console.log('Using standard web OAuth flow');
+    
+    // Standard web OAuth redirect for browsers
+    window.location.href = '/auth/google';
+  }
 }
 
 /**

@@ -1,13 +1,14 @@
 package vibekanban
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"path/filepath"
-	"time"
+	"strings"
 
+	"github.com/breadchris/share/deps"
 	"github.com/breadchris/share/models"
-	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -26,49 +27,143 @@ func NewVibeKanbanService(database *gorm.DB) *VibeKanbanService {
 	}
 }
 
+// HTTP Helper Functions
+
+// writeJSON writes a JSON response with the given status code and data
+func writeJSON(w http.ResponseWriter, status int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		http.Error(w, "Failed to encode JSON response", http.StatusInternalServerError)
+	}
+}
+
+// writeError writes a JSON error response with the given status code and message
+func writeError(w http.ResponseWriter, status int, message string) {
+	writeJSON(w, status, map[string]string{"error": message})
+}
+
+// parseJSON parses JSON from request body into the provided interface
+func parseJSON(r *http.Request, v interface{}) error {
+	if r.Header.Get("Content-Type") != "application/json" {
+		return fmt.Errorf("content-type must be application/json")
+	}
+	defer r.Body.Close()
+	return json.NewDecoder(r.Body).Decode(v)
+}
+
+// getUserID extracts user ID from request (from headers, JWT, or context)
+func getUserID(r *http.Request) string {
+	// For now, get from header - in real implementation this would be from JWT/auth middleware
+	userID := r.Header.Get("X-User-ID")
+	if userID == "" {
+		// Try getting from context if set by middleware
+		if userIDCtx := r.Context().Value("user_id"); userIDCtx != nil {
+			if uid, ok := userIDCtx.(string); ok {
+				return uid
+			}
+		}
+	}
+	return userID
+}
+
+// extractPathParam extracts a parameter from the URL path
+// For Go 1.22+ this can use r.PathValue(), for older versions we need manual parsing
+func extractPathParam(r *http.Request, param string) string {
+	// Try Go 1.22+ PathValue first
+	if value := r.PathValue(param); value != "" {
+		return value
+	}
+	
+	// Fallback for older Go versions - simple path parsing
+	path := strings.TrimPrefix(r.URL.Path, "/")
+	parts := strings.Split(path, "/")
+	
+	// Handle common patterns
+	switch param {
+	case "id":
+		// /projects/{id} - projects/123
+		if len(parts) >= 2 && parts[0] == "projects" {
+			return parts[1]
+		}
+	case "project_id":
+		// /projects/{project_id}/tasks - projects/123/tasks
+		if len(parts) >= 1 && parts[0] == "projects" {
+			return parts[1]
+		}
+	case "task_id":
+		// /projects/{project_id}/tasks/{task_id} - projects/123/tasks/456
+		if len(parts) >= 4 && parts[0] == "projects" && parts[2] == "tasks" {
+			return parts[3]
+		}
+	case "attempt_id":
+		// /projects/{project_id}/tasks/{task_id}/attempts/{attempt_id}
+		if len(parts) >= 6 && parts[4] == "attempts" {
+			return parts[5]
+		}
+	case "process_id":
+		// /processes/{process_id}
+		if len(parts) >= 2 && parts[0] == "processes" {
+			return parts[1]
+		}
+	}
+	
+	return ""
+}
+
 // Project endpoints
 
-func (s *VibeKanbanService) GetProjects(c *gin.Context) {
-	userID := c.GetString("user_id")
+func (s *VibeKanbanService) getProjects(w http.ResponseWriter, r *http.Request) {
+	userID := getUserID(r)
 	if userID == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		writeError(w, http.StatusUnauthorized, "User not authenticated")
 		return
 	}
 
 	var projects []models.VibeProject
 	result := s.db.Where("user_id = ?", userID).Preload("Tasks").Find(&projects)
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch projects"})
+		writeError(w, http.StatusInternalServerError, "Failed to fetch projects")
 		return
 	}
 
-	c.JSON(http.StatusOK, projects)
+	writeJSON(w, http.StatusOK, projects)
 }
 
-func (s *VibeKanbanService) CreateProject(c *gin.Context) {
-	userID := c.GetString("user_id")
+func (s *VibeKanbanService) createProject(w http.ResponseWriter, r *http.Request) {
+	userID := getUserID(r)
 	if userID == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		writeError(w, http.StatusUnauthorized, "User not authenticated")
 		return
 	}
 
 	var req struct {
-		Name          string                 `json:"name" binding:"required"`
-		GitRepoPath   string                 `json:"git_repo_path" binding:"required"`
+		Name          string                 `json:"name"`
+		GitRepoPath   string                 `json:"git_repo_path"`
 		SetupScript   string                 `json:"setup_script"`
 		DevScript     string                 `json:"dev_script"`
 		DefaultBranch string                 `json:"default_branch"`
 		Config        map[string]interface{} `json:"config"`
 	}
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := parseJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Validate required fields
+	if req.Name == "" {
+		writeError(w, http.StatusBadRequest, "name is required")
+		return
+	}
+	if req.GitRepoPath == "" {
+		writeError(w, http.StatusBadRequest, "git_repo_path is required")
 		return
 	}
 
 	// Validate git repo path
 	if !filepath.IsAbs(req.GitRepoPath) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Git repository path must be absolute"})
+		writeError(w, http.StatusBadRequest, "Git repository path must be absolute")
 		return
 	}
 
@@ -91,16 +186,26 @@ func (s *VibeKanbanService) CreateProject(c *gin.Context) {
 
 	result := s.db.Create(&project)
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create project"})
+		writeError(w, http.StatusInternalServerError, "Failed to create project")
 		return
 	}
 
-	c.JSON(http.StatusCreated, project)
+	writeJSON(w, http.StatusCreated, project)
 }
 
-func (s *VibeKanbanService) GetProject(c *gin.Context) {
-	projectID := c.Param("id")
-	userID := c.GetString("user_id")
+func (s *VibeKanbanService) getProject(w http.ResponseWriter, r *http.Request) {
+	projectID := extractPathParam(r, "id")
+	userID := getUserID(r)
+	
+	if userID == "" {
+		writeError(w, http.StatusUnauthorized, "User not authenticated")
+		return
+	}
+	
+	if projectID == "" {
+		writeError(w, http.StatusBadRequest, "Project ID is required")
+		return
+	}
 
 	var project models.VibeProject
 	result := s.db.Where("id = ? AND user_id = ?", projectID, userID).
@@ -110,19 +215,29 @@ func (s *VibeKanbanService) GetProject(c *gin.Context) {
 
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Project not found"})
+			writeError(w, http.StatusNotFound, "Project not found")
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch project"})
+			writeError(w, http.StatusInternalServerError, "Failed to fetch project")
 		}
 		return
 	}
 
-	c.JSON(http.StatusOK, project)
+	writeJSON(w, http.StatusOK, project)
 }
 
-func (s *VibeKanbanService) UpdateProject(c *gin.Context) {
-	projectID := c.Param("id")
-	userID := c.GetString("user_id")
+func (s *VibeKanbanService) updateProject(w http.ResponseWriter, r *http.Request) {
+	projectID := extractPathParam(r, "id")
+	userID := getUserID(r)
+	
+	if userID == "" {
+		writeError(w, http.StatusUnauthorized, "User not authenticated")
+		return
+	}
+	
+	if projectID == "" {
+		writeError(w, http.StatusBadRequest, "Project ID is required")
+		return
+	}
 
 	var req struct {
 		Name          string                 `json:"name"`
@@ -133,8 +248,8 @@ func (s *VibeKanbanService) UpdateProject(c *gin.Context) {
 		Config        map[string]interface{} `json:"config"`
 	}
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := parseJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -142,9 +257,9 @@ func (s *VibeKanbanService) UpdateProject(c *gin.Context) {
 	result := s.db.Where("id = ? AND user_id = ?", projectID, userID).First(&project)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Project not found"})
+			writeError(w, http.StatusNotFound, "Project not found")
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch project"})
+			writeError(w, http.StatusInternalServerError, "Failed to fetch project")
 		}
 		return
 	}
@@ -155,7 +270,7 @@ func (s *VibeKanbanService) UpdateProject(c *gin.Context) {
 	}
 	if req.GitRepoPath != "" {
 		if !filepath.IsAbs(req.GitRepoPath) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Git repository path must be absolute"})
+			writeError(w, http.StatusBadRequest, "Git repository path must be absolute")
 			return
 		}
 		project.GitRepoPath = req.GitRepoPath
@@ -171,45 +286,65 @@ func (s *VibeKanbanService) UpdateProject(c *gin.Context) {
 
 	result = s.db.Save(&project)
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update project"})
+		writeError(w, http.StatusInternalServerError, "Failed to update project")
 		return
 	}
 
-	c.JSON(http.StatusOK, project)
+	writeJSON(w, http.StatusOK, project)
 }
 
-func (s *VibeKanbanService) DeleteProject(c *gin.Context) {
-	projectID := c.Param("id")
-	userID := c.GetString("user_id")
+func (s *VibeKanbanService) deleteProject(w http.ResponseWriter, r *http.Request) {
+	projectID := extractPathParam(r, "id")
+	userID := getUserID(r)
+	
+	if userID == "" {
+		writeError(w, http.StatusUnauthorized, "User not authenticated")
+		return
+	}
+	
+	if projectID == "" {
+		writeError(w, http.StatusBadRequest, "Project ID is required")
+		return
+	}
 
 	result := s.db.Where("id = ? AND user_id = ?", projectID, userID).Delete(&models.VibeProject{})
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete project"})
+		writeError(w, http.StatusInternalServerError, "Failed to delete project")
 		return
 	}
 
 	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Project not found"})
+		writeError(w, http.StatusNotFound, "Project not found")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Project deleted successfully"})
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Project deleted successfully"})
 }
 
 // Task endpoints
 
-func (s *VibeKanbanService) GetTasks(c *gin.Context) {
-	projectID := c.Param("project_id")
-	userID := c.GetString("user_id")
+func (s *VibeKanbanService) getTasks(w http.ResponseWriter, r *http.Request) {
+	projectID := extractPathParam(r, "project_id")
+	userID := getUserID(r)
+	
+	if userID == "" {
+		writeError(w, http.StatusUnauthorized, "User not authenticated")
+		return
+	}
+	
+	if projectID == "" {
+		writeError(w, http.StatusBadRequest, "Project ID is required")
+		return
+	}
 
 	// Verify project belongs to user
 	var project models.VibeProject
 	result := s.db.Where("id = ? AND user_id = ?", projectID, userID).First(&project)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Project not found"})
+			writeError(w, http.StatusNotFound, "Project not found")
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify project"})
+			writeError(w, http.StatusInternalServerError, "Failed to verify project")
 		}
 		return
 	}
@@ -222,31 +357,41 @@ func (s *VibeKanbanService) GetTasks(c *gin.Context) {
 		Find(&tasks)
 
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch tasks"})
+		writeError(w, http.StatusInternalServerError, "Failed to fetch tasks")
 		return
 	}
 
-	c.JSON(http.StatusOK, tasks)
+	writeJSON(w, http.StatusOK, tasks)
 }
 
-func (s *VibeKanbanService) CreateTask(c *gin.Context) {
-	projectID := c.Param("project_id")
-	userID := c.GetString("user_id")
+func (s *VibeKanbanService) createTask(w http.ResponseWriter, r *http.Request) {
+	projectID := extractPathParam(r, "project_id")
+	userID := getUserID(r)
+	
+	if userID == "" {
+		writeError(w, http.StatusUnauthorized, "User not authenticated")
+		return
+	}
+	
+	if projectID == "" {
+		writeError(w, http.StatusBadRequest, "Project ID is required")
+		return
+	}
 
 	// Verify project belongs to user
 	var project models.VibeProject
 	result := s.db.Where("id = ? AND user_id = ?", projectID, userID).First(&project)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Project not found"})
+			writeError(w, http.StatusNotFound, "Project not found")
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify project"})
+			writeError(w, http.StatusInternalServerError, "Failed to verify project")
 		}
 		return
 	}
 
 	var req struct {
-		Title       string                 `json:"title" binding:"required"`
+		Title       string                 `json:"title"`
 		Description string                 `json:"description"`
 		Status      string                 `json:"status"`
 		Priority    string                 `json:"priority"`
@@ -254,8 +399,13 @@ func (s *VibeKanbanService) CreateTask(c *gin.Context) {
 		Metadata    map[string]interface{} `json:"metadata"`
 	}
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := parseJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if req.Title == "" {
+		writeError(w, http.StatusBadRequest, "title is required")
 		return
 	}
 
@@ -282,17 +432,32 @@ func (s *VibeKanbanService) CreateTask(c *gin.Context) {
 
 	result = s.db.Create(&task)
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create task"})
+		writeError(w, http.StatusInternalServerError, "Failed to create task")
 		return
 	}
 
-	c.JSON(http.StatusCreated, task)
+	writeJSON(w, http.StatusCreated, task)
 }
 
-func (s *VibeKanbanService) UpdateTask(c *gin.Context) {
-	projectID := c.Param("project_id")
-	taskID := c.Param("task_id")
-	userID := c.GetString("user_id")
+func (s *VibeKanbanService) updateTask(w http.ResponseWriter, r *http.Request) {
+	projectID := extractPathParam(r, "project_id")
+	taskID := extractPathParam(r, "task_id")
+	userID := getUserID(r)
+	
+	if userID == "" {
+		writeError(w, http.StatusUnauthorized, "User not authenticated")
+		return
+	}
+	
+	if projectID == "" {
+		writeError(w, http.StatusBadRequest, "Project ID is required")
+		return
+	}
+	
+	if taskID == "" {
+		writeError(w, http.StatusBadRequest, "Task ID is required")
+		return
+	}
 
 	var req struct {
 		Title       string                 `json:"title"`
@@ -303,8 +468,8 @@ func (s *VibeKanbanService) UpdateTask(c *gin.Context) {
 		Metadata    map[string]interface{} `json:"metadata"`
 	}
 
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := parseJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -312,9 +477,9 @@ func (s *VibeKanbanService) UpdateTask(c *gin.Context) {
 	result := s.db.Where("id = ? AND project_id = ? AND user_id = ?", taskID, projectID, userID).First(&task)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
+			writeError(w, http.StatusNotFound, "Task not found")
 		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch task"})
+			writeError(w, http.StatusInternalServerError, "Failed to fetch task")
 		}
 		return
 	}
@@ -339,697 +504,142 @@ func (s *VibeKanbanService) UpdateTask(c *gin.Context) {
 
 	result = s.db.Save(&task)
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update task"})
+		writeError(w, http.StatusInternalServerError, "Failed to update task")
 		return
 	}
 
-	c.JSON(http.StatusOK, task)
+	writeJSON(w, http.StatusOK, task)
 }
 
-func (s *VibeKanbanService) DeleteTask(c *gin.Context) {
-	projectID := c.Param("project_id")
-	taskID := c.Param("task_id")
-	userID := c.GetString("user_id")
+func (s *VibeKanbanService) deleteTask(w http.ResponseWriter, r *http.Request) {
+	projectID := extractPathParam(r, "project_id")
+	taskID := extractPathParam(r, "task_id")
+	userID := getUserID(r)
+	
+	if userID == "" {
+		writeError(w, http.StatusUnauthorized, "User not authenticated")
+		return
+	}
+	
+	if projectID == "" {
+		writeError(w, http.StatusBadRequest, "Project ID is required")
+		return
+	}
+	
+	if taskID == "" {
+		writeError(w, http.StatusBadRequest, "Task ID is required")
+		return
+	}
 
 	result := s.db.Where("id = ? AND project_id = ? AND user_id = ?", taskID, projectID, userID).Delete(&models.VibeTask{})
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete task"})
+		writeError(w, http.StatusInternalServerError, "Failed to delete task")
 		return
 	}
 
 	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
+		writeError(w, http.StatusNotFound, "Task not found")
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Task deleted successfully"})
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Task deleted successfully"})
 }
 
-// Task Attempt endpoints
+// Stub functions for remaining endpoints (to be implemented later)
 
-func (s *VibeKanbanService) GetTaskAttempts(c *gin.Context) {
-	projectID := c.Param("project_id")
-	taskID := c.Param("task_id")
-	userID := c.GetString("user_id")
-
-	// Verify task belongs to user
-	var task models.VibeTask
-	result := s.db.Where("id = ? AND project_id = ? AND user_id = ?", taskID, projectID, userID).First(&task)
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify task"})
-		}
-		return
-	}
-
-	var attempts []models.VibeTaskAttempt
-	result = s.db.Where("task_id = ?", taskID).
-		Preload("Processes").
-		Preload("Sessions").
-		Find(&attempts)
-
-	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch attempts"})
-		return
-	}
-
-	c.JSON(http.StatusOK, attempts)
+func (s *VibeKanbanService) getTaskAttempts(w http.ResponseWriter, r *http.Request) {
+	writeError(w, http.StatusNotImplemented, "Task attempts endpoint not yet implemented")
 }
 
-func (s *VibeKanbanService) CreateTaskAttempt(c *gin.Context) {
-	projectID := c.Param("project_id")
-	taskID := c.Param("task_id")
-	userID := c.GetString("user_id")
-
-	// Verify task belongs to user
-	var task models.VibeTask
-	result := s.db.Where("id = ? AND project_id = ? AND user_id = ?", taskID, projectID, userID).First(&task)
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Task not found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify task"})
-		}
-		return
-	}
-
-	var req struct {
-		Executor      string                 `json:"executor" binding:"required"`
-		BaseBranch    string                 `json:"base_branch"`
-		Configuration map[string]interface{} `json:"configuration"`
-		Metadata      map[string]interface{} `json:"metadata"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	attempt := models.VibeTaskAttempt{
-		Model: models.Model{
-			ID: uuid.NewString(),
-		},
-		TaskID:        taskID,
-		Executor:      req.Executor,
-		BaseBranch:    req.BaseBranch,
-		Status:        "pending",
-		UserID:        userID,
-		Configuration: models.MakeJSONField(req.Configuration),
-		Metadata:      models.MakeJSONField(req.Metadata),
-	}
-
-	if attempt.BaseBranch == "" {
-		// Get project to use default branch
-		var project models.VibeProject
-		s.db.Where("id = ?", projectID).First(&project)
-		attempt.BaseBranch = project.DefaultBranch
-	}
-
-	result = s.db.Create(&attempt)
-	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create attempt"})
-		return
-	}
-
-	c.JSON(http.StatusCreated, attempt)
+func (s *VibeKanbanService) createTaskAttempt(w http.ResponseWriter, r *http.Request) {
+	writeError(w, http.StatusNotImplemented, "Create task attempt endpoint not yet implemented")
 }
 
-// Git endpoints
-
-func (s *VibeKanbanService) GetProjectBranches(c *gin.Context) {
-	projectID := c.Param("id")
-	userID := c.GetString("user_id")
-
-	var project models.VibeProject
-	result := s.db.Where("id = ? AND user_id = ?", projectID, userID).First(&project)
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Project not found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch project"})
-		}
-		return
-	}
-
-	branches, err := s.gitService.GetBranches(project.GitRepoPath)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to get branches: %v", err)})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"branches": branches})
+func (s *VibeKanbanService) getProjectBranches(w http.ResponseWriter, r *http.Request) {
+	writeError(w, http.StatusNotImplemented, "Get project branches endpoint not yet implemented")
 }
 
-func (s *VibeKanbanService) CreateProjectBranch(c *gin.Context) {
-	projectID := c.Param("id")
-	userID := c.GetString("user_id")
-
-	var req struct {
-		BranchName string `json:"branch_name" binding:"required"`
-		BaseBranch string `json:"base_branch" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	var project models.VibeProject
-	result := s.db.Where("id = ? AND user_id = ?", projectID, userID).First(&project)
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Project not found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch project"})
-		}
-		return
-	}
-
-	err := s.gitService.CreateBranch(project.GitRepoPath, req.BranchName, req.BaseBranch)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to create branch: %v", err)})
-		return
-	}
-
-	c.JSON(http.StatusCreated, gin.H{"message": "Branch created successfully"})
+func (s *VibeKanbanService) createProjectBranch(w http.ResponseWriter, r *http.Request) {
+	writeError(w, http.StatusNotImplemented, "Create project branch endpoint not yet implemented")
 }
 
-func (s *VibeKanbanService) StartTaskAttempt(c *gin.Context) {
-	projectID := c.Param("project_id")
-	taskID := c.Param("task_id")
-	attemptID := c.Param("attempt_id")
-	userID := c.GetString("user_id")
-
-	// Verify attempt belongs to user
-	var attempt models.VibeTaskAttempt
-	result := s.db.Where("id = ? AND task_id = ? AND user_id = ?", attemptID, taskID, userID).
-		Preload("Task").
-		Preload("Task.Project").
-		First(&attempt)
-
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Attempt not found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify attempt"})
-		}
-		return
-	}
-
-	if attempt.Task.Project.ID != projectID {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Project ID mismatch"})
-		return
-	}
-
-	// Create worktree for isolated execution
-	worktreePath, branchName, err := s.gitService.CreateWorktree(
-		attempt.Task.Project.GitRepoPath,
-		attempt.BaseBranch,
-	)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to create worktree: %v", err)})
-		return
-	}
-
-	// Update attempt with worktree info
-	now := time.Now()
-	attempt.WorktreePath = worktreePath
-	attempt.Branch = branchName
-	attempt.Status = "running"
-	attempt.StartTime = &now
-
-	result = s.db.Save(&attempt)
-	if result.Error != nil {
-		// Cleanup worktree on failure
-		s.gitService.RemoveWorktree(attempt.Task.Project.GitRepoPath, worktreePath)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update attempt"})
-		return
-	}
-
-	c.JSON(http.StatusOK, attempt)
+func (s *VibeKanbanService) startTaskAttempt(w http.ResponseWriter, r *http.Request) {
+	writeError(w, http.StatusNotImplemented, "Start task attempt endpoint not yet implemented")
 }
 
-func (s *VibeKanbanService) GetAttemptDiff(c *gin.Context) {
-	_ = c.Param("project_id")
-	taskID := c.Param("task_id")
-	attemptID := c.Param("attempt_id")
-	userID := c.GetString("user_id")
-
-	var attempt models.VibeTaskAttempt
-	result := s.db.Where("id = ? AND task_id = ? AND user_id = ?", attemptID, taskID, userID).First(&attempt)
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Attempt not found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify attempt"})
-		}
-		return
-	}
-
-	if attempt.WorktreePath == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Worktree not initialized"})
-		return
-	}
-
-	diff, err := s.gitService.GetDiffFromBaseBranch(attempt.WorktreePath, attempt.BaseBranch)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to get diff: %v", err)})
-		return
-	}
-
-	// Cache the diff in the database
-	attempt.GitDiff = diff
-	s.db.Save(&attempt)
-
-	c.JSON(http.StatusOK, gin.H{"diff": diff})
+func (s *VibeKanbanService) getAttemptDiff(w http.ResponseWriter, r *http.Request) {
+	writeError(w, http.StatusNotImplemented, "Get attempt diff endpoint not yet implemented")
 }
 
-func (s *VibeKanbanService) MergeAttempt(c *gin.Context) {
-	_ = c.Param("project_id")
-	taskID := c.Param("task_id")
-	attemptID := c.Param("attempt_id")
-	userID := c.GetString("user_id")
-
-	var attempt models.VibeTaskAttempt
-	result := s.db.Where("id = ? AND task_id = ? AND user_id = ?", attemptID, taskID, userID).
-		Preload("Task").
-		Preload("Task.Project").
-		First(&attempt)
-
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Attempt not found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify attempt"})
-		}
-		return
-	}
-
-	if attempt.WorktreePath == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Worktree not initialized"})
-		return
-	}
-
-	// Commit changes in worktree
-	commitMessage := fmt.Sprintf("Vibe Kanban Task: %s", attempt.Task.Title)
-	commitHash, err := s.gitService.CommitChanges(attempt.WorktreePath, commitMessage)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to commit changes: %v", err)})
-		return
-	}
-
-	// Merge branch into base branch
-	mergeCommitHash, err := s.gitService.MergeBranch(
-		attempt.Task.Project.GitRepoPath,
-		attempt.Branch,
-		attempt.BaseBranch,
-	)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to merge branch: %v", err)})
-		return
-	}
-
-	// Update attempt
-	now := time.Now()
-	attempt.MergeCommit = mergeCommitHash
-	attempt.Status = "completed"
-	attempt.EndTime = &now
-
-	result = s.db.Save(&attempt)
-	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update attempt"})
-		return
-	}
-
-	// Update task status
-	attempt.Task.Status = "done"
-	s.db.Save(attempt.Task)
-
-	// Cleanup worktree
-	s.gitService.RemoveWorktree(attempt.Task.Project.GitRepoPath, attempt.WorktreePath)
-
-	c.JSON(http.StatusOK, gin.H{
-		"message":           "Changes merged successfully",
-		"commit_hash":       commitHash,
-		"merge_commit_hash": mergeCommitHash,
-	})
+func (s *VibeKanbanService) mergeAttempt(w http.ResponseWriter, r *http.Request) {
+	writeError(w, http.StatusNotImplemented, "Merge attempt endpoint not yet implemented")
 }
 
-// Process Management endpoints
-
-func (s *VibeKanbanService) StartSetupScript(c *gin.Context) {
-	_ = c.Param("project_id")
-	taskID := c.Param("task_id")
-	attemptID := c.Param("attempt_id")
-	userID := c.GetString("user_id")
-
-	var attempt models.VibeTaskAttempt
-	result := s.db.Where("id = ? AND task_id = ? AND user_id = ?", attemptID, taskID, userID).
-		Preload("Task").
-		Preload("Task.Project").
-		First(&attempt)
-
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Attempt not found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify attempt"})
-		}
-		return
-	}
-
-	if attempt.WorktreePath == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Worktree not initialized"})
-		return
-	}
-
-	process, err := s.processManager.StartSetupScript(
-		attemptID,
-		attempt.Task.Project.SetupScript,
-		attempt.WorktreePath,
-	)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to start setup script: %v", err)})
-		return
-	}
-
-	c.JSON(http.StatusOK, process)
+func (s *VibeKanbanService) startSetupScript(w http.ResponseWriter, r *http.Request) {
+	writeError(w, http.StatusNotImplemented, "Start setup script endpoint not yet implemented")
 }
 
-func (s *VibeKanbanService) StartCodingAgent(c *gin.Context) {
-	_ = c.Param("project_id")
-	taskID := c.Param("task_id")
-	attemptID := c.Param("attempt_id")
-	userID := c.GetString("user_id")
-
-	var req struct {
-		Prompt string `json:"prompt" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	var attempt models.VibeTaskAttempt
-	result := s.db.Where("id = ? AND task_id = ? AND user_id = ?", attemptID, taskID, userID).
-		Preload("Task").
-		Preload("Task.Project").
-		First(&attempt)
-
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Attempt not found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify attempt"})
-		}
-		return
-	}
-
-	if attempt.WorktreePath == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Worktree not initialized"})
-		return
-	}
-
-	// Use new executor system with automatic setup
-	err := s.processManager.AutoSetupAndExecute(
-		attemptID,
-		taskID,
-		attempt.Task.ProjectID,
-		"coding_agent",
-		map[string]interface{}{
-			"prompt": req.Prompt,
-		},
-	)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to start coding agent: %v", err)})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Coding agent started successfully"})
+func (s *VibeKanbanService) startCodingAgent(w http.ResponseWriter, r *http.Request) {
+	writeError(w, http.StatusNotImplemented, "Start coding agent endpoint not yet implemented")
 }
 
-func (s *VibeKanbanService) StartDevServer(c *gin.Context) {
-	_ = c.Param("project_id")
-	taskID := c.Param("task_id")
-	attemptID := c.Param("attempt_id")
-	userID := c.GetString("user_id")
-
-	var req struct {
-		Port int `json:"port"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	var attempt models.VibeTaskAttempt
-	result := s.db.Where("id = ? AND task_id = ? AND user_id = ?", attemptID, taskID, userID).
-		Preload("Task").
-		Preload("Task.Project").
-		First(&attempt)
-
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Attempt not found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify attempt"})
-		}
-		return
-	}
-
-	if attempt.WorktreePath == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Worktree not initialized"})
-		return
-	}
-
-	port := req.Port
-	if port == 0 {
-		port = 3000 // default port
-	}
-
-	// Use new executor system with automatic setup
-	err := s.processManager.AutoSetupAndExecute(
-		attemptID,
-		taskID,
-		attempt.Task.ProjectID,
-		"dev_server",
-		map[string]interface{}{
-			"port": port,
-		},
-	)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to start dev server: %v", err)})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Dev server started successfully", "port": port})
+func (s *VibeKanbanService) startDevServer(w http.ResponseWriter, r *http.Request) {
+	writeError(w, http.StatusNotImplemented, "Start dev server endpoint not yet implemented")
 }
 
-func (s *VibeKanbanService) StartFollowupExecution(c *gin.Context) {
-	_ = c.Param("project_id")
-	taskID := c.Param("task_id")
-	attemptID := c.Param("attempt_id")
-	userID := c.GetString("user_id")
-
-	var req struct {
-		Prompt string `json:"prompt" binding:"required"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	var attempt models.VibeTaskAttempt
-	result := s.db.Where("id = ? AND task_id = ? AND user_id = ?", attemptID, taskID, userID).
-		Preload("Task").
-		First(&attempt)
-
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Attempt not found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify attempt"})
-		}
-		return
-	}
-
-	// Use new executor system with follow-up support
-	err := s.processManager.AutoSetupAndExecute(
-		attemptID,
-		taskID,
-		attempt.Task.ProjectID,
-		"followup",
-		map[string]interface{}{
-			"prompt": req.Prompt,
-		},
-	)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to start follow-up execution: %v", err)})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Follow-up execution started successfully"})
+func (s *VibeKanbanService) startFollowupExecution(w http.ResponseWriter, r *http.Request) {
+	writeError(w, http.StatusNotImplemented, "Start followup execution endpoint not yet implemented")
 }
 
-func (s *VibeKanbanService) GetProcesses(c *gin.Context) {
-	_ = c.Param("project_id")
-	taskID := c.Param("task_id")
-	attemptID := c.Param("attempt_id")
-	userID := c.GetString("user_id")
-
-	// Verify attempt belongs to user
-	var attempt models.VibeTaskAttempt
-	result := s.db.Where("id = ? AND task_id = ? AND user_id = ?", attemptID, taskID, userID).First(&attempt)
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Attempt not found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify attempt"})
-		}
-		return
-	}
-
-	var processes []models.VibeExecutionProcess
-	result = s.db.Where("attempt_id = ?", attemptID).Find(&processes)
-	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch processes"})
-		return
-	}
-
-	c.JSON(http.StatusOK, processes)
+func (s *VibeKanbanService) getProcesses(w http.ResponseWriter, r *http.Request) {
+	writeError(w, http.StatusNotImplemented, "Get processes endpoint not yet implemented")
 }
 
-func (s *VibeKanbanService) KillProcess(c *gin.Context) {
-	processID := c.Param("process_id")
-	userID := c.GetString("user_id")
-
-	// Verify process belongs to user's attempt
-	var process models.VibeExecutionProcess
-	result := s.db.Where("id = ?", processID).
-		Preload("Attempt").
-		First(&process)
-
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Process not found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify process"})
-		}
-		return
-	}
-
-	if process.Attempt.UserID != userID {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
-		return
-	}
-
-	err := s.processManager.KillProcess(processID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to kill process: %v", err)})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Process killed successfully"})
+func (s *VibeKanbanService) killProcess(w http.ResponseWriter, r *http.Request) {
+	writeError(w, http.StatusNotImplemented, "Kill process endpoint not yet implemented")
 }
 
-func (s *VibeKanbanService) GetProcessOutput(c *gin.Context) {
-	processID := c.Param("process_id")
-	userID := c.GetString("user_id")
-
-	// Verify process belongs to user's attempt
-	var process models.VibeExecutionProcess
-	result := s.db.Where("id = ?", processID).
-		Preload("Attempt").
-		First(&process)
-
-	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Process not found"})
-		} else {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to verify process"})
-		}
-		return
-	}
-
-	if process.Attempt.UserID != userID {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
-		return
-	}
-
-	stdout, stderr, err := s.processManager.GetProcessOutput(processID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to get process output: %v", err)})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"stdout": stdout,
-		"stderr": stderr,
-	})
+func (s *VibeKanbanService) getProcessOutput(w http.ResponseWriter, r *http.Request) {
+	writeError(w, http.StatusNotImplemented, "Get process output endpoint not yet implemented")
 }
 
-// Mount routes
-func (s *VibeKanbanService) RegisterRoutes(r *gin.RouterGroup) {
-	// Projects
-	projects := r.Group("/projects")
-	{
-		projects.GET("", s.GetProjects)
-		projects.POST("", s.CreateProject)
-		projects.GET("/:id", s.GetProject)
-		projects.PUT("/:id", s.UpdateProject)
-		projects.DELETE("/:id", s.DeleteProject)
-
-		// Git operations for projects
-		projects.GET("/:id/branches", s.GetProjectBranches)
-		projects.POST("/:id/branches", s.CreateProjectBranch)
-
-		// Tasks
-		tasks := projects.Group("/:project_id/tasks")
-		{
-			tasks.GET("", s.GetTasks)
-			tasks.POST("", s.CreateTask)
-			tasks.PUT("/:task_id", s.UpdateTask)
-			tasks.DELETE("/:task_id", s.DeleteTask)
-
-			// Task attempts
-			attempts := tasks.Group("/:task_id/attempts")
-			{
-				attempts.GET("", s.GetTaskAttempts)
-				attempts.POST("", s.CreateTaskAttempt)
-				attempts.POST("/:attempt_id/start", s.StartTaskAttempt)
-				attempts.GET("/:attempt_id/diff", s.GetAttemptDiff)
-				attempts.POST("/:attempt_id/merge", s.MergeAttempt)
-
-				// Process management for attempts
-				processes := attempts.Group("/:attempt_id/processes")
-				{
-					processes.GET("", s.GetProcesses)
-					processes.POST("/setup", s.StartSetupScript)
-					processes.POST("/agent", s.StartCodingAgent)
-					processes.POST("/devserver", s.StartDevServer)
-					processes.POST("/followup", s.StartFollowupExecution)
-				}
-			}
-		}
-	}
-
-	// Process management (for any process by ID)
-	processes := r.Group("/processes")
-	{
-		processes.DELETE("/:process_id", s.KillProcess)
-		processes.GET("/:process_id/output", s.GetProcessOutput)
-	}
-}
-
-// Utility functions for integration with main.go
-
-func SetupVibeKanbanRoutes(db *gorm.DB, r *gin.Engine) {
-	service := NewVibeKanbanService(db)
-	api := r.Group("/api/vibe-kanban")
-	service.RegisterRoutes(api)
+// New creates a new HTTP ServeMux with all vibe-kanban routes
+func New(d deps.Deps) *http.ServeMux {
+	service := NewVibeKanbanService(d.DB)
+	mux := http.NewServeMux()
+	
+	// Project endpoints
+	mux.HandleFunc("GET /projects", service.getProjects)
+	mux.HandleFunc("POST /projects", service.createProject)
+	mux.HandleFunc("GET /projects/{id}", service.getProject)
+	mux.HandleFunc("PUT /projects/{id}", service.updateProject)
+	mux.HandleFunc("DELETE /projects/{id}", service.deleteProject)
+	
+	// Task endpoints
+	mux.HandleFunc("GET /projects/{project_id}/tasks", service.getTasks)
+	mux.HandleFunc("POST /projects/{project_id}/tasks", service.createTask)
+	mux.HandleFunc("PUT /projects/{project_id}/tasks/{task_id}", service.updateTask)
+	mux.HandleFunc("DELETE /projects/{project_id}/tasks/{task_id}", service.deleteTask)
+	
+	// Task Attempt endpoints (stubbed for now)
+	mux.HandleFunc("GET /projects/{project_id}/tasks/{task_id}/attempts", service.getTaskAttempts)
+	mux.HandleFunc("POST /projects/{project_id}/tasks/{task_id}/attempts", service.createTaskAttempt)
+	mux.HandleFunc("POST /projects/{project_id}/tasks/{task_id}/attempts/{attempt_id}/start", service.startTaskAttempt)
+	mux.HandleFunc("GET /projects/{project_id}/tasks/{task_id}/attempts/{attempt_id}/diff", service.getAttemptDiff)
+	mux.HandleFunc("POST /projects/{project_id}/tasks/{task_id}/attempts/{attempt_id}/merge", service.mergeAttempt)
+	
+	// Git endpoints (stubbed for now)
+	mux.HandleFunc("GET /projects/{id}/branches", service.getProjectBranches)
+	mux.HandleFunc("POST /projects/{id}/branches", service.createProjectBranch)
+	
+	// Process endpoints (stubbed for now)
+	mux.HandleFunc("POST /projects/{project_id}/tasks/{task_id}/attempts/{attempt_id}/processes/setup", service.startSetupScript)
+	mux.HandleFunc("POST /projects/{project_id}/tasks/{task_id}/attempts/{attempt_id}/processes/agent", service.startCodingAgent)
+	mux.HandleFunc("POST /projects/{project_id}/tasks/{task_id}/attempts/{attempt_id}/processes/devserver", service.startDevServer)
+	mux.HandleFunc("POST /projects/{project_id}/tasks/{task_id}/attempts/{attempt_id}/processes/followup", service.startFollowupExecution)
+	mux.HandleFunc("GET /projects/{project_id}/tasks/{task_id}/attempts/{attempt_id}/processes", service.getProcesses)
+	mux.HandleFunc("DELETE /processes/{process_id}", service.killProcess)
+	mux.HandleFunc("GET /processes/{process_id}/output", service.getProcessOutput)
+	
+	return mux
 }

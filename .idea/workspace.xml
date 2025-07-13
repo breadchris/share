@@ -7,17 +7,34 @@
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow" beforeDir="false" afterPath="$PROJECT_DIR$/flow" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/slackbot/handlers.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/handlers.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/slackbot/session_activity_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/session_activity_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/slackbot/slackbot_integration_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/slackbot/slackbot_integration_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.work.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.work.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/item-collector" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/justshare/utils/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/utils/auth.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/op/op.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/op/op.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/plugin.wasm" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/plugin/plugin.wasm" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/plugin/plugin.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/plugin/plugin/plugin.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugin/plugin_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/plugin/plugin_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/share/share.xcodeproj/project.pbxproj" beforeDir="false" afterPath="$PROJECT_DIR$/share/share.xcodeproj/project.pbxproj" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/share/share.xcodeproj/project.xcworkspace/xcuserdata/hacked.xcuserdatad/UserInterfaceState.xcuserstate" beforeDir="false" afterPath="$PROJECT_DIR$/share/share.xcodeproj/project.xcworkspace/xcuserdata/hacked.xcuserdatad/UserInterfaceState.xcuserstate" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vibekanban/git.go" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/git.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vibekanban/process.go" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/process.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/share/share.xcodeproj/xcuserdata/hacked.xcuserdatad/xcschemes/xcschememanagement.plist" beforeDir="false" afterPath="$PROJECT_DIR$/share/share.xcodeproj/xcuserdata/hacked.xcuserdatad/xcschemes/xcschememanagement.plist" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/share/share/ContentView.swift" beforeDir="false" afterPath="$PROJECT_DIR$/share/share/ContentView.swift" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/e2e/workflow-test/.github/workflows/e2e-test.yml" beforeDir="false" afterPath="$PROJECT_DIR$/infra/tests/e2e/workflow-test/.github/workflows/e2e-test.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/e2e/workflow-test/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/infra/tests/e2e/workflow-test/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/e2e/workflow-test/infrastructure/Pulumi.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/infra/tests/e2e/workflow-test/infrastructure/Pulumi.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/e2e/workflow-test/infrastructure/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/infra/tests/e2e/workflow-test/infrastructure/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/e2e/workflow-test/infrastructure/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/infra/tests/e2e/workflow-test/infrastructure/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/e2e/workflow-test/internal/execution/execution_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/infra/tests/e2e/workflow-test/internal/execution/execution_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/e2e/workflow-test/internal/execution/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/infra/tests/e2e/workflow-test/internal/execution/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/e2e/workflow-test/internal/infrastructure/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/infra/tests/e2e/workflow-test/internal/infrastructure/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/e2e/workflow-test/internal/infrastructure/infrastructure_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/infra/tests/e2e/workflow-test/internal/infrastructure/infrastructure_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/e2e/workflow-test/internal/integration/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/infra/tests/e2e/workflow-test/internal/integration/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/e2e/workflow-test/internal/integration/integration_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/infra/tests/e2e/workflow-test/internal/integration/integration_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/e2e/workflow-test/internal/workflow/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/infra/tests/e2e/workflow-test/internal/workflow/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/e2e/workflow-test/internal/workflow/workflow_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/infra/tests/e2e/workflow-test/internal/workflow/workflow_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/e2e/workflow-test/scripts/cleanup_aws_resources.sh" beforeDir="false" afterPath="$PROJECT_DIR$/infra/tests/e2e/workflow-test/scripts/cleanup_aws_resources.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/e2e/workflow-test/scripts/run_e2e_test.sh" beforeDir="false" afterPath="$PROJECT_DIR$/infra/tests/e2e/workflow-test/scripts/run_e2e_test.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/e2e/workflow-test/testdata/invalid-workflow.json" beforeDir="false" afterPath="$PROJECT_DIR$/infra/tests/e2e/workflow-test/testdata/invalid-workflow.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/e2e/workflow-test/testdata/simple-workflow.json" beforeDir="false" afterPath="$PROJECT_DIR$/infra/tests/e2e/workflow-test/testdata/simple-workflow.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/e2e/workflow-test/testdata/test-workflow.json" beforeDir="false" afterPath="$PROJECT_DIR$/infra/tests/e2e/workflow-test/testdata/test-workflow.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/vibekanban/vibekanban.go" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/vibekanban.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -101,11 +118,11 @@
       <recent name="$PROJECT_DIR$/hmr/client" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/infra" />
+      <recent name="$PROJECT_DIR$/graveyard" />
       <recent name="$PROJECT_DIR$/sheet" />
       <recent name="$PROJECT_DIR$/flow/db" />
       <recent name="$PROJECT_DIR$/justshare" />
-      <recent name="$PROJECT_DIR$/flow" />
-      <recent name="$PROJECT_DIR$/kanban/src/vendor/github.com/breadchris/share/kanban" />
     </key>
   </component>
   <component name="RunManager" selected="Go Build.share">
@@ -284,7 +301,7 @@
       <workItem from="1747973023098" duration="26954000" />
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
-      <workItem from="1750823408293" duration="328555000" />
+      <workItem from="1750823408293" duration="331921000" />
     </task>
     <servers />
   </component>

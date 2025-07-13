@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/breadchris/share/graveyard/list"
 	"github.com/breadchris/share/graveyard/llm"
+	"github.com/breadchris/share/graveyard/op"
 	"github.com/breadchris/share/graveyard/paint"
 	"github.com/breadchris/share/graveyard/registry"
 	"github.com/breadchris/share/graveyard/sqlnotebook"
@@ -40,9 +41,9 @@ import (
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/justshare"
 	"github.com/breadchris/share/kanban"
-	"github.com/breadchris/share/op"
 	"github.com/breadchris/share/session"
 	"github.com/breadchris/share/user"
+	"github.com/breadchris/share/vibekanban"
 	"github.com/breadchris/share/xctf"
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/google/uuid"
@@ -126,6 +127,7 @@ func startXCTF(port int) error {
 
 	p("/xctf", xctf.New)
 	p("/user", user.New)
+	p("/vibe-kanban", vibekanban.New)
 	p("", justshare.New)
 
 	http.HandleFunc("/register", a.handleRegister)
@@ -396,6 +398,7 @@ func startServer(useTLS bool, port int) {
 	p("/coderunner", interpreted(coderunner.New))
 	p("/example", interpreted(example.New))
 	p("/kanban", interpreted(kanban.New))
+	p("/vibe-kanban", interpreted(vibekanban.New))
 	//p("/claudemd", interpreted(claudemd.New))
 	p("/docker", interpreted(docker.New))
 	p("/browser", interpreted(NewBrowser))

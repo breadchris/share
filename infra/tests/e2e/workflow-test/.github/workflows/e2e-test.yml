@@ -24,15 +24,15 @@ on:
   push:
     branches: [ main, develop ]
     paths:
-      - 'infra/lambda-docker/**'
-      - 'tests/e2e/workflow-test/**'
+      - '../../../../../lambda-docker'
+      - '../..'
       - '.github/workflows/e2e-test.yml'
 
   pull_request:
     branches: [ main ]
     paths:
-      - 'infra/lambda-docker/**'
-      - 'tests/e2e/workflow-test/**'
+      - '../../../../../lambda-docker'
+      - '../..'
 
 env:
   AWS_REGION: ${{ github.event.inputs.aws_region || 'us-east-1' }}
