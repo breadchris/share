@@ -14,6 +14,9 @@
 		4C6D285E2CE5CCE100FCED19 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C6D285D2CE5CCE100FCED19 /* ShareViewController.swift */; };
 		4C6D28612CE5CCE200FCED19 /* MainInterface.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 4C6D285F2CE5CCE200FCED19 /* MainInterface.storyboard */; };
 		4C6D28652CE5CCE200FCED19 /* ext.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4C6D285B2CE5CCE100FCED19 /* ext.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		4C6D28732CE5CCEF00FCED19 /* ExtensionAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C6D28702CE5CCEF00FCED19 /* ExtensionAPI.swift */; };
+		4C6D28742CE5CCEF00FCED19 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C6D28712CE5CCEF00FCED19 /* Models.swift */; };
+		4C6D28752CE5CCEF00FCED19 /* SavedPagesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C6D28722CE5CCEF00FCED19 /* SavedPagesView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -50,6 +53,10 @@
 		4C6D285D2CE5CCE100FCED19 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		4C6D28602CE5CCE200FCED19 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/MainInterface.storyboard; sourceTree = "<group>"; };
 		4C6D28622CE5CCE200FCED19 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		4C6D28702CE5CCEF00FCED19 /* ExtensionAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionAPI.swift; sourceTree = "<group>"; };
+		4C6D28712CE5CCEF00FCED19 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		4C6D28722CE5CCEF00FCED19 /* SavedPagesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedPagesView.swift; sourceTree = "<group>"; };
+		4C6D28762CE5CCF000FCED19 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -93,7 +100,11 @@
 			children = (
 				4C6D28492CE5CCAF00FCED19 /* shareApp.swift */,
 				4C6D284B2CE5CCAF00FCED19 /* ContentView.swift */,
+				4C6D28702CE5CCEF00FCED19 /* ExtensionAPI.swift */,
+				4C6D28712CE5CCEF00FCED19 /* Models.swift */,
+				4C6D28722CE5CCEF00FCED19 /* SavedPagesView.swift */,
 				4C6D284D2CE5CCB000FCED19 /* Assets.xcassets */,
+				4C6D28762CE5CCF000FCED19 /* Info.plist */,
 				4C6D284F2CE5CCB000FCED19 /* Preview Content */,
 			);
 			path = share;
@@ -220,6 +231,9 @@
 			files = (
 				4C6D284C2CE5CCAF00FCED19 /* ContentView.swift in Sources */,
 				4C6D284A2CE5CCAF00FCED19 /* shareApp.swift in Sources */,
+				4C6D28732CE5CCEF00FCED19 /* ExtensionAPI.swift in Sources */,
+				4C6D28742CE5CCEF00FCED19 /* Models.swift in Sources */,
+				4C6D28752CE5CCEF00FCED19 /* SavedPagesView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -383,7 +397,8 @@
 				DEVELOPMENT_ASSET_PATHS = "\"share/Preview Content\"";
 				DEVELOPMENT_TEAM = GXTMGDAFNK;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = share/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -415,7 +430,8 @@
 				DEVELOPMENT_ASSET_PATHS = "\"share/Preview Content\"";
 				DEVELOPMENT_TEAM = GXTMGDAFNK;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = share/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -442,7 +458,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = GXTMGDAFNK;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = share/Info.plist;
 				INFOPLIST_FILE = ext/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ext;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -467,7 +484,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = GXTMGDAFNK;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = share/Info.plist;
 				INFOPLIST_FILE = ext/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ext;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";

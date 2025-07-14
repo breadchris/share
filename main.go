@@ -127,7 +127,6 @@ func startXCTF(port int) error {
 
 	p("/xctf", xctf.New)
 	p("/user", user.New)
-	p("/vibe-kanban", vibekanban.New)
 	p("", justshare.New)
 
 	http.HandleFunc("/register", a.handleRegister)
@@ -398,7 +397,7 @@ func startServer(useTLS bool, port int) {
 	p("/coderunner", interpreted(coderunner.New))
 	p("/example", interpreted(example.New))
 	p("/kanban", interpreted(kanban.New))
-	p("/vibe-kanban", interpreted(vibekanban.New))
+	p("/vibekanban", interpreted(vibekanban.New))
 	//p("/claudemd", interpreted(claudemd.New))
 	p("/docker", interpreted(docker.New))
 	p("/browser", interpreted(NewBrowser))

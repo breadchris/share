@@ -78,7 +78,7 @@ A task orchestration and management tool for AI coding agents, rewritten in Go a
 - Development server management with port allocation
 
 ### API Design
-- RESTful endpoints following `/api/vibe-kanban` prefix
+- RESTful endpoints following `/vibe-kanban` prefix
 - Consistent error handling and response formats
 - User authentication integration points
 - CORS and middleware support ready
@@ -88,7 +88,7 @@ A task orchestration and management tool for AI coding agents, rewritten in Go a
 The vibe-kanban system integrates with the main share application through:
 
 1. **Database**: Uses the existing GORM database with new model additions
-2. **Routing**: Mounts under `/api/vibe-kanban` prefix
+2. **Routing**: Mounts under `/vibe-kanban` prefix
 3. **Authentication**: Ready for user context integration
 4. **File System**: Uses temporary directories for git worktrees
 

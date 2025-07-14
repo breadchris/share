@@ -300,3 +300,45 @@ Follow the coderunner pattern for new features:
 - Frontend components: `/package-name/ComponentName.tsx`
 - Static assets: `/static/`
 - Database models: `/models/models.go`
+
+## Authentication Patterns
+
+### Session Manager Authentication
+All HTTP handlers should use the centralized session manager for user authentication. The standard pattern is:
+
+```go
+userID, err := s.session.GetUserID(r.Context())
+if err != nil {
+    http.Error(w, "Not logged in", http.StatusUnauthorized)
+    return
+}
+```
+
+**Key Points:**
+- Session manager is accessed via `s.session` where `s` is your service struct
+- Session manager comes from `deps.Deps.Session` dependency injection
+- Always check for errors from `GetUserID()` before proceeding
+- Use `http.Error()` with `http.StatusUnauthorized` for unauthorized requests
+- The session manager handles all session storage and user ID retrieval logic
+- Import: `"github.com/breadchris/share/session"`
+
+**Service Structure:**
+```go
+type YourService struct {
+    db      *gorm.DB
+    session *session.SessionManager
+    // other dependencies...
+}
+
+func NewYourService(db *gorm.DB, sessionManager *session.SessionManager) *YourService {
+    return &YourService{
+        db:      db,
+        session: sessionManager,
+    }
+}
+
+func New(d deps.Deps) *http.ServeMux {
+    service := NewYourService(d.DB, d.Session)
+    // register routes...
+}
+```

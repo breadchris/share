@@ -26,16 +26,15 @@ func NewGitService() *GitService {
 }
 
 // CreateWorktree creates a new git worktree for isolated task execution
-func (g *GitService) CreateWorktree(repoPath, baseBranch string) (string, string, error) {
-	// Generate unique worktree path and branch name
+func (g *GitService) CreateWorktree(repoPath, branchName, baseBranch string) (string, error) {
+	// Generate unique worktree path
 	worktreeID := uuid.NewString()
 	worktreePath := filepath.Join(g.baseWorkdir, worktreeID)
-	branchName := fmt.Sprintf("vibe-task-%s", worktreeID[:8])
 
 	// Open the main repository (for validation)
 	_, err := git.PlainOpen(repoPath)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to open repository: %w", err)
+		return "", fmt.Errorf("failed to open repository: %w", err)
 	}
 
 	// Create worktree using git CLI for better compatibility
@@ -43,10 +42,10 @@ func (g *GitService) CreateWorktree(repoPath, baseBranch string) (string, string
 	cmd.Dir = repoPath
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", "", fmt.Errorf("failed to create worktree: %s, error: %w", string(output), err)
+		return "", fmt.Errorf("failed to create worktree: %s, error: %w", string(output), err)
 	}
 
-	return worktreePath, branchName, nil
+	return worktreePath, nil
 }
 
 // RemoveWorktree removes a git worktree
@@ -130,6 +129,18 @@ func (g *GitService) GetDiffFromBaseBranch(worktreePath, baseBranch string) (str
 	output, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("failed to get diff from base branch: %w", err)
+	}
+
+	return string(output), nil
+}
+
+// GetBranchDiff returns the diff between two branches in a repository
+func (g *GitService) GetBranchDiff(repoPath, baseBranch, targetBranch string) (string, error) {
+	cmd := exec.Command("git", "diff", fmt.Sprintf("%s..%s", baseBranch, targetBranch))
+	cmd.Dir = repoPath
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to get branch diff: %w", err)
 	}
 
 	return string(output), nil

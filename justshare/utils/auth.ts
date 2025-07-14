@@ -75,7 +75,7 @@ export function loginWithGoogle(): void {
     // Trigger native iOS authentication flow
     window.webkit.messageHandlers.authHandler.postMessage({
       type: 'googleAuth',
-      authURL: '/auth/google'
+      authURL: this.href + '/auth/google'
     });
   } else {
     console.log('Using standard web OAuth flow');

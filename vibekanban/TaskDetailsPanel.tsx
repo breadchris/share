@@ -71,7 +71,7 @@ const DiffTab: React.FC<{ attempt: TaskAttempt; projectId: string; taskId: strin
     
     try {
       const response = await fetch(
-        `/api/vibe-kanban/projects/${projectId}/tasks/${taskId}/attempts/${attempt.id}/diff`
+        `/vibekanban/projects/${projectId}/tasks/${taskId}/attempts/${attempt.id}/diff`
       );
       
       if (!response.ok) {
@@ -153,7 +153,7 @@ const LogsTab: React.FC<{ attempt: TaskAttempt; projectId: string; taskId: strin
   const fetchProcesses = async () => {
     try {
       const response = await fetch(
-        `/api/vibe-kanban/projects/${projectId}/tasks/${taskId}/attempts/${attempt.id}/processes`
+        `/vibekanban/projects/${projectId}/tasks/${taskId}/attempts/${attempt.id}/processes`
       );
       
       if (response.ok) {
@@ -171,7 +171,7 @@ const LogsTab: React.FC<{ attempt: TaskAttempt; projectId: string; taskId: strin
   const fetchProcessOutput = async (processId: string) => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/vibe-kanban/processes/${processId}/output`);
+      const response = await fetch(`/vibekanban/processes/${processId}/output`);
       
       if (response.ok) {
         const data = await response.json();
@@ -335,7 +335,7 @@ const ConversationTab: React.FC<{ attempt: TaskAttempt }> = ({ attempt }) => {
     try {
       // This would integrate with the coding agent API
       const response = await fetch(
-        `/api/vibe-kanban/projects/${attempt.task_id}/tasks/${attempt.task_id}/attempts/${attempt.id}/processes/agent`,
+        `/vibekanban/projects/${attempt.task_id}/tasks/${attempt.task_id}/attempts/${attempt.id}/processes/agent`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

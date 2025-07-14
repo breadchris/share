@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { DndProvider, useDrag, useDrop } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 
 // Types
 interface Project {
@@ -57,6 +58,17 @@ interface ExecutionProcess {
   url?: string;
 }
 
+// Drag and drop types
+const ItemTypes = {
+  TASK: 'task'
+};
+
+interface DragItem {
+  id: string;
+  index: number;
+  sourceColumnId: string;
+}
+
 const COLUMNS = [
   { id: 'todo', title: 'To Do', color: 'bg-gray-100' },
   { id: 'inprogress', title: 'In Progress', color: 'bg-blue-100' },
@@ -64,11 +76,174 @@ const COLUMNS = [
   { id: 'done', title: 'Done', color: 'bg-green-100' },
 ];
 
+const NewTaskDialog: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onTaskCreated: (task: Task) => void;
+  projectId: string;
+}> = ({ isOpen, onClose, onTaskCreated, projectId }) => {
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    priority: 'medium' as Task['priority'],
+    labels: '',
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.title.trim()) {
+      setError('Task title is required');
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const taskData = {
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        priority: formData.priority,
+        status: 'todo' as Task['status'],
+        labels: formData.labels.trim() ? formData.labels.split(',').map(l => l.trim()).filter(l => l) : [],
+      };
+
+      const response = await fetch(`/vibekanban/projects/${projectId}/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(taskData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create task');
+      }
+
+      const task = await response.json();
+      onTaskCreated(task);
+      onClose();
+      setFormData({
+        title: '',
+        description: '',
+        priority: 'medium',
+        labels: '',
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create task');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">New Task</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Task Title *
+            </label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="What needs to be done?"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Describe the task in detail..."
+              rows={3}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Priority
+            </label>
+            <select
+              value={formData.priority}
+              onChange={(e) => setFormData({ ...formData, priority: e.target.value as Task['priority'] })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Labels
+            </label>
+            <input
+              type="text"
+              value={formData.labels}
+              onChange={(e) => setFormData({ ...formData, labels: e.target.value })}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="feature, bug, urgent (comma-separated)"
+            />
+            <p className="text-xs text-gray-500 mt-1">Separate multiple labels with commas</p>
+          </div>
+
+          {error && (
+            <div className="text-red-600 text-sm bg-red-50 p-2 rounded">
+              {error}
+            </div>
+          )}
+
+          <div className="flex space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50"
+              disabled={submitting}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 disabled:opacity-50"
+              disabled={submitting}
+            >
+              {submitting ? 'Creating...' : 'Create Task'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 const TaskCard: React.FC<{
   task: Task;
   onTaskClick: (task: Task) => void;
   onStartTask: (task: Task) => void;
-}> = ({ task, onTaskClick, onStartTask }) => {
+  isDragging?: boolean;
+}> = ({ task, onTaskClick, onStartTask, isDragging = false }) => {
   const priorityColors = {
     low: 'border-l-green-500',
     medium: 'border-l-yellow-500',
@@ -88,7 +263,7 @@ const TaskCard: React.FC<{
 
   return (
     <div
-      className={`bg-white rounded-lg shadow-sm border-l-4 ${priorityColors[task.priority]} p-4 cursor-pointer hover:shadow-md transition-shadow`}
+      className={`bg-white rounded-lg shadow-sm border-l-4 ${priorityColors[task.priority]} p-4 cursor-pointer hover:shadow-md transition-shadow ${isDragging ? 'opacity-50 rotate-2 shadow-lg' : ''}`}
       onClick={() => onTaskClick(task)}
     >
       <div className="flex justify-between items-start mb-2">
@@ -161,12 +336,53 @@ const TaskCard: React.FC<{
   );
 };
 
+const DraggableTaskCard: React.FC<{
+  task: Task;
+  index: number;
+  columnId: string;
+  onTaskClick: (task: Task) => void;
+  onStartTask: (task: Task) => void;
+  onMoveTask: (dragIndex: number, hoverIndex: number, sourceColumnId: string, targetColumnId: string) => void;
+}> = ({ task, index, columnId, onTaskClick, onStartTask, onMoveTask }) => {
+  const [{ isDragging }, drag] = useDrag(() => ({
+    type: ItemTypes.TASK,
+    item: { id: task.id, index, sourceColumnId: columnId },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  }));
+
+  return (
+    <div ref={drag}>
+      <TaskCard
+        task={task}
+        onTaskClick={onTaskClick}
+        onStartTask={onStartTask}
+        isDragging={isDragging}
+      />
+    </div>
+  );
+};
+
 const KanbanColumn: React.FC<{
   column: typeof COLUMNS[0];
   tasks: Task[];
   onTaskClick: (task: Task) => void;
   onStartTask: (task: Task) => void;
-}> = ({ column, tasks, onTaskClick, onStartTask }) => {
+  onMoveTask: (dragIndex: number, hoverIndex: number, sourceColumnId: string, targetColumnId: string) => void;
+}> = ({ column, tasks, onTaskClick, onStartTask, onMoveTask }) => {
+  const [{ isOver }, drop] = useDrop(() => ({
+    accept: ItemTypes.TASK,
+    drop: (item: DragItem) => {
+      if (item.sourceColumnId !== column.id) {
+        onMoveTask(item.index, tasks.length, item.sourceColumnId, column.id);
+      }
+    },
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+    }),
+  }));
+
   return (
     <div className={`${column.color} rounded-lg p-4 min-h-[200px]`}>
       <div className="flex justify-between items-center mb-4">
@@ -176,37 +392,24 @@ const KanbanColumn: React.FC<{
         </span>
       </div>
 
-      <Droppable droppableId={column.id}>
-        {(provided, snapshot) => (
-          <div
-            ref={provided.innerRef}
-            {...provided.droppableProps}
-            className={`space-y-3 min-h-[150px] ${
-              snapshot.isDraggingOver ? 'bg-white bg-opacity-50 rounded-lg' : ''
-            }`}
-          >
-            {tasks.map((task, index) => (
-              <Draggable key={task.id} draggableId={task.id} index={index}>
-                {(provided, snapshot) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                    className={snapshot.isDragging ? 'rotate-2 shadow-lg' : ''}
-                  >
-                    <TaskCard
-                      task={task}
-                      onTaskClick={onTaskClick}
-                      onStartTask={onStartTask}
-                    />
-                  </div>
-                )}
-              </Draggable>
-            ))}
-            {provided.placeholder}
-          </div>
-        )}
-      </Droppable>
+      <div
+        ref={drop}
+        className={`space-y-3 min-h-[150px] ${
+          isOver ? 'bg-white bg-opacity-50 rounded-lg' : ''
+        }`}
+      >
+        {tasks.map((task, index) => (
+          <DraggableTaskCard
+            key={task.id}
+            task={task}
+            index={index}
+            columnId={column.id}
+            onTaskClick={onTaskClick}
+            onStartTask={onStartTask}
+            onMoveTask={onMoveTask}
+          />
+        ))}
+      </div>
     </div>
   );
 };
@@ -228,13 +431,13 @@ export const VibeKanbanBoard: React.FC<{
         setLoading(true);
         
         // Fetch project
-        const projectResponse = await fetch(`/api/vibe-kanban/projects/${projectId}`);
+        const projectResponse = await fetch(`/vibekanban/projects/${projectId}`);
         if (!projectResponse.ok) throw new Error('Failed to fetch project');
         const projectData = await projectResponse.json();
         setProject(projectData);
 
         // Fetch tasks
-        const tasksResponse = await fetch(`/api/vibe-kanban/projects/${projectId}/tasks`);
+        const tasksResponse = await fetch(`/vibekanban/projects/${projectId}/tasks`);
         if (!tasksResponse.ok) throw new Error('Failed to fetch tasks');
         const tasksData = await tasksResponse.json();
         setTasks(tasksData);
@@ -251,20 +454,21 @@ export const VibeKanbanBoard: React.FC<{
     }
   }, [projectId]);
 
-  // Handle drag and drop
-  const handleDragEnd = async (result: DropResult) => {
-    if (!result.destination) return;
+  // Handle task movement between columns
+  const handleMoveTask = async (dragIndex: number, hoverIndex: number, sourceColumnId: string, targetColumnId: string) => {
+    if (sourceColumnId === targetColumnId) return;
 
-    const { source, destination, draggableId } = result;
+    // Find the task being moved
+    const sourceColumn = COLUMNS.find(col => col.id === sourceColumnId);
+    const sourceTasks = tasks.filter(task => task.status === sourceColumnId);
+    const task = sourceTasks[dragIndex];
     
-    if (source.droppableId === destination.droppableId) return;
+    if (!task) return;
 
-    // Update task status
-    const taskId = draggableId;
-    const newStatus = destination.droppableId as Task['status'];
+    const newStatus = targetColumnId as Task['status'];
 
     try {
-      const response = await fetch(`/api/vibe-kanban/projects/${projectId}/tasks/${taskId}`, {
+      const response = await fetch(`/vibekanban/projects/${projectId}/tasks/${task.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
@@ -274,8 +478,8 @@ export const VibeKanbanBoard: React.FC<{
 
       // Update local state
       setTasks(prevTasks =>
-        prevTasks.map(task =>
-          task.id === taskId ? { ...task, status: newStatus } : task
+        prevTasks.map(t =>
+          t.id === task.id ? { ...t, status: newStatus } : t
         )
       );
     } catch (err) {
@@ -284,11 +488,16 @@ export const VibeKanbanBoard: React.FC<{
     }
   };
 
+  // Handle task creation from dialog
+  const handleTaskCreated = (newTask: Task) => {
+    setTasks(prevTasks => [...prevTasks, newTask]);
+  };
+
   // Start a new task attempt
   const handleStartTask = async (task: Task) => {
     try {
       // Create a new attempt
-      const response = await fetch(`/api/vibe-kanban/projects/${projectId}/tasks/${task.id}/attempts`, {
+      const response = await fetch(`/vibekanban/projects/${projectId}/tasks/${task.id}/attempts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -302,7 +511,7 @@ export const VibeKanbanBoard: React.FC<{
 
       // Start the attempt (create worktree)
       const startResponse = await fetch(
-        `/api/vibe-kanban/projects/${projectId}/tasks/${task.id}/attempts/${attempt.id}/start`,
+        `/vibekanban/projects/${projectId}/tasks/${task.id}/attempts/${attempt.id}/start`,
         { method: 'POST' }
       );
 
@@ -372,7 +581,7 @@ export const VibeKanbanBoard: React.FC<{
 
       {/* Kanban Board */}
       <div className="flex-1 overflow-x-auto">
-        <DragDropContext onDragEnd={handleDragEnd}>
+        <DndProvider backend={HTML5Backend}>
           <div className="grid grid-cols-4 gap-6 min-w-[800px] h-full">
             {COLUMNS.map(column => (
               <KanbanColumn
@@ -381,11 +590,20 @@ export const VibeKanbanBoard: React.FC<{
                 tasks={tasksByStatus[column.id] || []}
                 onTaskClick={onTaskSelect}
                 onStartTask={handleStartTask}
+                onMoveTask={handleMoveTask}
               />
             ))}
           </div>
-        </DragDropContext>
+        </DndProvider>
       </div>
+
+      {/* New Task Dialog */}
+      <NewTaskDialog
+        isOpen={showNewTaskDialog}
+        onClose={() => setShowNewTaskDialog(false)}
+        onTaskCreated={handleTaskCreated}
+        projectId={projectId}
+      />
     </div>
   );
 };
