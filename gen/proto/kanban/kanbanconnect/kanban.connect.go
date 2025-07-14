@@ -5,10 +5,10 @@
 package kanbanconnect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
 	kanban "github.com/breadchris/share/gen/proto/kanban"
-	connect_go "github.com/bufbuild/connect-go"
 	http "net/http"
 	strings "strings"
 )
@@ -18,7 +18,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// KanbanServiceName is the fully-qualified name of the KanbanService service.
@@ -72,24 +72,42 @@ const (
 	KanbanServiceMoveCardProcedure = "/kanban.KanbanService/MoveCard"
 )
 
+// These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
+var (
+	kanbanServiceServiceDescriptor            = kanban.File_proto_kanban_kanban_proto.Services().ByName("KanbanService")
+	kanbanServiceCreateBoardMethodDescriptor  = kanbanServiceServiceDescriptor.Methods().ByName("CreateBoard")
+	kanbanServiceGetBoardMethodDescriptor     = kanbanServiceServiceDescriptor.Methods().ByName("GetBoard")
+	kanbanServiceListBoardsMethodDescriptor   = kanbanServiceServiceDescriptor.Methods().ByName("ListBoards")
+	kanbanServiceUpdateBoardMethodDescriptor  = kanbanServiceServiceDescriptor.Methods().ByName("UpdateBoard")
+	kanbanServiceDeleteBoardMethodDescriptor  = kanbanServiceServiceDescriptor.Methods().ByName("DeleteBoard")
+	kanbanServiceCreateColumnMethodDescriptor = kanbanServiceServiceDescriptor.Methods().ByName("CreateColumn")
+	kanbanServiceUpdateColumnMethodDescriptor = kanbanServiceServiceDescriptor.Methods().ByName("UpdateColumn")
+	kanbanServiceDeleteColumnMethodDescriptor = kanbanServiceServiceDescriptor.Methods().ByName("DeleteColumn")
+	kanbanServiceMoveColumnMethodDescriptor   = kanbanServiceServiceDescriptor.Methods().ByName("MoveColumn")
+	kanbanServiceCreateCardMethodDescriptor   = kanbanServiceServiceDescriptor.Methods().ByName("CreateCard")
+	kanbanServiceUpdateCardMethodDescriptor   = kanbanServiceServiceDescriptor.Methods().ByName("UpdateCard")
+	kanbanServiceDeleteCardMethodDescriptor   = kanbanServiceServiceDescriptor.Methods().ByName("DeleteCard")
+	kanbanServiceMoveCardMethodDescriptor     = kanbanServiceServiceDescriptor.Methods().ByName("MoveCard")
+)
+
 // KanbanServiceClient is a client for the kanban.KanbanService service.
 type KanbanServiceClient interface {
 	// Board operations
-	CreateBoard(context.Context, *connect_go.Request[kanban.CreateBoardRequest]) (*connect_go.Response[kanban.CreateBoardResponse], error)
-	GetBoard(context.Context, *connect_go.Request[kanban.GetBoardRequest]) (*connect_go.Response[kanban.GetBoardResponse], error)
-	ListBoards(context.Context, *connect_go.Request[kanban.ListBoardsRequest]) (*connect_go.Response[kanban.ListBoardsResponse], error)
-	UpdateBoard(context.Context, *connect_go.Request[kanban.UpdateBoardRequest]) (*connect_go.Response[kanban.UpdateBoardResponse], error)
-	DeleteBoard(context.Context, *connect_go.Request[kanban.DeleteBoardRequest]) (*connect_go.Response[kanban.DeleteBoardResponse], error)
+	CreateBoard(context.Context, *connect.Request[kanban.CreateBoardRequest]) (*connect.Response[kanban.CreateBoardResponse], error)
+	GetBoard(context.Context, *connect.Request[kanban.GetBoardRequest]) (*connect.Response[kanban.GetBoardResponse], error)
+	ListBoards(context.Context, *connect.Request[kanban.ListBoardsRequest]) (*connect.Response[kanban.ListBoardsResponse], error)
+	UpdateBoard(context.Context, *connect.Request[kanban.UpdateBoardRequest]) (*connect.Response[kanban.UpdateBoardResponse], error)
+	DeleteBoard(context.Context, *connect.Request[kanban.DeleteBoardRequest]) (*connect.Response[kanban.DeleteBoardResponse], error)
 	// Column operations
-	CreateColumn(context.Context, *connect_go.Request[kanban.CreateColumnRequest]) (*connect_go.Response[kanban.CreateColumnResponse], error)
-	UpdateColumn(context.Context, *connect_go.Request[kanban.UpdateColumnRequest]) (*connect_go.Response[kanban.UpdateColumnResponse], error)
-	DeleteColumn(context.Context, *connect_go.Request[kanban.DeleteColumnRequest]) (*connect_go.Response[kanban.DeleteColumnResponse], error)
-	MoveColumn(context.Context, *connect_go.Request[kanban.MoveColumnRequest]) (*connect_go.Response[kanban.MoveColumnResponse], error)
+	CreateColumn(context.Context, *connect.Request[kanban.CreateColumnRequest]) (*connect.Response[kanban.CreateColumnResponse], error)
+	UpdateColumn(context.Context, *connect.Request[kanban.UpdateColumnRequest]) (*connect.Response[kanban.UpdateColumnResponse], error)
+	DeleteColumn(context.Context, *connect.Request[kanban.DeleteColumnRequest]) (*connect.Response[kanban.DeleteColumnResponse], error)
+	MoveColumn(context.Context, *connect.Request[kanban.MoveColumnRequest]) (*connect.Response[kanban.MoveColumnResponse], error)
 	// Card operations
-	CreateCard(context.Context, *connect_go.Request[kanban.CreateCardRequest]) (*connect_go.Response[kanban.CreateCardResponse], error)
-	UpdateCard(context.Context, *connect_go.Request[kanban.UpdateCardRequest]) (*connect_go.Response[kanban.UpdateCardResponse], error)
-	DeleteCard(context.Context, *connect_go.Request[kanban.DeleteCardRequest]) (*connect_go.Response[kanban.DeleteCardResponse], error)
-	MoveCard(context.Context, *connect_go.Request[kanban.MoveCardRequest]) (*connect_go.Response[kanban.MoveCardResponse], error)
+	CreateCard(context.Context, *connect.Request[kanban.CreateCardRequest]) (*connect.Response[kanban.CreateCardResponse], error)
+	UpdateCard(context.Context, *connect.Request[kanban.UpdateCardRequest]) (*connect.Response[kanban.UpdateCardResponse], error)
+	DeleteCard(context.Context, *connect.Request[kanban.DeleteCardRequest]) (*connect.Response[kanban.DeleteCardResponse], error)
+	MoveCard(context.Context, *connect.Request[kanban.MoveCardRequest]) (*connect.Response[kanban.MoveCardResponse], error)
 }
 
 // NewKanbanServiceClient constructs a client for the kanban.KanbanService service. By default, it
@@ -99,177 +117,190 @@ type KanbanServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewKanbanServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) KanbanServiceClient {
+func NewKanbanServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) KanbanServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &kanbanServiceClient{
-		createBoard: connect_go.NewClient[kanban.CreateBoardRequest, kanban.CreateBoardResponse](
+		createBoard: connect.NewClient[kanban.CreateBoardRequest, kanban.CreateBoardResponse](
 			httpClient,
 			baseURL+KanbanServiceCreateBoardProcedure,
-			opts...,
+			connect.WithSchema(kanbanServiceCreateBoardMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
-		getBoard: connect_go.NewClient[kanban.GetBoardRequest, kanban.GetBoardResponse](
+		getBoard: connect.NewClient[kanban.GetBoardRequest, kanban.GetBoardResponse](
 			httpClient,
 			baseURL+KanbanServiceGetBoardProcedure,
-			opts...,
+			connect.WithSchema(kanbanServiceGetBoardMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
-		listBoards: connect_go.NewClient[kanban.ListBoardsRequest, kanban.ListBoardsResponse](
+		listBoards: connect.NewClient[kanban.ListBoardsRequest, kanban.ListBoardsResponse](
 			httpClient,
 			baseURL+KanbanServiceListBoardsProcedure,
-			opts...,
+			connect.WithSchema(kanbanServiceListBoardsMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
-		updateBoard: connect_go.NewClient[kanban.UpdateBoardRequest, kanban.UpdateBoardResponse](
+		updateBoard: connect.NewClient[kanban.UpdateBoardRequest, kanban.UpdateBoardResponse](
 			httpClient,
 			baseURL+KanbanServiceUpdateBoardProcedure,
-			opts...,
+			connect.WithSchema(kanbanServiceUpdateBoardMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
-		deleteBoard: connect_go.NewClient[kanban.DeleteBoardRequest, kanban.DeleteBoardResponse](
+		deleteBoard: connect.NewClient[kanban.DeleteBoardRequest, kanban.DeleteBoardResponse](
 			httpClient,
 			baseURL+KanbanServiceDeleteBoardProcedure,
-			opts...,
+			connect.WithSchema(kanbanServiceDeleteBoardMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
-		createColumn: connect_go.NewClient[kanban.CreateColumnRequest, kanban.CreateColumnResponse](
+		createColumn: connect.NewClient[kanban.CreateColumnRequest, kanban.CreateColumnResponse](
 			httpClient,
 			baseURL+KanbanServiceCreateColumnProcedure,
-			opts...,
+			connect.WithSchema(kanbanServiceCreateColumnMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
-		updateColumn: connect_go.NewClient[kanban.UpdateColumnRequest, kanban.UpdateColumnResponse](
+		updateColumn: connect.NewClient[kanban.UpdateColumnRequest, kanban.UpdateColumnResponse](
 			httpClient,
 			baseURL+KanbanServiceUpdateColumnProcedure,
-			opts...,
+			connect.WithSchema(kanbanServiceUpdateColumnMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
-		deleteColumn: connect_go.NewClient[kanban.DeleteColumnRequest, kanban.DeleteColumnResponse](
+		deleteColumn: connect.NewClient[kanban.DeleteColumnRequest, kanban.DeleteColumnResponse](
 			httpClient,
 			baseURL+KanbanServiceDeleteColumnProcedure,
-			opts...,
+			connect.WithSchema(kanbanServiceDeleteColumnMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
-		moveColumn: connect_go.NewClient[kanban.MoveColumnRequest, kanban.MoveColumnResponse](
+		moveColumn: connect.NewClient[kanban.MoveColumnRequest, kanban.MoveColumnResponse](
 			httpClient,
 			baseURL+KanbanServiceMoveColumnProcedure,
-			opts...,
+			connect.WithSchema(kanbanServiceMoveColumnMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
-		createCard: connect_go.NewClient[kanban.CreateCardRequest, kanban.CreateCardResponse](
+		createCard: connect.NewClient[kanban.CreateCardRequest, kanban.CreateCardResponse](
 			httpClient,
 			baseURL+KanbanServiceCreateCardProcedure,
-			opts...,
+			connect.WithSchema(kanbanServiceCreateCardMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
-		updateCard: connect_go.NewClient[kanban.UpdateCardRequest, kanban.UpdateCardResponse](
+		updateCard: connect.NewClient[kanban.UpdateCardRequest, kanban.UpdateCardResponse](
 			httpClient,
 			baseURL+KanbanServiceUpdateCardProcedure,
-			opts...,
+			connect.WithSchema(kanbanServiceUpdateCardMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
-		deleteCard: connect_go.NewClient[kanban.DeleteCardRequest, kanban.DeleteCardResponse](
+		deleteCard: connect.NewClient[kanban.DeleteCardRequest, kanban.DeleteCardResponse](
 			httpClient,
 			baseURL+KanbanServiceDeleteCardProcedure,
-			opts...,
+			connect.WithSchema(kanbanServiceDeleteCardMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
-		moveCard: connect_go.NewClient[kanban.MoveCardRequest, kanban.MoveCardResponse](
+		moveCard: connect.NewClient[kanban.MoveCardRequest, kanban.MoveCardResponse](
 			httpClient,
 			baseURL+KanbanServiceMoveCardProcedure,
-			opts...,
+			connect.WithSchema(kanbanServiceMoveCardMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // kanbanServiceClient implements KanbanServiceClient.
 type kanbanServiceClient struct {
-	createBoard  *connect_go.Client[kanban.CreateBoardRequest, kanban.CreateBoardResponse]
-	getBoard     *connect_go.Client[kanban.GetBoardRequest, kanban.GetBoardResponse]
-	listBoards   *connect_go.Client[kanban.ListBoardsRequest, kanban.ListBoardsResponse]
-	updateBoard  *connect_go.Client[kanban.UpdateBoardRequest, kanban.UpdateBoardResponse]
-	deleteBoard  *connect_go.Client[kanban.DeleteBoardRequest, kanban.DeleteBoardResponse]
-	createColumn *connect_go.Client[kanban.CreateColumnRequest, kanban.CreateColumnResponse]
-	updateColumn *connect_go.Client[kanban.UpdateColumnRequest, kanban.UpdateColumnResponse]
-	deleteColumn *connect_go.Client[kanban.DeleteColumnRequest, kanban.DeleteColumnResponse]
-	moveColumn   *connect_go.Client[kanban.MoveColumnRequest, kanban.MoveColumnResponse]
-	createCard   *connect_go.Client[kanban.CreateCardRequest, kanban.CreateCardResponse]
-	updateCard   *connect_go.Client[kanban.UpdateCardRequest, kanban.UpdateCardResponse]
-	deleteCard   *connect_go.Client[kanban.DeleteCardRequest, kanban.DeleteCardResponse]
-	moveCard     *connect_go.Client[kanban.MoveCardRequest, kanban.MoveCardResponse]
+	createBoard  *connect.Client[kanban.CreateBoardRequest, kanban.CreateBoardResponse]
+	getBoard     *connect.Client[kanban.GetBoardRequest, kanban.GetBoardResponse]
+	listBoards   *connect.Client[kanban.ListBoardsRequest, kanban.ListBoardsResponse]
+	updateBoard  *connect.Client[kanban.UpdateBoardRequest, kanban.UpdateBoardResponse]
+	deleteBoard  *connect.Client[kanban.DeleteBoardRequest, kanban.DeleteBoardResponse]
+	createColumn *connect.Client[kanban.CreateColumnRequest, kanban.CreateColumnResponse]
+	updateColumn *connect.Client[kanban.UpdateColumnRequest, kanban.UpdateColumnResponse]
+	deleteColumn *connect.Client[kanban.DeleteColumnRequest, kanban.DeleteColumnResponse]
+	moveColumn   *connect.Client[kanban.MoveColumnRequest, kanban.MoveColumnResponse]
+	createCard   *connect.Client[kanban.CreateCardRequest, kanban.CreateCardResponse]
+	updateCard   *connect.Client[kanban.UpdateCardRequest, kanban.UpdateCardResponse]
+	deleteCard   *connect.Client[kanban.DeleteCardRequest, kanban.DeleteCardResponse]
+	moveCard     *connect.Client[kanban.MoveCardRequest, kanban.MoveCardResponse]
 }
 
 // CreateBoard calls kanban.KanbanService.CreateBoard.
-func (c *kanbanServiceClient) CreateBoard(ctx context.Context, req *connect_go.Request[kanban.CreateBoardRequest]) (*connect_go.Response[kanban.CreateBoardResponse], error) {
+func (c *kanbanServiceClient) CreateBoard(ctx context.Context, req *connect.Request[kanban.CreateBoardRequest]) (*connect.Response[kanban.CreateBoardResponse], error) {
 	return c.createBoard.CallUnary(ctx, req)
 }
 
 // GetBoard calls kanban.KanbanService.GetBoard.
-func (c *kanbanServiceClient) GetBoard(ctx context.Context, req *connect_go.Request[kanban.GetBoardRequest]) (*connect_go.Response[kanban.GetBoardResponse], error) {
+func (c *kanbanServiceClient) GetBoard(ctx context.Context, req *connect.Request[kanban.GetBoardRequest]) (*connect.Response[kanban.GetBoardResponse], error) {
 	return c.getBoard.CallUnary(ctx, req)
 }
 
 // ListBoards calls kanban.KanbanService.ListBoards.
-func (c *kanbanServiceClient) ListBoards(ctx context.Context, req *connect_go.Request[kanban.ListBoardsRequest]) (*connect_go.Response[kanban.ListBoardsResponse], error) {
+func (c *kanbanServiceClient) ListBoards(ctx context.Context, req *connect.Request[kanban.ListBoardsRequest]) (*connect.Response[kanban.ListBoardsResponse], error) {
 	return c.listBoards.CallUnary(ctx, req)
 }
 
 // UpdateBoard calls kanban.KanbanService.UpdateBoard.
-func (c *kanbanServiceClient) UpdateBoard(ctx context.Context, req *connect_go.Request[kanban.UpdateBoardRequest]) (*connect_go.Response[kanban.UpdateBoardResponse], error) {
+func (c *kanbanServiceClient) UpdateBoard(ctx context.Context, req *connect.Request[kanban.UpdateBoardRequest]) (*connect.Response[kanban.UpdateBoardResponse], error) {
 	return c.updateBoard.CallUnary(ctx, req)
 }
 
 // DeleteBoard calls kanban.KanbanService.DeleteBoard.
-func (c *kanbanServiceClient) DeleteBoard(ctx context.Context, req *connect_go.Request[kanban.DeleteBoardRequest]) (*connect_go.Response[kanban.DeleteBoardResponse], error) {
+func (c *kanbanServiceClient) DeleteBoard(ctx context.Context, req *connect.Request[kanban.DeleteBoardRequest]) (*connect.Response[kanban.DeleteBoardResponse], error) {
 	return c.deleteBoard.CallUnary(ctx, req)
 }
 
 // CreateColumn calls kanban.KanbanService.CreateColumn.
-func (c *kanbanServiceClient) CreateColumn(ctx context.Context, req *connect_go.Request[kanban.CreateColumnRequest]) (*connect_go.Response[kanban.CreateColumnResponse], error) {
+func (c *kanbanServiceClient) CreateColumn(ctx context.Context, req *connect.Request[kanban.CreateColumnRequest]) (*connect.Response[kanban.CreateColumnResponse], error) {
 	return c.createColumn.CallUnary(ctx, req)
 }
 
 // UpdateColumn calls kanban.KanbanService.UpdateColumn.
-func (c *kanbanServiceClient) UpdateColumn(ctx context.Context, req *connect_go.Request[kanban.UpdateColumnRequest]) (*connect_go.Response[kanban.UpdateColumnResponse], error) {
+func (c *kanbanServiceClient) UpdateColumn(ctx context.Context, req *connect.Request[kanban.UpdateColumnRequest]) (*connect.Response[kanban.UpdateColumnResponse], error) {
 	return c.updateColumn.CallUnary(ctx, req)
 }
 
 // DeleteColumn calls kanban.KanbanService.DeleteColumn.
-func (c *kanbanServiceClient) DeleteColumn(ctx context.Context, req *connect_go.Request[kanban.DeleteColumnRequest]) (*connect_go.Response[kanban.DeleteColumnResponse], error) {
+func (c *kanbanServiceClient) DeleteColumn(ctx context.Context, req *connect.Request[kanban.DeleteColumnRequest]) (*connect.Response[kanban.DeleteColumnResponse], error) {
 	return c.deleteColumn.CallUnary(ctx, req)
 }
 
 // MoveColumn calls kanban.KanbanService.MoveColumn.
-func (c *kanbanServiceClient) MoveColumn(ctx context.Context, req *connect_go.Request[kanban.MoveColumnRequest]) (*connect_go.Response[kanban.MoveColumnResponse], error) {
+func (c *kanbanServiceClient) MoveColumn(ctx context.Context, req *connect.Request[kanban.MoveColumnRequest]) (*connect.Response[kanban.MoveColumnResponse], error) {
 	return c.moveColumn.CallUnary(ctx, req)
 }
 
 // CreateCard calls kanban.KanbanService.CreateCard.
-func (c *kanbanServiceClient) CreateCard(ctx context.Context, req *connect_go.Request[kanban.CreateCardRequest]) (*connect_go.Response[kanban.CreateCardResponse], error) {
+func (c *kanbanServiceClient) CreateCard(ctx context.Context, req *connect.Request[kanban.CreateCardRequest]) (*connect.Response[kanban.CreateCardResponse], error) {
 	return c.createCard.CallUnary(ctx, req)
 }
 
 // UpdateCard calls kanban.KanbanService.UpdateCard.
-func (c *kanbanServiceClient) UpdateCard(ctx context.Context, req *connect_go.Request[kanban.UpdateCardRequest]) (*connect_go.Response[kanban.UpdateCardResponse], error) {
+func (c *kanbanServiceClient) UpdateCard(ctx context.Context, req *connect.Request[kanban.UpdateCardRequest]) (*connect.Response[kanban.UpdateCardResponse], error) {
 	return c.updateCard.CallUnary(ctx, req)
 }
 
 // DeleteCard calls kanban.KanbanService.DeleteCard.
-func (c *kanbanServiceClient) DeleteCard(ctx context.Context, req *connect_go.Request[kanban.DeleteCardRequest]) (*connect_go.Response[kanban.DeleteCardResponse], error) {
+func (c *kanbanServiceClient) DeleteCard(ctx context.Context, req *connect.Request[kanban.DeleteCardRequest]) (*connect.Response[kanban.DeleteCardResponse], error) {
 	return c.deleteCard.CallUnary(ctx, req)
 }
 
 // MoveCard calls kanban.KanbanService.MoveCard.
-func (c *kanbanServiceClient) MoveCard(ctx context.Context, req *connect_go.Request[kanban.MoveCardRequest]) (*connect_go.Response[kanban.MoveCardResponse], error) {
+func (c *kanbanServiceClient) MoveCard(ctx context.Context, req *connect.Request[kanban.MoveCardRequest]) (*connect.Response[kanban.MoveCardResponse], error) {
 	return c.moveCard.CallUnary(ctx, req)
 }
 
 // KanbanServiceHandler is an implementation of the kanban.KanbanService service.
 type KanbanServiceHandler interface {
 	// Board operations
-	CreateBoard(context.Context, *connect_go.Request[kanban.CreateBoardRequest]) (*connect_go.Response[kanban.CreateBoardResponse], error)
-	GetBoard(context.Context, *connect_go.Request[kanban.GetBoardRequest]) (*connect_go.Response[kanban.GetBoardResponse], error)
-	ListBoards(context.Context, *connect_go.Request[kanban.ListBoardsRequest]) (*connect_go.Response[kanban.ListBoardsResponse], error)
-	UpdateBoard(context.Context, *connect_go.Request[kanban.UpdateBoardRequest]) (*connect_go.Response[kanban.UpdateBoardResponse], error)
-	DeleteBoard(context.Context, *connect_go.Request[kanban.DeleteBoardRequest]) (*connect_go.Response[kanban.DeleteBoardResponse], error)
+	CreateBoard(context.Context, *connect.Request[kanban.CreateBoardRequest]) (*connect.Response[kanban.CreateBoardResponse], error)
+	GetBoard(context.Context, *connect.Request[kanban.GetBoardRequest]) (*connect.Response[kanban.GetBoardResponse], error)
+	ListBoards(context.Context, *connect.Request[kanban.ListBoardsRequest]) (*connect.Response[kanban.ListBoardsResponse], error)
+	UpdateBoard(context.Context, *connect.Request[kanban.UpdateBoardRequest]) (*connect.Response[kanban.UpdateBoardResponse], error)
+	DeleteBoard(context.Context, *connect.Request[kanban.DeleteBoardRequest]) (*connect.Response[kanban.DeleteBoardResponse], error)
 	// Column operations
-	CreateColumn(context.Context, *connect_go.Request[kanban.CreateColumnRequest]) (*connect_go.Response[kanban.CreateColumnResponse], error)
-	UpdateColumn(context.Context, *connect_go.Request[kanban.UpdateColumnRequest]) (*connect_go.Response[kanban.UpdateColumnResponse], error)
-	DeleteColumn(context.Context, *connect_go.Request[kanban.DeleteColumnRequest]) (*connect_go.Response[kanban.DeleteColumnResponse], error)
-	MoveColumn(context.Context, *connect_go.Request[kanban.MoveColumnRequest]) (*connect_go.Response[kanban.MoveColumnResponse], error)
+	CreateColumn(context.Context, *connect.Request[kanban.CreateColumnRequest]) (*connect.Response[kanban.CreateColumnResponse], error)
+	UpdateColumn(context.Context, *connect.Request[kanban.UpdateColumnRequest]) (*connect.Response[kanban.UpdateColumnResponse], error)
+	DeleteColumn(context.Context, *connect.Request[kanban.DeleteColumnRequest]) (*connect.Response[kanban.DeleteColumnResponse], error)
+	MoveColumn(context.Context, *connect.Request[kanban.MoveColumnRequest]) (*connect.Response[kanban.MoveColumnResponse], error)
 	// Card operations
-	CreateCard(context.Context, *connect_go.Request[kanban.CreateCardRequest]) (*connect_go.Response[kanban.CreateCardResponse], error)
-	UpdateCard(context.Context, *connect_go.Request[kanban.UpdateCardRequest]) (*connect_go.Response[kanban.UpdateCardResponse], error)
-	DeleteCard(context.Context, *connect_go.Request[kanban.DeleteCardRequest]) (*connect_go.Response[kanban.DeleteCardResponse], error)
-	MoveCard(context.Context, *connect_go.Request[kanban.MoveCardRequest]) (*connect_go.Response[kanban.MoveCardResponse], error)
+	CreateCard(context.Context, *connect.Request[kanban.CreateCardRequest]) (*connect.Response[kanban.CreateCardResponse], error)
+	UpdateCard(context.Context, *connect.Request[kanban.UpdateCardRequest]) (*connect.Response[kanban.UpdateCardResponse], error)
+	DeleteCard(context.Context, *connect.Request[kanban.DeleteCardRequest]) (*connect.Response[kanban.DeleteCardResponse], error)
+	MoveCard(context.Context, *connect.Request[kanban.MoveCardRequest]) (*connect.Response[kanban.MoveCardResponse], error)
 }
 
 // NewKanbanServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -277,71 +308,84 @@ type KanbanServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewKanbanServiceHandler(svc KanbanServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	kanbanServiceCreateBoardHandler := connect_go.NewUnaryHandler(
+func NewKanbanServiceHandler(svc KanbanServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	kanbanServiceCreateBoardHandler := connect.NewUnaryHandler(
 		KanbanServiceCreateBoardProcedure,
 		svc.CreateBoard,
-		opts...,
+		connect.WithSchema(kanbanServiceCreateBoardMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
-	kanbanServiceGetBoardHandler := connect_go.NewUnaryHandler(
+	kanbanServiceGetBoardHandler := connect.NewUnaryHandler(
 		KanbanServiceGetBoardProcedure,
 		svc.GetBoard,
-		opts...,
+		connect.WithSchema(kanbanServiceGetBoardMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
-	kanbanServiceListBoardsHandler := connect_go.NewUnaryHandler(
+	kanbanServiceListBoardsHandler := connect.NewUnaryHandler(
 		KanbanServiceListBoardsProcedure,
 		svc.ListBoards,
-		opts...,
+		connect.WithSchema(kanbanServiceListBoardsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
-	kanbanServiceUpdateBoardHandler := connect_go.NewUnaryHandler(
+	kanbanServiceUpdateBoardHandler := connect.NewUnaryHandler(
 		KanbanServiceUpdateBoardProcedure,
 		svc.UpdateBoard,
-		opts...,
+		connect.WithSchema(kanbanServiceUpdateBoardMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
-	kanbanServiceDeleteBoardHandler := connect_go.NewUnaryHandler(
+	kanbanServiceDeleteBoardHandler := connect.NewUnaryHandler(
 		KanbanServiceDeleteBoardProcedure,
 		svc.DeleteBoard,
-		opts...,
+		connect.WithSchema(kanbanServiceDeleteBoardMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
-	kanbanServiceCreateColumnHandler := connect_go.NewUnaryHandler(
+	kanbanServiceCreateColumnHandler := connect.NewUnaryHandler(
 		KanbanServiceCreateColumnProcedure,
 		svc.CreateColumn,
-		opts...,
+		connect.WithSchema(kanbanServiceCreateColumnMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
-	kanbanServiceUpdateColumnHandler := connect_go.NewUnaryHandler(
+	kanbanServiceUpdateColumnHandler := connect.NewUnaryHandler(
 		KanbanServiceUpdateColumnProcedure,
 		svc.UpdateColumn,
-		opts...,
+		connect.WithSchema(kanbanServiceUpdateColumnMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
-	kanbanServiceDeleteColumnHandler := connect_go.NewUnaryHandler(
+	kanbanServiceDeleteColumnHandler := connect.NewUnaryHandler(
 		KanbanServiceDeleteColumnProcedure,
 		svc.DeleteColumn,
-		opts...,
+		connect.WithSchema(kanbanServiceDeleteColumnMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
-	kanbanServiceMoveColumnHandler := connect_go.NewUnaryHandler(
+	kanbanServiceMoveColumnHandler := connect.NewUnaryHandler(
 		KanbanServiceMoveColumnProcedure,
 		svc.MoveColumn,
-		opts...,
+		connect.WithSchema(kanbanServiceMoveColumnMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
-	kanbanServiceCreateCardHandler := connect_go.NewUnaryHandler(
+	kanbanServiceCreateCardHandler := connect.NewUnaryHandler(
 		KanbanServiceCreateCardProcedure,
 		svc.CreateCard,
-		opts...,
+		connect.WithSchema(kanbanServiceCreateCardMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
-	kanbanServiceUpdateCardHandler := connect_go.NewUnaryHandler(
+	kanbanServiceUpdateCardHandler := connect.NewUnaryHandler(
 		KanbanServiceUpdateCardProcedure,
 		svc.UpdateCard,
-		opts...,
+		connect.WithSchema(kanbanServiceUpdateCardMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
-	kanbanServiceDeleteCardHandler := connect_go.NewUnaryHandler(
+	kanbanServiceDeleteCardHandler := connect.NewUnaryHandler(
 		KanbanServiceDeleteCardProcedure,
 		svc.DeleteCard,
-		opts...,
+		connect.WithSchema(kanbanServiceDeleteCardMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
-	kanbanServiceMoveCardHandler := connect_go.NewUnaryHandler(
+	kanbanServiceMoveCardHandler := connect.NewUnaryHandler(
 		KanbanServiceMoveCardProcedure,
 		svc.MoveCard,
-		opts...,
+		connect.WithSchema(kanbanServiceMoveCardMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/kanban.KanbanService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -380,54 +424,54 @@ func NewKanbanServiceHandler(svc KanbanServiceHandler, opts ...connect_go.Handle
 // UnimplementedKanbanServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedKanbanServiceHandler struct{}
 
-func (UnimplementedKanbanServiceHandler) CreateBoard(context.Context, *connect_go.Request[kanban.CreateBoardRequest]) (*connect_go.Response[kanban.CreateBoardResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("kanban.KanbanService.CreateBoard is not implemented"))
+func (UnimplementedKanbanServiceHandler) CreateBoard(context.Context, *connect.Request[kanban.CreateBoardRequest]) (*connect.Response[kanban.CreateBoardResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("kanban.KanbanService.CreateBoard is not implemented"))
 }
 
-func (UnimplementedKanbanServiceHandler) GetBoard(context.Context, *connect_go.Request[kanban.GetBoardRequest]) (*connect_go.Response[kanban.GetBoardResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("kanban.KanbanService.GetBoard is not implemented"))
+func (UnimplementedKanbanServiceHandler) GetBoard(context.Context, *connect.Request[kanban.GetBoardRequest]) (*connect.Response[kanban.GetBoardResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("kanban.KanbanService.GetBoard is not implemented"))
 }
 
-func (UnimplementedKanbanServiceHandler) ListBoards(context.Context, *connect_go.Request[kanban.ListBoardsRequest]) (*connect_go.Response[kanban.ListBoardsResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("kanban.KanbanService.ListBoards is not implemented"))
+func (UnimplementedKanbanServiceHandler) ListBoards(context.Context, *connect.Request[kanban.ListBoardsRequest]) (*connect.Response[kanban.ListBoardsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("kanban.KanbanService.ListBoards is not implemented"))
 }
 
-func (UnimplementedKanbanServiceHandler) UpdateBoard(context.Context, *connect_go.Request[kanban.UpdateBoardRequest]) (*connect_go.Response[kanban.UpdateBoardResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("kanban.KanbanService.UpdateBoard is not implemented"))
+func (UnimplementedKanbanServiceHandler) UpdateBoard(context.Context, *connect.Request[kanban.UpdateBoardRequest]) (*connect.Response[kanban.UpdateBoardResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("kanban.KanbanService.UpdateBoard is not implemented"))
 }
 
-func (UnimplementedKanbanServiceHandler) DeleteBoard(context.Context, *connect_go.Request[kanban.DeleteBoardRequest]) (*connect_go.Response[kanban.DeleteBoardResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("kanban.KanbanService.DeleteBoard is not implemented"))
+func (UnimplementedKanbanServiceHandler) DeleteBoard(context.Context, *connect.Request[kanban.DeleteBoardRequest]) (*connect.Response[kanban.DeleteBoardResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("kanban.KanbanService.DeleteBoard is not implemented"))
 }
 
-func (UnimplementedKanbanServiceHandler) CreateColumn(context.Context, *connect_go.Request[kanban.CreateColumnRequest]) (*connect_go.Response[kanban.CreateColumnResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("kanban.KanbanService.CreateColumn is not implemented"))
+func (UnimplementedKanbanServiceHandler) CreateColumn(context.Context, *connect.Request[kanban.CreateColumnRequest]) (*connect.Response[kanban.CreateColumnResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("kanban.KanbanService.CreateColumn is not implemented"))
 }
 
-func (UnimplementedKanbanServiceHandler) UpdateColumn(context.Context, *connect_go.Request[kanban.UpdateColumnRequest]) (*connect_go.Response[kanban.UpdateColumnResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("kanban.KanbanService.UpdateColumn is not implemented"))
+func (UnimplementedKanbanServiceHandler) UpdateColumn(context.Context, *connect.Request[kanban.UpdateColumnRequest]) (*connect.Response[kanban.UpdateColumnResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("kanban.KanbanService.UpdateColumn is not implemented"))
 }
 
-func (UnimplementedKanbanServiceHandler) DeleteColumn(context.Context, *connect_go.Request[kanban.DeleteColumnRequest]) (*connect_go.Response[kanban.DeleteColumnResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("kanban.KanbanService.DeleteColumn is not implemented"))
+func (UnimplementedKanbanServiceHandler) DeleteColumn(context.Context, *connect.Request[kanban.DeleteColumnRequest]) (*connect.Response[kanban.DeleteColumnResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("kanban.KanbanService.DeleteColumn is not implemented"))
 }
 
-func (UnimplementedKanbanServiceHandler) MoveColumn(context.Context, *connect_go.Request[kanban.MoveColumnRequest]) (*connect_go.Response[kanban.MoveColumnResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("kanban.KanbanService.MoveColumn is not implemented"))
+func (UnimplementedKanbanServiceHandler) MoveColumn(context.Context, *connect.Request[kanban.MoveColumnRequest]) (*connect.Response[kanban.MoveColumnResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("kanban.KanbanService.MoveColumn is not implemented"))
 }
 
-func (UnimplementedKanbanServiceHandler) CreateCard(context.Context, *connect_go.Request[kanban.CreateCardRequest]) (*connect_go.Response[kanban.CreateCardResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("kanban.KanbanService.CreateCard is not implemented"))
+func (UnimplementedKanbanServiceHandler) CreateCard(context.Context, *connect.Request[kanban.CreateCardRequest]) (*connect.Response[kanban.CreateCardResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("kanban.KanbanService.CreateCard is not implemented"))
 }
 
-func (UnimplementedKanbanServiceHandler) UpdateCard(context.Context, *connect_go.Request[kanban.UpdateCardRequest]) (*connect_go.Response[kanban.UpdateCardResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("kanban.KanbanService.UpdateCard is not implemented"))
+func (UnimplementedKanbanServiceHandler) UpdateCard(context.Context, *connect.Request[kanban.UpdateCardRequest]) (*connect.Response[kanban.UpdateCardResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("kanban.KanbanService.UpdateCard is not implemented"))
 }
 
-func (UnimplementedKanbanServiceHandler) DeleteCard(context.Context, *connect_go.Request[kanban.DeleteCardRequest]) (*connect_go.Response[kanban.DeleteCardResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("kanban.KanbanService.DeleteCard is not implemented"))
+func (UnimplementedKanbanServiceHandler) DeleteCard(context.Context, *connect.Request[kanban.DeleteCardRequest]) (*connect.Response[kanban.DeleteCardResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("kanban.KanbanService.DeleteCard is not implemented"))
 }
 
-func (UnimplementedKanbanServiceHandler) MoveCard(context.Context, *connect_go.Request[kanban.MoveCardRequest]) (*connect_go.Response[kanban.MoveCardResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("kanban.KanbanService.MoveCard is not implemented"))
+func (UnimplementedKanbanServiceHandler) MoveCard(context.Context, *connect.Request[kanban.MoveCardRequest]) (*connect.Response[kanban.MoveCardResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("kanban.KanbanService.MoveCard is not implemented"))
 }

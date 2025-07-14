@@ -11,11 +11,43 @@ only refer to the code in the git repo directory in isolation, this is a separat
 Environment variables will not be used, instead use the `config/config.go` file to set configuration options.
 
 ## Proto / GRPC
-- Proto files are located in the `proto/` directory
-- Use go generate . to generate Go and Typescript from proto files
-- Refer to ./buf.gen.yaml for the code generation configuration
-- generated files will be located in `./gen/proto`
-- Use ./example as an example for how to use the generated code
+
+### File Organization
+- **Proto files**: Located in the `proto/` directory
+- **Generated Go files**: Located in `./gen/proto/` and `./gen/genconnect/`
+- **Generated TypeScript files**: Located in `./gen/proto/` with `_pb.ts` and `_connect.ts` extensions
+- **Configuration**: `./buf.gen.yaml` for code generation settings
+
+### Code Generation Workflow
+1. **Single Command**: Use `go generate .` to generate both Go and TypeScript from proto files
+2. **Go Generation**: Creates `.pb.go`, `_grpc.pb.go`, and `.connect.go` files
+3. **TypeScript Generation**: Creates `_pb.ts` (types) and `_connect.ts` (client) files
+4. **Automatic**: Triggered by `//go:generate buf generate --path proto` directive in `main.go`
+
+### Generated File Structure
+```
+gen/
+├── proto/
+│   └── {service}/
+│       ├── {service}.pb.go         # Go protobuf messages
+│       ├── {service}_grpc.pb.go    # Go gRPC server/client
+│       ├── {service}_pb.ts         # TypeScript types
+│       ├── {service}_connect.ts    # TypeScript ConnectRPC client
+│       └── {service}connect/
+│           └── {service}.connect.go # Go ConnectRPC handlers
+└── genconnect/
+    └── {service}.connect.go        # Additional Go ConnectRPC files
+```
+
+### Examples and Usage Patterns
+- **Go Backend**: See `./vibekanban/` for ConnectRPC service implementation
+- **TypeScript Frontend**: See `./example/ExampleClient.tsx` for ConnectRPC client usage
+- **Service Structure**: Follow `vibekanban/service.go` pattern for new services
+
+### ConnectRPC Integration
+- **Backend**: Services implement generated handler interfaces from `genconnect` packages
+- **Frontend**: Use generated TypeScript clients with `@connectrpc/connect-web` transport
+- **Type Safety**: Full type safety between frontend and backend via generated types
 
 ## Go
 - Debug print statements should be fmt.Printf("Debug: %+v\n", variable)

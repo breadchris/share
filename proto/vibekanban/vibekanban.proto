@@ -1,0 +1,370 @@
+syntax = "proto3";
+
+package vibekanban;
+
+option go_package = "github.com/breadchris/share/gen/proto/vibekanban";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+// VibeKanban service provides project and task management functionality
+service VibeKanbanService {
+  // Project operations
+  rpc GetProject(GetProjectRequest) returns (GetProjectResponse);
+  rpc ListProjects(ListProjectsRequest) returns (ListProjectsResponse);
+  rpc CreateProject(CreateProjectRequest) returns (CreateProjectResponse);
+  rpc UpdateProject(UpdateProjectRequest) returns (UpdateProjectResponse);
+  rpc DeleteProject(DeleteProjectRequest) returns (google.protobuf.Empty);
+  
+  // Task operations
+  rpc GetTasks(GetTasksRequest) returns (GetTasksResponse);
+  rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse);
+  rpc UpdateTask(UpdateTaskRequest) returns (UpdateTaskResponse);
+  rpc DeleteTask(DeleteTaskRequest) returns (google.protobuf.Empty);
+  
+  // Task attempt operations
+  rpc GetTaskAttempts(GetTaskAttemptsRequest) returns (GetTaskAttemptsResponse);
+  rpc CreateTaskAttempt(CreateTaskAttemptRequest) returns (CreateTaskAttemptResponse);
+  rpc StartTaskAttempt(StartTaskAttemptRequest) returns (StartTaskAttemptResponse);
+  rpc GetAttemptDiff(GetAttemptDiffRequest) returns (GetAttemptDiffResponse);
+  rpc MergeAttempt(MergeAttemptRequest) returns (MergeAttemptResponse);
+  
+  // Git operations
+  rpc GetProjectBranches(GetProjectBranchesRequest) returns (GetProjectBranchesResponse);
+  rpc CreateProjectBranch(CreateProjectBranchRequest) returns (CreateProjectBranchResponse);
+  
+  // Process operations
+  rpc GetProcesses(GetProcessesRequest) returns (GetProcessesResponse);
+  rpc KillProcess(KillProcessRequest) returns (google.protobuf.Empty);
+  
+  // Debug operations
+  rpc GetAttemptStatus(GetAttemptStatusRequest) returns (GetAttemptStatusResponse);
+  rpc GetDebugProcesses(GetDebugProcessesRequest) returns (GetDebugProcessesResponse);
+}
+
+// Core data models
+message Project {
+  string id = 1;
+  string name = 2;
+  string git_repo_path = 3;
+  string setup_script = 4;
+  string dev_script = 5;
+  string default_branch = 6;
+  string user_id = 7;
+  repeated Task tasks = 8;
+  map<string, string> config = 9;
+  google.protobuf.Timestamp created_at = 10;
+  google.protobuf.Timestamp updated_at = 11;
+}
+
+message Task {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  TaskStatus status = 4;
+  TaskPriority priority = 5;
+  string project_id = 6;
+  string user_id = 7;
+  repeated TaskAttempt attempts = 8;
+  repeated string labels = 9;
+  map<string, string> metadata = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+}
+
+message TaskAttempt {
+  string id = 1;
+  string task_id = 2;
+  string worktree_path = 3;
+  string branch = 4;
+  string base_branch = 5;
+  string merge_commit = 6;
+  string executor = 7;
+  AttemptStatus status = 8;
+  string pr_url = 9;
+  google.protobuf.Timestamp start_time = 10;
+  google.protobuf.Timestamp end_time = 11;
+  string user_id = 12;
+  repeated ExecutionProcess processes = 13;
+  repeated ExecutorSession sessions = 14;
+  google.protobuf.Timestamp created_at = 15;
+  google.protobuf.Timestamp updated_at = 16;
+}
+
+message ExecutionProcess {
+  string id = 1;
+  string attempt_id = 2;
+  ProcessType type = 3;
+  ProcessStatus status = 4;
+  string command = 5;
+  int32 process_id = 6;
+  google.protobuf.Timestamp start_time = 7;
+  google.protobuf.Timestamp end_time = 8;
+  string stdout = 9;
+  string stderr = 10;
+  int32 exit_code = 11;
+  int32 port = 12;
+  string url = 13;
+  map<string, string> metadata = 14;
+  google.protobuf.Timestamp created_at = 15;
+  google.protobuf.Timestamp updated_at = 16;
+}
+
+message ExecutorSession {
+  string id = 1;
+  string attempt_id = 2;
+  string session_id = 3;
+  string executor = 4;
+  string prompt = 5;
+  string summary = 6;
+  repeated ConversationEntry messages = 7;
+  map<string, string> metadata = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+}
+
+message ConversationEntry {
+  string type = 1;
+  string content = 2;
+  map<string, string> metadata = 3;
+  google.protobuf.Timestamp timestamp = 4;
+}
+
+// Enums
+enum TaskStatus {
+  TASK_STATUS_UNSPECIFIED = 0;
+  TASK_STATUS_TODO = 1;
+  TASK_STATUS_IN_PROGRESS = 2;
+  TASK_STATUS_IN_REVIEW = 3;
+  TASK_STATUS_DONE = 4;
+  TASK_STATUS_CANCELLED = 5;
+}
+
+enum TaskPriority {
+  TASK_PRIORITY_UNSPECIFIED = 0;
+  TASK_PRIORITY_LOW = 1;
+  TASK_PRIORITY_MEDIUM = 2;
+  TASK_PRIORITY_HIGH = 3;
+}
+
+enum AttemptStatus {
+  ATTEMPT_STATUS_UNSPECIFIED = 0;
+  ATTEMPT_STATUS_PENDING = 1;
+  ATTEMPT_STATUS_RUNNING = 2;
+  ATTEMPT_STATUS_COMPLETED = 3;
+  ATTEMPT_STATUS_FAILED = 4;
+}
+
+enum ProcessType {
+  PROCESS_TYPE_UNSPECIFIED = 0;
+  PROCESS_TYPE_SETUP_SCRIPT = 1;
+  PROCESS_TYPE_CODING_AGENT = 2;
+  PROCESS_TYPE_DEV_SERVER = 3;
+}
+
+enum ProcessStatus {
+  PROCESS_STATUS_UNSPECIFIED = 0;
+  PROCESS_STATUS_PENDING = 1;
+  PROCESS_STATUS_RUNNING = 2;
+  PROCESS_STATUS_COMPLETED = 3;
+  PROCESS_STATUS_FAILED = 4;
+  PROCESS_STATUS_KILLED = 5;
+}
+
+// Project operations
+message GetProjectRequest {
+  string id = 1;
+}
+
+message GetProjectResponse {
+  Project project = 1;
+}
+
+message ListProjectsRequest {
+  int32 page_size = 1;
+  string page_token = 2;
+}
+
+message ListProjectsResponse {
+  repeated Project projects = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message CreateProjectRequest {
+  string name = 1;
+  string git_repo_path = 2;
+  string setup_script = 3;
+  string dev_script = 4;
+  string default_branch = 5;
+  map<string, string> config = 6;
+}
+
+message CreateProjectResponse {
+  Project project = 1;
+}
+
+message UpdateProjectRequest {
+  string id = 1;
+  string name = 2;
+  string git_repo_path = 3;
+  string setup_script = 4;
+  string dev_script = 5;
+  string default_branch = 6;
+  map<string, string> config = 7;
+}
+
+message UpdateProjectResponse {
+  Project project = 1;
+}
+
+message DeleteProjectRequest {
+  string id = 1;
+}
+
+// Task operations
+message GetTasksRequest {
+  string project_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+  TaskStatus status_filter = 4;
+  TaskPriority priority_filter = 5;
+}
+
+message GetTasksResponse {
+  repeated Task tasks = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message CreateTaskRequest {
+  string project_id = 1;
+  string title = 2;
+  string description = 3;
+  TaskPriority priority = 4;
+  repeated string labels = 5;
+  map<string, string> metadata = 6;
+}
+
+message CreateTaskResponse {
+  Task task = 1;
+}
+
+message UpdateTaskRequest {
+  string id = 1;
+  string title = 2;
+  string description = 3;
+  TaskStatus status = 4;
+  TaskPriority priority = 5;
+  repeated string labels = 6;
+  map<string, string> metadata = 7;
+}
+
+message UpdateTaskResponse {
+  Task task = 1;
+}
+
+message DeleteTaskRequest {
+  string id = 1;
+}
+
+// Task attempt operations
+message GetTaskAttemptsRequest {
+  string task_id = 1;
+  int32 page_size = 2;
+  string page_token = 3;
+}
+
+message GetTaskAttemptsResponse {
+  repeated TaskAttempt attempts = 1;
+  string next_page_token = 2;
+  int32 total_count = 3;
+}
+
+message CreateTaskAttemptRequest {
+  string task_id = 1;
+  string executor = 2;
+  string base_branch = 3;
+}
+
+message CreateTaskAttemptResponse {
+  TaskAttempt attempt = 1;
+}
+
+message StartTaskAttemptRequest {
+  string attempt_id = 1;
+}
+
+message StartTaskAttemptResponse {
+  TaskAttempt attempt = 1;
+}
+
+message GetAttemptDiffRequest {
+  string attempt_id = 1;
+}
+
+message GetAttemptDiffResponse {
+  string diff = 1;
+  repeated string files = 2;
+}
+
+message MergeAttemptRequest {
+  string attempt_id = 1;
+  string commit_message = 2;
+}
+
+message MergeAttemptResponse {
+  string merge_commit = 1;
+  string pr_url = 2;
+}
+
+// Git operations
+message GetProjectBranchesRequest {
+  string project_id = 1;
+}
+
+message GetProjectBranchesResponse {
+  repeated string branches = 1;
+  string current_branch = 2;
+}
+
+message CreateProjectBranchRequest {
+  string project_id = 1;
+  string branch_name = 2;
+  string base_branch = 3;
+}
+
+message CreateProjectBranchResponse {
+  string branch_name = 1;
+}
+
+// Process operations
+message GetProcessesRequest {
+  string attempt_id = 1;
+}
+
+message GetProcessesResponse {
+  repeated ExecutionProcess processes = 1;
+}
+
+message KillProcessRequest {
+  string process_id = 1;
+}
+
+// Debug operations
+message GetAttemptStatusRequest {
+  string attempt_id = 1;
+}
+
+message GetAttemptStatusResponse {
+  TaskAttempt attempt = 1;
+  repeated ExecutionProcess processes = 2;
+}
+
+message GetDebugProcessesRequest {
+  // Empty for now, could add filters later
+}
+
+message GetDebugProcessesResponse {
+  repeated ExecutionProcess processes = 1;
+}

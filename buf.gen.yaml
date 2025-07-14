@@ -1,28 +1,22 @@
-version: v1
+version: v2
 managed:
   enabled: true
-  go_package_prefix:
-    default: github.com/breadchris/share/gen
+#  go_package_prefix:
+#    default: github.com/breadchris/share/gen
+  override:
+    - file_option: go_package_prefix
+      value: github.com/breadchris/share/gen
 plugins:
-  - plugin: buf.build/protocolbuffers/go
-    out: ./gen
+  - local: protoc-gen-go
+    out: gen
+    opt: paths=source_relative
+  - local: protoc-gen-connect-go
+    out: gen
+    opt: paths=source_relative
+  - local: protoc-gen-es
     opt:
-      - paths=source_relative
-  - plugin: buf.build/bufbuild/connect-go
-    out: ./gen
-    opt:
-      - paths=source_relative
-      - reflect-protocol=grpc-v1
-  - plugin: buf.build/grpc/go:v1.2.0
-    out: ./gen
-    opt:
-      - paths=source_relative
-      - require_unimplemented_servers=false
-  - plugin: es
-    opt: target=ts
-    out: ./gen
-  - plugin: connect-es
-    opt: target=ts
+    - target=ts
+    include_imports: true
     out: ./gen
 #  - plugin: buf.build/bufbuild/connect-swift
 #    opt: >

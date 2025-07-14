@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/breadchris/share/screenshare/config/ipdns"
-	"github.com/breadchris/share/screenshare/config/mode"
+	"github.com/breadchris/share/graveyard/screenshare/config/ipdns"
+	"github.com/breadchris/share/graveyard/screenshare/config/mode"
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/rs/zerolog"

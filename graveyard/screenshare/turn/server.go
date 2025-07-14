@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/breadchris/share/screenshare/config"
-	"github.com/breadchris/share/screenshare/config/ipdns"
-	"github.com/breadchris/share/screenshare/util"
+	"github.com/breadchris/share/graveyard/screenshare/config"
+	"github.com/breadchris/share/graveyard/screenshare/config/ipdns"
+	"github.com/breadchris/share/graveyard/screenshare/util"
 	"github.com/pion/turn/v4"
 	"github.com/rs/zerolog/log"
 )

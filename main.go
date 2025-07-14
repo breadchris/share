@@ -1,6 +1,6 @@
 package main
 
-//go:generate buf generate --path proto
+//go:generate npx buf generate --path proto
 
 import (
 	"context"
@@ -36,7 +36,6 @@ import (
 	"github.com/breadchris/share/editor/config"
 	"github.com/breadchris/share/editor/leaps"
 	"github.com/breadchris/share/editor/playground"
-	"github.com/breadchris/share/example"
 	"github.com/breadchris/share/graph"
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/justshare"
@@ -395,7 +394,6 @@ func startServer(useTLS bool, port int) {
 	p("", interpreted(justshare.New))
 
 	p("/coderunner", interpreted(coderunner.New))
-	p("/example", interpreted(example.New))
 	p("/kanban", interpreted(kanban.New))
 	p("/vibekanban", interpreted(vibekanban.New))
 	//p("/claudemd", interpreted(claudemd.New))

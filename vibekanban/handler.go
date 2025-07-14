@@ -1,15 +1,15 @@
-package example
+package vibekanban
 
 import (
+	"connectrpc.com/connect"
+	"github.com/breadchris/share/gen/proto/vibekanban/vibekanbanconnect"
 	"net/http"
 
 	"github.com/breadchris/share/coderunner"
 	"github.com/breadchris/share/deps"
-	"github.com/breadchris/share/gen/proto/example/exampleconnect"
-	"github.com/bufbuild/connect-go"
 )
 
-// New creates a new HTTP handler for the example service
+// New creates a new HTTP handler for the vibekanban service
 // Following the deps pattern used in the rest of the codebase
 func New(d deps.Deps) *http.ServeMux {
 	mux := http.NewServeMux()
@@ -17,23 +17,23 @@ func New(d deps.Deps) *http.ServeMux {
 	// Serve the React component at the root path
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			coderunner.ServeReactApp(w, r, "example/ExampleClient", "ExampleClient")
+			coderunner.ServeReactApp(w, r, "vibekanban/VibeKanbanApp", "VibeKanbanApp")
 			return
 		}
 		http.NotFound(w, r)
 	})
 
 	// Create service instance
-	service := NewService()
+	service := NewService(d.DB, d.Session)
 
 	// Register the service with Connect interceptors
-	// examples https://github.com/justshare-io/justshare/blob/main/pkg/server/serve.go#L139
 	interceptors := connect.WithInterceptors(
 	// Add any interceptors you need (logging, auth, etc.)
+	// For now, keep it simple without additional interceptors
 	)
 
 	// Create and mount the handler for API endpoints
-	path, handler := exampleconnect.NewExampleServiceHandler(service, interceptors)
+	path, handler := vibekanbanconnect.NewVibeKanbanServiceHandler(service, interceptors)
 	mux.Handle(path, handler)
 
 	return mux

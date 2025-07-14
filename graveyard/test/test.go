@@ -3,8 +3,8 @@ package test
 import (
 	"fmt"
 	"github.com/breadchris/share/deps"
+	"github.com/breadchris/share/graveyard/yaegi"
 	. "github.com/breadchris/share/html"
-	"github.com/breadchris/share/yaegi"
 	"net/http"
 )
 

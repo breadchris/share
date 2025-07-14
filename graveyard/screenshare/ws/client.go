@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/breadchris/share/screenshare/ws/outgoing"
+	"github.com/breadchris/share/graveyard/screenshare/ws/outgoing"
 	"github.com/gorilla/websocket"
 	"github.com/rs/xid"
 	"github.com/rs/zerolog"

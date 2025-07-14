@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/breadchris/share/screenshare/cmd"
-	pmode "github.com/breadchris/share/screenshare/config/mode"
+	"github.com/breadchris/share/graveyard/screenshare/cmd"
+	pmode "github.com/breadchris/share/graveyard/screenshare/config/mode"
 )
 
 var (

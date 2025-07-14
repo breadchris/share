@@ -1,12 +1,12 @@
 package kanban
 
 import (
+	"connectrpc.com/connect"
 	"net/http"
 
 	"github.com/breadchris/share/coderunner"
 	"github.com/breadchris/share/deps"
 	"github.com/breadchris/share/gen/proto/kanban/kanbanconnect"
-	"github.com/bufbuild/connect-go"
 )
 
 // TODO merge https://github.com/traefik/yaegi/pull/1684/files with fork

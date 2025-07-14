@@ -1454,7 +1454,7 @@ func (s *VibeKanbanService) getDebugProcesses(w http.ResponseWriter, r *http.Req
 }
 
 // New creates a new HTTP ServeMux with all vibe-kanban routes
-func New(d deps.Deps) *http.ServeMux {
+func NewHTTP(d deps.Deps) *http.ServeMux {
 	service := NewVibeKanbanService(d.DB, d.Session)
 	mux := http.NewServeMux()
 

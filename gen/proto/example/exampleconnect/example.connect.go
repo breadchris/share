@@ -5,10 +5,10 @@
 package exampleconnect
 
 import (
+	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
 	example "github.com/breadchris/share/gen/proto/example"
-	connect_go "github.com/bufbuild/connect-go"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"
 	strings "strings"
@@ -19,7 +19,7 @@ import (
 // generated with a version of connect newer than the one compiled into your binary. You can fix the
 // problem by either regenerating this code with an older version of connect or updating the connect
 // version compiled into your binary.
-const _ = connect_go.IsAtLeastVersion0_1_0
+const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// ExampleServiceName is the fully-qualified name of the ExampleService service.
@@ -50,13 +50,23 @@ const (
 	ExampleServiceListItemsProcedure = "/example.ExampleService/ListItems"
 )
 
+// These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
+var (
+	exampleServiceServiceDescriptor          = example.File_proto_example_example_proto.Services().ByName("ExampleService")
+	exampleServiceCreateItemMethodDescriptor = exampleServiceServiceDescriptor.Methods().ByName("CreateItem")
+	exampleServiceGetItemMethodDescriptor    = exampleServiceServiceDescriptor.Methods().ByName("GetItem")
+	exampleServiceUpdateItemMethodDescriptor = exampleServiceServiceDescriptor.Methods().ByName("UpdateItem")
+	exampleServiceDeleteItemMethodDescriptor = exampleServiceServiceDescriptor.Methods().ByName("DeleteItem")
+	exampleServiceListItemsMethodDescriptor  = exampleServiceServiceDescriptor.Methods().ByName("ListItems")
+)
+
 // ExampleServiceClient is a client for the example.ExampleService service.
 type ExampleServiceClient interface {
-	CreateItem(context.Context, *connect_go.Request[example.CreateItemRequest]) (*connect_go.Response[example.CreateItemResponse], error)
-	GetItem(context.Context, *connect_go.Request[example.GetItemRequest]) (*connect_go.Response[example.GetItemResponse], error)
-	UpdateItem(context.Context, *connect_go.Request[example.UpdateItemRequest]) (*connect_go.Response[example.UpdateItemResponse], error)
-	DeleteItem(context.Context, *connect_go.Request[example.DeleteItemRequest]) (*connect_go.Response[emptypb.Empty], error)
-	ListItems(context.Context, *connect_go.Request[example.ListItemsRequest]) (*connect_go.Response[example.ListItemsResponse], error)
+	CreateItem(context.Context, *connect.Request[example.CreateItemRequest]) (*connect.Response[example.CreateItemResponse], error)
+	GetItem(context.Context, *connect.Request[example.GetItemRequest]) (*connect.Response[example.GetItemResponse], error)
+	UpdateItem(context.Context, *connect.Request[example.UpdateItemRequest]) (*connect.Response[example.UpdateItemResponse], error)
+	DeleteItem(context.Context, *connect.Request[example.DeleteItemRequest]) (*connect.Response[emptypb.Empty], error)
+	ListItems(context.Context, *connect.Request[example.ListItemsRequest]) (*connect.Response[example.ListItemsResponse], error)
 }
 
 // NewExampleServiceClient constructs a client for the example.ExampleService service. By default,
@@ -66,78 +76,83 @@ type ExampleServiceClient interface {
 //
 // The URL supplied here should be the base URL for the Connect or gRPC server (for example,
 // http://api.acme.com or https://acme.com/grpc).
-func NewExampleServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts ...connect_go.ClientOption) ExampleServiceClient {
+func NewExampleServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) ExampleServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &exampleServiceClient{
-		createItem: connect_go.NewClient[example.CreateItemRequest, example.CreateItemResponse](
+		createItem: connect.NewClient[example.CreateItemRequest, example.CreateItemResponse](
 			httpClient,
 			baseURL+ExampleServiceCreateItemProcedure,
-			opts...,
+			connect.WithSchema(exampleServiceCreateItemMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
-		getItem: connect_go.NewClient[example.GetItemRequest, example.GetItemResponse](
+		getItem: connect.NewClient[example.GetItemRequest, example.GetItemResponse](
 			httpClient,
 			baseURL+ExampleServiceGetItemProcedure,
-			opts...,
+			connect.WithSchema(exampleServiceGetItemMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
-		updateItem: connect_go.NewClient[example.UpdateItemRequest, example.UpdateItemResponse](
+		updateItem: connect.NewClient[example.UpdateItemRequest, example.UpdateItemResponse](
 			httpClient,
 			baseURL+ExampleServiceUpdateItemProcedure,
-			opts...,
+			connect.WithSchema(exampleServiceUpdateItemMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
-		deleteItem: connect_go.NewClient[example.DeleteItemRequest, emptypb.Empty](
+		deleteItem: connect.NewClient[example.DeleteItemRequest, emptypb.Empty](
 			httpClient,
 			baseURL+ExampleServiceDeleteItemProcedure,
-			opts...,
+			connect.WithSchema(exampleServiceDeleteItemMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
-		listItems: connect_go.NewClient[example.ListItemsRequest, example.ListItemsResponse](
+		listItems: connect.NewClient[example.ListItemsRequest, example.ListItemsResponse](
 			httpClient,
 			baseURL+ExampleServiceListItemsProcedure,
-			opts...,
+			connect.WithSchema(exampleServiceListItemsMethodDescriptor),
+			connect.WithClientOptions(opts...),
 		),
 	}
 }
 
 // exampleServiceClient implements ExampleServiceClient.
 type exampleServiceClient struct {
-	createItem *connect_go.Client[example.CreateItemRequest, example.CreateItemResponse]
-	getItem    *connect_go.Client[example.GetItemRequest, example.GetItemResponse]
-	updateItem *connect_go.Client[example.UpdateItemRequest, example.UpdateItemResponse]
-	deleteItem *connect_go.Client[example.DeleteItemRequest, emptypb.Empty]
-	listItems  *connect_go.Client[example.ListItemsRequest, example.ListItemsResponse]
+	createItem *connect.Client[example.CreateItemRequest, example.CreateItemResponse]
+	getItem    *connect.Client[example.GetItemRequest, example.GetItemResponse]
+	updateItem *connect.Client[example.UpdateItemRequest, example.UpdateItemResponse]
+	deleteItem *connect.Client[example.DeleteItemRequest, emptypb.Empty]
+	listItems  *connect.Client[example.ListItemsRequest, example.ListItemsResponse]
 }
 
 // CreateItem calls example.ExampleService.CreateItem.
-func (c *exampleServiceClient) CreateItem(ctx context.Context, req *connect_go.Request[example.CreateItemRequest]) (*connect_go.Response[example.CreateItemResponse], error) {
+func (c *exampleServiceClient) CreateItem(ctx context.Context, req *connect.Request[example.CreateItemRequest]) (*connect.Response[example.CreateItemResponse], error) {
 	return c.createItem.CallUnary(ctx, req)
 }
 
 // GetItem calls example.ExampleService.GetItem.
-func (c *exampleServiceClient) GetItem(ctx context.Context, req *connect_go.Request[example.GetItemRequest]) (*connect_go.Response[example.GetItemResponse], error) {
+func (c *exampleServiceClient) GetItem(ctx context.Context, req *connect.Request[example.GetItemRequest]) (*connect.Response[example.GetItemResponse], error) {
 	return c.getItem.CallUnary(ctx, req)
 }
 
 // UpdateItem calls example.ExampleService.UpdateItem.
-func (c *exampleServiceClient) UpdateItem(ctx context.Context, req *connect_go.Request[example.UpdateItemRequest]) (*connect_go.Response[example.UpdateItemResponse], error) {
+func (c *exampleServiceClient) UpdateItem(ctx context.Context, req *connect.Request[example.UpdateItemRequest]) (*connect.Response[example.UpdateItemResponse], error) {
 	return c.updateItem.CallUnary(ctx, req)
 }
 
 // DeleteItem calls example.ExampleService.DeleteItem.
-func (c *exampleServiceClient) DeleteItem(ctx context.Context, req *connect_go.Request[example.DeleteItemRequest]) (*connect_go.Response[emptypb.Empty], error) {
+func (c *exampleServiceClient) DeleteItem(ctx context.Context, req *connect.Request[example.DeleteItemRequest]) (*connect.Response[emptypb.Empty], error) {
 	return c.deleteItem.CallUnary(ctx, req)
 }
 
 // ListItems calls example.ExampleService.ListItems.
-func (c *exampleServiceClient) ListItems(ctx context.Context, req *connect_go.Request[example.ListItemsRequest]) (*connect_go.Response[example.ListItemsResponse], error) {
+func (c *exampleServiceClient) ListItems(ctx context.Context, req *connect.Request[example.ListItemsRequest]) (*connect.Response[example.ListItemsResponse], error) {
 	return c.listItems.CallUnary(ctx, req)
 }
 
 // ExampleServiceHandler is an implementation of the example.ExampleService service.
 type ExampleServiceHandler interface {
-	CreateItem(context.Context, *connect_go.Request[example.CreateItemRequest]) (*connect_go.Response[example.CreateItemResponse], error)
-	GetItem(context.Context, *connect_go.Request[example.GetItemRequest]) (*connect_go.Response[example.GetItemResponse], error)
-	UpdateItem(context.Context, *connect_go.Request[example.UpdateItemRequest]) (*connect_go.Response[example.UpdateItemResponse], error)
-	DeleteItem(context.Context, *connect_go.Request[example.DeleteItemRequest]) (*connect_go.Response[emptypb.Empty], error)
-	ListItems(context.Context, *connect_go.Request[example.ListItemsRequest]) (*connect_go.Response[example.ListItemsResponse], error)
+	CreateItem(context.Context, *connect.Request[example.CreateItemRequest]) (*connect.Response[example.CreateItemResponse], error)
+	GetItem(context.Context, *connect.Request[example.GetItemRequest]) (*connect.Response[example.GetItemResponse], error)
+	UpdateItem(context.Context, *connect.Request[example.UpdateItemRequest]) (*connect.Response[example.UpdateItemResponse], error)
+	DeleteItem(context.Context, *connect.Request[example.DeleteItemRequest]) (*connect.Response[emptypb.Empty], error)
+	ListItems(context.Context, *connect.Request[example.ListItemsRequest]) (*connect.Response[example.ListItemsResponse], error)
 }
 
 // NewExampleServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -145,31 +160,36 @@ type ExampleServiceHandler interface {
 //
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
-func NewExampleServiceHandler(svc ExampleServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
-	exampleServiceCreateItemHandler := connect_go.NewUnaryHandler(
+func NewExampleServiceHandler(svc ExampleServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	exampleServiceCreateItemHandler := connect.NewUnaryHandler(
 		ExampleServiceCreateItemProcedure,
 		svc.CreateItem,
-		opts...,
+		connect.WithSchema(exampleServiceCreateItemMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
-	exampleServiceGetItemHandler := connect_go.NewUnaryHandler(
+	exampleServiceGetItemHandler := connect.NewUnaryHandler(
 		ExampleServiceGetItemProcedure,
 		svc.GetItem,
-		opts...,
+		connect.WithSchema(exampleServiceGetItemMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
-	exampleServiceUpdateItemHandler := connect_go.NewUnaryHandler(
+	exampleServiceUpdateItemHandler := connect.NewUnaryHandler(
 		ExampleServiceUpdateItemProcedure,
 		svc.UpdateItem,
-		opts...,
+		connect.WithSchema(exampleServiceUpdateItemMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
-	exampleServiceDeleteItemHandler := connect_go.NewUnaryHandler(
+	exampleServiceDeleteItemHandler := connect.NewUnaryHandler(
 		ExampleServiceDeleteItemProcedure,
 		svc.DeleteItem,
-		opts...,
+		connect.WithSchema(exampleServiceDeleteItemMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
-	exampleServiceListItemsHandler := connect_go.NewUnaryHandler(
+	exampleServiceListItemsHandler := connect.NewUnaryHandler(
 		ExampleServiceListItemsProcedure,
 		svc.ListItems,
-		opts...,
+		connect.WithSchema(exampleServiceListItemsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
 	)
 	return "/example.ExampleService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -192,22 +212,22 @@ func NewExampleServiceHandler(svc ExampleServiceHandler, opts ...connect_go.Hand
 // UnimplementedExampleServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedExampleServiceHandler struct{}
 
-func (UnimplementedExampleServiceHandler) CreateItem(context.Context, *connect_go.Request[example.CreateItemRequest]) (*connect_go.Response[example.CreateItemResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("example.ExampleService.CreateItem is not implemented"))
+func (UnimplementedExampleServiceHandler) CreateItem(context.Context, *connect.Request[example.CreateItemRequest]) (*connect.Response[example.CreateItemResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("example.ExampleService.CreateItem is not implemented"))
 }
 
-func (UnimplementedExampleServiceHandler) GetItem(context.Context, *connect_go.Request[example.GetItemRequest]) (*connect_go.Response[example.GetItemResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("example.ExampleService.GetItem is not implemented"))
+func (UnimplementedExampleServiceHandler) GetItem(context.Context, *connect.Request[example.GetItemRequest]) (*connect.Response[example.GetItemResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("example.ExampleService.GetItem is not implemented"))
 }
 
-func (UnimplementedExampleServiceHandler) UpdateItem(context.Context, *connect_go.Request[example.UpdateItemRequest]) (*connect_go.Response[example.UpdateItemResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("example.ExampleService.UpdateItem is not implemented"))
+func (UnimplementedExampleServiceHandler) UpdateItem(context.Context, *connect.Request[example.UpdateItemRequest]) (*connect.Response[example.UpdateItemResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("example.ExampleService.UpdateItem is not implemented"))
 }
 
-func (UnimplementedExampleServiceHandler) DeleteItem(context.Context, *connect_go.Request[example.DeleteItemRequest]) (*connect_go.Response[emptypb.Empty], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("example.ExampleService.DeleteItem is not implemented"))
+func (UnimplementedExampleServiceHandler) DeleteItem(context.Context, *connect.Request[example.DeleteItemRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("example.ExampleService.DeleteItem is not implemented"))
 }
 
-func (UnimplementedExampleServiceHandler) ListItems(context.Context, *connect_go.Request[example.ListItemsRequest]) (*connect_go.Response[example.ListItemsResponse], error) {
-	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("example.ExampleService.ListItems is not implemented"))
+func (UnimplementedExampleServiceHandler) ListItems(context.Context, *connect.Request[example.ListItemsRequest]) (*connect.Response[example.ListItemsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("example.ExampleService.ListItems is not implemented"))
 }

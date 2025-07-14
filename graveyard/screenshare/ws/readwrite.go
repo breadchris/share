@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/breadchris/share/screenshare/ws/outgoing"
+	"github.com/breadchris/share/graveyard/screenshare/ws/outgoing"
 )
 
 type Typed struct {

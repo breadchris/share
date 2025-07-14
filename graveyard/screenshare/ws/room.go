@@ -5,8 +5,8 @@ import (
 	"net"
 	"sort"
 
-	"github.com/breadchris/share/screenshare/config"
-	"github.com/breadchris/share/screenshare/ws/outgoing"
+	"github.com/breadchris/share/graveyard/screenshare/config"
+	"github.com/breadchris/share/graveyard/screenshare/ws/outgoing"
 	"github.com/rs/xid"
 )
 

@@ -84,10 +84,10 @@ services:
 - windows_i386.exe (32bit)
 - windows_amd64.exe (64bit)
 
-Download the zip with the binary for your platform from [screego/server Releases](https://github.com/breadchris/share/screenshare/releases).
+Download the zip with the binary for your platform from [screego/server Releases](https://github.com/breadchris/share/graveyard/screenshare/releases).
 
 ```bash
-$ wget https://github.com/breadchris/share/screenshare/releases/download/vGITHUB_VERSION/screego_GITHUB_VERSION_{PLATFORM}.tar.gz
+$ wget https://github.com/breadchris/share/graveyard/screenshare/releases/download/vGITHUB_VERSION/screego_GITHUB_VERSION_{PLATFORM}.tar.gz
 ```
 
 Unzip the archive.

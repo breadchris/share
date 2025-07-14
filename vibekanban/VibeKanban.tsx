@@ -1,45 +1,84 @@
 import React, { useState, useEffect } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import { createConnectTransport } from '@connectrpc/connect-web';
+import { createClient } from '@connectrpc/connect';
+import type {
+  GetProjectRequest,
+  GetTasksRequest,
+  CreateTaskRequest,
+  CreateTaskAttemptRequest,
+  StartTaskAttemptRequest,
+  UpdateTaskRequest,
+} from '../gen/proto/vibekanban/vibekanban_pb';
+import {
+  TaskStatus,
+  TaskPriority,
+  AttemptStatus,
+  Project as ProtoProject,
+  Task as ProtoTask,
+  TaskAttempt as ProtoTaskAttempt,
+  VibeKanbanService
+} from '../gen/proto/vibekanban/vibekanban_pb';
 
-// Types
-interface Project {
-  id: string;
-  name: string;
-  git_repo_path: string;
-  setup_script?: string;
-  dev_script?: string;
-  default_branch: string;
-  created_at: string;
-  updated_at: string;
+// Create the transport and client
+const transport = createConnectTransport({
+  baseUrl: '/vibekanban',
+});
+
+const client = createClient(VibeKanbanService, transport);
+
+// Type aliases for easier usage
+type Project = ProtoProject;
+type Task = ProtoTask;
+type TaskAttempt = ProtoTaskAttempt;
+
+// Helper functions to convert between protobuf enums and strings
+function statusToEnum(status: string): TaskStatus {
+  switch (status) {
+    case 'todo': return TaskStatus.TODO;
+    case 'inprogress': return TaskStatus.IN_PROGRESS;
+    case 'inreview': return TaskStatus.IN_REVIEW;
+    case 'done': return TaskStatus.DONE;
+    case 'cancelled': return TaskStatus.CANCELLED;
+    default: return TaskStatus.TODO;
+  }
 }
 
-interface Task {
-  id: string;
+function priorityToEnum(priority: string): TaskPriority {
+  switch (priority) {
+    case 'low': return TaskPriority.LOW;
+    case 'medium': return TaskPriority.MEDIUM;
+    case 'high': return TaskPriority.HIGH;
+    default: return TaskPriority.MEDIUM;
+  }
+}
+
+function enumToStatus(status: TaskStatus): string {
+  switch (status) {
+    case TaskStatus.TODO: return 'todo';
+    case TaskStatus.IN_PROGRESS: return 'inprogress';
+    case TaskStatus.IN_REVIEW: return 'inreview';
+    case TaskStatus.DONE: return 'done';
+    case TaskStatus.CANCELLED: return 'cancelled';
+    default: return 'todo';
+  }
+}
+
+function enumToPriority(priority: TaskPriority): string {
+  switch (priority) {
+    case TaskPriority.LOW: return 'low';
+    case TaskPriority.MEDIUM: return 'medium';
+    case TaskPriority.HIGH: return 'high';
+    default: return 'medium';
+  }
+}
+
+interface TaskForm {
   title: string;
   description: string;
-  status: 'todo' | 'inprogress' | 'inreview' | 'done' | 'cancelled';
   priority: 'low' | 'medium' | 'high';
-  project_id: string;
-  user_id: string;
-  labels?: string[];
-  created_at: string;
-  updated_at: string;
-  attempts?: TaskAttempt[];
-}
-
-interface TaskAttempt {
-  id: string;
-  task_id: string;
-  executor: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  worktree_path?: string;
-  branch?: string;
-  base_branch: string;
-  pr_url?: string;
-  start_time?: string;
-  end_time?: string;
-  git_diff?: string;
+  labels: string;
 }
 
 interface ExecutionProcess {
@@ -82,10 +121,10 @@ const NewTaskDialog: React.FC<{
   onTaskCreated: (task: Task) => void;
   projectId: string;
 }> = ({ isOpen, onClose, onTaskCreated, projectId }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<TaskForm>({
     title: '',
     description: '',
-    priority: 'medium' as Task['priority'],
+    priority: 'medium',
     labels: '',
   });
   const [submitting, setSubmitting] = useState(false);
@@ -102,27 +141,21 @@ const NewTaskDialog: React.FC<{
     setError(null);
 
     try {
-      const taskData = {
+      const labels = formData.labels.trim() ? formData.labels.split(',').map(l => l.trim()).filter(l => l) : [];
+      
+      const request = new CreateTaskRequest({
+        projectId: projectId,
         title: formData.title.trim(),
         description: formData.description.trim(),
-        priority: formData.priority,
-        status: 'todo' as Task['status'],
-        labels: formData.labels.trim() ? formData.labels.split(',').map(l => l.trim()).filter(l => l) : [],
-      };
-
-      const response = await fetch(`/vibekanban/projects/${projectId}/tasks`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(taskData),
+        priority: priorityToEnum(formData.priority),
+        labels: labels,
+        metadata: {}
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create task');
+      const response = await client.createTask(request);
+      if (response.task) {
+        onTaskCreated(response.task);
       }
-
-      const task = await response.json();
-      onTaskCreated(task);
       onClose();
       setFormData({
         title: '',
@@ -186,7 +219,7 @@ const NewTaskDialog: React.FC<{
             </label>
             <select
               value={formData.priority}
-              onChange={(e) => setFormData({ ...formData, priority: e.target.value as Task['priority'] })}
+              onChange={(e) => setFormData({ ...formData, priority: e.target.value as TaskForm['priority'] })}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="low">Low</option>
@@ -204,30 +237,27 @@ const NewTaskDialog: React.FC<{
               value={formData.labels}
               onChange={(e) => setFormData({ ...formData, labels: e.target.value })}
               className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="feature, bug, urgent (comma-separated)"
+              placeholder="Enter labels separated by commas"
             />
             <p className="text-xs text-gray-500 mt-1">Separate multiple labels with commas</p>
           </div>
 
           {error && (
-            <div className="text-red-600 text-sm bg-red-50 p-2 rounded">
-              {error}
-            </div>
+            <div className="text-red-600 text-sm">{error}</div>
           )}
 
-          <div className="flex space-x-3 pt-4">
+          <div className="flex justify-end space-x-3">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50"
-              disabled={submitting}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 disabled:opacity-50"
               disabled={submitting}
+              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
             >
               {submitting ? 'Creating...' : 'Create Task'}
             </button>
@@ -244,37 +274,36 @@ const TaskCard: React.FC<{
   onStartTask: (task: Task) => void;
   isDragging?: boolean;
 }> = ({ task, onTaskClick, onStartTask, isDragging = false }) => {
-  const priorityColors = {
-    low: 'border-l-green-500',
-    medium: 'border-l-yellow-500',
-    high: 'border-l-red-500',
-  };
-
-  const statusColors = {
-    todo: 'text-gray-600',
-    inprogress: 'text-blue-600',
-    inreview: 'text-yellow-600',
-    done: 'text-green-600',
-    cancelled: 'text-red-600',
-  };
-
-  const latestAttempt = task.attempts?.[0];
-  const hasRunningAttempt = latestAttempt?.status === 'running';
+  const latestAttempt = task.attempts && task.attempts.length > 0 ? task.attempts[0] : null;
+  const hasRunningAttempt = latestAttempt?.status === AttemptStatus.RUNNING;
+  const priorityColor = {
+    [TaskPriority.HIGH]: 'border-red-300',
+    [TaskPriority.MEDIUM]: 'border-yellow-300',
+    [TaskPriority.LOW]: 'border-green-300',
+  }[task.priority] || 'border-gray-300';
 
   return (
     <div
-      className={`bg-white rounded-lg shadow-sm border-l-4 ${priorityColors[task.priority]} p-4 cursor-pointer hover:shadow-md transition-shadow ${isDragging ? 'opacity-50 rotate-2 shadow-lg' : ''}`}
+      className={`bg-white rounded-lg p-4 shadow-sm border-l-4 ${priorityColor} cursor-pointer hover:shadow-md transition-shadow ${
+        isDragging ? 'opacity-50' : ''
+      }`}
       onClick={() => onTaskClick(task)}
     >
       <div className="flex justify-between items-start mb-2">
-        <h3 className="font-medium text-gray-900 text-sm leading-5">{task.title}</h3>
-        <span className={`text-xs px-2 py-1 rounded-full ${statusColors[task.status]} bg-opacity-20`}>
-          {task.status}
+        <h3 className="text-sm font-medium text-gray-900 line-clamp-2">{task.title}</h3>
+        <span className={`text-xs px-2 py-1 rounded-full ${
+          task.priority === TaskPriority.HIGH
+            ? 'bg-red-100 text-red-800'
+            : task.priority === TaskPriority.MEDIUM
+            ? 'bg-yellow-100 text-yellow-800'
+            : 'bg-green-100 text-green-800'
+        }`}>
+          {enumToPriority(task.priority)}
         </span>
       </div>
 
       {task.description && (
-        <p className="text-gray-600 text-xs mb-3 line-clamp-2">{task.description}</p>
+        <p className="text-xs text-gray-600 mb-3 line-clamp-2">{task.description}</p>
       )}
 
       {task.labels && task.labels.length > 0 && (
@@ -282,7 +311,7 @@ const TaskCard: React.FC<{
           {task.labels.map((label, index) => (
             <span
               key={index}
-              className="inline-block bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded"
+              className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded"
             >
               {label}
             </span>
@@ -291,12 +320,7 @@ const TaskCard: React.FC<{
       )}
 
       <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <span className={`w-3 h-3 rounded-full ${priorityColors[task.priority].replace('border-l-', 'bg-')}`}></span>
-          <span className="text-xs text-gray-500">{task.priority}</span>
-        </div>
-
-        {task.status === 'todo' && !hasRunningAttempt && (
+        {!hasRunningAttempt && enumToStatus(task.status) === 'todo' && (
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -315,7 +339,7 @@ const TaskCard: React.FC<{
           </span>
         )}
 
-        {latestAttempt?.status === 'completed' && (
+        {latestAttempt?.status === AttemptStatus.COMPLETED && (
           <span className="text-xs text-green-500">Completed</span>
         )}
       </div>
@@ -431,16 +455,16 @@ export const VibeKanbanBoard: React.FC<{
         setLoading(true);
         
         // Fetch project
-        const projectResponse = await fetch(`/vibekanban/projects/${projectId}`);
-        if (!projectResponse.ok) throw new Error('Failed to fetch project');
-        const projectData = await projectResponse.json();
-        setProject(projectData);
+        const projectRequest = new GetProjectRequest({ id: projectId });
+        const projectResponse = await client.getProject(projectRequest);
+        if (projectResponse.project) {
+          setProject(projectResponse.project);
+        }
 
         // Fetch tasks
-        const tasksResponse = await fetch(`/vibekanban/projects/${projectId}/tasks`);
-        if (!tasksResponse.ok) throw new Error('Failed to fetch tasks');
-        const tasksData = await tasksResponse.json();
-        setTasks(tasksData);
+        const tasksRequest = new GetTasksRequest({ projectId: projectId });
+        const tasksResponse = await client.getTasks(tasksRequest);
+        setTasks(tasksResponse.tasks);
         
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch data');
@@ -459,22 +483,20 @@ export const VibeKanbanBoard: React.FC<{
     if (sourceColumnId === targetColumnId) return;
 
     // Find the task being moved
-    const sourceColumn = COLUMNS.find(col => col.id === sourceColumnId);
-    const sourceTasks = tasks.filter(task => task.status === sourceColumnId);
+    const sourceTasks = tasks.filter(task => enumToStatus(task.status) === sourceColumnId);
     const task = sourceTasks[dragIndex];
     
     if (!task) return;
 
-    const newStatus = targetColumnId as Task['status'];
+    const newStatus = statusToEnum(targetColumnId);
 
     try {
-      const response = await fetch(`/vibekanban/projects/${projectId}/tasks/${task.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
+      const request = new UpdateTaskRequest({
+        id: task.id,
+        status: newStatus,
       });
 
-      if (!response.ok) throw new Error('Failed to update task');
+      await client.updateTask(request);
 
       // Update local state
       setTasks(prevTasks =>
@@ -497,37 +519,39 @@ export const VibeKanbanBoard: React.FC<{
   const handleStartTask = async (task: Task) => {
     try {
       // Create a new attempt
-      const response = await fetch(`/vibekanban/projects/${projectId}/tasks/${task.id}/attempts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          executor: 'claude', // Default executor
-          base_branch: project?.default_branch || 'main',
-        }),
+      const createRequest = new CreateTaskAttemptRequest({
+        taskId: task.id,
+        executor: 'claude', // Default executor
+        baseBranch: project?.defaultBranch || 'main',
       });
 
-      if (!response.ok) throw new Error('Failed to create attempt');
-      const attempt = await response.json();
+      const createResponse = await client.createTaskAttempt(createRequest);
+      if (!createResponse.attempt) {
+        throw new Error('Failed to create attempt');
+      }
 
       // Start the attempt (create worktree)
-      const startResponse = await fetch(
-        `/vibekanban/projects/${projectId}/tasks/${task.id}/attempts/${attempt.id}/start`,
-        { method: 'POST' }
-      );
+      const startRequest = new StartTaskAttemptRequest({
+        attemptId: createResponse.attempt.id,
+      });
 
-      if (!startResponse.ok) throw new Error('Failed to start attempt');
+      await client.startTaskAttempt(startRequest);
 
       // Update task status to in progress
+      const updatedTask = {
+        ...task,
+        status: TaskStatus.IN_PROGRESS,
+        attempts: [createResponse.attempt, ...(task.attempts || [])]
+      };
+
       setTasks(prevTasks =>
         prevTasks.map(t =>
-          t.id === task.id
-            ? { ...t, status: 'inprogress', attempts: [attempt, ...(t.attempts || [])] }
-            : t
+          t.id === task.id ? updatedTask : t
         )
       );
 
       // Select the task to show details
-      onTaskSelect({ ...task, status: 'inprogress', attempts: [attempt] });
+      onTaskSelect(updatedTask);
       
     } catch (err) {
       console.error('Failed to start task:', err);
@@ -537,7 +561,7 @@ export const VibeKanbanBoard: React.FC<{
 
   // Group tasks by status
   const tasksByStatus = COLUMNS.reduce((acc, column) => {
-    acc[column.id] = tasks.filter(task => task.status === column.id);
+    acc[column.id] = tasks.filter(task => enumToStatus(task.status) === column.id);
     return acc;
   }, {} as Record<string, Task[]>);
 
@@ -569,7 +593,7 @@ export const VibeKanbanBoard: React.FC<{
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{project?.name || 'Vibe Kanban'}</h1>
-          <p className="text-gray-600 text-sm">{project?.git_repo_path}</p>
+          <p className="text-gray-600 text-sm">{project?.gitRepoPath}</p>
         </div>
         <button
           onClick={() => setShowNewTaskDialog(true)}
@@ -607,3 +631,76 @@ export const VibeKanbanBoard: React.FC<{
     </div>
   );
 };
+
+const VibeKanban: React.FC = () => {
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
+  // Extract projectId from URL params or provide a default
+  const urlParams = new URLSearchParams(window.location.search);
+  const projectId = urlParams.get('projectId') || 'default-project-id';
+
+  return (
+    <div className="h-screen bg-gray-50 p-6">
+      <VibeKanbanBoard
+        projectId={projectId}
+        onTaskSelect={setSelectedTask}
+      />
+      
+      {/* Task Details Panel - could be implemented later */}
+      {selectedTask && (
+        <div className="fixed right-0 top-0 h-full w-96 bg-white shadow-lg border-l border-gray-200 p-6 z-40">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold">Task Details</h2>
+            <button
+              onClick={() => setSelectedTask(null)}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-medium text-gray-900">{selectedTask.title}</h3>
+              <p className="text-sm text-gray-600 mt-1">{selectedTask.description}</p>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-gray-500">Status:</span>
+                <span className="ml-2 font-medium">{enumToStatus(selectedTask.status)}</span>
+              </div>
+              <div>
+                <span className="text-gray-500">Priority:</span>
+                <span className="ml-2 font-medium">{enumToPriority(selectedTask.priority)}</span>
+              </div>
+            </div>
+            
+            {selectedTask.attempts && selectedTask.attempts.length > 0 && (
+              <div>
+                <h4 className="font-medium text-gray-900 mb-2">Attempts</h4>
+                <div className="space-y-2">
+                  {selectedTask.attempts.map((attempt) => (
+                    <div key={attempt.id} className="p-2 bg-gray-50 rounded">
+                      <div className="text-sm">
+                        <span className="font-medium">{attempt.executor}</span>
+                        <span className="ml-2 text-gray-500">({attempt.status})</span>
+                      </div>
+                      {attempt.branch && (
+                        <div className="text-xs text-gray-600 mt-1">
+                          Branch: {attempt.branch}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default VibeKanban;

@@ -1,13 +1,13 @@
 package kanban
 
 import (
+	"connectrpc.com/connect"
 	"context"
 	"fmt"
 
 	"github.com/breadchris/share/gen/proto/kanban"
 	"github.com/breadchris/share/gen/proto/kanban/kanbanconnect"
 	"github.com/breadchris/share/models"
-	"github.com/bufbuild/connect-go"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
