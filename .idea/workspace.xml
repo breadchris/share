@@ -7,24 +7,34 @@
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dist/editor.wasm" beforeDir="false" afterPath="$PROJECT_DIR$/dist/editor.wasm" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/buf.gen.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/buf.gen.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/example/ExampleClient.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/example/ExampleClient.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/src/example/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/src/example/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/scraper-lambda/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/infra/examples/scraper-lambda/Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/scraper-lambda/Pulumi.dev.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/infra/examples/scraper-lambda/Pulumi.dev.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/scraper-lambda/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/infra/examples/scraper-lambda/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/scraper-lambda/cmd/lambda/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/infra/examples/scraper-lambda/cmd/lambda/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/scraper-lambda/deploy.sh" beforeDir="false" afterPath="$PROJECT_DIR$/infra/examples/scraper-lambda/deploy.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/scraper-lambda/entry.sh" beforeDir="false" afterPath="$PROJECT_DIR$/infra/examples/scraper-lambda/entry.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/scraper-lambda/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/infra/examples/scraper-lambda/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/workflow-scraper/Dockerfile.scraper" beforeDir="false" afterPath="$PROJECT_DIR$/infra/examples/workflow-scraper/Dockerfile.scraper" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/workflow-scraper/Pulumi.dev.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/infra/examples/workflow-scraper/Pulumi.dev.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/workflow-scraper/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/infra/examples/workflow-scraper/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/workflow-scraper/cmd/lambda/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/infra/examples/workflow-scraper/cmd/lambda/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/workflow-scraper/entry.sh" beforeDir="false" afterPath="$PROJECT_DIR$/infra/examples/workflow-scraper/entry.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/examples/workflow-scraper/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/infra/examples/workflow-scraper/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension.go" beforeDir="false" afterPath="$PROJECT_DIR$/extension.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow" beforeDir="false" afterPath="$PROJECT_DIR$/flow" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/justshare/utils/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/utils/auth.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/share/ext/ShareViewController.swift" beforeDir="false" afterPath="$PROJECT_DIR$/share/ext/ShareViewController.swift" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gots.go" beforeDir="false" afterPath="$PROJECT_DIR$/gots/gots.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/infra/lambda-docker/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/infra/lambda-docker/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/share/share.xcodeproj/project.pbxproj" beforeDir="false" afterPath="$PROJECT_DIR$/share/share.xcodeproj/project.pbxproj" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/share/share.xcodeproj/project.xcworkspace/xcuserdata/hacked.xcuserdatad/UserInterfaceState.xcuserstate" beforeDir="false" afterPath="$PROJECT_DIR$/share/share.xcodeproj/project.xcworkspace/xcuserdata/hacked.xcuserdatad/UserInterfaceState.xcuserstate" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/share/share/ContentView.swift" beforeDir="false" afterPath="$PROJECT_DIR$/share/share/ContentView.swift" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/share/share/ExtensionAPI.swift" beforeDir="false" afterPath="$PROJECT_DIR$/share/share/ExtensionAPI.swift" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/share/share/Info.plist" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/symbol/symbol.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/symbol.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vibekanban/ProjectList.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/ProjectList.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vibekanban/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vibekanban/TaskDetailsPanel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/TaskDetailsPanel.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vibekanban/VibeKanban.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/VibeKanban.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vibekanban/git.go" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/git.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vibekanban/claude.go" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/claude.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/vibekanban/process.go" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/process.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vibekanban/vibekanban.go" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/vibekanban.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -107,11 +117,11 @@
       <recent name="$PROJECT_DIR$/hmr/client" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/example" />
       <recent name="$PROJECT_DIR$/infra" />
+      <recent name="$PROJECT_DIR$/gots" />
       <recent name="$PROJECT_DIR$/graveyard" />
       <recent name="$PROJECT_DIR$/sheet" />
-      <recent name="$PROJECT_DIR$/flow/db" />
-      <recent name="$PROJECT_DIR$/justshare" />
     </key>
   </component>
   <component name="RunManager" selected="Go Build.share">
@@ -290,7 +300,7 @@
       <workItem from="1747973023098" duration="26954000" />
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
-      <workItem from="1750823408293" duration="344098000" />
+      <workItem from="1750823408293" duration="346773000" />
     </task>
     <servers />
   </component>

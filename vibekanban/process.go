@@ -782,41 +782,71 @@ func (pm *ProcessManager) StartProcessExecution(attemptID, taskID string, execut
 
 // monitorExecutorProcess monitors an executor process and handles session extraction
 func (pm *ProcessManager) monitorExecutorProcess(mp *ManagedProcess, executor Executor) {
+	fmt.Printf("Debug: monitorExecutorProcess started for process %s (attempt %s)\n", mp.ID, mp.AttemptID)
+	
 	// Start the command
+	fmt.Printf("Debug: Starting process command: %s %v\n", mp.cmd.Path, mp.cmd.Args)
 	err := mp.cmd.Start()
 	if err != nil {
+		fmt.Printf("Debug: Failed to start process %s: %v\n", mp.ID, err)
 		mp.Status = "failed"
 		now := time.Now()
 		mp.EndTime = &now
 		pm.updateProcessInDB(mp)
 		return
 	}
+	
+	fmt.Printf("Debug: Process %s started successfully, PID: %d\n", mp.ID, mp.cmd.Process.Pid)
 
 	// Wait for completion
+	fmt.Printf("Debug: Waiting for process %s to complete...\n", mp.ID)
 	err = mp.cmd.Wait()
 	now := time.Now()
 	mp.EndTime = &now
+
+	fmt.Printf("Debug: Process %s completed with error: %v\n", mp.ID, err)
 
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if status, ok := exitError.Sys().(syscall.WaitStatus); ok {
 				exitCode := status.ExitStatus()
 				mp.ExitCode = &exitCode
+				fmt.Printf("Debug: Process %s failed with exit code: %d\n", mp.ID, exitCode)
 			}
 		}
 		mp.Status = "failed"
+		fmt.Printf("Debug: Process %s marked as failed\n", mp.ID)
 	} else {
 		exitCode := 0
 		mp.ExitCode = &exitCode
 		mp.Status = "completed"
+		fmt.Printf("Debug: Process %s completed successfully\n", mp.ID)
+	}
+
+	// Get output for debugging
+	stdout := mp.stdout.GetOutput()
+	stderr := mp.stderr.GetOutput()
+	fmt.Printf("Debug: Process %s stdout length: %d, stderr length: %d\n", mp.ID, len(stdout), len(stderr))
+	if len(stderr) > 0 {
+		fmt.Printf("Debug: Process %s stderr: %s\n", mp.ID, stderr)
+	}
+	if len(stdout) > 0 && len(stdout) < 1000 {
+		fmt.Printf("Debug: Process %s stdout: %s\n", mp.ID, stdout)
 	}
 
 	// Extract normalized conversation and session if this is a coding agent
 	if strings.Contains(mp.Type, "coding") || mp.Type == "claude" {
+		fmt.Printf("Debug: Extracting session from logs for process %s\n", mp.ID)
 		go pm.extractSessionFromLogs(mp, executor)
 	}
 
+	fmt.Printf("Debug: Updating process %s in database\n", mp.ID)
 	pm.updateProcessInDB(mp)
+	
+	// Update task attempt status based on process completion
+	pm.updateTaskAttemptStatus(mp)
+	
+	fmt.Printf("Debug: monitorExecutorProcess completed for process %s\n", mp.ID)
 }
 
 // extractSessionFromLogs extracts session information from executor logs
@@ -977,6 +1007,58 @@ func (pm *ProcessManager) CreateExecutorSessionRecord(attemptID, taskID, process
 	}
 
 	return pm.db.Create(session).Error
+}
+
+// updateTaskAttemptStatus updates the task attempt status based on process completion
+func (pm *ProcessManager) updateTaskAttemptStatus(mp *ManagedProcess) {
+	fmt.Printf("Debug: Updating task attempt status for attempt %s based on process %s status: %s\n", mp.AttemptID, mp.ID, mp.Status)
+	
+	// Get current attempt
+	var attempt models.VibeTaskAttempt
+	if err := pm.db.First(&attempt, "id = ?", mp.AttemptID).Error; err != nil {
+		fmt.Printf("Debug: Failed to find attempt %s: %v\n", mp.AttemptID, err)
+		return
+	}
+	
+	// Only update if this is a coding agent process (main execution)
+	if !strings.Contains(mp.Type, "coding") && mp.Type != "claude" {
+		fmt.Printf("Debug: Skipping attempt status update for non-coding process type: %s\n", mp.Type)
+		return
+	}
+	
+	var newStatus string
+	var endTime *time.Time
+	now := time.Now()
+	
+	switch mp.Status {
+	case "completed":
+		newStatus = "completed"
+		endTime = &now
+		fmt.Printf("Debug: Setting attempt %s to completed\n", mp.AttemptID)
+	case "failed":
+		newStatus = "failed"
+		endTime = &now
+		fmt.Printf("Debug: Setting attempt %s to failed\n", mp.AttemptID)
+	default:
+		fmt.Printf("Debug: No status update needed for process status: %s\n", mp.Status)
+		return
+	}
+	
+	// Update attempt status
+	updates := map[string]interface{}{
+		"status":     newStatus,
+		"updated_at": now,
+	}
+	if endTime != nil {
+		updates["end_time"] = endTime
+	}
+	
+	if err := pm.db.Model(&models.VibeTaskAttempt{}).Where("id = ?", mp.AttemptID).Updates(updates).Error; err != nil {
+		fmt.Printf("Debug: Failed to update attempt status: %v\n", err)
+		return
+	}
+	
+	fmt.Printf("Debug: Successfully updated attempt %s status to %s\n", mp.AttemptID, newStatus)
 }
 
 // StartExecution starts the execution flow for a task attempt (main entry point)

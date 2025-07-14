@@ -1,4 +1,4 @@
-package main
+package gots
 
 import (
 	_ "embed"
@@ -211,57 +211,57 @@ func main() {
 
 // FunctionInfo represents a Go function's signature information
 type FunctionInfo struct {
-	Name       string
-	RequestType string
+	Name         string
+	RequestType  string
 	ResponseType string
-	Endpoint   string
+	Endpoint     string
 }
 
 // GenerateTSFromFunctions generates TypeScript interfaces and fetch functions for Go functions
 func GenerateTSFromFunctions(functions interface{}) (string, error) {
 	var sb strings.Builder
-	
+
 	// Get the slice of function values using reflection
 	funcSlice := reflect.ValueOf(functions)
 	if funcSlice.Kind() != reflect.Slice {
 		return "", fmt.Errorf("expected slice of functions, got %T", functions)
 	}
-	
+
 	var funcInfos []FunctionInfo
-	
+
 	// Extract function information
 	for i := 0; i < funcSlice.Len(); i++ {
 		funcValue := funcSlice.Index(i)
 		if funcValue.Kind() != reflect.Func {
 			continue
 		}
-		
+
 		funcType := funcValue.Type()
 		funcName := getFunctionName(funcValue)
-		
+
 		// Validate function signature: func(req SomeStruct) (SomeResponse, error)
 		if funcType.NumIn() != 1 || funcType.NumOut() != 2 {
 			continue
 		}
-		
+
 		// Check if last return type is error
 		errorInterface := reflect.TypeOf((*error)(nil)).Elem()
 		if !funcType.Out(1).Implements(errorInterface) {
 			continue
 		}
-		
+
 		reqType := funcType.In(0)
 		respType := funcType.Out(0)
-		
+
 		funcInfo := FunctionInfo{
-			Name:        funcName,
-			RequestType: getTypeName(reqType),
+			Name:         funcName,
+			RequestType:  getTypeName(reqType),
 			ResponseType: getTypeName(respType),
-			Endpoint:    strings.ToLower(funcName),
+			Endpoint:     strings.ToLower(funcName),
 		}
 		funcInfos = append(funcInfos, funcInfo)
 	}
-	
+
 	// Generate TypeScript interfaces for request/response types
 	typeMap := make(map[string]bool)
 	for _, funcInfo := range funcInfos {
@@ -282,24 +282,24 @@ func GenerateTSFromFunctions(functions interface{}) (string, error) {
 			}
 		}
 	}
-	
+
 	// Generate API client class
 	sb.WriteString("export interface FetchOptions {\n")
 	sb.WriteString("    baseURL?: string;\n")
 	sb.WriteString("    headers?: Record<string, string>;\n")
 	sb.WriteString("    timeout?: number;\n")
 	sb.WriteString("}\n\n")
-	
+
 	sb.WriteString("export interface Response<T> {\n")
 	sb.WriteString("    data: T;\n")
 	sb.WriteString("    status: number;\n")
 	sb.WriteString("    statusText: string;\n")
 	sb.WriteString("}\n\n")
-	
+
 	sb.WriteString("export class APIClient {\n")
 	sb.WriteString("    private baseURL: string;\n")
 	sb.WriteString("    private defaultHeaders: Record<string, string>;\n\n")
-	
+
 	sb.WriteString("    constructor(options: FetchOptions = {}) {\n")
 	sb.WriteString("        this.baseURL = options.baseURL || '';\n")
 	sb.WriteString("        this.defaultHeaders = {\n")
@@ -307,24 +307,24 @@ func GenerateTSFromFunctions(functions interface{}) (string, error) {
 	sb.WriteString("            ...options.headers\n")
 	sb.WriteString("        };\n")
 	sb.WriteString("    }\n\n")
-	
+
 	// Generate individual API methods
 	for _, funcInfo := range funcInfos {
 		sb.WriteString(fmt.Sprintf("    async %s(req: %s, options: FetchOptions = {}): Promise<Response<%s>> {\n",
 			funcInfo.Name, funcInfo.RequestType, funcInfo.ResponseType))
 		sb.WriteString("        const url = `${this.baseURL}/" + funcInfo.Endpoint + "`;\n")
 		sb.WriteString("        const headers = { ...this.defaultHeaders, ...options.headers };\n\n")
-		
+
 		sb.WriteString("        const response = await fetch(url, {\n")
 		sb.WriteString("            method: 'POST',\n")
 		sb.WriteString("            headers,\n")
 		sb.WriteString("            body: JSON.stringify(req)\n")
 		sb.WriteString("        });\n\n")
-		
+
 		sb.WriteString("        if (!response.ok) {\n")
 		sb.WriteString("            throw new Error(`HTTP error! status: ${response.status}`);\n")
 		sb.WriteString("        }\n\n")
-		
+
 		sb.WriteString("        const data = await response.json();\n")
 		sb.WriteString("        return {\n")
 		sb.WriteString("            data,\n")
@@ -333,9 +333,9 @@ func GenerateTSFromFunctions(functions interface{}) (string, error) {
 		sb.WriteString("        };\n")
 		sb.WriteString("    }\n\n")
 	}
-	
+
 	sb.WriteString("}\n\n")
-	
+
 	// Generate convenience functions
 	sb.WriteString("// Convenience functions for individual API calls\n")
 	for _, funcInfo := range funcInfos {
@@ -345,7 +345,7 @@ func GenerateTSFromFunctions(functions interface{}) (string, error) {
 		sb.WriteString(fmt.Sprintf("    return client.%s(req, options);\n", funcInfo.Name))
 		sb.WriteString("}\n\n")
 	}
-	
+
 	return sb.String(), nil
 }
 
@@ -366,11 +366,11 @@ func getTypeName(t reflect.Type) string {
 	for t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
-	
+
 	if t.PkgPath() == "" {
 		return t.Name()
 	}
-	
+
 	// Return just the type name without package path for simplicity
 	return t.Name()
 }
@@ -381,7 +381,7 @@ func generateTSInterface(typeName string) string {
 	// 1. Parse the actual Go struct definition
 	// 2. Convert field types to TypeScript equivalents
 	// 3. Handle tags (json, omitempty, etc.)
-	
+
 	// For now, return a basic interface structure
 	return fmt.Sprintf("interface %s {\n    // TODO: Add actual fields\n}", typeName)
 }
@@ -389,7 +389,7 @@ func generateTSInterface(typeName string) string {
 // GenerateTSFromGoCode generates TypeScript from Go source code containing function definitions
 func GenerateTSFromGoCode(goCode string) (string, error) {
 	fset := token.NewFileSet()
-	
+
 	// Try to parse as a complete file first
 	node, err := parser.ParseFile(fset, "input.go", goCode, parser.ParseComments)
 	if err != nil {
@@ -400,11 +400,11 @@ func GenerateTSFromGoCode(goCode string) (string, error) {
 			return "", fmt.Errorf("failed to parse Go code: %v", err)
 		}
 	}
-	
+
 	var sb strings.Builder
 	var funcInfos []FunctionInfo
 	var structTypes map[string]*ast.StructType = make(map[string]*ast.StructType)
-	
+
 	// First pass: collect struct types
 	ast.Inspect(node, func(n ast.Node) bool {
 		switch decl := n.(type) {
@@ -419,7 +419,7 @@ func GenerateTSFromGoCode(goCode string) (string, error) {
 		}
 		return true
 	})
-	
+
 	// Second pass: collect function signatures
 	ast.Inspect(node, func(n ast.Node) bool {
 		switch decl := n.(type) {
@@ -427,13 +427,13 @@ func GenerateTSFromGoCode(goCode string) (string, error) {
 			if decl.Type.Params.NumFields() == 1 && decl.Type.Results.NumFields() == 2 {
 				// Check if it matches our pattern: func Name(req Type) (resp Type, error)
 				funcName := decl.Name.Name
-				
+
 				// Get request type
 				reqType := getTypeString(decl.Type.Params.List[0].Type)
-				
+
 				// Get response type (first return value)
 				respType := getTypeString(decl.Type.Results.List[0].Type)
-				
+
 				// Check if second return is error
 				if len(decl.Type.Results.List) > 1 {
 					if ident, ok := decl.Type.Results.List[1].Type.(*ast.Ident); ok && ident.Name == "error" {
@@ -450,7 +450,7 @@ func GenerateTSFromGoCode(goCode string) (string, error) {
 		}
 		return true
 	})
-	
+
 	// Generate TypeScript interfaces for structs
 	generatedTypes := make(map[string]bool)
 	for _, funcInfo := range funcInfos {
@@ -460,7 +460,7 @@ func GenerateTSFromGoCode(goCode string) (string, error) {
 			sb.WriteString("\n\n")
 			generatedTypes[funcInfo.RequestType] = true
 		}
-		
+
 		// Generate response type interface
 		if structType, exists := structTypes[funcInfo.ResponseType]; exists && !generatedTypes[funcInfo.ResponseType] {
 			sb.WriteString(generateTSInterfaceFromAST(funcInfo.ResponseType, structType))
@@ -468,7 +468,7 @@ func GenerateTSFromGoCode(goCode string) (string, error) {
 			generatedTypes[funcInfo.ResponseType] = true
 		}
 	}
-	
+
 	// Generate API client and convenience functions (same as before)
 	if len(funcInfos) > 0 {
 		sb.WriteString("export interface FetchOptions {\n")
@@ -476,13 +476,13 @@ func GenerateTSFromGoCode(goCode string) (string, error) {
 		sb.WriteString("    headers?: Record<string, string>;\n")
 		sb.WriteString("    timeout?: number;\n")
 		sb.WriteString("}\n\n")
-		
+
 		sb.WriteString("export interface Response<T> {\n")
 		sb.WriteString("    data: T;\n")
 		sb.WriteString("    status: number;\n")
 		sb.WriteString("    statusText: string;\n")
 		sb.WriteString("}\n\n")
-		
+
 		// Generate convenience functions
 		for _, funcInfo := range funcInfos {
 			sb.WriteString(fmt.Sprintf("export async function %s(req: %s, options: FetchOptions = {}): Promise<Response<%s>> {\n",
@@ -492,17 +492,17 @@ func GenerateTSFromGoCode(goCode string) (string, error) {
 			sb.WriteString("        'Content-Type': 'application/json',\n")
 			sb.WriteString("        ...options.headers\n")
 			sb.WriteString("    };\n\n")
-			
+
 			sb.WriteString("    const response = await fetch(url, {\n")
 			sb.WriteString("        method: 'POST',\n")
 			sb.WriteString("        headers,\n")
 			sb.WriteString("        body: JSON.stringify(req)\n")
 			sb.WriteString("    });\n\n")
-			
+
 			sb.WriteString("    if (!response.ok) {\n")
 			sb.WriteString("        throw new Error(`HTTP error! status: ${response.status}`);\n")
 			sb.WriteString("    }\n\n")
-			
+
 			sb.WriteString("    const data = await response.json();\n")
 			sb.WriteString("    return {\n")
 			sb.WriteString("        data,\n")
@@ -512,7 +512,7 @@ func GenerateTSFromGoCode(goCode string) (string, error) {
 			sb.WriteString("}\n\n")
 		}
 	}
-	
+
 	return sb.String(), nil
 }
 
@@ -534,9 +534,9 @@ func getTypeString(expr ast.Expr) string {
 func generateTSInterfaceFromAST(name string, structType *ast.StructType) string {
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("export interface %s {\n", name))
-	
+
 	writeFields(&sb, structType.Fields.List, 0)
-	
+
 	sb.WriteString("}")
 	return sb.String()
 }

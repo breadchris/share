@@ -298,6 +298,6 @@ docker run -p 9000:8080 my-lambda-image
 
 ## Related Projects
 
-- [Scraper Lambda Example](../../examples/scraper-lambda/) - Web scraping with ChromeDP
+- [Scraper Lambda Example](../examples/scraper-lambda/) - Web scraping with ChromeDP
 - [Flow Pulumi Slackbot](../../flow/pulumi-slackbot/) - Original Slack bot implementation
 - [Share Repository](../../) - Main application with scraping capabilities

@@ -9,7 +9,7 @@ import {
   DeleteItemRequest, 
   ListItemsRequest,
   Item 
-} from '../gen/proto/example/example_pb';
+} from '../coderunner/src/gen/proto/example/example_pb';
 
 // Create the transport and client
 const transport = createConnectTransport({

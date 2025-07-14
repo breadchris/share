@@ -5,10 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -50,11 +52,37 @@ type ClaudeContentBlock struct {
 }
 
 func (c *ClaudeExecutor) Spawn(ctx context.Context, taskID uuid.UUID, worktreePath string) (*exec.Cmd, error) {
+	fmt.Printf("Debug: ClaudeExecutor.Spawn called with taskID: %s, worktreePath: %s\n", taskID.String(), worktreePath)
+	
+	// Validate worktree path exists
+	if _, err := os.Stat(worktreePath); os.IsNotExist(err) {
+		return nil, fmt.Errorf("worktree path does not exist: %s", worktreePath)
+	}
+	
+	// Check if npx is available
+	if _, err := exec.LookPath("npx"); err != nil {
+		fmt.Printf("Debug: npx not found in PATH, Claude executor will fail: %v\n", err)
+		return nil, fmt.Errorf("npx not found in PATH - please install Node.js and npm: %w", err)
+	}
+	
+	// Optionally check if Claude CLI is available (this takes time, so only in debug mode)
+	if os.Getenv("CLAUDE_DEBUG") == "true" {
+		fmt.Printf("Debug: Checking if Claude CLI is available...\n")
+		checkCmd := exec.Command("npx", "@anthropic-ai/claude-code@latest", "--version")
+		if err := checkCmd.Run(); err != nil {
+			fmt.Printf("Debug: Claude CLI check failed (this is okay): %v\n", err)
+		} else {
+			fmt.Printf("Debug: Claude CLI is available\n")
+		}
+	}
+	
 	// Create a basic prompt - specific task details will be provided via stdin
 	prompt := fmt.Sprintf("Task ID: %s\nPlease help with this task.", taskID.String())
+	fmt.Printf("Debug: Created prompt for Claude: %s\n", prompt)
 
 	// Create Claude command
 	claudeCommand := "npx -y @anthropic-ai/claude-code@latest -p --dangerously-skip-permissions --verbose --output-format=stream-json"
+	fmt.Printf("Debug: Claude command: %s\n", claudeCommand)
 	
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
@@ -64,25 +92,34 @@ func (c *ClaudeExecutor) Spawn(ctx context.Context, taskID uuid.UUID, worktreePa
 	}
 	
 	cmd.Dir = worktreePath
-	cmd.Env = append(cmd.Env, "NODE_NO_WARNINGS=1")
+	// Set up environment with proper PATH and NODE settings
+	env := os.Environ()
+	env = append(env, "NODE_NO_WARNINGS=1")
+	env = append(env, "FORCE_COLOR=0") // Disable colors for cleaner output
+	cmd.Env = env
 	
-	// Set up pipes
+	fmt.Printf("Debug: Command setup complete, working directory: %s\n", cmd.Dir)
+	
+	// Set up pipes for better error handling
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create stdin pipe: %w", err)
 	}
 	
-	// Start the command
-	if err := cmd.Start(); err != nil {
-		stdin.Close()
-		return nil, fmt.Errorf("failed to start Claude: %w", err)
-	}
+	// Don't start the command here - let the process manager handle it
+	// Just return the configured command
+	fmt.Printf("Debug: Claude command configured successfully\n")
 	
-	// Write prompt to stdin in a goroutine
+	// Store stdin and prompt for later use
 	go func() {
+		// Wait a bit for the process to start, then write prompt
+		time.Sleep(100 * time.Millisecond)
 		defer stdin.Close()
-		if _, err := stdin.Write([]byte(prompt)); err != nil {
+		fmt.Printf("Debug: Writing prompt to Claude stdin\n")
+		if _, err := stdin.Write([]byte(prompt + "\n")); err != nil {
 			fmt.Printf("Debug: Failed to write prompt to Claude stdin: %v\n", err)
+		} else {
+			fmt.Printf("Debug: Successfully wrote prompt to Claude stdin\n")
 		}
 	}()
 	

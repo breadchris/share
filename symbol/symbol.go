@@ -56,7 +56,7 @@
 //go:generate yaegi extract github.com/evanw/esbuild/pkg/api
 //go:generate yaegi extract github.com/breadchris/share/gen/proto/kanban/kanbanconnect
 //go:generate yaegi extract github.com/breadchris/share/gen/proto/kanban
-//go:generate yaegi github.com/go-git/go-git/v5/plumbing
+//go:generate yaegi extract github.com/go-git/go-git/v5/plumbing
 
 // Slack and Flow module dependencies for yaegi interpretation
 //go:generate yaegi extract github.com/slack-go/slack

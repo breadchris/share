@@ -56,7 +56,6 @@
 		4C6D28702CE5CCEF00FCED19 /* ExtensionAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionAPI.swift; sourceTree = "<group>"; };
 		4C6D28712CE5CCEF00FCED19 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		4C6D28722CE5CCEF00FCED19 /* SavedPagesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedPagesView.swift; sourceTree = "<group>"; };
-		4C6D28762CE5CCF000FCED19 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -104,7 +103,6 @@
 				4C6D28712CE5CCEF00FCED19 /* Models.swift */,
 				4C6D28722CE5CCEF00FCED19 /* SavedPagesView.swift */,
 				4C6D284D2CE5CCB000FCED19 /* Assets.xcassets */,
-				4C6D28762CE5CCF000FCED19 /* Info.plist */,
 				4C6D284F2CE5CCB000FCED19 /* Preview Content */,
 			);
 			path = share;
@@ -397,8 +395,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"share/Preview Content\"";
 				DEVELOPMENT_TEAM = GXTMGDAFNK;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = share/Info.plist;
+				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -430,8 +427,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"share/Preview Content\"";
 				DEVELOPMENT_TEAM = GXTMGDAFNK;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = share/Info.plist;
+				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -458,8 +454,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = GXTMGDAFNK;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = share/Info.plist;
+				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ext/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ext;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -484,8 +479,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = GXTMGDAFNK;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = share/Info.plist;
+				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ext/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = ext;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";

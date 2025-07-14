@@ -14,6 +14,8 @@ Environment variables will not be used, instead use the `config/config.go` file 
 - Proto files are located in the `proto/` directory
 - Use go generate . to generate Go and Typescript from proto files
 - Refer to ./buf.gen.yaml for the code generation configuration
+- generated files will be located in `./gen/proto`
+- Use ./example as an example for how to use the generated code
 
 ## Go
 - Debug print statements should be fmt.Printf("Debug: %+v\n", variable)

@@ -107,6 +107,7 @@ struct ContentView: View {
         
         Task {
             do {
+                print(formattedURL)
                 let pageInfo = try await ExtensionAPI.shared.saveURLSimple(formattedURL)
                 
                 await MainActor.run {

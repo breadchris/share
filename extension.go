@@ -46,15 +46,15 @@ type ProxyRequest struct {
 
 type ProxyOptions struct {
 	IncludeCredentials bool     `json:"include_credentials"`
-	WaitForJS         bool     `json:"wait_for_js"`
-	ScreenshotAfter   bool     `json:"screenshot_after"`
-	CookieDomains     []string `json:"cookie_domains"`
+	WaitForJS          bool     `json:"wait_for_js"`
+	ScreenshotAfter    bool     `json:"screenshot_after"`
+	CookieDomains      []string `json:"cookie_domains"`
 }
 
 type ProxyResponse struct {
-	RequestID  string            `json:"requestId"`
-	Response   ProxyResult       `json:"response"`
-	ReceivedAt time.Time        `json:"received_at"`
+	RequestID  string      `json:"requestId"`
+	Response   ProxyResult `json:"response"`
+	ReceivedAt time.Time   `json:"received_at"`
 }
 
 type ProxyResult struct {
@@ -76,12 +76,12 @@ type ExtensionWebSocketMessage struct {
 }
 
 type ExtensionConnection struct {
-	conn       *websocket.Conn
-	id         string
-	connected  time.Time
-	lastPing   time.Time
-	send       chan ExtensionWebSocketMessage
-	stats      ConnectionStats
+	conn      *websocket.Conn
+	id        string
+	connected time.Time
+	lastPing  time.Time
+	send      chan ExtensionWebSocketMessage
+	stats     ConnectionStats
 }
 
 type ConnectionStats struct {
@@ -127,6 +127,7 @@ func NewExtension(d deps.Deps) *http.ServeMux {
 	})
 
 	m.HandleFunc("/save", func(w http.ResponseWriter, r *http.Request) {
+		println("Received request to /save")
 		if r.Method == http.MethodPost {
 			if err := r.ParseForm(); err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
@@ -455,52 +456,52 @@ func extractAndSaveImagesWithProxy(pageInfo PageInfo, contentID string, proxyMan
 	if pageInfo.HTML == "" {
 		return nil, fmt.Errorf("no HTML content to process")
 	}
-	
+
 	// Parse HTML
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(pageInfo.HTML))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse HTML: %w", err)
 	}
-	
+
 	u, err := url.Parse(pageInfo.URL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse URL: %w", err)
 	}
-	
+
 	var extractedImages []string
-	
+
 	// Extract images based on domain-specific logic
 	if isMobbinDomain(u.Hostname()) {
 		images := extractMobbinImages(doc, u)
 		extractedImages = append(extractedImages, images...)
 	}
-	
+
 	// If no domain-specific logic matched, use generic image extraction
 	if len(extractedImages) == 0 {
 		images := extractGenericImages(doc, u)
 		extractedImages = append(extractedImages, images...)
 	}
-	
+
 	if len(extractedImages) == 0 {
 		return nil, nil
 	}
-	
+
 	// Use the provided content ID for directory creation
 	contentDir := filepath.Join("./data/content", contentID)
-	
+
 	// Create content directory
 	if err := os.MkdirAll(contentDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create content directory: %w", err)
 	}
-	
+
 	var savedImages []string
-	
+
 	// Download images using proxy for authenticated requests
 	for i, imgURL := range extractedImages {
 		if i >= 10 { // Limit to 10 images to avoid excessive downloads
 			break
 		}
-		
+
 		savedPath, err := downloadImageWithProxy(imgURL, contentDir, i, proxyManager)
 		if err != nil {
 			slog.Error("failed to download image via proxy", "url", imgURL, "error", err)
@@ -511,10 +512,10 @@ func extractAndSaveImagesWithProxy(pageInfo PageInfo, contentID string, proxyMan
 				continue
 			}
 		}
-		
+
 		savedImages = append(savedImages, savedPath)
 	}
-	
+
 	return savedImages, nil
 }
 
@@ -683,35 +684,35 @@ func downloadImageWithProxy(imageURL, contentDir string, index int, proxyManager
 	} else if strings.HasSuffix(imageURL, ".webp") {
 		ext = ".webp"
 	}
-	
+
 	// Create filename
 	filename := fmt.Sprintf("image_%d%s", index, ext)
 	filePath := filepath.Join(contentDir, filename)
-	
+
 	// Make proxy request to download image
 	headers := map[string]string{
-		"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-		"Accept": "image/webp,image/apng,image/*,*/*;q=0.8",
+		"User-Agent":      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+		"Accept":          "image/webp,image/apng,image/*,*/*;q=0.8",
 		"Accept-Language": "en-US,en;q=0.9",
 	}
-	
+
 	options := ProxyOptions{
 		IncludeCredentials: true, // Include cookies and auth headers
 	}
-	
+
 	result, err := proxyManager.MakeProxyRequest(imageURL, "GET", headers, "", options)
 	if err != nil {
 		return "", fmt.Errorf("proxy request failed: %w", err)
 	}
-	
+
 	if !result.Success {
 		return "", fmt.Errorf("proxy request unsuccessful: %s", result.Error)
 	}
-	
+
 	if result.Status != 200 {
 		return "", fmt.Errorf("bad status: %d %s", result.Status, result.StatusText)
 	}
-	
+
 	// Update file extension based on Content-Type from response
 	if contentType, exists := result.Headers["content-type"]; exists {
 		switch {
@@ -724,25 +725,25 @@ func downloadImageWithProxy(imageURL, contentDir string, index int, proxyManager
 		case strings.Contains(contentType, "jpeg") || strings.Contains(contentType, "jpg"):
 			ext = ".jpg"
 		}
-		
+
 		// Update filename with correct extension
 		filename = fmt.Sprintf("image_%d%s", index, ext)
 		filePath = filepath.Join(contentDir, filename)
 	}
-	
+
 	// Create file
 	file, err := os.Create(filePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to create file: %w", err)
 	}
 	defer file.Close()
-	
+
 	// Write response body to file
 	_, err = file.WriteString(result.Body)
 	if err != nil {
 		return "", fmt.Errorf("failed to save image: %w", err)
 	}
-	
+
 	slog.Info("Downloaded image via proxy", "url", imageURL, "path", filePath)
 	return filePath, nil
 }
@@ -752,16 +753,16 @@ type ProxyManager struct {
 	pendingRequests   map[string]*ProxyRequest
 	completedRequests map[string]ProxyResult
 	requestChannels   map[string]chan ProxyResult
-	requestCounts     map[string]int  // Track requests per domain for rate limiting
-	lastRequestTime   map[string]time.Time  // Track last request time per domain
-	connectionHub     *ConnectionHub  // WebSocket connection hub
+	requestCounts     map[string]int       // Track requests per domain for rate limiting
+	lastRequestTime   map[string]time.Time // Track last request time per domain
+	connectionHub     *ConnectionHub       // WebSocket connection hub
 	mu                sync.RWMutex
 }
 
 // Security configuration
 const (
-	MaxRequestsPerDomain = 50         // Max requests per domain per hour
-	MinRequestInterval   = time.Second * 2  // Minimum interval between requests to same domain
+	MaxRequestsPerDomain = 50              // Max requests per domain per hour
+	MinRequestInterval   = time.Second * 2 // Minimum interval between requests to same domain
 )
 
 func NewProxyManager() *ProxyManager {
@@ -777,40 +778,40 @@ func NewProxyManager() *ProxyManager {
 func (pm *ProxyManager) AddRequest(request *ProxyRequest) chan ProxyResult {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
-	
+
 	// Create response channel for this request
 	responseChan := make(chan ProxyResult, 1)
-	
+
 	pm.pendingRequests[request.ID] = request
 	pm.requestChannels[request.ID] = responseChan
-	
+
 	slog.Info("Added proxy request", "id", request.ID, "url", request.URL)
-	
+
 	return responseChan
 }
 
 func (pm *ProxyManager) GetPendingRequests() []*ProxyRequest {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
-	
+
 	requests := make([]*ProxyRequest, 0, len(pm.pendingRequests))
 	for _, request := range pm.pendingRequests {
 		requests = append(requests, request)
 	}
-	
+
 	return requests
 }
 
 func (pm *ProxyManager) CompleteRequest(requestID string, result ProxyResult) {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
-	
+
 	// Remove from pending
 	delete(pm.pendingRequests, requestID)
-	
+
 	// Store result
 	pm.completedRequests[requestID] = result
-	
+
 	// Send to response channel if exists
 	if responseChan, exists := pm.requestChannels[requestID]; exists {
 		select {
@@ -819,12 +820,12 @@ func (pm *ProxyManager) CompleteRequest(requestID string, result ProxyResult) {
 		default:
 			slog.Warn("Response channel full or closed", "id", requestID)
 		}
-		
+
 		// Clean up channel
 		close(responseChan)
 		delete(pm.requestChannels, requestID)
 	}
-	
+
 	slog.Info("Completed proxy request", "id", requestID, "success", result.Success)
 }
 
@@ -840,15 +841,15 @@ func (pm *ProxyManager) MakeProxyRequest(targetURL, method string, headers map[s
 	if err := pm.validateProxyRequest(targetURL, method, headers, body, options); err != nil {
 		return nil, fmt.Errorf("proxy request validation failed: %w", err)
 	}
-	
+
 	// Apply rate limiting
 	if err := pm.checkRateLimit(targetURL); err != nil {
 		return nil, fmt.Errorf("rate limit exceeded: %w", err)
 	}
-	
+
 	// Generate unique request ID
 	requestID := generateRequestID()
-	
+
 	request := &ProxyRequest{
 		ID:      requestID,
 		URL:     targetURL,
@@ -857,15 +858,15 @@ func (pm *ProxyManager) MakeProxyRequest(targetURL, method string, headers map[s
 		Body:    body,
 		Options: options,
 	}
-	
+
 	// Send request via WebSocket to extension
 	if pm.connectionHub == nil {
 		return nil, fmt.Errorf("no WebSocket connection available")
 	}
-	
+
 	// Add request and get response channel
 	responseChan := pm.AddRequest(request)
-	
+
 	// Send request via WebSocket
 	message := ExtensionWebSocketMessage{
 		Type:      "proxy_request",
@@ -873,14 +874,14 @@ func (pm *ProxyManager) MakeProxyRequest(targetURL, method string, headers map[s
 		Timestamp: time.Now().Unix(),
 		Data:      request,
 	}
-	
+
 	pm.connectionHub.BroadcastMessage(message)
 	slog.Info("Sent proxy request via WebSocket", "id", requestID, "url", targetURL)
-	
+
 	// Wait for response with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	
+
 	select {
 	case result := <-responseChan:
 		return &result, nil
@@ -893,7 +894,7 @@ func (pm *ProxyManager) MakeProxyRequest(targetURL, method string, headers map[s
 			delete(pm.requestChannels, requestID)
 		}
 		pm.mu.Unlock()
-		
+
 		return nil, fmt.Errorf("proxy request timed out after 60 seconds")
 	}
 }
@@ -919,12 +920,12 @@ func (pm *ProxyManager) validateProxyRequest(targetURL, method string, headers m
 	if err != nil {
 		return fmt.Errorf("invalid URL: %w", err)
 	}
-	
+
 	// Check if domain is allowed
 	if !isAllowedProxyDomain(parsedURL.Hostname()) {
 		return fmt.Errorf("domain not allowed for proxy requests: %s", parsedURL.Hostname())
 	}
-	
+
 	// Validate HTTP method
 	allowedMethods := []string{"GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS"}
 	methodValid := false
@@ -937,7 +938,7 @@ func (pm *ProxyManager) validateProxyRequest(targetURL, method string, headers m
 	if !methodValid {
 		return fmt.Errorf("HTTP method not allowed: %s", method)
 	}
-	
+
 	// Validate headers - prevent malicious headers
 	for key, value := range headers {
 		key = strings.ToLower(key)
@@ -948,17 +949,17 @@ func (pm *ProxyManager) validateProxyRequest(targetURL, method string, headers m
 			return fmt.Errorf("header value too long for %s", key)
 		}
 	}
-	
+
 	// Validate body size
 	if len(body) > 1024*1024 { // 1MB limit
 		return fmt.Errorf("request body too large: %d bytes", len(body))
 	}
-	
+
 	// Validate scheme (only HTTPS for security)
 	if parsedURL.Scheme != "https" {
 		return fmt.Errorf("only HTTPS URLs are allowed, got: %s", parsedURL.Scheme)
 	}
-	
+
 	return nil
 }
 
@@ -968,39 +969,39 @@ func (pm *ProxyManager) checkRateLimit(targetURL string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	domain := parsedURL.Hostname()
 	now := time.Now()
-	
+
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
-	
+
 	// Check minimum interval between requests
 	if lastTime, exists := pm.lastRequestTime[domain]; exists {
 		if now.Sub(lastTime) < MinRequestInterval {
 			return fmt.Errorf("rate limit: minimum interval of %v between requests to %s", MinRequestInterval, domain)
 		}
 	}
-	
+
 	// Clean up old request counts (older than 1 hour)
 	pm.cleanupOldRequestCounts()
-	
+
 	// Check maximum requests per hour
 	if count, exists := pm.requestCounts[domain]; exists && count >= MaxRequestsPerDomain {
 		return fmt.Errorf("rate limit: maximum of %d requests per hour exceeded for %s", MaxRequestsPerDomain, domain)
 	}
-	
+
 	// Update counters
 	pm.requestCounts[domain]++
 	pm.lastRequestTime[domain] = now
-	
+
 	return nil
 }
 
 // cleanupOldRequestCounts removes request counts older than 1 hour
 func (pm *ProxyManager) cleanupOldRequestCounts() {
 	cutoff := time.Now().Add(-time.Hour)
-	
+
 	for domain, lastTime := range pm.lastRequestTime {
 		if lastTime.Before(cutoff) {
 			delete(pm.requestCounts, domain)
@@ -1023,13 +1024,13 @@ func isAllowedProxyDomain(hostname string) bool {
 		"design.google",
 		"material.io",
 	}
-	
+
 	for _, domain := range allowedDomains {
 		if hostname == domain || strings.HasSuffix(hostname, "."+domain) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -1072,7 +1073,7 @@ func (hub *ConnectionHub) GetConnection(id string) (*ExtensionConnection, bool) 
 func (hub *ConnectionHub) GetAllConnections() []*ExtensionConnection {
 	hub.mu.RLock()
 	defer hub.mu.RUnlock()
-	
+
 	connections := make([]*ExtensionConnection, 0, len(hub.connections))
 	for _, conn := range hub.connections {
 		connections = append(connections, conn)
@@ -1083,7 +1084,7 @@ func (hub *ConnectionHub) GetAllConnections() []*ExtensionConnection {
 func (hub *ConnectionHub) BroadcastMessage(message ExtensionWebSocketMessage) {
 	hub.mu.RLock()
 	defer hub.mu.RUnlock()
-	
+
 	for _, conn := range hub.connections {
 		select {
 		case conn.send <- message:
@@ -1134,7 +1135,7 @@ func handleWebSocketConnection(w http.ResponseWriter, r *http.Request, proxyMana
 			"serverTime":   time.Now().Unix(),
 		},
 	}
-	
+
 	select {
 	case extConn.send <- welcome:
 	default:

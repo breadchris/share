@@ -1,1 +1,1 @@
-export { ExampleClient } from './ExampleClient';
+export { ExampleClient } from '../../../example/ExampleClient';

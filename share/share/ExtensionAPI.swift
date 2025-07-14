@@ -56,7 +56,7 @@ class ExtensionAPI {
     private let baseURL: String
     private let session: URLSession
     
-    init(baseURL: String = "http://hacked.tailde2ed1.ts.net:8080") {
+    init(baseURL: String = "https://justshare.io") {
         self.baseURL = baseURL
         self.session = URLSession.shared
     }
@@ -66,6 +66,8 @@ class ExtensionAPI {
         guard let url = URL(string: "\(baseURL)/extension/save") else {
             throw ExtensionAPIError.invalidURL
         }
+        
+        print(url)
         
         let request = SaveURLRequest(url: urlString, title: title, html: html)
         
