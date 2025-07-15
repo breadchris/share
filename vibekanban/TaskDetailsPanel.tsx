@@ -37,9 +37,15 @@ const DiffTab: React.FC<{ attempt: TaskAttempt; projectId: string; taskId: strin
     setError(null);
     
     try {
+<<<<<<< HEAD
       const request = new GetAttemptDiffRequest({
         attemptId: attempt.id,
       });
+=======
+      const response = await fetch(
+        `/vibekanban/projects/${projectId}/tasks/${taskId}/attempts/${attempt.id}/diff`
+      );
+>>>>>>> ca39096 (update)
       
       const response = await client.getAttemptDiff(request);
       setDiff(response.diff || 'No changes yet');
@@ -115,9 +121,15 @@ const LogsTab: React.FC<{ attempt: TaskAttempt; projectId: string; taskId: strin
 
   const fetchProcesses = async () => {
     try {
+<<<<<<< HEAD
       const request = new GetProcessesRequest({
         attemptId: attempt.id,
       });
+=======
+      const response = await fetch(
+        `/vibekanban/projects/${projectId}/tasks/${taskId}/attempts/${attempt.id}/processes`
+      );
+>>>>>>> ca39096 (update)
       
       const response = await client.getProcesses(request);
       setProcesses(response.processes);
@@ -132,11 +144,20 @@ const LogsTab: React.FC<{ attempt: TaskAttempt; projectId: string; taskId: strin
   const fetchProcessOutput = async (process: ExecutionProcess) => {
     setLoading(true);
     try {
+<<<<<<< HEAD
       // Use the stdout/stderr from the process data directly
       setProcessOutput({
         stdout: process.stdout || '',
         stderr: process.stderr || ''
       });
+=======
+      const response = await fetch(`/vibekanban/processes/${processId}/output`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setProcessOutput(data);
+      }
+>>>>>>> ca39096 (update)
     } catch (err) {
       console.error('Failed to fetch process output:', err);
     } finally {
@@ -325,11 +346,28 @@ const ConversationTab: React.FC<{ attempt: TaskAttempt }> = ({ attempt }) => {
 
     setSending(true);
     try {
+<<<<<<< HEAD
       // TODO: Implement via ConnectRPC service when available
       // For now, this functionality is not implemented as a ConnectRPC method
       console.log('Sending prompt:', prompt);
       setPrompt('');
       // TODO: Update conversation history when ConnectRPC method is available
+=======
+      // This would integrate with the coding agent API
+      const response = await fetch(
+        `/vibekanban/projects/${attempt.task_id}/tasks/${attempt.task_id}/attempts/${attempt.id}/processes/agent`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt }),
+        }
+      );
+
+      if (response.ok) {
+        setPrompt('');
+        // TODO: Update conversation history
+      }
+>>>>>>> ca39096 (update)
     } catch (err) {
       console.error('Failed to send prompt:', err);
     } finally {

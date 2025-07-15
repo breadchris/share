@@ -53,18 +53,30 @@ type ClaudeContentBlock struct {
 
 func (c *ClaudeExecutor) Spawn(ctx context.Context, taskID uuid.UUID, worktreePath string) (*exec.Cmd, error) {
 	fmt.Printf("Debug: ClaudeExecutor.Spawn called with taskID: %s, worktreePath: %s\n", taskID.String(), worktreePath)
+<<<<<<< HEAD:vibekanban/process/claude.go
 
+=======
+	
+>>>>>>> ca39096 (update):vibekanban/claude.go
 	// Validate worktree path exists
 	if _, err := os.Stat(worktreePath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("worktree path does not exist: %s", worktreePath)
 	}
+<<<<<<< HEAD:vibekanban/process/claude.go
 
+=======
+	
+>>>>>>> ca39096 (update):vibekanban/claude.go
 	// Check if npx is available
 	if _, err := exec.LookPath("npx"); err != nil {
 		fmt.Printf("Debug: npx not found in PATH, Claude executor will fail: %v\n", err)
 		return nil, fmt.Errorf("npx not found in PATH - please install Node.js and npm: %w", err)
 	}
+<<<<<<< HEAD:vibekanban/process/claude.go
 
+=======
+	
+>>>>>>> ca39096 (update):vibekanban/claude.go
 	// Optionally check if Claude CLI is available (this takes time, so only in debug mode)
 	if os.Getenv("CLAUDE_DEBUG") == "true" {
 		fmt.Printf("Debug: Checking if Claude CLI is available...\n")
@@ -75,7 +87,11 @@ func (c *ClaudeExecutor) Spawn(ctx context.Context, taskID uuid.UUID, worktreePa
 			fmt.Printf("Debug: Claude CLI is available\n")
 		}
 	}
+<<<<<<< HEAD:vibekanban/process/claude.go
 
+=======
+	
+>>>>>>> ca39096 (update):vibekanban/claude.go
 	// Create a basic prompt - specific task details will be provided via stdin
 	prompt := fmt.Sprintf("Task ID: %s\nPlease help with this task.", taskID.String())
 	fmt.Printf("Debug: Created prompt for Claude: %s\n", prompt)
@@ -83,7 +99,11 @@ func (c *ClaudeExecutor) Spawn(ctx context.Context, taskID uuid.UUID, worktreePa
 	// Create Claude command
 	claudeCommand := "npx -y @anthropic-ai/claude-code@latest -p --dangerously-skip-permissions --verbose --output-format=stream-json"
 	fmt.Printf("Debug: Claude command: %s\n", claudeCommand)
+<<<<<<< HEAD:vibekanban/process/claude.go
 
+=======
+	
+>>>>>>> ca39096 (update):vibekanban/claude.go
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
 		cmd = exec.CommandContext(ctx, "cmd", "/C", claudeCommand)
@@ -97,19 +117,33 @@ func (c *ClaudeExecutor) Spawn(ctx context.Context, taskID uuid.UUID, worktreePa
 	env = append(env, "NODE_NO_WARNINGS=1")
 	env = append(env, "FORCE_COLOR=0") // Disable colors for cleaner output
 	cmd.Env = env
+<<<<<<< HEAD:vibekanban/process/claude.go
 
 	fmt.Printf("Debug: Command setup complete, working directory: %s\n", cmd.Dir)
 
+=======
+	
+	fmt.Printf("Debug: Command setup complete, working directory: %s\n", cmd.Dir)
+	
+>>>>>>> ca39096 (update):vibekanban/claude.go
 	// Set up pipes for better error handling
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create stdin pipe: %w", err)
 	}
+<<<<<<< HEAD:vibekanban/process/claude.go
 
 	// Don't start the command here - let the process manager handle it
 	// Just return the configured command
 	fmt.Printf("Debug: Claude command configured successfully\n")
 
+=======
+	
+	// Don't start the command here - let the process manager handle it
+	// Just return the configured command
+	fmt.Printf("Debug: Claude command configured successfully\n")
+	
+>>>>>>> ca39096 (update):vibekanban/claude.go
 	// Store stdin and prompt for later use
 	go func() {
 		// Wait a bit for the process to start, then write prompt

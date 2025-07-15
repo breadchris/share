@@ -345,7 +345,11 @@ func startServer(useTLS bool, port int) {
 
 	p("/coderunner", interpreted(coderunner.New))
 	p("/kanban", interpreted(kanban.New))
+<<<<<<< HEAD
 	p("/vibekanban", vibekanban.New(deps))
+=======
+	p("/vibekanban", interpreted(vibekanban.New))
+>>>>>>> ca39096 (update)
 	//p("/claudemd", interpreted(claudemd.New))
 	p("/docker", interpreted(docker.New))
 	p("/browser", interpreted(NewBrowser))

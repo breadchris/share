@@ -626,12 +626,18 @@ func (pm *ProcessManager) ExecuteOperation(attemptID, taskID, projectID, operati
 // StartCodingAgentDirect starts a coding agent directly without setup check
 func (pm *ProcessManager) StartCodingAgentDirect(attemptID, taskID, projectID string) error {
 	fmt.Printf("Debug: Starting coding agent direct for attempt %s\n", attemptID)
+<<<<<<< HEAD:vibekanban/process/process.go
 
+=======
+	
+>>>>>>> ca39096 (update):vibekanban/process.go
 	// Get task attempt to determine executor and worktree
 	var attempt models.VibeTaskAttempt
 	if err := pm.db.First(&attempt, "id = ?", attemptID).Error; err != nil {
 		return fmt.Errorf("task attempt not found (ID: %s): %w", attemptID, err)
 	}
+	
+	fmt.Printf("Debug: Found attempt with executor: %s, worktree: %s\n", attempt.Executor, attempt.WorktreePath)
 
 	fmt.Printf("Debug: Found attempt with executor: %s, worktree: %s\n", attempt.Executor, attempt.WorktreePath)
 
@@ -646,7 +652,11 @@ func (pm *ProcessManager) StartCodingAgentDirect(attemptID, taskID, projectID st
 		fmt.Printf("Debug: Failed to start process execution: %v\n", err)
 		return err
 	}
+<<<<<<< HEAD:vibekanban/process/process.go
 
+=======
+	
+>>>>>>> ca39096 (update):vibekanban/process.go
 	fmt.Printf("Debug: Successfully started coding agent for attempt %s\n", attemptID)
 	return nil
 }
@@ -741,7 +751,11 @@ func (pm *ProcessManager) StartProcessExecution(attemptID, taskID string, execut
 	fmt.Printf("Debug: Creating executor from type\n")
 	executor := pm.CreateExecutorFromType(executorType)
 	fmt.Printf("Debug: Created executor: %T\n", executor)
+<<<<<<< HEAD:vibekanban/process/process.go
 
+=======
+	
+>>>>>>> ca39096 (update):vibekanban/process.go
 	ctx := context.Background()
 	fmt.Printf("Debug: Spawning executor with taskID: %s, worktreePath: %s\n", taskID, worktreePath)
 	cmd, err := executor.Spawn(ctx, uuid.MustParse(taskID), worktreePath)
@@ -783,7 +797,11 @@ func (pm *ProcessManager) StartProcessExecution(attemptID, taskID string, execut
 // monitorExecutorProcess monitors an executor process and handles session extraction
 func (pm *ProcessManager) monitorExecutorProcess(mp *ManagedProcess, executor Executor) {
 	fmt.Printf("Debug: monitorExecutorProcess started for process %s (attempt %s)\n", mp.ID, mp.AttemptID)
+<<<<<<< HEAD:vibekanban/process/process.go
 
+=======
+	
+>>>>>>> ca39096 (update):vibekanban/process.go
 	// Start the command
 	fmt.Printf("Debug: Starting process command: %s %v\n", mp.cmd.Path, mp.cmd.Args)
 	err := mp.cmd.Start()
@@ -795,6 +813,8 @@ func (pm *ProcessManager) monitorExecutorProcess(mp *ManagedProcess, executor Ex
 		pm.updateProcessInDB(mp)
 		return
 	}
+	
+	fmt.Printf("Debug: Process %s started successfully, PID: %d\n", mp.ID, mp.cmd.Process.Pid)
 
 	fmt.Printf("Debug: Process %s started successfully, PID: %d\n", mp.ID, mp.cmd.Process.Pid)
 
@@ -842,10 +862,17 @@ func (pm *ProcessManager) monitorExecutorProcess(mp *ManagedProcess, executor Ex
 
 	fmt.Printf("Debug: Updating process %s in database\n", mp.ID)
 	pm.updateProcessInDB(mp)
+<<<<<<< HEAD:vibekanban/process/process.go
 
 	// Update task attempt status based on process completion
 	pm.updateTaskAttemptStatus(mp)
 
+=======
+	
+	// Update task attempt status based on process completion
+	pm.updateTaskAttemptStatus(mp)
+	
+>>>>>>> ca39096 (update):vibekanban/process.go
 	fmt.Printf("Debug: monitorExecutorProcess completed for process %s\n", mp.ID)
 }
 
@@ -1012,24 +1039,40 @@ func (pm *ProcessManager) CreateExecutorSessionRecord(attemptID, taskID, process
 // updateTaskAttemptStatus updates the task attempt status based on process completion
 func (pm *ProcessManager) updateTaskAttemptStatus(mp *ManagedProcess) {
 	fmt.Printf("Debug: Updating task attempt status for attempt %s based on process %s status: %s\n", mp.AttemptID, mp.ID, mp.Status)
+<<<<<<< HEAD:vibekanban/process/process.go
 
+=======
+	
+>>>>>>> ca39096 (update):vibekanban/process.go
 	// Get current attempt
 	var attempt models.VibeTaskAttempt
 	if err := pm.db.First(&attempt, "id = ?", mp.AttemptID).Error; err != nil {
 		fmt.Printf("Debug: Failed to find attempt %s: %v\n", mp.AttemptID, err)
 		return
 	}
+<<<<<<< HEAD:vibekanban/process/process.go
 
+=======
+	
+>>>>>>> ca39096 (update):vibekanban/process.go
 	// Only update if this is a coding agent process (main execution)
 	if !strings.Contains(mp.Type, "coding") && mp.Type != "claude" {
 		fmt.Printf("Debug: Skipping attempt status update for non-coding process type: %s\n", mp.Type)
 		return
 	}
+<<<<<<< HEAD:vibekanban/process/process.go
 
 	var newStatus string
 	var endTime *time.Time
 	now := time.Now()
 
+=======
+	
+	var newStatus string
+	var endTime *time.Time
+	now := time.Now()
+	
+>>>>>>> ca39096 (update):vibekanban/process.go
 	switch mp.Status {
 	case "completed":
 		newStatus = "completed"
@@ -1043,7 +1086,11 @@ func (pm *ProcessManager) updateTaskAttemptStatus(mp *ManagedProcess) {
 		fmt.Printf("Debug: No status update needed for process status: %s\n", mp.Status)
 		return
 	}
+<<<<<<< HEAD:vibekanban/process/process.go
 
+=======
+	
+>>>>>>> ca39096 (update):vibekanban/process.go
 	// Update attempt status
 	updates := map[string]interface{}{
 		"status":     newStatus,
@@ -1052,19 +1099,31 @@ func (pm *ProcessManager) updateTaskAttemptStatus(mp *ManagedProcess) {
 	if endTime != nil {
 		updates["end_time"] = endTime
 	}
+<<<<<<< HEAD:vibekanban/process/process.go
 
+=======
+	
+>>>>>>> ca39096 (update):vibekanban/process.go
 	if err := pm.db.Model(&models.VibeTaskAttempt{}).Where("id = ?", mp.AttemptID).Updates(updates).Error; err != nil {
 		fmt.Printf("Debug: Failed to update attempt status: %v\n", err)
 		return
 	}
+<<<<<<< HEAD:vibekanban/process/process.go
 
+=======
+	
+>>>>>>> ca39096 (update):vibekanban/process.go
 	fmt.Printf("Debug: Successfully updated attempt %s status to %s\n", mp.AttemptID, newStatus)
 }
 
 // StartExecution starts the execution flow for a task attempt (main entry point)
 func (pm *ProcessManager) StartExecution(attemptID, taskID, projectID, executor, worktreePath string) error {
 	fmt.Printf("Debug: Starting execution for attempt %s, task %s, project %s\n", attemptID, taskID, projectID)
+<<<<<<< HEAD:vibekanban/process/process.go
 
+=======
+	
+>>>>>>> ca39096 (update):vibekanban/process.go
 	// Get project to check if setup script exists
 	var project models.VibeProject
 	if err := pm.db.First(&project, "id = ?", projectID).Error; err != nil {
@@ -1090,4 +1149,8 @@ func (pm *ProcessManager) StartExecution(attemptID, taskID, projectID, executor,
 		fmt.Printf("Debug: Starting coding agent directly\n")
 		return pm.StartCodingAgentDirect(attemptID, taskID, projectID)
 	}
+<<<<<<< HEAD:vibekanban/process/process.go
 }
+=======
+}
+>>>>>>> ca39096 (update):vibekanban/process.go

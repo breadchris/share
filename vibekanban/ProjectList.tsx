@@ -43,12 +43,19 @@ const NewProjectDialog: React.FC<{
     setError(null);
 
     try {
+<<<<<<< HEAD
       const request = new CreateProjectRequest({
         name: formData.name,
         gitRepoPath: formData.git_repo_path,
         setupScript: formData.setup_script,
         devScript: formData.dev_script,
         defaultBranch: formData.default_branch,
+=======
+      const response = await fetch('/vibekanban/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+>>>>>>> ca39096 (update)
       });
 
       const response = await client.createProject(request);
@@ -324,8 +331,19 @@ export const ProjectList: React.FC<{
   const fetchProjects = async () => {
     try {
       setLoading(true);
+<<<<<<< HEAD
       const response = await client.listProjects({});
       setProjects(response.projects);
+=======
+      const response = await fetch('/vibekanban/projects');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch projects');
+      }
+      
+      const data = await response.json();
+      setProjects(data);
+>>>>>>> ca39096 (update)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch projects');
     } finally {
@@ -343,8 +361,13 @@ export const ProjectList: React.FC<{
 
   const handleDeleteProject = async (project: Project) => {
     try {
+<<<<<<< HEAD
       const request = new DeleteProjectRequest({
         id: project.id,
+=======
+      const response = await fetch(`/vibekanban/projects/${project.id}`, {
+        method: 'DELETE',
+>>>>>>> ca39096 (update)
       });
 
       await client.deleteProject(request);
