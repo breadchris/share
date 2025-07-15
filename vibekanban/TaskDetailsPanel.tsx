@@ -1,60 +1,27 @@
 import React, { useState, useEffect } from 'react';
+import { createConnectTransport } from '@connectrpc/connect-web';
+import { createClient } from '@connectrpc/connect';
+import { VibeKanbanService } from '../gen/proto/vibekanban/vibekanban_pb';
+import type {
+  GetAttemptDiffRequest,
+  GetProcessesRequest,
+} from '../gen/proto/vibekanban/vibekanban_pb';
+import {
+  Task,
+  TaskAttempt,
+  ExecutionProcess,
+  TaskStatus,
+  TaskPriority,
+  AttemptStatus,
+  ProcessType,
+  ProcessStatus
+} from '../gen/proto/vibekanban/vibekanban_pb';
 
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: 'todo' | 'inprogress' | 'inreview' | 'done' | 'cancelled';
-  priority: 'low' | 'medium' | 'high';
-  project_id: string;
-  user_id: string;
-  labels?: string[];
-  created_at: string;
-  updated_at: string;
-  attempts?: TaskAttempt[];
-}
-
-interface TaskAttempt {
-  id: string;
-  task_id: string;
-  executor: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  worktree_path?: string;
-  branch?: string;
-  base_branch: string;
-  pr_url?: string;
-  start_time?: string;
-  end_time?: string;
-  git_diff?: string;
-  processes?: ExecutionProcess[];
-  sessions?: ExecutorSession[];
-}
-
-interface ExecutionProcess {
-  id: string;
-  attempt_id: string;
-  type: 'setupscript' | 'codingagent' | 'devserver';
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'killed';
-  command: string;
-  process_id?: number;
-  start_time?: string;
-  end_time?: string;
-  stdout?: string;
-  stderr?: string;
-  exit_code?: number;
-  port?: number;
-  url?: string;
-}
-
-interface ExecutorSession {
-  id: string;
-  attempt_id: string;
-  session_id: string;
-  executor: string;
-  prompt: string;
-  summary?: string;
-  messages?: any[];
-}
+// Create ConnectRPC client
+const transport = createConnectTransport({
+  baseUrl: '/vibekanban',
+});
+const client = createClient(VibeKanbanService, transport);
 
 const DiffTab: React.FC<{ attempt: TaskAttempt; projectId: string; taskId: string }> = ({
   attempt,
@@ -70,16 +37,12 @@ const DiffTab: React.FC<{ attempt: TaskAttempt; projectId: string; taskId: strin
     setError(null);
     
     try {
-      const response = await fetch(
-        `/vibekanban/projects/${projectId}/tasks/${taskId}/attempts/${attempt.id}/diff`
-      );
+      const request = new GetAttemptDiffRequest({
+        attemptId: attempt.id,
+      });
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch diff');
-      }
-      
-      const data = await response.json();
-      setDiff(data.diff || 'No changes yet');
+      const response = await client.getAttemptDiff(request);
+      setDiff(response.diff || 'No changes yet');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch diff');
     } finally {
@@ -152,31 +115,28 @@ const LogsTab: React.FC<{ attempt: TaskAttempt; projectId: string; taskId: strin
 
   const fetchProcesses = async () => {
     try {
-      const response = await fetch(
-        `/vibekanban/projects/${projectId}/tasks/${taskId}/attempts/${attempt.id}/processes`
-      );
+      const request = new GetProcessesRequest({
+        attemptId: attempt.id,
+      });
       
-      if (response.ok) {
-        const data = await response.json();
-        setProcesses(data);
-        if (data.length > 0 && !selectedProcess) {
-          setSelectedProcess(data[0]);
-        }
+      const response = await client.getProcesses(request);
+      setProcesses(response.processes);
+      if (response.processes.length > 0 && !selectedProcess) {
+        setSelectedProcess(response.processes[0]);
       }
     } catch (err) {
       console.error('Failed to fetch processes:', err);
     }
   };
 
-  const fetchProcessOutput = async (processId: string) => {
+  const fetchProcessOutput = async (process: ExecutionProcess) => {
     setLoading(true);
     try {
-      const response = await fetch(`/vibekanban/processes/${processId}/output`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        setProcessOutput(data);
-      }
+      // Use the stdout/stderr from the process data directly
+      setProcessOutput({
+        stdout: process.stdout || '',
+        stderr: process.stderr || ''
+      });
     } catch (err) {
       console.error('Failed to fetch process output:', err);
     } finally {
@@ -192,9 +152,41 @@ const LogsTab: React.FC<{ attempt: TaskAttempt; projectId: string; taskId: strin
 
   useEffect(() => {
     if (selectedProcess) {
-      fetchProcessOutput(selectedProcess.id);
+      fetchProcessOutput(selectedProcess);
     }
   }, [selectedProcess]);
+
+  // Helper function to convert process status enum to string
+  const getProcessStatusString = (status: ProcessStatus): string => {
+    switch (status) {
+      case ProcessStatus.PROCESS_STATUS_PENDING:
+        return 'pending';
+      case ProcessStatus.PROCESS_STATUS_RUNNING:
+        return 'running';
+      case ProcessStatus.PROCESS_STATUS_COMPLETED:
+        return 'completed';
+      case ProcessStatus.PROCESS_STATUS_FAILED:
+        return 'failed';
+      case ProcessStatus.PROCESS_STATUS_KILLED:
+        return 'killed';
+      default:
+        return 'pending';
+    }
+  };
+
+  // Helper function to convert process type enum to string
+  const getProcessTypeString = (type: ProcessType): string => {
+    switch (type) {
+      case ProcessType.PROCESS_TYPE_SETUP_SCRIPT:
+        return 'setup_script';
+      case ProcessType.PROCESS_TYPE_CODING_AGENT:
+        return 'coding_agent';
+      case ProcessType.PROCESS_TYPE_DEV_SERVER:
+        return 'dev_server';
+      default:
+        return 'coding_agent';
+    }
+  };
 
   const statusColors = {
     pending: 'text-yellow-600 bg-yellow-100',
@@ -228,14 +220,14 @@ const LogsTab: React.FC<{ attempt: TaskAttempt; projectId: string; taskId: strin
               >
                 <div className="flex justify-between items-center">
                   <div>
-                    <span className="font-medium text-sm">{process.type}</span>
-                    <span className={`ml-2 text-xs px-2 py-1 rounded-full ${statusColors[process.status]}`}>
-                      {process.status}
+                    <span className="font-medium text-sm">{getProcessTypeString(process.type)}</span>
+                    <span className={`ml-2 text-xs px-2 py-1 rounded-full ${statusColors[getProcessStatusString(process.status)]}`}>
+                      {getProcessStatusString(process.status)}
                     </span>
                   </div>
-                  {process.start_time && (
+                  {process.startTime && (
                     <span className="text-xs text-gray-500">
-                      {new Date(process.start_time).toLocaleTimeString()}
+                      {new Date(process.startTime.toDate()).toLocaleTimeString()}
                     </span>
                   )}
                 </div>
@@ -271,10 +263,10 @@ const LogsTab: React.FC<{ attempt: TaskAttempt; projectId: string; taskId: strin
             <div className="border-t pt-4">
               <div className="flex justify-between items-center mb-2">
                 <h4 className="text-sm font-medium">
-                  Output - {selectedProcess.type}
+                  Output - {getProcessTypeString(selectedProcess.type)}
                 </h4>
                 <button
-                  onClick={() => fetchProcessOutput(selectedProcess.id)}
+                  onClick={() => fetchProcessOutput(selectedProcess)}
                   className="text-blue-500 text-xs hover:text-blue-700"
                 >
                   Refresh
@@ -333,20 +325,11 @@ const ConversationTab: React.FC<{ attempt: TaskAttempt }> = ({ attempt }) => {
 
     setSending(true);
     try {
-      // This would integrate with the coding agent API
-      const response = await fetch(
-        `/vibekanban/projects/${attempt.task_id}/tasks/${attempt.task_id}/attempts/${attempt.id}/processes/agent`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt }),
-        }
-      );
-
-      if (response.ok) {
-        setPrompt('');
-        // TODO: Update conversation history
-      }
+      // TODO: Implement via ConnectRPC service when available
+      // For now, this functionality is not implemented as a ConnectRPC method
+      console.log('Sending prompt:', prompt);
+      setPrompt('');
+      // TODO: Update conversation history when ConnectRPC method is available
     } catch (err) {
       console.error('Failed to send prompt:', err);
     } finally {
@@ -418,6 +401,54 @@ export const TaskDetailsPanel: React.FC<{
   const [activeTab, setActiveTab] = useState<'overview' | 'diff' | 'logs' | 'conversation'>('overview');
   const [selectedAttempt, setSelectedAttempt] = useState<TaskAttempt | null>(null);
 
+  // Helper function to convert task status enum to string
+  const getTaskStatusString = (status: TaskStatus): string => {
+    switch (status) {
+      case TaskStatus.TASK_STATUS_TODO:
+        return 'todo';
+      case TaskStatus.TASK_STATUS_IN_PROGRESS:
+        return 'inprogress';
+      case TaskStatus.TASK_STATUS_IN_REVIEW:
+        return 'inreview';
+      case TaskStatus.TASK_STATUS_DONE:
+        return 'done';
+      case TaskStatus.TASK_STATUS_CANCELLED:
+        return 'cancelled';
+      default:
+        return 'todo';
+    }
+  };
+
+  // Helper function to convert task priority enum to string
+  const getTaskPriorityString = (priority: TaskPriority): string => {
+    switch (priority) {
+      case TaskPriority.TASK_PRIORITY_LOW:
+        return 'low';
+      case TaskPriority.TASK_PRIORITY_MEDIUM:
+        return 'medium';
+      case TaskPriority.TASK_PRIORITY_HIGH:
+        return 'high';
+      default:
+        return 'medium';
+    }
+  };
+
+  // Helper function to convert attempt status enum to string
+  const getAttemptStatusString = (status: AttemptStatus): string => {
+    switch (status) {
+      case AttemptStatus.ATTEMPT_STATUS_PENDING:
+        return 'pending';
+      case AttemptStatus.ATTEMPT_STATUS_RUNNING:
+        return 'running';
+      case AttemptStatus.ATTEMPT_STATUS_COMPLETED:
+        return 'completed';
+      case AttemptStatus.ATTEMPT_STATUS_FAILED:
+        return 'failed';
+      default:
+        return 'pending';
+    }
+  };
+
   useEffect(() => {
     if (task.attempts && task.attempts.length > 0) {
       setSelectedAttempt(task.attempts[0]);
@@ -443,6 +474,10 @@ export const TaskDetailsPanel: React.FC<{
     inreview: 'text-yellow-600 bg-yellow-100',
     done: 'text-green-600 bg-green-100',
     cancelled: 'text-red-600 bg-red-100',
+    pending: 'text-yellow-600 bg-yellow-100',
+    running: 'text-blue-600 bg-blue-100',
+    completed: 'text-green-600 bg-green-100',
+    failed: 'text-red-600 bg-red-100',
   };
 
   return (
@@ -453,11 +488,11 @@ export const TaskDetailsPanel: React.FC<{
           <div className="flex-1">
             <h2 className="text-lg font-semibold text-gray-900 mb-2">{task.title}</h2>
             <div className="flex items-center space-x-3">
-              <span className={`text-xs px-2 py-1 rounded-full ${statusColors[task.status]}`}>
-                {task.status}
+              <span className={`text-xs px-2 py-1 rounded-full ${statusColors[getTaskStatusString(task.status)]}`}>
+                {getTaskStatusString(task.status)}
               </span>
-              <span className={`text-xs px-2 py-1 rounded-full ${priorityColors[task.priority]}`}>
-                {task.priority}
+              <span className={`text-xs px-2 py-1 rounded-full ${priorityColors[getTaskPriorityString(task.priority)]}`}>
+                {getTaskPriorityString(task.priority)}
               </span>
             </div>
           </div>
@@ -535,8 +570,8 @@ export const TaskDetailsPanel: React.FC<{
                     >
                       <div className="flex justify-between items-center mb-2">
                         <span className="font-medium text-sm">{attempt.executor}</span>
-                        <span className={`text-xs px-2 py-1 rounded-full ${statusColors[attempt.status] || 'text-gray-600 bg-gray-100'}`}>
-                          {attempt.status}
+                        <span className={`text-xs px-2 py-1 rounded-full ${statusColors[getAttemptStatusString(attempt.status)]}`}>
+                          {getAttemptStatusString(attempt.status)}
                         </span>
                       </div>
                       
@@ -546,16 +581,16 @@ export const TaskDetailsPanel: React.FC<{
                         </div>
                       )}
                       
-                      {attempt.start_time && (
+                      {attempt.startTime && (
                         <div className="text-xs text-gray-500">
-                          Started: {new Date(attempt.start_time).toLocaleString()}
+                          Started: {new Date(attempt.startTime.toDate()).toLocaleString()}
                         </div>
                       )}
                       
-                      {attempt.pr_url && (
+                      {attempt.prUrl && (
                         <div className="mt-2">
                           <a
-                            href={attempt.pr_url}
+                            href={attempt.prUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-xs text-blue-500 hover:text-blue-700"
@@ -576,11 +611,11 @@ export const TaskDetailsPanel: React.FC<{
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-gray-500">Created</span>
-                <p>{new Date(task.created_at).toLocaleString()}</p>
+                <p>{new Date(task.createdAt?.toDate() || 0).toLocaleString()}</p>
               </div>
               <div>
                 <span className="text-gray-500">Updated</span>
-                <p>{new Date(task.updated_at).toLocaleString()}</p>
+                <p>{new Date(task.updatedAt?.toDate() || 0).toLocaleString()}</p>
               </div>
             </div>
           </div>

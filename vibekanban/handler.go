@@ -2,10 +2,10 @@ package vibekanban
 
 import (
 	"connectrpc.com/connect"
+	"github.com/breadchris/flow/code"
 	"github.com/breadchris/share/gen/proto/vibekanban/vibekanbanconnect"
 	"net/http"
 
-	"github.com/breadchris/share/coderunner"
 	"github.com/breadchris/share/deps"
 )
 
@@ -17,7 +17,7 @@ func New(d deps.Deps) *http.ServeMux {
 	// Serve the React component at the root path
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			coderunner.ServeReactApp(w, r, "vibekanban/VibeKanbanApp", "VibeKanbanApp")
+			code.ServeReactApp(w, r, "vibekanban/VibeKanbanApp.tsx", "VibeKanbanApp")
 			return
 		}
 		http.NotFound(w, r)

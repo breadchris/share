@@ -1,4 +1,4 @@
-package vibekanban
+package process
 
 import (
 	"context"
@@ -133,10 +133,10 @@ type NormalizedEntryType struct {
 
 // NormalizedEntry represents a single entry in a normalized conversation
 type NormalizedEntry struct {
-	Timestamp *time.Time           `json:"timestamp,omitempty"`
-	Type      NormalizedEntryType  `json:"entry_type"`
-	Content   string               `json:"content"`
-	Metadata  *json.RawMessage     `json:"metadata,omitempty"`
+	Timestamp *time.Time          `json:"timestamp,omitempty"`
+	Type      NormalizedEntryType `json:"entry_type"`
+	Content   string              `json:"content"`
+	Metadata  *json.RawMessage    `json:"metadata,omitempty"`
 }
 
 // NormalizedConversation represents a normalized conversation for different executor formats
@@ -194,7 +194,7 @@ func NewSpawnContextFromCommand(cmd *exec.Cmd, executorType string) SpawnContext
 	if len(cmd.Args) > 1 {
 		args = cmd.Args[1:]
 	}
-	
+
 	return SpawnContext{
 		ExecutorType: executorType,
 		Command:      cmd.Path,
@@ -241,10 +241,10 @@ func NewSpawnFailedError(err error, context SpawnContext) ExecutorError {
 type Executor interface {
 	// Spawn starts the executor process and returns the running process
 	Spawn(ctx context.Context, taskID uuid.UUID, worktreePath string) (*exec.Cmd, error)
-	
+
 	// NormalizeLogs processes raw logs and converts them to normalized conversation format
 	NormalizeLogs(logs string, worktreePath string) (*NormalizedConversation, error)
-	
+
 	// GetExecutorType returns the type of this executor
 	GetExecutorType() ExecutorConfig
 }
@@ -288,11 +288,11 @@ func (e *EchoExecutor) Spawn(ctx context.Context, taskID uuid.UUID, worktreePath
 func (e *EchoExecutor) NormalizeLogs(logs string, worktreePath string) (*NormalizedConversation, error) {
 	entries := []NormalizedEntry{
 		{
-			Type: NormalizedEntryType{Type: "assistant_message"},
+			Type:    NormalizedEntryType{Type: "assistant_message"},
 			Content: logs,
 		},
 	}
-	
+
 	return &NormalizedConversation{
 		Entries:      entries,
 		ExecutorType: "echo",

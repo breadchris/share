@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/breadchris/share/gen/proto/vibekanban/vibekanbanconnect"
+	"github.com/breadchris/share/vibekanban/process"
 	"strings"
 	"time"
 
@@ -19,7 +20,10 @@ import (
 // Service implements the VibeKanbanService ConnectRPC service
 type Service struct {
 	vibekanbanconnect.UnimplementedVibeKanbanServiceHandler
-	*VibeKanbanService // Embed the existing service with business logic
+	db             *gorm.DB
+	session        *session.SessionManager
+	gitService     *GitService
+	processManager *process.ProcessManager
 }
 
 var _ vibekanbanconnect.VibeKanbanServiceHandler = (*Service)(nil)
@@ -27,13 +31,16 @@ var _ vibekanbanconnect.VibeKanbanServiceHandler = (*Service)(nil)
 // NewService creates a new VibeKanban service instance
 func NewService(database *gorm.DB, sessionManager *session.SessionManager) *Service {
 	return &Service{
-		VibeKanbanService: NewVibeKanbanService(database, sessionManager),
+		db:             database,
+		session:        sessionManager,
+		gitService:     NewGitService(),
+		processManager: process.NewProcessManager(database),
 	}
 }
 
 // Helper function to get user ID from context
 func (s *Service) getUserID(ctx context.Context) (string, error) {
-	return s.VibeKanbanService.session.GetUserID(ctx)
+	return s.session.GetUserID(ctx)
 }
 
 // Conversion helpers from GORM models to protobuf messages
@@ -303,23 +310,6 @@ func stringToProcessStatus(status string) vibekanban.ProcessStatus {
 	}
 }
 
-func processStatusToString(status vibekanban.ProcessStatus) string {
-	switch status {
-	case vibekanban.ProcessStatus_PROCESS_STATUS_PENDING:
-		return "pending"
-	case vibekanban.ProcessStatus_PROCESS_STATUS_RUNNING:
-		return "running"
-	case vibekanban.ProcessStatus_PROCESS_STATUS_COMPLETED:
-		return "completed"
-	case vibekanban.ProcessStatus_PROCESS_STATUS_FAILED:
-		return "failed"
-	case vibekanban.ProcessStatus_PROCESS_STATUS_KILLED:
-		return "killed"
-	default:
-		return "pending"
-	}
-}
-
 // Project operations
 func (s *Service) GetProject(ctx context.Context, req *connect.Request[vibekanban.GetProjectRequest]) (*connect.Response[vibekanban.GetProjectResponse], error) {
 	userID, err := s.getUserID(ctx)
@@ -410,7 +400,7 @@ func (s *Service) UpdateProject(ctx context.Context, req *connect.Request[vibeka
 	}
 
 	var project models.VibeProject
-	result := s.VibeKanbanService.db.Where("id = ? AND user_id = ?", req.Msg.Id, userID).First(&project)
+	result := s.db.Where("id = ? AND user_id = ?", req.Msg.Id, userID).First(&project)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("project not found"))
@@ -440,7 +430,7 @@ func (s *Service) UpdateProject(ctx context.Context, req *connect.Request[vibeka
 		project.Config = models.MakeJSONField(configMap)
 	}
 
-	result = s.VibeKanbanService.db.Save(&project)
+	result = s.db.Save(&project)
 	if result.Error != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to update project: %w", result.Error))
 	}
@@ -460,7 +450,7 @@ func (s *Service) DeleteProject(ctx context.Context, req *connect.Request[vibeka
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("project ID is required"))
 	}
 
-	result := s.VibeKanbanService.db.Where("id = ? AND user_id = ?", req.Msg.Id, userID).Delete(&models.VibeProject{})
+	result := s.db.Where("id = ? AND user_id = ?", req.Msg.Id, userID).Delete(&models.VibeProject{})
 	if result.Error != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to delete project: %w", result.Error))
 	}
@@ -517,7 +507,7 @@ func (s *Service) CreateTask(ctx context.Context, req *connect.Request[vibekanba
 
 	// Verify project belongs to user
 	var project models.VibeProject
-	result := s.VibeKanbanService.db.Where("id = ? AND user_id = ?", req.Msg.ProjectId, userID).First(&project)
+	result := s.db.Where("id = ? AND user_id = ?", req.Msg.ProjectId, userID).First(&project)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("project not found"))
@@ -544,7 +534,7 @@ func (s *Service) CreateTask(ctx context.Context, req *connect.Request[vibekanba
 		task.Metadata = models.MakeJSONField(metadataMap)
 	}
 
-	result = s.VibeKanbanService.db.Create(&task)
+	result = s.db.Create(&task)
 	if result.Error != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to create task: %w", result.Error))
 	}
@@ -565,7 +555,7 @@ func (s *Service) UpdateTask(ctx context.Context, req *connect.Request[vibekanba
 	}
 
 	var task models.VibeTask
-	result := s.VibeKanbanService.db.Where("id = ? AND user_id = ?", req.Msg.Id, userID).First(&task)
+	result := s.db.Where("id = ? AND user_id = ?", req.Msg.Id, userID).First(&task)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("task not found"))
@@ -599,7 +589,7 @@ func (s *Service) UpdateTask(ctx context.Context, req *connect.Request[vibekanba
 		task.Metadata = models.MakeJSONField(metadataMap)
 	}
 
-	result = s.VibeKanbanService.db.Save(&task)
+	result = s.db.Save(&task)
 	if result.Error != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to update task: %w", result.Error))
 	}
@@ -619,7 +609,7 @@ func (s *Service) DeleteTask(ctx context.Context, req *connect.Request[vibekanba
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("task ID is required"))
 	}
 
-	result := s.VibeKanbanService.db.Where("id = ? AND user_id = ?", req.Msg.Id, userID).Delete(&models.VibeTask{})
+	result := s.db.Where("id = ? AND user_id = ?", req.Msg.Id, userID).Delete(&models.VibeTask{})
 	if result.Error != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to delete task: %w", result.Error))
 	}
@@ -644,7 +634,7 @@ func (s *Service) CreateTaskAttempt(ctx context.Context, req *connect.Request[vi
 
 	// Verify task belongs to user
 	var task models.VibeTask
-	result := s.VibeKanbanService.db.Where("id = ? AND user_id = ?", req.Msg.TaskId, userID).First(&task)
+	result := s.db.Where("id = ? AND user_id = ?", req.Msg.TaskId, userID).First(&task)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("task not found"))
@@ -669,7 +659,7 @@ func (s *Service) CreateTaskAttempt(ctx context.Context, req *connect.Request[vi
 		attempt.BaseBranch = "main"
 	}
 
-	result = s.VibeKanbanService.db.Create(&attempt)
+	result = s.db.Create(&attempt)
 	if result.Error != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to create attempt: %w", result.Error))
 	}
@@ -691,7 +681,7 @@ func (s *Service) StartTaskAttempt(ctx context.Context, req *connect.Request[vib
 
 	// Extract task ID from attempt - we need to look it up
 	var attempt models.VibeTaskAttempt
-	result := s.VibeKanbanService.db.Where("id = ? AND user_id = ?", req.Msg.AttemptId, userID).First(&attempt)
+	result := s.db.Where("id = ? AND user_id = ?", req.Msg.AttemptId, userID).First(&attempt)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("task attempt not found"))
@@ -728,7 +718,7 @@ func (s *Service) GetTaskAttempts(ctx context.Context, req *connect.Request[vibe
 
 	// Verify task exists and user has access
 	var task models.VibeTask
-	result := s.VibeKanbanService.db.Where("id = ? AND user_id = ?", req.Msg.TaskId, userID).First(&task)
+	result := s.db.Where("id = ? AND user_id = ?", req.Msg.TaskId, userID).First(&task)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("task not found"))
@@ -738,7 +728,7 @@ func (s *Service) GetTaskAttempts(ctx context.Context, req *connect.Request[vibe
 
 	// Get task attempts with associated processes and sessions
 	var attempts []models.VibeTaskAttempt
-	query := s.VibeKanbanService.db.Where("task_id = ?", req.Msg.TaskId).
+	query := s.db.Where("task_id = ?", req.Msg.TaskId).
 		Preload("Processes").
 		Preload("Sessions").
 		Order("created_at DESC")
@@ -782,7 +772,7 @@ func (s *Service) GetAttemptDiff(ctx context.Context, req *connect.Request[vibek
 
 	// Verify attempt exists and user has access
 	var attempt models.VibeTaskAttempt
-	result := s.VibeKanbanService.db.Where("id = ? AND user_id = ?", req.Msg.AttemptId, userID).
+	result := s.db.Where("id = ? AND user_id = ?", req.Msg.AttemptId, userID).
 		Preload("Task").
 		Preload("Task.Project").
 		First(&attempt)
@@ -794,7 +784,7 @@ func (s *Service) GetAttemptDiff(ctx context.Context, req *connect.Request[vibek
 	}
 
 	// Get git diff for this attempt
-	diff, err := s.VibeKanbanService.gitService.GetBranchDiff(
+	diff, err := s.gitService.GetBranchDiff(
 		attempt.Task.Project.GitRepoPath,
 		attempt.BaseBranch,
 		attempt.Branch,
@@ -836,7 +826,7 @@ func (s *Service) MergeAttempt(ctx context.Context, req *connect.Request[vibekan
 
 	// Verify attempt exists and user has access
 	var attempt models.VibeTaskAttempt
-	result := s.VibeKanbanService.db.Where("id = ? AND user_id = ?", req.Msg.AttemptId, userID).
+	result := s.db.Where("id = ? AND user_id = ?", req.Msg.AttemptId, userID).
 		Preload("Task").
 		Preload("Task.Project").
 		First(&attempt)
@@ -853,7 +843,7 @@ func (s *Service) MergeAttempt(ctx context.Context, req *connect.Request[vibekan
 	}
 
 	// Merge the branch
-	mergeCommit, err := s.VibeKanbanService.gitService.MergeBranch(
+	mergeCommit, err := s.gitService.MergeBranch(
 		attempt.Task.Project.GitRepoPath,
 		attempt.Branch,
 		attempt.BaseBranch,
@@ -864,14 +854,14 @@ func (s *Service) MergeAttempt(ctx context.Context, req *connect.Request[vibekan
 
 	// Update attempt with merge commit
 	attempt.MergeCommit = mergeCommit
-	result = s.VibeKanbanService.db.Save(&attempt)
+	result = s.db.Save(&attempt)
 	if result.Error != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to update task attempt: %w", result.Error))
 	}
 
 	// Update task status to completed
 	now := time.Now()
-	result = s.VibeKanbanService.db.Model(&attempt.Task).Updates(map[string]interface{}{
+	result = s.db.Model(&attempt.Task).Updates(map[string]interface{}{
 		"status":     "done",
 		"updated_at": now,
 	})
@@ -905,7 +895,7 @@ func (s *Service) GetProjectBranches(ctx context.Context, req *connect.Request[v
 
 	// Verify project exists and user has access
 	var project models.VibeProject
-	result := s.VibeKanbanService.db.Where("id = ? AND user_id = ?", req.Msg.ProjectId, userID).First(&project)
+	result := s.db.Where("id = ? AND user_id = ?", req.Msg.ProjectId, userID).First(&project)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("project not found"))
@@ -914,18 +904,18 @@ func (s *Service) GetProjectBranches(ctx context.Context, req *connect.Request[v
 	}
 
 	// Validate git repository
-	if err := s.VibeKanbanService.gitService.ValidateRepository(project.GitRepoPath); err != nil {
+	if err := s.gitService.ValidateRepository(project.GitRepoPath); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid git repository: %w", err))
 	}
 
 	// Get branches
-	branches, err := s.VibeKanbanService.gitService.GetBranches(project.GitRepoPath)
+	branches, err := s.gitService.GetBranches(project.GitRepoPath)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to get branches: %w", err))
 	}
 
 	// Get repository status to find current branch
-	status, err := s.VibeKanbanService.gitService.GetRepositoryStatus(project.GitRepoPath)
+	status, err := s.gitService.GetRepositoryStatus(project.GitRepoPath)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to get repository status: %w", err))
 	}
@@ -952,7 +942,7 @@ func (s *Service) CreateProjectBranch(ctx context.Context, req *connect.Request[
 
 	// Verify project exists and user has access
 	var project models.VibeProject
-	result := s.VibeKanbanService.db.Where("id = ? AND user_id = ?", req.Msg.ProjectId, userID).First(&project)
+	result := s.db.Where("id = ? AND user_id = ?", req.Msg.ProjectId, userID).First(&project)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("project not found"))
@@ -967,12 +957,12 @@ func (s *Service) CreateProjectBranch(ctx context.Context, req *connect.Request[
 	}
 
 	// Validate git repository
-	if err := s.VibeKanbanService.gitService.ValidateRepository(project.GitRepoPath); err != nil {
+	if err := s.gitService.ValidateRepository(project.GitRepoPath); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid git repository: %w", err))
 	}
 
 	// Create the branch
-	err = s.VibeKanbanService.gitService.CreateBranch(project.GitRepoPath, req.Msg.BranchName, baseBranch)
+	err = s.gitService.CreateBranch(project.GitRepoPath, req.Msg.BranchName, baseBranch)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to create branch: %w", err))
 	}
@@ -995,7 +985,7 @@ func (s *Service) GetProcesses(ctx context.Context, req *connect.Request[vibekan
 
 	// Verify attempt exists and user has access
 	var attempt models.VibeTaskAttempt
-	result := s.VibeKanbanService.db.Where("id = ? AND user_id = ?", req.Msg.AttemptId, userID).First(&attempt)
+	result := s.db.Where("id = ? AND user_id = ?", req.Msg.AttemptId, userID).First(&attempt)
 	if result.Error != nil {
 		if result.Error == gorm.ErrRecordNotFound {
 			return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("task attempt not found"))
@@ -1005,7 +995,7 @@ func (s *Service) GetProcesses(ctx context.Context, req *connect.Request[vibekan
 
 	// Get processes from database
 	var processes []models.VibeExecutionProcess
-	result = s.VibeKanbanService.db.Where("attempt_id = ?", req.Msg.AttemptId).
+	result = s.db.Where("attempt_id = ?", req.Msg.AttemptId).
 		Order("created_at ASC").
 		Find(&processes)
 
@@ -1036,7 +1026,7 @@ func (s *Service) KillProcess(ctx context.Context, req *connect.Request[vibekanb
 
 	// Verify process exists and user has access through attempt
 	var process models.VibeExecutionProcess
-	result := s.VibeKanbanService.db.Where("id = ?", req.Msg.ProcessId).
+	result := s.db.Where("id = ?", req.Msg.ProcessId).
 		Preload("Attempt").
 		First(&process)
 	if result.Error != nil {
@@ -1052,7 +1042,7 @@ func (s *Service) KillProcess(ctx context.Context, req *connect.Request[vibekanb
 	}
 
 	// Kill the process using the process manager
-	err = s.VibeKanbanService.processManager.KillProcess(req.Msg.ProcessId)
+	err = s.processManager.KillProcess(req.Msg.ProcessId)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to kill process: %w", err))
 	}
@@ -1073,7 +1063,7 @@ func (s *Service) GetAttemptStatus(ctx context.Context, req *connect.Request[vib
 
 	// Get attempt with all related data
 	var attempt models.VibeTaskAttempt
-	result := s.VibeKanbanService.db.Where("id = ? AND user_id = ?", req.Msg.AttemptId, userID).
+	result := s.db.Where("id = ? AND user_id = ?", req.Msg.AttemptId, userID).
 		Preload("Task").
 		Preload("Task.Project").
 		Preload("Processes").
@@ -1106,7 +1096,7 @@ func (s *Service) GetDebugProcesses(ctx context.Context, req *connect.Request[vi
 
 	// Get all processes for user's attempts from database
 	var processes []models.VibeExecutionProcess
-	result := s.VibeKanbanService.db.
+	result := s.db.
 		Joins("JOIN vibe_task_attempts ON vibe_execution_processes.attempt_id = vibe_task_attempts.id").
 		Where("vibe_task_attempts.user_id = ?", userID).
 		Order("vibe_execution_processes.created_at DESC").

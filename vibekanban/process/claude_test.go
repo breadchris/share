@@ -1,4 +1,4 @@
-package vibekanban
+package process
 
 import (
 	"context"
@@ -65,7 +65,7 @@ func TestClaudeExecutor_Spawn(t *testing.T) {
 func TestClaudeExecutor_GetExecutorType(t *testing.T) {
 	executor := &ClaudeExecutor{}
 	execType := executor.GetExecutorType()
-	
+
 	if execType != ExecutorClaude {
 		t.Errorf("Expected ExecutorClaude, got %v", execType)
 	}
@@ -167,7 +167,7 @@ func TestClaudeExecutor_EndToEndFlow(t *testing.T) {
 	if os.Getenv("CI") != "" {
 		t.Skip("Skipping end-to-end test in CI environment")
 	}
-	
+
 	if _, err := exec.LookPath("npx"); err != nil {
 		t.Skip("Skipping end-to-end test: npx not found in PATH")
 	}
@@ -211,11 +211,11 @@ func TestClaudeExecutor_EndToEndFlow(t *testing.T) {
 		case err := <-done:
 			// Command completed
 			t.Logf("Command completed with error: %v", err)
-			
+
 			// Note: We expect this to fail if Claude CLI is not properly configured
 			// or if authentication is missing, but the test validates that the
 			// executor can spawn and run the command properly
-			
+
 		case <-ctx.Done():
 			// Timeout - kill the process
 			if cmd.Process != nil {
@@ -230,7 +230,7 @@ func TestClaudeExecutor_EndToEndFlow(t *testing.T) {
 func TestExecutorFactory(t *testing.T) {
 	t.Run("CreateClaudeExecutor", func(t *testing.T) {
 		executor := CreateExecutor(ExecutorClaude)
-		
+
 		claudeExec, ok := executor.(*ClaudeExecutor)
 		if !ok {
 			t.Errorf("Expected *ClaudeExecutor, got %T", executor)
@@ -244,9 +244,9 @@ func TestExecutorFactory(t *testing.T) {
 	t.Run("CreateFollowupExecutor", func(t *testing.T) {
 		sessionID := "test-session-789"
 		prompt := "Test followup prompt"
-		
+
 		executor := CreateFollowupExecutor(ExecutorClaude, sessionID, prompt)
-		
+
 		followupExec, ok := executor.(*ClaudeFollowupExecutor)
 		if !ok {
 			t.Errorf("Expected *ClaudeFollowupExecutor, got %T", executor)

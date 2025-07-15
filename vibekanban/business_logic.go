@@ -15,7 +15,7 @@ import (
 
 // Project business logic
 
-func (s *VibeKanbanService) listProjectsLogic(userID string) ([]models.VibeProject, error) {
+func (s *Service) listProjectsLogic(userID string) ([]models.VibeProject, error) {
 	var projects []models.VibeProject
 	result := s.db.Where("user_id = ?", userID).Find(&projects)
 	if result.Error != nil {
@@ -24,7 +24,7 @@ func (s *VibeKanbanService) listProjectsLogic(userID string) ([]models.VibeProje
 	return projects, nil
 }
 
-func (s *VibeKanbanService) getProjectLogic(projectID, userID string) (*models.VibeProject, error) {
+func (s *Service) getProjectLogic(projectID, userID string) (*models.VibeProject, error) {
 	if projectID == "" {
 		return nil, fmt.Errorf("project ID is required")
 	}
@@ -54,7 +54,7 @@ type CreateProjectRequest struct {
 	Config        map[string]interface{}
 }
 
-func (s *VibeKanbanService) createProjectLogic(req CreateProjectRequest, userID string) (*models.VibeProject, error) {
+func (s *Service) createProjectLogic(req CreateProjectRequest, userID string) (*models.VibeProject, error) {
 	// Validate required fields
 	if req.Name == "" {
 		return nil, fmt.Errorf("name is required")
@@ -102,7 +102,7 @@ type UpdateProjectRequest struct {
 	Config        map[string]interface{}
 }
 
-func (s *VibeKanbanService) updateProjectLogic(projectID, userID string, req UpdateProjectRequest) (*models.VibeProject, error) {
+func (s *Service) updateProjectLogic(projectID, userID string, req UpdateProjectRequest) (*models.VibeProject, error) {
 	if projectID == "" {
 		return nil, fmt.Errorf("project ID is required")
 	}
@@ -143,7 +143,7 @@ func (s *VibeKanbanService) updateProjectLogic(projectID, userID string, req Upd
 	return &project, nil
 }
 
-func (s *VibeKanbanService) deleteProjectLogic(projectID, userID string) error {
+func (s *Service) deleteProjectLogic(projectID, userID string) error {
 	if projectID == "" {
 		return fmt.Errorf("project ID is required")
 	}
@@ -162,7 +162,7 @@ func (s *VibeKanbanService) deleteProjectLogic(projectID, userID string) error {
 
 // Task business logic
 
-func (s *VibeKanbanService) getTasksLogic(projectID, userID string) ([]models.VibeTask, error) {
+func (s *Service) getTasksLogic(projectID, userID string) ([]models.VibeTask, error) {
 	if projectID == "" {
 		return nil, fmt.Errorf("project ID is required")
 	}
@@ -200,7 +200,7 @@ type CreateTaskRequest struct {
 	Metadata    map[string]interface{}
 }
 
-func (s *VibeKanbanService) createTaskLogic(projectID, userID string, req CreateTaskRequest) (*models.VibeTask, error) {
+func (s *Service) createTaskLogic(projectID, userID string, req CreateTaskRequest) (*models.VibeTask, error) {
 	if projectID == "" {
 		return nil, fmt.Errorf("project ID is required")
 	}
@@ -257,7 +257,7 @@ type UpdateTaskRequest struct {
 	Metadata    map[string]interface{}
 }
 
-func (s *VibeKanbanService) updateTaskLogic(taskID, userID string, req UpdateTaskRequest) (*models.VibeTask, error) {
+func (s *Service) updateTaskLogic(taskID, userID string, req UpdateTaskRequest) (*models.VibeTask, error) {
 	if taskID == "" {
 		return nil, fmt.Errorf("task ID is required")
 	}
@@ -297,7 +297,7 @@ func (s *VibeKanbanService) updateTaskLogic(taskID, userID string, req UpdateTas
 	return &task, nil
 }
 
-func (s *VibeKanbanService) deleteTaskLogic(taskID, userID string) error {
+func (s *Service) deleteTaskLogic(taskID, userID string) error {
 	if taskID == "" {
 		return fmt.Errorf("task ID is required")
 	}
@@ -316,7 +316,7 @@ func (s *VibeKanbanService) deleteTaskLogic(taskID, userID string) error {
 
 // Task Attempt business logic
 
-func (s *VibeKanbanService) getTaskAttemptsLogic(taskID, userID string) ([]models.VibeTaskAttempt, error) {
+func (s *Service) getTaskAttemptsLogic(taskID, userID string) ([]models.VibeTaskAttempt, error) {
 	if taskID == "" {
 		return nil, fmt.Errorf("task ID is required")
 	}
@@ -350,7 +350,7 @@ type CreateTaskAttemptRequest struct {
 	BaseBranch string
 }
 
-func (s *VibeKanbanService) createTaskAttemptLogic(taskID, userID string, req CreateTaskAttemptRequest) (*models.VibeTaskAttempt, error) {
+func (s *Service) createTaskAttemptLogic(taskID, userID string, req CreateTaskAttemptRequest) (*models.VibeTaskAttempt, error) {
 	if taskID == "" {
 		return nil, fmt.Errorf("task ID is required")
 	}
@@ -405,7 +405,7 @@ func (s *VibeKanbanService) createTaskAttemptLogic(taskID, userID string, req Cr
 	return &attempt, nil
 }
 
-func (s *VibeKanbanService) startTaskAttemptLogic(attemptID, taskID, userID string) (*models.VibeTaskAttempt, error) {
+func (s *Service) startTaskAttemptLogic(attemptID, taskID, userID string) (*models.VibeTaskAttempt, error) {
 	if attemptID == "" || taskID == "" {
 		return nil, fmt.Errorf("attempt ID and task ID are required")
 	}
@@ -491,7 +491,7 @@ func (s *VibeKanbanService) startTaskAttemptLogic(attemptID, taskID, userID stri
 
 // Git operations business logic
 
-func (s *VibeKanbanService) getProjectBranchesLogic(projectID, userID string) (map[string]interface{}, error) {
+func (s *Service) getProjectBranchesLogic(projectID, userID string) (map[string]interface{}, error) {
 	if projectID == "" {
 		return nil, fmt.Errorf("project ID is required")
 	}
@@ -542,7 +542,7 @@ type CreateProjectBranchRequest struct {
 	BaseBranch string
 }
 
-func (s *VibeKanbanService) createProjectBranchLogic(projectID, userID string, req CreateProjectBranchRequest) (map[string]interface{}, error) {
+func (s *Service) createProjectBranchLogic(projectID, userID string, req CreateProjectBranchRequest) (map[string]interface{}, error) {
 	if projectID == "" {
 		return nil, fmt.Errorf("project ID is required")
 	}
@@ -588,7 +588,7 @@ func (s *VibeKanbanService) createProjectBranchLogic(projectID, userID string, r
 	return response, nil
 }
 
-func (s *VibeKanbanService) getAttemptDiffLogic(attemptID, taskID, userID string) (map[string]interface{}, error) {
+func (s *Service) getAttemptDiffLogic(attemptID, taskID, userID string) (map[string]interface{}, error) {
 	if attemptID == "" || taskID == "" {
 		return nil, fmt.Errorf("attempt ID and task ID are required")
 	}
@@ -626,7 +626,7 @@ func (s *VibeKanbanService) getAttemptDiffLogic(attemptID, taskID, userID string
 	return response, nil
 }
 
-func (s *VibeKanbanService) mergeAttemptLogic(attemptID, taskID, userID string, commitMessage string) (map[string]interface{}, error) {
+func (s *Service) mergeAttemptLogic(attemptID, taskID, userID string, commitMessage string) (map[string]interface{}, error) {
 	if attemptID == "" || taskID == "" {
 		return nil, fmt.Errorf("attempt ID and task ID are required")
 	}

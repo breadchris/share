@@ -168,8 +168,14 @@ func DynamicHTTPMux(f func(d Deps) *http.ServeMux, files ...string) func(Deps) *
 		//function = parts[len(parts)-1]
 	}
 
+	wd, err := os.Getwd()
+	if err != nil {
+		slog.Warn("failed to get working directory", "error", err)
+		return f
+	}
+
 	i := interp.New(interp.Options{
-		GoPath: "/dev/null",
+		GoPath: wd,
 	})
 
 	i.Use(stdlib.Symbols)
@@ -190,7 +196,7 @@ func DynamicHTTPMux(f func(d Deps) *http.ServeMux, files ...string) func(Deps) *
 		}
 	}
 
-	_, err := i.EvalPath(file)
+	_, err = i.EvalPath(file)
 	if err != nil {
 		slog.Warn("failed to eval path", "error", err)
 		return f

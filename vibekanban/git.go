@@ -18,7 +18,8 @@ type GitService struct {
 }
 
 func NewGitService() *GitService {
-	baseWorkdir := filepath.Join(os.TempDir(), "vibe-kanban-worktrees")
+	// baseWorkdir := filepath.Join(os.TempDir(), "vibe-kanban-worktrees")
+	baseWorkdir := filepath.Join("./data", "vibe-kanban-worktrees")
 	os.MkdirAll(baseWorkdir, 0755)
 	return &GitService{
 		baseWorkdir: baseWorkdir,

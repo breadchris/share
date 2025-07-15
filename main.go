@@ -6,18 +6,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/breadchris/share/graveyard/list"
 	"github.com/breadchris/share/graveyard/llm"
-	"github.com/breadchris/share/graveyard/op"
-	"github.com/breadchris/share/graveyard/paint"
 	"github.com/breadchris/share/graveyard/registry"
-	"github.com/breadchris/share/graveyard/sqlnotebook"
 	"log"
 	"log/slog"
 	"net/http"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -44,8 +39,6 @@ import (
 	"github.com/breadchris/share/user"
 	"github.com/breadchris/share/vibekanban"
 	"github.com/breadchris/share/xctf"
-	"github.com/evanw/esbuild/pkg/api"
-	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/protoflow-labs/protoflow/pkg/util/reload"
 	"github.com/sashabaranov/go-openai"
@@ -232,17 +225,6 @@ func startServer(useTLS bool, port int) {
 	})
 	slog.SetDefault(slog.New(handler))
 
-	loadJSON(dataFile, &entries)
-	var newEntries []Entry
-	for _, e := range entries {
-		if e.ID == "" {
-			e.ID = uuid.New().String()
-		}
-		newEntries = append(newEntries, e)
-	}
-	entries = newEntries
-	saveJSON(dataFile, entries)
-
 	s, err := session.New()
 	if err != nil {
 		log.Fatalf("Failed to create session store: %v", err)
@@ -255,15 +237,7 @@ func startServer(useTLS bool, port int) {
 		http.Handle(p+"/", http.StripPrefix(p, s))
 	}
 
-	setupWebauthn()
-	setupCursor()
-	//setupRecipe()
 	fileUpload()
-
-	recipeIdx, err := NewSearchIndex(smittenIndex)
-	if err != nil {
-		panic(err)
-	}
 
 	oai := openai.NewClient(appConfig.OpenAIKey)
 	lm := leaps.RegisterRoutes(leaps.NewLogger())
@@ -279,12 +253,12 @@ func startServer(useTLS bool, port int) {
 		AI:      oai,
 		Config:  appConfig,
 		Docker:  dockerManager,
-		Search: deps2.SearchIndex{
-			Recipe: recipeIdx,
-		},
+		//Search: deps2.SearchIndex{
+		//	Recipe: recipeIdx,
+		//},
 	}
 
-	shouldInterpret := true
+	shouldInterpret := false
 	//shouldInterpret := false
 	interpreted := func(f func(d deps2.Deps) *http.ServeMux, files ...string) *http.ServeMux {
 		m := http.NewServeMux()
@@ -329,37 +303,13 @@ func startServer(useTLS bool, port int) {
 		})
 		return m
 	}))
-	p("/dungeon", interpreted(xctf.NewDungeon))
-	p("/sqlnotebook", interpreted(sqlnotebook.New))
-	p("/list", interpreted(list.New))
-	p("/xctf", interpreted(xctf.New))
-	p("/recipe", interpreted(NewRecipe))
-	p("/articles", interpreted(NewArticle))
-	// p("/card", interpreted(NewCard))
 	p("/ai", interpreted(aiapi.New))
-	//p("/card", interpreted(NewCard2))
-	p("/op", interpreted(op.New))
-	//p("/ainet", interpreted(ainet.New))
-	p("/user", interpreted(user.New))
-	p("/paint", interpreted(paint.New))
-	p("/notes", interpreted(NewNotes))
 	p("/llm", interpreted(llm.NewChatGPT))
-	p("/mood", interpreted(NewMood))
-	p("/chat", interpreted(NewChat))
 	p("/spotify", setupSpotify(deps))
-	p("/leaps", lm.Mux)
-	p("/vote", interpreted(NewVote))
 	p("/breadchris", interpreted(breadchris.New))
-	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./eventcalendar.go", "./card.go", "./ai.go", "./tarot.go"}))
-	//p("/code", interpreted(wasmcode.New))
 	p("/extension", interpreted(NewExtension))
-	p("/git", interpreted(NewGit))
-	p("/music", interpreted(NewMusic))
 	p("/stripe", interpreted(NewStripe))
-	p("/everout", interpreted(NewEverout))
 	p("/graph", interpreted(graph.New))
-	p("/pipeport", interpreted(NewPipePort))
-	p("/nolanisslow", interpreted(NewNolan))
 	//p("/calendar", interpreted(calendar.NewCalendar))
 	p("/registry", interpreted(registry.New))
 	g := NewGithub(deps)
@@ -395,7 +345,7 @@ func startServer(useTLS bool, port int) {
 
 	p("/coderunner", interpreted(coderunner.New))
 	p("/kanban", interpreted(kanban.New))
-	p("/vibekanban", interpreted(vibekanban.New))
+	p("/vibekanban", vibekanban.New(deps))
 	//p("/claudemd", interpreted(claudemd.New))
 	p("/docker", interpreted(docker.New))
 	p("/browser", interpreted(NewBrowser))
@@ -471,185 +421,6 @@ func startServer(useTLS bool, port int) {
 		}
 	})
 
-	// p("", interpreted(NewRecipe))
-
-	go func() {
-		paths := []string{
-			"./breadchris/editor.tsx",
-			"./breadchris/CodeBlock.tsx",
-		}
-		if err := WatchFilesAndFolders(paths, func(s string) {
-			result := api.Build(api.BuildOptions{
-				EntryPoints: paths,
-				Loader: map[string]api.Loader{
-					".js":    api.LoaderJS,
-					".jsx":   api.LoaderJSX,
-					".ts":    api.LoaderTS,
-					".tsx":   api.LoaderTSX,
-					".woff":  api.LoaderFile,
-					".png":   api.LoaderFile,
-					".woff2": api.LoaderFile,
-					".ttf":   api.LoaderFile,
-					".eot":   api.LoaderFile,
-					".css":   api.LoaderCSS,
-				},
-				Outdir:      "breadchris/static",
-				Bundle:      true,
-				TreeShaking: api.TreeShakingTrue,
-				//MinifyWhitespace:  true,
-				//MinifyIdentifiers: true,
-				//MinifySyntax:      true,
-				//Splitting:         true,
-				Format:    api.FormatESModule,
-				Write:     true,
-				Sourcemap: api.SourceMapExternal,
-				LogLevel:  api.LogLevelInfo,
-			})
-
-			for _, warning := range result.Warnings {
-				fmt.Println(warning.Text)
-			}
-
-			for _, e := range result.Errors {
-				fmt.Println(e.Text)
-			}
-
-			for _, f := range result.OutputFiles {
-				fmt.Println(f.Path)
-			}
-		}); err != nil {
-			log.Fatalf("Failed to watch files: %v", err)
-		}
-	}()
-	go func() {
-		entrypoints := []string{
-			// "./graph/graph.tsx",
-			// "./graph/nodes.tsx",
-			// "./graph/code.ts",
-			//"./xctf/graph.tsx",
-			//"./code/monaco.tsx",
-			//"./code/playground.ts",
-			// "./music.tsx",
-			"./coderunner/CodeRunner.tsx",
-			//"./wasmcode/monaco.tsx",
-			//"./wasmcode/analyzer/analyzer.worker.ts",
-			//"./wasmcode/language/language.worker.ts",
-		}
-		paths := make([]string, len(entrypoints))
-		copy(paths, entrypoints)
-		if err := filepath.Walk("./coderunner", func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			if filepath.Ext(path) == ".ts" || filepath.Ext(path) == ".tsx" {
-				paths = append(paths, path)
-			}
-			return nil
-		}); err != nil {
-			log.Fatalf("Failed to walk wasmcode: %v", err)
-		}
-		if err := WatchFilesAndFolders(paths, func(s string) {
-			result := api.Build(api.BuildOptions{
-				EntryPoints: entrypoints,
-				Loader: map[string]api.Loader{
-					".js":    api.LoaderJS,
-					".jsx":   api.LoaderJSX,
-					".ts":    api.LoaderTS,
-					".tsx":   api.LoaderTSX,
-					".woff":  api.LoaderFile,
-					".woff2": api.LoaderFile,
-					".ttf":   api.LoaderFile,
-					".eot":   api.LoaderFile,
-					".css":   api.LoaderCSS,
-					".png":   api.LoaderFile,
-				},
-				Outdir:      "static/coderunner",
-				Format:      api.FormatESModule,
-				Bundle:      true,
-				Write:       true,
-				TreeShaking: api.TreeShakingTrue,
-				//MinifyWhitespace:  true,
-				//MinifyIdentifiers: true,
-				//MinifySyntax:      true,
-				Sourcemap: api.SourceMapInline,
-				LogLevel:  api.LogLevelInfo,
-			})
-
-			for _, warning := range result.Warnings {
-				fmt.Println(warning.Text)
-			}
-
-			for _, e := range result.Errors {
-				fmt.Println(e.Text)
-			}
-
-			for _, f := range result.OutputFiles {
-				fmt.Println(f.Path)
-			}
-
-			// if err = x.CopyPaths([]string{
-			// 	"static/wasmcode",
-			// 	"static/analyzer@v1.wasm",
-			// 	"static/leapclient.js",
-			// 	"static/leap-bind-textarea.js",
-			// 	"static/node_modules",
-			// }, "breadchris/static"); err != nil {
-			// 	log.Fatalf("Failed to copy paths: %v", err)
-			// }
-
-			// rel <- struct{}{}
-		}); err != nil {
-			log.Fatalf("Failed to watch files: %v", err)
-		}
-	}()
-	// non-module code
-	go func() {
-		entrypoints := []string{
-			"./code/playground.ts",
-			"./recipe.tsx",
-		}
-		if err := WatchFilesAndFolders(entrypoints, func(s string) {
-			result := api.Build(api.BuildOptions{
-				EntryPoints: entrypoints,
-				Loader: map[string]api.Loader{
-					".js":    api.LoaderJS,
-					".jsx":   api.LoaderJSX,
-					".ts":    api.LoaderTS,
-					".tsx":   api.LoaderTSX,
-					".woff":  api.LoaderFile,
-					".woff2": api.LoaderFile,
-					".ttf":   api.LoaderFile,
-					".eot":   api.LoaderFile,
-					".css":   api.LoaderCSS,
-				},
-				Outdir:      "static/",
-				Bundle:      true,
-				Write:       true,
-				TreeShaking: api.TreeShakingTrue,
-				//MinifyWhitespace:  true,
-				//MinifyIdentifiers: true,
-				//MinifySyntax:      true,
-				Sourcemap: api.SourceMapInline,
-				LogLevel:  api.LogLevelInfo,
-			})
-
-			for _, warning := range result.Warnings {
-				fmt.Println(warning.Text)
-			}
-
-			for _, e := range result.Errors {
-				fmt.Println(e.Text)
-			}
-
-			for _, f := range result.OutputFiles {
-				fmt.Println(f.Path)
-			}
-		}); err != nil {
-			log.Fatalf("Failed to watch files: %v", err)
-		}
-	}()
-
-	// Start Slack bot from flow module (non-blocking)
 	go func() {
 		if flowDeps.Config.IsSlackBotEnabled() {
 			slog.Info("Starting Flow Slack bot...")

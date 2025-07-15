@@ -72,13 +72,15 @@ func TestService_GetProject(t *testing.T) {
 
 	// Create test project
 	project := &models.VibeProject{
-		ID:            "project-1",
+		Model: models.Model{
+			ID:        "project-1",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
 		Name:          "Test Project",
 		GitRepoPath:   "/tmp/test-repo",
 		DefaultBranch: "main",
 		UserID:        userID,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
 	}
 	db.Create(project)
 
@@ -176,31 +178,37 @@ func TestService_ListProjects(t *testing.T) {
 	// Create test projects
 	projects := []*models.VibeProject{
 		{
-			ID:            "project-1",
+			Model: models.Model{
+				ID:        "project-1",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			},
 			Name:          "Project 1",
 			GitRepoPath:   "/tmp/repo1",
 			DefaultBranch: "main",
 			UserID:        userID,
-			CreatedAt:     time.Now(),
-			UpdatedAt:     time.Now(),
 		},
 		{
-			ID:            "project-2",
+			Model: models.Model{
+				ID:        "project-2",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			},
 			Name:          "Project 2",
 			GitRepoPath:   "/tmp/repo2",
 			DefaultBranch: "main",
 			UserID:        userID,
-			CreatedAt:     time.Now(),
-			UpdatedAt:     time.Now(),
 		},
 		{
-			ID:            "project-3",
+			Model: models.Model{
+				ID:        "project-3",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			},
 			Name:          "Other User Project",
 			GitRepoPath:   "/tmp/repo3",
 			DefaultBranch: "main",
 			UserID:        "other-user",
-			CreatedAt:     time.Now(),
-			UpdatedAt:     time.Now(),
 		},
 	}
 	for _, project := range projects {
@@ -363,13 +371,15 @@ func TestService_UpdateProject(t *testing.T) {
 
 	// Create test project
 	project := &models.VibeProject{
-		ID:            "project-1",
+		Model: models.Model{
+			ID:        "project-1",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
 		Name:          "Original Project",
 		GitRepoPath:   "/tmp/original-repo",
 		DefaultBranch: "main",
 		UserID:        userID,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
 	}
 	db.Create(project)
 
@@ -461,23 +471,27 @@ func TestService_DeleteProject(t *testing.T) {
 
 	// Create test project with tasks
 	project := &models.VibeProject{
-		ID:            "project-1",
+		Model: models.Model{
+			ID:        "project-1",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
 		Name:          "Test Project",
 		GitRepoPath:   "/tmp/test-repo",
 		DefaultBranch: "main",
 		UserID:        userID,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
 	}
 	db.Create(project)
 
 	task := &models.VibeTask{
-		ID:        "task-1",
+		Model: models.Model{
+			ID:        "task-1",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
 		Title:     "Test Task",
 		ProjectID: "project-1",
 		UserID:    userID,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
 	}
 	db.Create(task)
 
@@ -551,38 +565,44 @@ func TestService_GetTasks(t *testing.T) {
 
 	// Create test project and tasks
 	project := &models.VibeProject{
-		ID:            "project-1",
+		Model: models.Model{
+			ID:        "project-1",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
 		Name:          "Test Project",
 		GitRepoPath:   "/tmp/test-repo",
 		DefaultBranch: "main",
 		UserID:        userID,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
 	}
 	db.Create(project)
 
 	tasks := []*models.VibeTask{
 		{
-			ID:          "task-1",
+			Model: models.Model{
+				ID:        "task-1",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			},
 			Title:       "Task 1",
 			Description: "First task",
 			Status:      "todo",
 			Priority:    "high",
 			ProjectID:   "project-1",
 			UserID:      userID,
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
 		},
 		{
-			ID:          "task-2",
+			Model: models.Model{
+				ID:        "task-2",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			},
 			Title:       "Task 2",
 			Description: "Second task",
 			Status:      "inprogress",
 			Priority:    "medium",
 			ProjectID:   "project-1",
 			UserID:      userID,
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
 		},
 	}
 	for _, task := range tasks {
@@ -671,13 +691,15 @@ func TestService_CreateTask(t *testing.T) {
 
 	// Create test project
 	project := &models.VibeProject{
-		ID:            "project-1",
+		Model: models.Model{
+			ID:        "project-1",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
 		Name:          "Test Project",
 		GitRepoPath:   "/tmp/test-repo",
 		DefaultBranch: "main",
 		UserID:        userID,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
 	}
 	db.Create(project)
 
@@ -776,26 +798,30 @@ func TestService_UpdateTask(t *testing.T) {
 
 	// Create test project and task
 	project := &models.VibeProject{
-		ID:            "project-1",
+		Model: models.Model{
+			ID:        "project-1",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
 		Name:          "Test Project",
 		GitRepoPath:   "/tmp/test-repo",
 		DefaultBranch: "main",
 		UserID:        userID,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
 	}
 	db.Create(project)
 
 	task := &models.VibeTask{
-		ID:          "task-1",
+		Model: models.Model{
+			ID:        "task-1",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
 		Title:       "Original Task",
 		Description: "Original description",
 		Status:      "todo",
 		Priority:    "low",
 		ProjectID:   "project-1",
 		UserID:      userID,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
 	}
 	db.Create(task)
 
@@ -881,23 +907,27 @@ func TestService_DeleteTask(t *testing.T) {
 
 	// Create test project and task
 	project := &models.VibeProject{
-		ID:            "project-1",
+		Model: models.Model{
+			ID:        "project-1",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
 		Name:          "Test Project",
 		GitRepoPath:   "/tmp/test-repo",
 		DefaultBranch: "main",
 		UserID:        userID,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
 	}
 	db.Create(project)
 
 	task := &models.VibeTask{
-		ID:        "task-1",
+		Model: models.Model{
+			ID:        "task-1",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
 		Title:     "Test Task",
 		ProjectID: "project-1",
 		UserID:    userID,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
 	}
 	db.Create(task)
 
@@ -971,29 +1001,37 @@ func TestService_GetTaskAttempts(t *testing.T) {
 
 	// Create test data
 	project := &models.VibeProject{
-		ID:            "project-1",
+		Model: models.Model{
+			ID:        "project-1",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
 		Name:          "Test Project",
 		GitRepoPath:   "/tmp/test-repo",
 		DefaultBranch: "main",
 		UserID:        userID,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
 	}
 	db.Create(project)
 
 	task := &models.VibeTask{
-		ID:        "task-1",
+		Model: models.Model{
+			ID:        "task-1",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
 		Title:     "Test Task",
 		ProjectID: "project-1",
 		UserID:    userID,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
 	}
 	db.Create(task)
 
 	attempts := []*models.VibeTaskAttempt{
 		{
-			ID:           "attempt-1",
+			Model: models.Model{
+				ID:        "attempt-1",
+				CreatedAt: time.Now().Add(-time.Hour),
+				UpdatedAt: time.Now().Add(-time.Hour),
+			},
 			TaskID:       "task-1",
 			WorktreePath: "/tmp/worktree1",
 			Branch:       "task-1-attempt-1",
@@ -1001,11 +1039,13 @@ func TestService_GetTaskAttempts(t *testing.T) {
 			Executor:     "claude",
 			Status:       "completed",
 			UserID:       userID,
-			CreatedAt:    time.Now().Add(-time.Hour),
-			UpdatedAt:    time.Now().Add(-time.Hour),
 		},
 		{
-			ID:           "attempt-2",
+			Model: models.Model{
+				ID:        "attempt-2",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			},
 			TaskID:       "task-1",
 			WorktreePath: "/tmp/worktree2",
 			Branch:       "task-1-attempt-2",
@@ -1013,8 +1053,6 @@ func TestService_GetTaskAttempts(t *testing.T) {
 			Executor:     "claude",
 			Status:       "running",
 			UserID:       userID,
-			CreatedAt:    time.Now(),
-			UpdatedAt:    time.Now(),
 		},
 	}
 	for _, attempt := range attempts {
@@ -1110,23 +1148,27 @@ func TestService_CreateTaskAttempt(t *testing.T) {
 
 	// Create test data
 	project := &models.VibeProject{
-		ID:            "project-1",
+		Model: models.Model{
+			ID:        "project-1",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
 		Name:          "Test Project",
 		GitRepoPath:   "/tmp/test-repo",
 		DefaultBranch: "main",
 		UserID:        userID,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
 	}
 	db.Create(project)
 
 	task := &models.VibeTask{
-		ID:        "task-1",
+		Model: models.Model{
+			ID:        "task-1",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
 		Title:     "Test Task",
 		ProjectID: "project-1",
 		UserID:    userID,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
 	}
 	db.Create(task)
 
@@ -1228,28 +1270,36 @@ func TestService_GetProcesses(t *testing.T) {
 
 	// Create test data
 	project := &models.VibeProject{
-		ID:            "project-1",
+		Model: models.Model{
+			ID:        "project-1",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
 		Name:          "Test Project",
 		GitRepoPath:   "/tmp/test-repo",
 		DefaultBranch: "main",
 		UserID:        userID,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
 	}
 	db.Create(project)
 
 	task := &models.VibeTask{
-		ID:        "task-1",
+		Model: models.Model{
+			ID:        "task-1",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
 		Title:     "Test Task",
 		ProjectID: "project-1",
 		UserID:    userID,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
 	}
 	db.Create(task)
 
 	attempt := &models.VibeTaskAttempt{
-		ID:           "attempt-1",
+		Model: models.Model{
+			ID:        "attempt-1",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
 		TaskID:       "task-1",
 		WorktreePath: "/tmp/worktree1",
 		Branch:       "task-1-attempt-1",
@@ -1257,14 +1307,16 @@ func TestService_GetProcesses(t *testing.T) {
 		Executor:     "claude",
 		Status:       "running",
 		UserID:       userID,
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
 	}
 	db.Create(attempt)
 
 	processes := []*models.VibeExecutionProcess{
 		{
-			ID:        "process-1",
+			Model: models.Model{
+				ID:        "process-1",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			},
 			AttemptID: "attempt-1",
 			Type:      "setup_script",
 			Status:    "completed",
@@ -1272,11 +1324,13 @@ func TestService_GetProcesses(t *testing.T) {
 			ProcessID: 1234,
 			ExitCode:  0,
 			UserID:    userID,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
 		},
 		{
-			ID:        "process-2",
+			Model: models.Model{
+				ID:        "process-2",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			},
 			AttemptID: "attempt-1",
 			Type:      "dev_server",
 			Status:    "running",
@@ -1285,8 +1339,6 @@ func TestService_GetProcesses(t *testing.T) {
 			Port:      3000,
 			URL:       "http://localhost:3000",
 			UserID:    userID,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
 		},
 	}
 	for _, process := range processes {
@@ -1381,28 +1433,36 @@ func TestService_KillProcess(t *testing.T) {
 
 	// Create test data
 	project := &models.VibeProject{
-		ID:            "project-1",
+		Model: models.Model{
+			ID:        "project-1",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
 		Name:          "Test Project",
 		GitRepoPath:   "/tmp/test-repo",
 		DefaultBranch: "main",
 		UserID:        userID,
-		CreatedAt:     time.Now(),
-		UpdatedAt:     time.Now(),
 	}
 	db.Create(project)
 
 	task := &models.VibeTask{
-		ID:        "task-1",
+		Model: models.Model{
+			ID:        "task-1",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
 		Title:     "Test Task",
 		ProjectID: "project-1",
 		UserID:    userID,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
 	}
 	db.Create(task)
 
 	attempt := &models.VibeTaskAttempt{
-		ID:           "attempt-1",
+		Model: models.Model{
+			ID:        "attempt-1",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
 		TaskID:       "task-1",
 		WorktreePath: "/tmp/worktree1",
 		Branch:       "task-1-attempt-1",
@@ -1410,13 +1470,15 @@ func TestService_KillProcess(t *testing.T) {
 		Executor:     "claude",
 		Status:       "running",
 		UserID:       userID,
-		CreatedAt:    time.Now(),
-		UpdatedAt:    time.Now(),
 	}
 	db.Create(attempt)
 
 	runningProcess := &models.VibeExecutionProcess{
-		ID:        "process-1",
+		Model: models.Model{
+			ID:        "process-1",
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
 		AttemptID: "attempt-1",
 		Type:      "dev_server",
 		Status:    "running",
@@ -1425,8 +1487,6 @@ func TestService_KillProcess(t *testing.T) {
 		Port:      3000,
 		URL:       "http://localhost:3000",
 		UserID:    userID,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
 	}
 	db.Create(runningProcess)
 

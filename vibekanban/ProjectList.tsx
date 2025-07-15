@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
+import { createConnectTransport } from '@connectrpc/connect-web';
+import { createClient } from '@connectrpc/connect';
+import { VibeKanbanService } from '../gen/proto/vibekanban/vibekanban_pb';
+import type {
+  CreateProjectRequest,
+  DeleteProjectRequest,
+} from '../gen/proto/vibekanban/vibekanban_pb';
+import {
+  Project,
+  TaskPriority
+} from '../gen/proto/vibekanban/vibekanban_pb';
 
-interface Project {
-  id: string;
-  name: string;
-  git_repo_path: string;
-  setup_script?: string;
-  dev_script?: string;
-  default_branch: string;
-  created_at: string;
-  updated_at: string;
-  tasks?: Array<{
-    id: string;
-    title: string;
-    status: string;
-  }>;
-}
+// Create ConnectRPC client
+const transport = createConnectTransport({
+  baseUrl: '/vibekanban',
+});
+const client = createClient(VibeKanbanService, transport);
 
 const NewProjectDialog: React.FC<{
   isOpen: boolean;
@@ -42,19 +43,16 @@ const NewProjectDialog: React.FC<{
     setError(null);
 
     try {
-      const response = await fetch('/vibekanban/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+      const request = new CreateProjectRequest({
+        name: formData.name,
+        gitRepoPath: formData.git_repo_path,
+        setupScript: formData.setup_script,
+        devScript: formData.dev_script,
+        defaultBranch: formData.default_branch,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create project');
-      }
-
-      const project = await response.json();
-      onProjectCreated(project);
+      const response = await client.createProject(request);
+      onProjectCreated(response.project!);
       onClose();
       setFormData({
         name: '',
@@ -185,28 +183,32 @@ const NewProjectDialog: React.FC<{
   );
 };
 
-const ProjectCard: React.FC<{
+interface ProjectCardProps {
   project: Project;
   onSelect: (project: Project) => void;
   onDelete: (project: Project) => void;
-}> = ({ project, onSelect, onDelete }) => {
+}
+
+const ProjectCard: React.FC<ProjectCardProps> = (props: ProjectCardProps) => {
+  const { project, onSelect, onDelete } = props;
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const taskCounts = project.tasks?.reduce((acc, task) => {
-    acc[task.status] = (acc[task.status] || 0) + 1;
+    const status = task.status.toString().toLowerCase().replace('task_status_', '');
+    acc[status] = (acc[status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>) || {};
 
   const totalTasks = project.tasks?.length || 0;
   const completedTasks = taskCounts.done || 0;
-  const inProgressTasks = taskCounts.inprogress || 0;
+  const inProgressTasks = taskCounts.in_progress || 0;
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-1">{project.name}</h3>
-          <p className="text-sm text-gray-600 break-all">{project.git_repo_path}</p>
+          <p className="text-sm text-gray-600 break-all">{project.gitRepoPath}</p>
         </div>
         <div className="flex space-x-2">
           <button
@@ -227,28 +229,28 @@ const ProjectCard: React.FC<{
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
           <span className="text-xs text-gray-500">Default Branch</span>
-          <p className="font-mono text-sm">{project.default_branch}</p>
+          <p className="font-mono text-sm">{project.defaultBranch}</p>
         </div>
         <div>
           <span className="text-xs text-gray-500">Created</span>
-          <p className="text-sm">{new Date(project.created_at).toLocaleDateString()}</p>
+          <p className="text-sm">{new Date(Number(project.createdAt?.seconds) || 0).toLocaleDateString()}</p>
         </div>
       </div>
 
-      {(project.setup_script || project.dev_script) && (
+      {(project.setupScript || project.devScript) && (
         <div className="mb-4">
           <div className="text-xs text-gray-500 mb-2">Scripts</div>
           <div className="space-y-1">
-            {project.setup_script && (
+            {project.setupScript && (
               <div className="text-xs">
                 <span className="text-gray-600">Setup:</span>{' '}
-                <code className="bg-gray-100 px-1 rounded">{project.setup_script}</code>
+                <code className="bg-gray-100 px-1 rounded">{project.setupScript}</code>
               </div>
             )}
-            {project.dev_script && (
+            {project.devScript && (
               <div className="text-xs">
                 <span className="text-gray-600">Dev:</span>{' '}
-                <code className="bg-gray-100 px-1 rounded">{project.dev_script}</code>
+                <code className="bg-gray-100 px-1 rounded">{project.devScript}</code>
               </div>
             )}
           </div>
@@ -322,14 +324,8 @@ export const ProjectList: React.FC<{
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/vibekanban/projects');
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch projects');
-      }
-      
-      const data = await response.json();
-      setProjects(data);
+      const response = await client.listProjects({});
+      setProjects(response.projects);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch projects');
     } finally {
@@ -347,14 +343,11 @@ export const ProjectList: React.FC<{
 
   const handleDeleteProject = async (project: Project) => {
     try {
-      const response = await fetch(`/vibekanban/projects/${project.id}`, {
-        method: 'DELETE',
+      const request = new DeleteProjectRequest({
+        id: project.id,
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to delete project');
-      }
-
+      await client.deleteProject(request);
       setProjects(prev => prev.filter(p => p.id !== project.id));
     } catch (err) {
       console.error('Failed to delete project:', err);

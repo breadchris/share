@@ -14,12 +14,14 @@ func init() {
 		"NewFromFile": reflect.ValueOf(config.NewFromFile),
 
 		// type definitions
-		"AppConfig":     reflect.ValueOf((*config.AppConfig)(nil)),
-		"BlogConfig":    reflect.ValueOf((*config.BlogConfig)(nil)),
-		"GithubConfig":  reflect.ValueOf((*config.GithubConfig)(nil)),
-		"ProxyConfig":   reflect.ValueOf((*config.ProxyConfig)(nil)),
-		"SMTPConfig":    reflect.ValueOf((*config.SMTPConfig)(nil)),
-		"SpotifyConfig": reflect.ValueOf((*config.SpotifyConfig)(nil)),
-		"Stripe":        reflect.ValueOf((*config.Stripe)(nil)),
+		"AppConfig":        reflect.ValueOf((*config.AppConfig)(nil)),
+		"BlogConfig":       reflect.ValueOf((*config.BlogConfig)(nil)),
+		"DeploymentConfig": reflect.ValueOf((*config.DeploymentConfig)(nil)),
+		"GithubConfig":     reflect.ValueOf((*config.GithubConfig)(nil)),
+		"ProxyConfig":      reflect.ValueOf((*config.ProxyConfig)(nil)),
+		"SMTPConfig":       reflect.ValueOf((*config.SMTPConfig)(nil)),
+		"SnapshotConfig":   reflect.ValueOf((*config.SnapshotConfig)(nil)),
+		"SpotifyConfig":    reflect.ValueOf((*config.SpotifyConfig)(nil)),
+		"Stripe":           reflect.ValueOf((*config.Stripe)(nil)),
 	}
 }

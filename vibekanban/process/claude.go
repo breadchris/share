@@ -1,4 +1,4 @@
-package vibekanban
+package process
 
 import (
 	"bufio"
@@ -36,11 +36,11 @@ type ClaudeStreamMessage struct {
 
 // ClaudeMessage represents the structure of Claude's message content
 type ClaudeMessage struct {
-	ID      string                `json:"id"`
-	Type    string                `json:"type"`
-	Role    string                `json:"role"`
-	Model   string                `json:"model"`
-	Content []ClaudeContentBlock  `json:"content"`
+	ID      string               `json:"id"`
+	Type    string               `json:"type"`
+	Role    string               `json:"role"`
+	Model   string               `json:"model"`
+	Content []ClaudeContentBlock `json:"content"`
 }
 
 // ClaudeContentBlock represents a content block within a Claude message
@@ -53,18 +53,18 @@ type ClaudeContentBlock struct {
 
 func (c *ClaudeExecutor) Spawn(ctx context.Context, taskID uuid.UUID, worktreePath string) (*exec.Cmd, error) {
 	fmt.Printf("Debug: ClaudeExecutor.Spawn called with taskID: %s, worktreePath: %s\n", taskID.String(), worktreePath)
-	
+
 	// Validate worktree path exists
 	if _, err := os.Stat(worktreePath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("worktree path does not exist: %s", worktreePath)
 	}
-	
+
 	// Check if npx is available
 	if _, err := exec.LookPath("npx"); err != nil {
 		fmt.Printf("Debug: npx not found in PATH, Claude executor will fail: %v\n", err)
 		return nil, fmt.Errorf("npx not found in PATH - please install Node.js and npm: %w", err)
 	}
-	
+
 	// Optionally check if Claude CLI is available (this takes time, so only in debug mode)
 	if os.Getenv("CLAUDE_DEBUG") == "true" {
 		fmt.Printf("Debug: Checking if Claude CLI is available...\n")
@@ -75,7 +75,7 @@ func (c *ClaudeExecutor) Spawn(ctx context.Context, taskID uuid.UUID, worktreePa
 			fmt.Printf("Debug: Claude CLI is available\n")
 		}
 	}
-	
+
 	// Create a basic prompt - specific task details will be provided via stdin
 	prompt := fmt.Sprintf("Task ID: %s\nPlease help with this task.", taskID.String())
 	fmt.Printf("Debug: Created prompt for Claude: %s\n", prompt)
@@ -83,33 +83,33 @@ func (c *ClaudeExecutor) Spawn(ctx context.Context, taskID uuid.UUID, worktreePa
 	// Create Claude command
 	claudeCommand := "npx -y @anthropic-ai/claude-code@latest -p --dangerously-skip-permissions --verbose --output-format=stream-json"
 	fmt.Printf("Debug: Claude command: %s\n", claudeCommand)
-	
+
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
 		cmd = exec.CommandContext(ctx, "cmd", "/C", claudeCommand)
 	} else {
 		cmd = exec.CommandContext(ctx, "sh", "-c", claudeCommand)
 	}
-	
+
 	cmd.Dir = worktreePath
 	// Set up environment with proper PATH and NODE settings
 	env := os.Environ()
 	env = append(env, "NODE_NO_WARNINGS=1")
 	env = append(env, "FORCE_COLOR=0") // Disable colors for cleaner output
 	cmd.Env = env
-	
+
 	fmt.Printf("Debug: Command setup complete, working directory: %s\n", cmd.Dir)
-	
+
 	// Set up pipes for better error handling
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create stdin pipe: %w", err)
 	}
-	
+
 	// Don't start the command here - let the process manager handle it
 	// Just return the configured command
 	fmt.Printf("Debug: Claude command configured successfully\n")
-	
+
 	// Store stdin and prompt for later use
 	go func() {
 		// Wait a bit for the process to start, then write prompt
@@ -122,50 +122,50 @@ func (c *ClaudeExecutor) Spawn(ctx context.Context, taskID uuid.UUID, worktreePa
 			fmt.Printf("Debug: Successfully wrote prompt to Claude stdin\n")
 		}
 	}()
-	
+
 	return cmd, nil
 }
 
 func (c *ClaudeExecutor) NormalizeLogs(logs string, worktreePath string) (*NormalizedConversation, error) {
 	var entries []NormalizedEntry
 	var sessionID *string
-	
+
 	scanner := bufio.NewScanner(strings.NewReader(logs))
-	
+
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
 			continue
 		}
-		
+
 		// Try to parse as JSON
 		var msg ClaudeStreamMessage
 		if err := json.Unmarshal([]byte(line), &msg); err != nil {
 			// If not JSON, add as raw text
 			entries = append(entries, NormalizedEntry{
-				Type: NormalizedEntryType{Type: "system_message"},
+				Type:    NormalizedEntryType{Type: "system_message"},
 				Content: fmt.Sprintf("Raw output: %s", line),
 			})
 			continue
 		}
-		
+
 		// Extract session ID
 		if sessionID == nil && msg.SessionID != "" {
 			sessionID = &msg.SessionID
 		}
-		
+
 		// Process different message types
 		switch msg.Type {
 		case "system":
 			if msg.Subtype == "init" {
 				rawMsg := json.RawMessage(line)
 				entries = append(entries, NormalizedEntry{
-					Type: NormalizedEntryType{Type: "system_message"},
-					Content: fmt.Sprintf("System initialized with model: %s", msg.Model),
+					Type:     NormalizedEntryType{Type: "system_message"},
+					Content:  fmt.Sprintf("System initialized with model: %s", msg.Model),
 					Metadata: &rawMsg,
 				})
 			}
-			
+
 		case "assistant":
 			if len(msg.Message) > 0 {
 				var claudeMsg ClaudeMessage
@@ -173,7 +173,7 @@ func (c *ClaudeExecutor) NormalizeLogs(logs string, worktreePath string) (*Norma
 					c.processAssistantMessage(claudeMsg, &entries, worktreePath, line)
 				}
 			}
-			
+
 		case "user":
 			if len(msg.Message) > 0 {
 				var claudeMsg ClaudeMessage
@@ -181,22 +181,22 @@ func (c *ClaudeExecutor) NormalizeLogs(logs string, worktreePath string) (*Norma
 					c.processUserMessage(claudeMsg, &entries, line)
 				}
 			}
-			
+
 		case "result":
 			// Skip result entries as requested in the original Rust code
 			continue
-			
+
 		default:
 			// Add unrecognized JSON
 			rawMsg := json.RawMessage(line)
 			entries = append(entries, NormalizedEntry{
-				Type: NormalizedEntryType{Type: "system_message"},
-				Content: fmt.Sprintf("Unrecognized JSON: %s", line),
+				Type:     NormalizedEntryType{Type: "system_message"},
+				Content:  fmt.Sprintf("Unrecognized JSON: %s", line),
 				Metadata: &rawMsg,
 			})
 		}
 	}
-	
+
 	return &NormalizedConversation{
 		Entries:      entries,
 		SessionID:    sessionID,
@@ -210,23 +210,23 @@ func (c *ClaudeExecutor) processAssistantMessage(msg ClaudeMessage, entries *[]N
 		case "text":
 			rawMsg := json.RawMessage(rawLine)
 			*entries = append(*entries, NormalizedEntry{
-				Type: NormalizedEntryType{Type: "assistant_message"},
-				Content: content.Text,
+				Type:     NormalizedEntryType{Type: "assistant_message"},
+				Content:  content.Text,
 				Metadata: &rawMsg,
 			})
-			
+
 		case "tool_use":
 			actionType := c.extractActionType(content.Name, content.Input, worktreePath)
 			contentStr := c.generateConciseContent(content.Name, content.Input, actionType, worktreePath)
-			
+
 			rawMsg := json.RawMessage(rawLine)
 			*entries = append(*entries, NormalizedEntry{
 				Type: NormalizedEntryType{
-					Type: "tool_use",
-					ToolName: content.Name,
+					Type:       "tool_use",
+					ToolName:   content.Name,
 					ActionType: actionType,
 				},
-				Content: contentStr,
+				Content:  contentStr,
 				Metadata: &rawMsg,
 			})
 		}
@@ -238,8 +238,8 @@ func (c *ClaudeExecutor) processUserMessage(msg ClaudeMessage, entries *[]Normal
 		if content.Type == "text" {
 			rawMsg := json.RawMessage(rawLine)
 			*entries = append(*entries, NormalizedEntry{
-				Type: NormalizedEntryType{Type: "user_message"},
-				Content: content.Text,
+				Type:     NormalizedEntryType{Type: "user_message"},
+				Content:  content.Text,
 				Metadata: &rawMsg,
 			})
 		}
@@ -251,14 +251,14 @@ func (c *ClaudeExecutor) extractActionType(toolName string, input json.RawMessag
 	if err := json.Unmarshal(input, &inputMap); err != nil {
 		return NewOtherAction(fmt.Sprintf("Tool: %s", toolName))
 	}
-	
+
 	switch strings.ToLower(toolName) {
 	case "read":
 		if filePath, ok := inputMap["file_path"].(string); ok {
 			return NewFileReadAction(c.makePathRelative(filePath, worktreePath))
 		}
 		return NewOtherAction("File read operation")
-		
+
 	case "edit", "write", "multiedit":
 		if filePath, ok := inputMap["file_path"].(string); ok {
 			return NewFileWriteAction(c.makePathRelative(filePath, worktreePath))
@@ -267,25 +267,25 @@ func (c *ClaudeExecutor) extractActionType(toolName string, input json.RawMessag
 			return NewFileWriteAction(c.makePathRelative(path, worktreePath))
 		}
 		return NewOtherAction("File write operation")
-		
+
 	case "bash":
 		if command, ok := inputMap["command"].(string); ok {
 			return NewCommandRunAction(command)
 		}
 		return NewOtherAction("Command execution")
-		
+
 	case "grep":
 		if pattern, ok := inputMap["pattern"].(string); ok {
 			return NewSearchAction(pattern)
 		}
 		return NewOtherAction("Search operation")
-		
+
 	case "webfetch":
 		if url, ok := inputMap["url"].(string); ok {
 			return NewWebFetchAction(url)
 		}
 		return NewOtherAction("Web fetch operation")
-		
+
 	case "task":
 		if desc, ok := inputMap["description"].(string); ok {
 			return NewTaskCreateAction(desc)
@@ -294,7 +294,7 @@ func (c *ClaudeExecutor) extractActionType(toolName string, input json.RawMessag
 			return NewTaskCreateAction(prompt)
 		}
 		return NewOtherAction("Task creation")
-		
+
 	default:
 		return NewOtherAction(fmt.Sprintf("Tool: %s", toolName))
 	}
@@ -324,7 +324,7 @@ func (c *ClaudeExecutor) generateSpecialToolContent(toolName string, input json.
 	if err := json.Unmarshal(input, &inputMap); err != nil {
 		return toolName
 	}
-	
+
 	switch strings.ToLower(toolName) {
 	case "todoread", "todowrite":
 		return c.generateTodoContent(inputMap)
@@ -347,22 +347,22 @@ func (c *ClaudeExecutor) generateTodoContent(inputMap map[string]interface{}) st
 	if !ok || len(todos) == 0 {
 		return "Managing TODO list"
 	}
-	
+
 	var todoItems []string
 	for _, todo := range todos {
 		todoMap, ok := todo.(map[string]interface{})
 		if !ok {
 			continue
 		}
-		
+
 		content, ok := todoMap["content"].(string)
 		if !ok {
 			continue
 		}
-		
+
 		status, _ := todoMap["status"].(string)
 		priority, _ := todoMap["priority"].(string)
-		
+
 		statusEmoji := "📝"
 		switch status {
 		case "completed":
@@ -372,18 +372,18 @@ func (c *ClaudeExecutor) generateTodoContent(inputMap map[string]interface{}) st
 		case "pending", "todo":
 			statusEmoji = "⏳"
 		}
-		
+
 		if priority == "" {
 			priority = "medium"
 		}
-		
+
 		todoItems = append(todoItems, fmt.Sprintf("%s %s (%s)", statusEmoji, content, priority))
 	}
-	
+
 	if len(todoItems) == 0 {
 		return "Managing TODO list"
 	}
-	
+
 	return fmt.Sprintf("TODO List:\n%s", strings.Join(todoItems, "\n"))
 }
 
@@ -392,12 +392,12 @@ func (c *ClaudeExecutor) generateLsContent(inputMap map[string]interface{}, work
 	if !ok {
 		return "List directory"
 	}
-	
+
 	relativePath := c.makePathRelative(path, worktreePath)
 	if relativePath == "" {
 		return "List directory"
 	}
-	
+
 	return fmt.Sprintf("List directory: `%s`", relativePath)
 }
 
@@ -406,12 +406,12 @@ func (c *ClaudeExecutor) generateGlobContent(inputMap map[string]interface{}, wo
 	if pattern == "" {
 		pattern = "*"
 	}
-	
+
 	if path, ok := inputMap["path"].(string); ok {
 		relativePath := c.makePathRelative(path, worktreePath)
 		return fmt.Sprintf("Find files: `%s` in `%s`", pattern, relativePath)
 	}
-	
+
 	return fmt.Sprintf("Find files: `%s`", pattern)
 }
 
@@ -420,12 +420,12 @@ func (c *ClaudeExecutor) makePathRelative(path, worktreePath string) string {
 	if !filepath.IsAbs(path) {
 		return path
 	}
-	
+
 	// Try to make path relative to worktree
 	if rel, err := filepath.Rel(worktreePath, path); err == nil {
 		return rel
 	}
-	
+
 	// If we can't make it relative, return the original path
 	return path
 }
@@ -438,29 +438,29 @@ func (c *ClaudeExecutor) GetExecutorType() ExecutorConfig {
 func (cf *ClaudeFollowupExecutor) Spawn(ctx context.Context, taskID uuid.UUID, worktreePath string) (*exec.Cmd, error) {
 	// Create Claude command with resume flag
 	claudeCommand := fmt.Sprintf("npx -y @anthropic-ai/claude-code@latest -p --dangerously-skip-permissions --verbose --output-format=stream-json --resume=%s", cf.SessionID)
-	
+
 	var cmd *exec.Cmd
 	if runtime.GOOS == "windows" {
 		cmd = exec.CommandContext(ctx, "cmd", "/C", claudeCommand)
 	} else {
 		cmd = exec.CommandContext(ctx, "sh", "-c", claudeCommand)
 	}
-	
+
 	cmd.Dir = worktreePath
 	cmd.Env = append(cmd.Env, "NODE_NO_WARNINGS=1")
-	
+
 	// Set up pipes
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create stdin pipe: %w", err)
 	}
-	
+
 	// Start the command
 	if err := cmd.Start(); err != nil {
 		stdin.Close()
 		return nil, fmt.Errorf("failed to start Claude followup: %w", err)
 	}
-	
+
 	// Write prompt to stdin in a goroutine
 	go func() {
 		defer stdin.Close()
@@ -468,7 +468,7 @@ func (cf *ClaudeFollowupExecutor) Spawn(ctx context.Context, taskID uuid.UUID, w
 			fmt.Printf("Debug: Failed to write followup prompt to Claude stdin: %v\n", err)
 		}
 	}()
-	
+
 	return cmd, nil
 }
 

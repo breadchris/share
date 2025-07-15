@@ -6,63 +6,40 @@
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/buf.gen.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/buf.gen.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/example/ExampleClient.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/example/handler.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/example/service.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/code/code.go" beforeDir="false" afterPath="$PROJECT_DIR$/code/code.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow" beforeDir="false" afterPath="$PROJECT_DIR$/flow" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/claude/hooks/useClaudeSession.ts" beforeDir="false" afterPath="$PROJECT_DIR$/flow/claude/hooks/useClaudeSession.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/claude/hooks/useClaudeWebSocket.ts" beforeDir="false" afterPath="$PROJECT_DIR$/flow/claude/hooks/useClaudeWebSocket.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/code/code.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/code/code.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/code/html_helpers.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/code/html_helpers.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gen/node.pb.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gen/proto/example/example.pb.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gen/proto/example/example_connect.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gen/proto/example/example_grpc.pb.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gen/proto/example/example_pb.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gen/proto/example/exampleconnect/example.connect.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gen/proto/kanban/kanban.pb.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gen/proto/kanban/kanban_connect.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gen/proto/kanban/kanban_grpc.pb.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gen/proto/kanban/kanban_pb.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gen/proto/kanban/kanbanconnect/kanban.connect.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gen/proto/node.pb.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/gen/proto/node_pb.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/code/react.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/code/react.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/flow/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/main.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/go.work.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.work.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/screenshare/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/screenshare/cmd/hash.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/cmd/hash.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/screenshare/cmd/serve.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/cmd/serve.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/screenshare/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/config/config.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/screenshare/config/ip.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/config/ip.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/screenshare/docs/_sidebar.md" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/docs/_sidebar.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/screenshare/docs/development.md" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/docs/development.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/screenshare/docs/install.md" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/docs/install.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/screenshare/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/screenshare/router/router.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/router/router.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/screenshare/turn/server.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/turn/server.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/screenshare/ui/build/assets/index-BwZWgZCf.js" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/build/assets/index-BwZWgZCf.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/screenshare/ui/src/RoomManage.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ui/src/RoomManage.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/screenshare/ws/client.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/client.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/screenshare/ws/event_clientanswer.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/event_clientanswer.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/screenshare/ws/event_clientice.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/event_clientice.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/graveyard/screenshare/ws/event_create.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/event_create.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/screenshare/ws/event_disconnected.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/event_disconnected.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/screenshare/ws/event_hostice.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/event_hostice.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/screenshare/ws/event_hostoffer.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/event_hostoffer.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/screenshare/ws/event_stop_share.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/event_stop_share.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/screenshare/ws/readwrite.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/readwrite.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/screenshare/ws/room.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/room.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/screenshare/ws/rooms.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/screenshare/ws/rooms.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/graveyard/test/test.go" beforeDir="false" afterPath="$PROJECT_DIR$/graveyard/test/test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/kanban/handler.go" beforeDir="false" afterPath="$PROJECT_DIR$/kanban/handler.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/kanban/service.go" beforeDir="false" afterPath="$PROJECT_DIR$/kanban/service.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/share/share.xcodeproj/project.xcworkspace/xcuserdata/hacked.xcuserdatad/UserInterfaceState.xcuserstate" beforeDir="false" afterPath="$PROJECT_DIR$/share/share.xcodeproj/project.xcworkspace/xcuserdata/hacked.xcuserdatad/UserInterfaceState.xcuserstate" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/music.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/gottybuilder/gotty.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-coderunner.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-coderunner.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-config.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-config.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-models.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-models.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/net-http.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/net-http.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/os-exec.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/os-exec.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/symbol.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/symbol.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vibekanban/ProjectList.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/ProjectList.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vibekanban/TaskDetailsPanel.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/TaskDetailsPanel.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/vibekanban/VibeKanban.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/VibeKanban.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vibekanban/vibekanban.go" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/vibekanban.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vibekanban/business_logic.go" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/business_logic.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vibekanban/claude.go" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/process/claude.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vibekanban/claude_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/process/claude_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vibekanban/executor.go" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/process/executor.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vibekanban/git.go" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/git.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vibekanban/handler.go" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/handler.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vibekanban/process.go" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/process/process.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vibekanban/service.go" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/service.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vibekanban/service_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/service_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vibekanban/vibekanban.go" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -116,7 +93,7 @@
     "git-widget-placeholder": "master",
     "go.import.settings.migrated": "true",
     "go.sdk.automatically.set": "true",
-    "last_opened_file_path": "/Users/hacked/Documents/GitHub/share/data/session/c31c2f42-9ab4-40f6-aa0f-388c1ebcca08/data",
+    "last_opened_file_path": "/Users/hacked/Documents/GitHub/share/flow/code",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -138,18 +115,18 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/data/session/c31c2f42-9ab4-40f6-aa0f-388c1ebcca08/data" />
       <recent name="$PROJECT_DIR$/flow/code" />
+      <recent name="$PROJECT_DIR$/data/session/c31c2f42-9ab4-40f6-aa0f-388c1ebcca08/data" />
       <recent name="$PROJECT_DIR$/graph" />
       <recent name="$PROJECT_DIR$/ysweet/justshare/components" />
       <recent name="$PROJECT_DIR$/hmr/client" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/vibekanban/process" />
       <recent name="$PROJECT_DIR$/example" />
       <recent name="$PROJECT_DIR$/infra" />
       <recent name="$PROJECT_DIR$/gots" />
       <recent name="$PROJECT_DIR$/graveyard" />
-      <recent name="$PROJECT_DIR$/sheet" />
     </key>
   </component>
   <component name="RunManager" selected="Go Build.share">
@@ -328,7 +305,7 @@
       <workItem from="1747973023098" duration="26954000" />
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
-      <workItem from="1750823408293" duration="359571000" />
+      <workItem from="1750823408293" duration="369977000" />
     </task>
     <servers />
   </component>
