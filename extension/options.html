@@ -51,6 +51,24 @@
             border-color: #007bff;
         }
         
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        
+        input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        
         .description {
             font-size: 12px;
             color: #666;
@@ -128,6 +146,32 @@
             <input type="url" id="apiDomain" placeholder="https://localhost:8080">
             <div class="description">
                 Enter the API domain for server-side content processing and scraping. This can be different from the main server URL. Default is localhost:8080
+            </div>
+        </div>
+        
+        <div class="setting-group">
+            <label>
+                <input type="checkbox" id="autoReconnect" checked>
+                Enable automatic reconnection
+            </label>
+            <div class="description">
+                Automatically attempt to reconnect when the WebSocket connection is lost
+            </div>
+        </div>
+        
+        <div class="setting-group">
+            <label for="maxReconnectAttempts">Maximum reconnection attempts:</label>
+            <input type="number" id="maxReconnectAttempts" min="1" max="10" value="5">
+            <div class="description">
+                Number of times to attempt reconnection before giving up (1-10)
+            </div>
+        </div>
+        
+        <div class="setting-group">
+            <label for="reconnectDelay">Initial reconnection delay (ms):</label>
+            <input type="number" id="reconnectDelay" min="1000" max="30000" step="1000" value="1000">
+            <div class="description">
+                Initial delay before first reconnection attempt in milliseconds (1000-30000). Delay doubles with each attempt.
             </div>
         </div>
         

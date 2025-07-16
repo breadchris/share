@@ -137,7 +137,8 @@ Remaining features to implement:
 
 ### Frontend Packages
 - `react` - UI framework
-- `@hello-pangea/dnd` - Drag and drop functionality
+- `react-dnd` - Drag and drop functionality
+- `react-dnd-html5-backend` - HTML5 backend for react-dnd
 - `tailwindcss` - Styling
 
 The implementation follows the existing patterns in the share repository and provides a solid foundation for AI-assisted software development workflows.

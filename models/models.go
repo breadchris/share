@@ -536,7 +536,7 @@ type VibeProject struct {
 	DefaultBranch string                             `json:"default_branch" gorm:"default:'main'"`
 	UserID        string                             `json:"user_id" gorm:"index;not null"`
 	User          *User                              `gorm:"foreignKey:UserID"`
-	Tasks         []VibeTask                         `gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE"`
+	Tasks         []VibeTask                         `json:"tasks" gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE"`
 	Config        *JSONField[map[string]interface{}] `json:"config,omitempty"` // Project-specific configuration
 }
 
@@ -550,7 +550,7 @@ type VibeTask struct {
 	Project     *VibeProject                       `gorm:"foreignKey:ProjectID"`
 	UserID      string                             `json:"user_id" gorm:"index;not null"`
 	User        *User                              `gorm:"foreignKey:UserID"`
-	Attempts    []VibeTaskAttempt                  `gorm:"foreignKey:TaskID;constraint:OnDelete:CASCADE"`
+	Attempts    []VibeTaskAttempt                  `json:"attempts" gorm:"foreignKey:TaskID;constraint:OnDelete:CASCADE"`
 	Labels      []string                           `json:"labels" gorm:"type:json"`
 	Metadata    *JSONField[map[string]interface{}] `json:"metadata,omitempty"`
 }
@@ -570,8 +570,8 @@ type VibeTaskAttempt struct {
 	EndTime       *time.Time                         `json:"end_time"`
 	UserID        string                             `json:"user_id" gorm:"index;not null"`
 	User          *User                              `gorm:"foreignKey:UserID"`
-	Processes     []VibeExecutionProcess             `gorm:"foreignKey:AttemptID;constraint:OnDelete:CASCADE"`
-	Sessions      []VibeExecutorSession              `gorm:"foreignKey:AttemptID;constraint:OnDelete:CASCADE"`
+	Processes     []VibeExecutionProcess             `json:"processes" gorm:"foreignKey:AttemptID;constraint:OnDelete:CASCADE"`
+	Sessions      []VibeExecutorSession              `json:"sessions" gorm:"foreignKey:AttemptID;constraint:OnDelete:CASCADE"`
 	GitDiff       string                             `json:"git_diff" gorm:"type:text"`          // Cached git diff
 	Metadata      *JSONField[map[string]interface{}] `json:"metadata,omitempty"`                 // Execution metadata
 	Configuration *JSONField[map[string]interface{}] `json:"configuration,omitempty"`            // Attempt-specific config

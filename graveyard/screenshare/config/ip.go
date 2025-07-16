@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/breadchris/share/screenshare/config/ipdns"
+	"github.com/breadchris/share/graveyard/screenshare/config/ipdns"
 )
 
 func parseIPProvider(ips []string, config string) (ipdns.Provider, []FutureLog) {

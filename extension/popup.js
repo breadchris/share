@@ -7,6 +7,13 @@ let connectionStats = {
     lastActivity: null
 };
 
+let reconnectInfo = {
+    attempts: 0,
+    maxAttempts: 5,
+    isReconnecting: false,
+    autoReconnectEnabled: true
+};
+
 async function initialize() {
     // Load current settings and connection status
     await loadSettings();
@@ -15,6 +22,7 @@ async function initialize() {
     // Set up event listeners
     document.getElementById('connect-btn').addEventListener('click', connectToServer);
     document.getElementById('disconnect-btn').addEventListener('click', disconnectFromServer);
+    document.getElementById('stop-reconnect-btn').addEventListener('click', stopReconnection);
     document.getElementById('options-btn').addEventListener('click', openOptions);
     
     // Update UI every second
@@ -51,12 +59,17 @@ async function updateConnectionStatus() {
         
         const status = response?.status || 'disconnected';
         const stats = response?.stats || {};
+        const reconnect = response?.reconnectInfo || {};
         
         updateStatusUI(status);
         
         if (stats) {
             connectionStats = { ...connectionStats, ...stats };
             updateStats();
+        }
+        
+        if (reconnect) {
+            reconnectInfo = { ...reconnectInfo, ...reconnect };
         }
         
     } catch (error) {
@@ -70,16 +83,21 @@ function updateStatusUI(status) {
     const statusText = document.getElementById('status-text');
     const connectBtn = document.getElementById('connect-btn');
     const disconnectBtn = document.getElementById('disconnect-btn');
+    const stopReconnectBtn = document.getElementById('stop-reconnect-btn');
     const statsElement = document.getElementById('stats');
     
     // Reset classes
     statusElement.className = 'status';
     
+    // Hide all buttons initially
+    connectBtn.style.display = 'none';
+    disconnectBtn.style.display = 'none';
+    stopReconnectBtn.style.display = 'none';
+    
     switch (status) {
         case 'connected':
             statusElement.classList.add('connected');
             statusText.textContent = 'Connected';
-            connectBtn.style.display = 'none';
             disconnectBtn.style.display = 'block';
             statsElement.style.display = 'flex';
             break;
@@ -88,7 +106,15 @@ function updateStatusUI(status) {
             statusElement.classList.add('connecting');
             statusText.textContent = 'Connecting...';
             connectBtn.disabled = true;
-            disconnectBtn.style.display = 'none';
+            statsElement.style.display = 'none';
+            break;
+            
+        case 'reconnecting':
+            statusElement.classList.add('connecting');
+            const attemptText = reconnectInfo.attempts > 0 ? 
+                ` (${reconnectInfo.attempts}/${reconnectInfo.maxAttempts})` : '';
+            statusText.textContent = `Reconnecting...${attemptText}`;
+            stopReconnectBtn.style.display = 'block';
             statsElement.style.display = 'none';
             break;
             
@@ -98,7 +124,6 @@ function updateStatusUI(status) {
             statusText.textContent = 'Disconnected';
             connectBtn.style.display = 'block';
             connectBtn.disabled = false;
-            disconnectBtn.style.display = 'none';
             statsElement.style.display = 'none';
             break;
     }
@@ -144,6 +169,24 @@ async function disconnectFromServer() {
         
     } catch (error) {
         console.error('Error disconnecting from server:', error);
+    }
+}
+
+async function stopReconnection() {
+    try {
+        const response = await chrome.runtime.sendMessage({ 
+            action: 'stopReconnection' 
+        });
+        
+        if (response?.success) {
+            console.log('Reconnection stopped successfully');
+            updateStatusUI('disconnected');
+        } else {
+            console.error('Failed to stop reconnection:', response?.error);
+        }
+        
+    } catch (error) {
+        console.error('Error stopping reconnection:', error);
     }
 }
 

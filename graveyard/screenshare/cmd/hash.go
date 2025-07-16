@@ -5,7 +5,7 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/breadchris/share/screenshare/logger"
+	"github.com/breadchris/share/graveyard/screenshare/logger"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli"

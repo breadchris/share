@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ProjectList } from './ProjectList';
 import { VibeKanbanBoard } from './VibeKanban';
 import { TaskDetailsPanel } from './TaskDetailsPanel';
@@ -46,6 +46,18 @@ export const VibeKanbanApp: React.FC = () => {
   const [currentView, setCurrentView] = useState<'projects' | 'kanban'>('projects');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const handleProjectSelect = (project: Project) => {
     setSelectedProject(project);
@@ -117,10 +129,11 @@ export const VibeKanbanApp: React.FC = () => {
           <ProjectList onProjectSelect={handleProjectSelect} />
         ) : (
           selectedProject && (
-            <div className="h-full p-6">
+            <div className={`h-full ${isMobile ? 'p-0' : 'p-6'}`}>
               <VibeKanbanBoard
                 projectId={selectedProject.id}
                 onTaskSelect={handleTaskSelect}
+                isMobile={isMobile}
               />
             </div>
           )

@@ -3,7 +3,7 @@ package ws
 import (
 	"fmt"
 
-	"github.com/breadchris/share/screenshare/ws/outgoing"
+	"github.com/breadchris/share/graveyard/screenshare/ws/outgoing"
 	"github.com/rs/zerolog/log"
 )
 

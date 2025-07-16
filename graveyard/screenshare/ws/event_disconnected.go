@@ -3,7 +3,7 @@ package ws
 import (
 	"bytes"
 
-	"github.com/breadchris/share/screenshare/ws/outgoing"
+	"github.com/breadchris/share/graveyard/screenshare/ws/outgoing"
 	"github.com/gorilla/websocket"
 )
 

@@ -1,6 +1,6 @@
 package main
 
-//go:generate buf generate --path proto
+// //go:generate buf generate --path proto
 
 import (
 	"context"
@@ -37,6 +37,7 @@ import (
 	"github.com/breadchris/share/editor/leaps"
 	"github.com/breadchris/share/editor/playground"
 	"github.com/breadchris/share/example"
+	extensionmcp "github.com/breadchris/share/extension-mcp"
 	"github.com/breadchris/share/graph"
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/justshare"
@@ -127,7 +128,7 @@ func startXCTF(port int) error {
 
 	p("/xctf", xctf.New)
 	p("/user", user.New)
-	p("/vibe-kanban", vibekanban.New)
+	p("/vibekanban", vibekanban.NewHTTP)
 	p("", justshare.New)
 
 	http.HandleFunc("/register", a.handleRegister)
@@ -355,6 +356,7 @@ func startServer(useTLS bool, port int) {
 	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./eventcalendar.go", "./card.go", "./ai.go", "./tarot.go"}))
 	//p("/code", interpreted(wasmcode.New))
 	p("/extension", interpreted(NewExtension))
+	p("/extension-mcp", extensionmcp.New(deps))
 	p("/git", interpreted(NewGit))
 	p("/music", interpreted(NewMusic))
 	p("/stripe", interpreted(NewStripe))
@@ -398,7 +400,7 @@ func startServer(useTLS bool, port int) {
 	p("/coderunner", interpreted(coderunner.New))
 	p("/example", interpreted(example.New))
 	p("/kanban", interpreted(kanban.New))
-	p("/vibe-kanban", interpreted(vibekanban.New))
+	p("/vibekanban", interpreted(vibekanban.NewHTTP))
 	//p("/claudemd", interpreted(claudemd.New))
 	p("/docker", interpreted(docker.New))
 	p("/browser", interpreted(NewBrowser))
@@ -911,6 +913,42 @@ func main() {
 					return restartProcess(c.Bool("tls"), c.Int("port"))
 				},
 			},
+			{
+				Name:  "tsx-compile",
+				Usage: "Compile TSX files using @flow/code esbuild logic",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "input",
+						Aliases:  []string{"i"},
+						Usage:    "Input TSX/TS file to compile",
+						Required: true,
+					},
+					&cli.StringFlag{
+						Name:    "output",
+						Aliases: []string{"o"},
+						Usage:   "Output file or directory",
+					},
+					&cli.StringFlag{
+						Name:    "format",
+						Aliases: []string{"f"},
+						Usage:   "Output format: esm, cjs, or both",
+						Value:   "esm",
+					},
+					&cli.BoolFlag{
+						Name:  "sourcemap",
+						Usage: "Generate source maps",
+						Value: false,
+					},
+					&cli.BoolFlag{
+						Name:  "minify",
+						Usage: "Minify output",
+						Value: false,
+					},
+				},
+				Action: func(c *cli.Context) error {
+					return compileTSXCommand(c)
+				},
+			},
 			NewPipePortCli(),
 			{
 				Name:  "browser",
@@ -944,6 +982,202 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func compileTSXCommand(c *cli.Context) error {
+	inputFile := c.String("input")
+	outputPath := c.String("output")
+	format := c.String("format")
+	sourcemap := c.Bool("sourcemap")
+	minify := c.Bool("minify")
+
+	// Validate input file exists
+	if _, err := os.Stat(inputFile); os.IsNotExist(err) {
+		return fmt.Errorf("input file not found: %s", inputFile)
+	}
+
+	// Validate format
+	if format != "esm" && format != "cjs" && format != "both" {
+		return fmt.Errorf("invalid format: %s (must be esm, cjs, or both)", format)
+	}
+
+	// Read source file
+	sourceCode, err := os.ReadFile(inputFile)
+	if err != nil {
+		return fmt.Errorf("failed to read input file: %v", err)
+	}
+
+	// Determine output paths
+	var outputs []struct {
+		format    string
+		filename  string
+		apiFormat api.Format
+		target    api.Target
+	}
+
+	baseFilename := strings.TrimSuffix(filepath.Base(inputFile), filepath.Ext(inputFile))
+	outputDir := filepath.Dir(inputFile)
+	if outputPath != "" {
+		if filepath.Ext(outputPath) != "" {
+			// outputPath is a file
+			outputDir = filepath.Dir(outputPath)
+			baseFilename = strings.TrimSuffix(filepath.Base(outputPath), filepath.Ext(outputPath))
+		} else {
+			// outputPath is a directory
+			outputDir = outputPath
+		}
+	}
+
+	if format == "esm" || format == "both" {
+		outputs = append(outputs, struct {
+			format    string
+			filename  string
+			apiFormat api.Format
+			target    api.Target
+		}{
+			format:    "esm",
+			filename:  filepath.Join(outputDir, baseFilename+".esm.js"),
+			apiFormat: api.FormatESModule,
+			target:    api.ESNext,
+		})
+	}
+
+	if format == "cjs" || format == "both" {
+		outputs = append(outputs, struct {
+			format    string
+			filename  string
+			apiFormat api.Format
+			target    api.Target
+		}{
+			format:    "cjs",
+			filename:  filepath.Join(outputDir, baseFilename+".cjs.js"),
+			apiFormat: api.FormatCommonJS,
+			target:    api.ES2020,
+		})
+	}
+
+	// Determine file loader
+	var loader api.Loader
+	switch filepath.Ext(inputFile) {
+	case ".js":
+		loader = api.LoaderJS
+	case ".jsx":
+		loader = api.LoaderJSX
+	case ".ts":
+		loader = api.LoaderTS
+	case ".tsx":
+		loader = api.LoaderTSX
+	default:
+		loader = api.LoaderTSX // Default to TSX
+	}
+
+	// Create output directory if it doesn't exist
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("failed to create output directory: %v", err)
+	}
+
+	// Compile for each format
+	for _, output := range outputs {
+		fmt.Printf("Compiling %s to %s format...\n", inputFile, output.format)
+
+		buildOptions := api.BuildOptions{
+			Stdin: &api.StdinOptions{
+				Contents:   string(sourceCode),
+				ResolveDir: filepath.Dir(inputFile),
+				Sourcefile: filepath.Base(inputFile),
+				Loader:     loader,
+			},
+			Loader: map[string]api.Loader{
+				".js":  api.LoaderJS,
+				".jsx": api.LoaderJSX,
+				".ts":  api.LoaderTS,
+				".tsx": api.LoaderTSX,
+				".css": api.LoaderCSS,
+			},
+			Format:          output.apiFormat,
+			Bundle:          true,
+			Write:           false,
+			TreeShaking:     api.TreeShakingTrue,
+			Target:          output.target,
+			JSX:             api.JSXAutomatic,
+			JSXImportSource: "react",
+			LogLevel:        api.LogLevelSilent,
+			TsconfigRaw: `{
+				"compilerOptions": {
+					"jsx": "react-jsx",
+					"allowSyntheticDefaultImports": true,
+					"esModuleInterop": true,
+					"moduleResolution": "node",
+					"target": "ESNext",
+					"lib": ["ESNext", "DOM", "DOM.Iterable"],
+					"allowJs": true,
+					"skipLibCheck": true,
+					"strict": false,
+					"forceConsistentCasingInFileNames": true,
+					"noEmit": true,
+					"incremental": true,
+					"resolveJsonModule": true,
+					"isolatedModules": true
+				}
+			}`,
+		}
+
+		// Set external dependencies for ES modules
+		if output.format == "esm" {
+			buildOptions.External = []string{"react", "react-dom", "react-dom/client", "supabase-kv", "react/jsx-runtime", "@connectrpc/connect", "@connectrpc/connect-web"}
+		}
+
+		// Add sourcemap option - use inline for simplicity
+		if sourcemap {
+			buildOptions.Sourcemap = api.SourceMapInline
+		}
+
+		// Add minify options
+		if minify {
+			buildOptions.MinifyWhitespace = true
+			buildOptions.MinifyIdentifiers = true
+			buildOptions.MinifySyntax = true
+		}
+
+		// Build
+		result := api.Build(buildOptions)
+
+		// Check for build errors
+		if len(result.Errors) > 0 {
+			fmt.Printf("Build failed for %s format:\n", output.format)
+			for _, err := range result.Errors {
+				location := "unknown"
+				if err.Location != nil {
+					location = fmt.Sprintf("%s:%d:%d", err.Location.File, err.Location.Line, err.Location.Column)
+				}
+				fmt.Printf("  %s: %s\n", location, err.Text)
+			}
+			return fmt.Errorf("compilation failed")
+		}
+
+		// Print warnings
+		for _, warning := range result.Warnings {
+			fmt.Printf("Warning: %s\n", warning.Text)
+		}
+
+		// Write output
+		if len(result.OutputFiles) == 0 {
+			return fmt.Errorf("no output generated for %s format", output.format)
+		}
+
+		compiledJS := result.OutputFiles[0].Contents
+		if err := os.WriteFile(output.filename, compiledJS, 0644); err != nil {
+			return fmt.Errorf("failed to write output file %s: %v", output.filename, err)
+		}
+
+		fmt.Printf("Successfully compiled to: %s\n", output.filename)
+		if sourcemap {
+			fmt.Printf("Sourcemap included inline\n")
+		}
+	}
+
+	fmt.Printf("Compilation completed successfully!\n")
+	return nil
 }
 
 func liveReload() error {

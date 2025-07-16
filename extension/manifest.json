@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "share",
   "version": "1.0",
-  "description": "Watches for changes to class attributes and sends them to localhost:8080/modify.",
+  "description": "Browser extension with MCP server integration for console monitoring, network analysis, and tab management.",
   "permissions": [
     "webRequest",
     "activeTab",

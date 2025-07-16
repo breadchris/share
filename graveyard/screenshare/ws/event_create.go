@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/breadchris/share/screenshare/config"
+	"github.com/breadchris/share/graveyard/screenshare/config"
 	"github.com/rs/xid"
 )
 

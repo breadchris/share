@@ -11,6 +11,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type GitService struct {
@@ -18,35 +19,62 @@ type GitService struct {
 }
 
 func NewGitService() *GitService {
-	baseWorkdir := filepath.Join(os.TempDir(), "vibe-kanban-worktrees")
-	os.MkdirAll(baseWorkdir, 0755)
+	// baseWorkdir := filepath.Join(os.TempDir(), "vibe-kanban-worktrees")
+	baseWorkdir := filepath.Join("./data", "vibe-kanban-worktrees")
+	
+	// Convert to absolute path to avoid issues with relative path resolution
+	absBaseWorkdir, err := filepath.Abs(baseWorkdir)
+	if err != nil {
+		fmt.Printf("Warning: Failed to get absolute path for baseWorkdir, using relative: %v\n", err)
+		absBaseWorkdir = baseWorkdir
+	}
+	
+	os.MkdirAll(absBaseWorkdir, 0755)
+	fmt.Printf("Debug: GitService baseWorkdir set to: %s\n", absBaseWorkdir)
+	
 	return &GitService{
-		baseWorkdir: baseWorkdir,
+		baseWorkdir: absBaseWorkdir,
 	}
 }
 
 // CreateWorktree creates a new git worktree for isolated task execution
-func (g *GitService) CreateWorktree(repoPath, baseBranch string) (string, string, error) {
-	// Generate unique worktree path and branch name
+func (g *GitService) CreateWorktree(repoPath, branchName, baseBranch string) (string, error) {
+	// Generate unique worktree path
 	worktreeID := uuid.NewString()
 	worktreePath := filepath.Join(g.baseWorkdir, worktreeID)
-	branchName := fmt.Sprintf("vibe-task-%s", worktreeID[:8])
+
+	fmt.Printf("Debug: CreateWorktree called with repoPath: %s, branchName: %s, baseBranch: %s\n", repoPath, branchName, baseBranch)
+	fmt.Printf("Debug: Generated worktreeID: %s\n", worktreeID)
+	fmt.Printf("Debug: Generated worktreePath: %s\n", worktreePath)
+
+	// Validate that worktreePath is absolute
+	if !filepath.IsAbs(worktreePath) {
+		return "", fmt.Errorf("worktreePath must be absolute, got: %s", worktreePath)
+	}
 
 	// Open the main repository (for validation)
 	_, err := git.PlainOpen(repoPath)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to open repository: %w", err)
+		return "", fmt.Errorf("failed to open repository: %w", err)
 	}
 
 	// Create worktree using git CLI for better compatibility
 	cmd := exec.Command("git", "worktree", "add", "-b", branchName, worktreePath, baseBranch)
 	cmd.Dir = repoPath
+	
+	fmt.Printf("Debug: Running git command from directory: %s\n", cmd.Dir)
+	fmt.Printf("Debug: Git command: git worktree add -b %s %s %s\n", branchName, worktreePath, baseBranch)
+	
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", "", fmt.Errorf("failed to create worktree: %s, error: %w", string(output), err)
+		fmt.Printf("Debug: Git worktree command failed. Output: %s\n", string(output))
+		return "", fmt.Errorf("failed to create worktree: %s, error: %w", string(output), err)
 	}
 
-	return worktreePath, branchName, nil
+	fmt.Printf("Debug: Git worktree command succeeded. Output: %s\n", string(output))
+	fmt.Printf("Debug: Created worktree at: %s\n", worktreePath)
+
+	return worktreePath, nil
 }
 
 // RemoveWorktree removes a git worktree
@@ -130,6 +158,18 @@ func (g *GitService) GetDiffFromBaseBranch(worktreePath, baseBranch string) (str
 	output, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("failed to get diff from base branch: %w", err)
+	}
+
+	return string(output), nil
+}
+
+// GetBranchDiff returns the diff between two branches in a repository
+func (g *GitService) GetBranchDiff(repoPath, baseBranch, targetBranch string) (string, error) {
+	cmd := exec.Command("git", "diff", fmt.Sprintf("%s..%s", baseBranch, targetBranch))
+	cmd.Dir = repoPath
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to get branch diff: %w", err)
 	}
 
 	return string(output), nil
@@ -327,6 +367,67 @@ func (g *GitService) CleanupOldWorktrees(maxAge time.Duration) error {
 		if info.ModTime().Before(cutoff) {
 			worktreePath := filepath.Join(g.baseWorkdir, entry.Name())
 			os.RemoveAll(worktreePath) // Best effort cleanup
+		}
+	}
+
+	return nil
+}
+
+// CleanupOrphanedWorktrees removes worktrees that exist on disk but are not referenced by any active attempts
+func (g *GitService) CleanupOrphanedWorktrees(db *gorm.DB) error {
+	// Read all worktree directories
+	entries, err := os.ReadDir(g.baseWorkdir)
+	if err != nil {
+		return fmt.Errorf("failed to read worktree directory: %w", err)
+	}
+
+	// Get all worktree paths from database for active attempts
+	var activeWorktreePaths []string
+	
+	if db != nil {
+		// Query to get all non-empty worktree paths from active attempts
+		result := db.Raw("SELECT DISTINCT worktree_path FROM vibe_task_attempts WHERE worktree_path IS NOT NULL AND worktree_path != '' AND status IN ('pending', 'running')").Scan(&activeWorktreePaths)
+		if result.Error != nil {
+			fmt.Printf("Debug: Failed to query active worktree paths: %v\n", result.Error)
+			// Continue with cleanup based on directory listing only
+		} else {
+			fmt.Printf("Debug: Found %d active worktree paths in database\n", len(activeWorktreePaths))
+		}
+	}
+
+	// Convert active paths to map for faster lookup
+	activePaths := make(map[string]bool)
+	for _, path := range activeWorktreePaths {
+		activePaths[path] = true
+	}
+
+	// Check each directory in baseWorkdir
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		worktreePath := filepath.Join(g.baseWorkdir, entry.Name())
+		
+		// Skip if this worktree is referenced by an active attempt
+		if activePaths[worktreePath] {
+			fmt.Printf("Debug: Keeping active worktree: %s\n", worktreePath)
+			continue
+		}
+
+		// Check if the directory looks like a valid worktree (has .git file)
+		gitFile := filepath.Join(worktreePath, ".git")
+		if _, err := os.Stat(gitFile); os.IsNotExist(err) {
+			fmt.Printf("Debug: Removing non-git directory: %s\n", worktreePath)
+			os.RemoveAll(worktreePath)
+			continue
+		}
+
+		// This appears to be an orphaned worktree - remove it
+		fmt.Printf("Debug: Removing orphaned worktree: %s\n", worktreePath)
+		if err := os.RemoveAll(worktreePath); err != nil {
+			fmt.Printf("Debug: Failed to remove orphaned worktree %s: %v\n", worktreePath, err)
+			// Continue with other worktrees
 		}
 	}
 

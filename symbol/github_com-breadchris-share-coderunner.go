@@ -10,6 +10,8 @@ import (
 func init() {
 	Symbols["github.com/breadchris/share/coderunner/coderunner"] = map[string]reflect.Value{
 		// function, constant and variable definitions
+		"BASE_BUILD_DIR":            reflect.ValueOf(&coderunner.BASE_BUILD_DIR).Elem(),
+		"BASE_SOURCE_DIR":           reflect.ValueOf(&coderunner.BASE_SOURCE_DIR).Elem(),
 		"BuildErrorPage":            reflect.ValueOf(coderunner.BuildErrorPage),
 		"CSSLinks":                  reflect.ValueOf(coderunner.CSSLinks),
 		"ComponentErrorStyles":      reflect.ValueOf(coderunner.ComponentErrorStyles),
@@ -19,6 +21,7 @@ func init() {
 		"ErrorDisplay":              reflect.ValueOf(coderunner.ErrorDisplay),
 		"LoadModule":                reflect.ValueOf(coderunner.LoadModule),
 		"New":                       reflect.ValueOf(coderunner.New),
+		"NewComponentSnapshotter":   reflect.ValueOf(coderunner.NewComponentSnapshotter),
 		"ReactComponentPage":        reflect.ValueOf(coderunner.ReactComponentPage),
 		"ReactComponentPageWithCSS": reflect.ValueOf(coderunner.ReactComponentPageWithCSS),
 		"ReactImportMap":            reflect.ValueOf(coderunner.ReactImportMap),
@@ -27,8 +30,9 @@ func init() {
 		"ServeReactAppWithProps":    reflect.ValueOf(coderunner.ServeReactAppWithProps),
 
 		// type definitions
-		"BuildCache":      reflect.ValueOf((*coderunner.BuildCache)(nil)),
-		"FileInfo":        reflect.ValueOf((*coderunner.FileInfo)(nil)),
-		"SaveFileRequest": reflect.ValueOf((*coderunner.SaveFileRequest)(nil)),
+		"BuildCache":           reflect.ValueOf((*coderunner.BuildCache)(nil)),
+		"ComponentSnapshotter": reflect.ValueOf((*coderunner.ComponentSnapshotter)(nil)),
+		"FileInfo":             reflect.ValueOf((*coderunner.FileInfo)(nil)),
+		"SaveFileRequest":      reflect.ValueOf((*coderunner.SaveFileRequest)(nil)),
 	}
 }

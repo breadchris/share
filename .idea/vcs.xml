@@ -2,11 +2,11 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/chromedp-mcp" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/claudemd" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/flow" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/gotty" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/hmr" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/item-collector" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/vibe-kanban" vcs="Git" />
   </component>
 </project>

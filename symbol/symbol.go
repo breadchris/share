@@ -35,6 +35,7 @@
 //go:generate yaegi extract github.com/google/go-github/v66/github
 //go:generate yaegi extract github.com/gorilla/sessions
 //go:generate yaegi extract github.com/markbates/goth/gothic
+//go:generate yaegi extract github.com/go-git/go-git/v5/plumbing
 //go:generate yaegi extract golang.org/x/oauth2
 //go:generate yaegi extract gorm.io/gorm
 //go:generate yaegi extract gorm.io/gorm/clause

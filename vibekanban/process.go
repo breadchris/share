@@ -43,17 +43,17 @@ type ManagedProcess struct {
 	Args      []string
 	WorkDir   string
 	Env       []string
-	
+
 	cmd       *exec.Cmd
 	cancelCtx context.CancelFunc
 	stdout    *ProcessOutput
 	stderr    *ProcessOutput
-	
-	Status    string    // pending, running, completed, failed, killed
+
+	Status    string // pending, running, completed, failed, killed
 	StartTime time.Time
 	EndTime   *time.Time
 	ExitCode  *int
-	
+
 	// For dev servers
 	Port int
 	URL  string
@@ -74,26 +74,26 @@ func NewProcessOutput() *ProcessOutput {
 func (po *ProcessOutput) Write(p []byte) (n int, err error) {
 	po.mu.Lock()
 	defer po.mu.Unlock()
-	
+
 	line := string(p)
 	po.buffer = append(po.buffer, line)
-	
+
 	// Keep only last 1000 lines to prevent memory issues
 	if len(po.buffer) > 1000 {
 		po.buffer = po.buffer[len(po.buffer)-1000:]
 	}
-	
+
 	if po.writer != nil {
 		return po.writer.Write(p)
 	}
-	
+
 	return len(p), nil
 }
 
 func (po *ProcessOutput) GetLines() []string {
 	po.mu.RLock()
 	defer po.mu.RUnlock()
-	
+
 	lines := make([]string, len(po.buffer))
 	copy(lines, po.buffer)
 	return lines
@@ -122,7 +122,7 @@ func (pm *ProcessManager) StartSetupScript(attemptID, script, workDir string) (*
 	}
 
 	processID := uuid.NewString()
-	
+
 	// Create database record
 	dbProcess := &models.VibeExecutionProcess{
 		Model: models.Model{
@@ -133,7 +133,7 @@ func (pm *ProcessManager) StartSetupScript(attemptID, script, workDir string) (*
 		Command:   script,
 		Status:    "pending",
 	}
-	
+
 	if err := pm.db.Create(dbProcess).Error; err != nil {
 		return nil, fmt.Errorf("failed to create process record: %w", err)
 	}
@@ -142,7 +142,7 @@ func (pm *ProcessManager) StartSetupScript(attemptID, script, workDir string) (*
 	managedProcess := &ManagedProcess{
 		ID:        processID,
 		AttemptID: attemptID,
-		Type:      "setupscript", 
+		Type:      "setupscript",
 		Command:   "/bin/bash",
 		Args:      []string{"-c", script},
 		WorkDir:   workDir,
@@ -164,11 +164,11 @@ func (pm *ProcessManager) StartSetupScript(attemptID, script, workDir string) (*
 // StartCodingAgent starts an AI coding agent
 func (pm *ProcessManager) StartCodingAgent(attemptID, executor, prompt, workDir string, env []string) (*models.VibeExecutionProcess, error) {
 	processID := uuid.NewString()
-	
+
 	// Build command based on executor type
 	var command string
 	var args []string
-	
+
 	switch executor {
 	case "claude":
 		command = "npx"
@@ -193,7 +193,7 @@ func (pm *ProcessManager) StartCodingAgent(attemptID, executor, prompt, workDir 
 		Command:   fmt.Sprintf("%s %v", command, args),
 		Status:    "pending",
 	}
-	
+
 	if err := pm.db.Create(dbProcess).Error; err != nil {
 		return nil, fmt.Errorf("failed to create process record: %w", err)
 	}
@@ -229,7 +229,7 @@ func (pm *ProcessManager) StartDevServer(attemptID, script, workDir string, port
 	}
 
 	processID := uuid.NewString()
-	
+
 	// Create database record
 	dbProcess := &models.VibeExecutionProcess{
 		Model: models.Model{
@@ -242,7 +242,7 @@ func (pm *ProcessManager) StartDevServer(attemptID, script, workDir string, port
 		Port:      port,
 		URL:       fmt.Sprintf("http://localhost:%d", port),
 	}
-	
+
 	if err := pm.db.Create(dbProcess).Error; err != nil {
 		return nil, fmt.Errorf("failed to create process record: %w", err)
 	}
@@ -281,11 +281,11 @@ func (pm *ProcessManager) runProcess(mp *ManagedProcess) {
 	cmd := exec.CommandContext(ctx, mp.Command, mp.Args...)
 	cmd.Dir = mp.WorkDir
 	cmd.Env = append(os.Environ(), mp.Env...)
-	
+
 	// Set up pipes
 	cmd.Stdout = mp.stdout
 	cmd.Stderr = mp.stderr
-	
+
 	mp.cmd = cmd
 	mp.Status = "running"
 	mp.StartTime = time.Now()
@@ -338,7 +338,7 @@ func (pm *ProcessManager) updateProcessInDB(mp *ManagedProcess) {
 	dbProcess.ExitCode = mp.ExitCode
 	dbProcess.StdOut = mp.stdout.GetOutput()
 	dbProcess.StdErr = mp.stderr.GetOutput()
-	
+
 	if mp.cmd != nil && mp.cmd.Process != nil {
 		dbProcess.ProcessID = mp.cmd.Process.Pid
 	}
@@ -350,7 +350,7 @@ func (pm *ProcessManager) updateProcessInDB(mp *ManagedProcess) {
 func (pm *ProcessManager) GetProcess(processID string) (*ManagedProcess, bool) {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
-	
+
 	process, exists := pm.processes[processID]
 	return process, exists
 }
@@ -359,7 +359,7 @@ func (pm *ProcessManager) GetProcess(processID string) (*ManagedProcess, bool) {
 func (pm *ProcessManager) KillProcess(processID string) error {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
-	
+
 	process, exists := pm.processes[processID]
 	if !exists {
 		return fmt.Errorf("process not found")
@@ -382,7 +382,51 @@ func (pm *ProcessManager) KillProcess(processID string) error {
 	process.EndTime = &now
 
 	pm.updateProcessInDB(process)
-	
+
+	return nil
+}
+
+// KillProcessesForAttempt terminates all running processes for a specific attempt
+func (pm *ProcessManager) KillProcessesForAttempt(attemptID string) error {
+	pm.mu.Lock()
+	defer pm.mu.Unlock()
+
+	var errors []string
+	killedCount := 0
+
+	for processID, process := range pm.processes {
+		if process.AttemptID == attemptID && process.Status == "running" {
+			fmt.Printf("Debug: Killing process %s for attempt %s\n", processID, attemptID)
+			
+			// Cancel context if exists
+			if process.cancelCtx != nil {
+				process.cancelCtx()
+			}
+
+			// Kill the process
+			if process.cmd != nil && process.cmd.Process != nil {
+				if err := process.cmd.Process.Kill(); err != nil {
+					errors = append(errors, fmt.Sprintf("failed to kill process %s: %v", processID, err))
+				}
+			}
+
+			// Update process status
+			process.Status = "killed"
+			now := time.Now()
+			process.EndTime = &now
+
+			// Update in database
+			pm.updateProcessInDB(process)
+			killedCount++
+		}
+	}
+
+	fmt.Printf("Debug: Killed %d processes for attempt %s\n", killedCount, attemptID)
+
+	if len(errors) > 0 {
+		return fmt.Errorf("some processes failed to kill: %s", strings.Join(errors, "; "))
+	}
+
 	return nil
 }
 
@@ -400,14 +444,14 @@ func (pm *ProcessManager) GetProcessOutput(processID string) (stdout, stderr str
 func (pm *ProcessManager) GetProcessesByAttempt(attemptID string) []*ManagedProcess {
 	pm.mu.RLock()
 	defer pm.mu.RUnlock()
-	
+
 	var processes []*ManagedProcess
 	for _, process := range pm.processes {
 		if process.AttemptID == attemptID {
 			processes = append(processes, process)
 		}
 	}
-	
+
 	return processes
 }
 
@@ -415,7 +459,7 @@ func (pm *ProcessManager) GetProcessesByAttempt(attemptID string) []*ManagedProc
 func (pm *ProcessManager) CleanupCompletedProcesses() {
 	pm.mu.Lock()
 	defer pm.mu.Unlock()
-	
+
 	for id, process := range pm.processes {
 		if process.Status == "completed" || process.Status == "failed" || process.Status == "killed" {
 			delete(pm.processes, id)
@@ -431,11 +475,11 @@ func (pm *ProcessManager) GetLiveOutput(processID string) (<-chan string, error)
 	}
 
 	outputChan := make(chan string, 100)
-	
+
 	// Create a custom writer that sends to the channel
 	writer := &channelWriter{ch: outputChan}
 	process.stdout.writer = writer
-	
+
 	// Send existing output
 	go func() {
 		lines := process.stdout.GetLines()
@@ -447,7 +491,7 @@ func (pm *ProcessManager) GetLiveOutput(processID string) (<-chan string, error)
 			}
 		}
 	}()
-	
+
 	return outputChan, nil
 }
 
@@ -506,9 +550,9 @@ func (pm *ProcessManager) ExecuteSetupWithDelegation(attemptID, taskID, projectI
 	delegationContext := DelegationContext{
 		DelegateTo: delegateTo,
 		OperationParams: map[string]interface{}{
-			"task_id":     taskID,
-			"project_id":  projectID,
-			"attempt_id":  attemptID,
+			"task_id":    taskID,
+			"project_id": projectID,
+			"attempt_id": attemptID,
 			"additional": operationParams,
 		},
 	}
@@ -522,6 +566,41 @@ func (pm *ProcessManager) ExecuteSetupWithDelegation(attemptID, taskID, projectI
 	return err
 }
 
+// ExecuteSetupWithDelegationAndWorktree executes setup script with delegation context and specific worktree path (avoids race condition)
+func (pm *ProcessManager) ExecuteSetupWithDelegationAndWorktree(attemptID, taskID, projectID, delegateTo string, operationParams map[string]interface{}, worktreePath string) error {
+	// Validate worktree path is provided
+	if worktreePath == "" {
+		return fmt.Errorf("worktree path is required for setup script execution")
+	}
+	
+	// Get project only (use provided worktree path)
+	var project models.VibeProject
+	if err := pm.db.First(&project, "id = ?", projectID).Error; err != nil {
+		return fmt.Errorf("project not found: %w", err)
+	}
+
+	fmt.Printf("Debug: ExecuteSetupWithDelegationAndWorktree - using provided worktree: %s\n", worktreePath)
+
+	// Create delegation context
+	delegationContext := DelegationContext{
+		DelegateTo: delegateTo,
+		OperationParams: map[string]interface{}{
+			"task_id":    taskID,
+			"project_id": projectID,
+			"attempt_id": attemptID,
+			"additional": operationParams,
+		},
+	}
+
+	// Start setup script with delegation context
+	if project.SetupScript == "" {
+		return fmt.Errorf("no setup script configured")
+	}
+
+	_, err := pm.StartSetupScriptWithDelegation(attemptID, project.SetupScript, worktreePath, delegationContext)
+	return err
+}
+
 // StartSetupScriptWithDelegation starts setup script with delegation context
 func (pm *ProcessManager) StartSetupScriptWithDelegation(attemptID, script, workDir string, delegation DelegationContext) (*models.VibeExecutionProcess, error) {
 	if script == "" {
@@ -529,7 +608,7 @@ func (pm *ProcessManager) StartSetupScriptWithDelegation(attemptID, script, work
 	}
 
 	processID := uuid.NewString()
-	
+
 	// Serialize delegation context
 	delegationJSON, err := json.Marshal(delegation)
 	if err != nil {
@@ -545,13 +624,13 @@ func (pm *ProcessManager) StartSetupScriptWithDelegation(attemptID, script, work
 		Type:      "setupscript",
 		Command:   script,
 		Status:    "pending",
-		Metadata:  &models.JSONField[map[string]interface{}]{
+		Metadata: &models.JSONField[map[string]interface{}]{
 			Data: map[string]interface{}{
 				"delegation_context": string(delegationJSON),
 			},
 		},
 	}
-	
+
 	if err := pm.db.Create(dbProcess).Error; err != nil {
 		return nil, fmt.Errorf("failed to create process record: %w", err)
 	}
@@ -560,7 +639,7 @@ func (pm *ProcessManager) StartSetupScriptWithDelegation(attemptID, script, work
 	managedProcess := &ManagedProcess{
 		ID:        processID,
 		AttemptID: attemptID,
-		Type:      "setupscript", 
+		Type:      "setupscript",
 		Command:   "/bin/bash",
 		Args:      []string{"-c", script},
 		WorkDir:   workDir,
@@ -625,17 +704,60 @@ func (pm *ProcessManager) ExecuteOperation(attemptID, taskID, projectID, operati
 
 // StartCodingAgentDirect starts a coding agent directly without setup check
 func (pm *ProcessManager) StartCodingAgentDirect(attemptID, taskID, projectID string) error {
+	fmt.Printf("Debug: Starting coding agent direct for attempt %s\n", attemptID)
 	// Get task attempt to determine executor and worktree
 	var attempt models.VibeTaskAttempt
 	if err := pm.db.First(&attempt, "id = ?", attemptID).Error; err != nil {
-		return fmt.Errorf("task attempt not found: %w", err)
+		return fmt.Errorf("task attempt not found (ID: %s): %w", attemptID, err)
 	}
+
+	fmt.Printf("Debug: Found attempt with executor: %s, worktree: %s\n", attempt.Executor, attempt.WorktreePath)
 
 	// Determine executor config
 	executorConfig := pm.ResolveExecutorConfig(&attempt.Executor)
+	fmt.Printf("Debug: Resolved executor config: %s\n", executorConfig.String())
 
 	// Start the coding agent process
-	return pm.StartProcessExecution(attemptID, taskID, CodingAgentType{ExecutorConfig: executorConfig}, "Starting executor", attempt.WorktreePath)
+	fmt.Printf("Debug: Starting process execution with CodingAgentType\n")
+	err := pm.StartProcessExecution(attemptID, taskID, CodingAgentType{ExecutorConfig: executorConfig}, "Starting executor", attempt.WorktreePath)
+	if err != nil {
+		fmt.Printf("Debug: Failed to start process execution: %v\n", err)
+		return err
+	}
+	fmt.Printf("Debug: Successfully started coding agent for attempt %s\n", attemptID)
+	return nil
+}
+
+// StartCodingAgentWithWorktree starts a coding agent with a specific worktree path (avoids race condition)
+func (pm *ProcessManager) StartCodingAgentWithWorktree(attemptID, taskID, projectID, worktreePath string) error {
+	fmt.Printf("Debug: Starting coding agent with worktree for attempt %s, worktree: %s\n", attemptID, worktreePath)
+	
+	// Validate worktree path is provided
+	if worktreePath == "" {
+		return fmt.Errorf("worktree path is required for coding agent execution")
+	}
+	
+	// Get task attempt to determine executor (but use provided worktree path)
+	var attempt models.VibeTaskAttempt
+	if err := pm.db.First(&attempt, "id = ?", attemptID).Error; err != nil {
+		return fmt.Errorf("task attempt not found (ID: %s): %w", attemptID, err)
+	}
+
+	fmt.Printf("Debug: Found attempt with executor: %s, using provided worktree: %s\n", attempt.Executor, worktreePath)
+
+	// Determine executor config
+	executorConfig := pm.ResolveExecutorConfig(&attempt.Executor)
+	fmt.Printf("Debug: Resolved executor config: %s\n", executorConfig.String())
+
+	// Start the coding agent process with provided worktree path
+	fmt.Printf("Debug: Starting process execution with CodingAgentType and worktree: %s\n", worktreePath)
+	err := pm.StartProcessExecution(attemptID, taskID, CodingAgentType{ExecutorConfig: executorConfig}, "Starting executor", worktreePath)
+	if err != nil {
+		fmt.Printf("Debug: Failed to start process execution: %v\n", err)
+		return err
+	}
+	fmt.Printf("Debug: Successfully started coding agent for attempt %s\n", attemptID)
+	return nil
 }
 
 // StartDevServerDirect starts a dev server directly without setup check
@@ -702,29 +824,40 @@ func (pm *ProcessManager) StartFollowupExecutionDirect(attemptID, taskID, projec
 // StartProcessExecution starts a process execution with the new executor interface
 func (pm *ProcessManager) StartProcessExecution(attemptID, taskID string, executorType ExecutorType, activityNote, worktreePath string) error {
 	processID := uuid.NewString()
+	fmt.Printf("Debug: StartProcessExecution - processID: %s, attemptID: %s, taskID: %s\n", processID, attemptID, taskID)
+	fmt.Printf("Debug: ExecutorType: %T, Config: %s, WorktreePath: %s\n", executorType, executorType.Config().String(), worktreePath)
 
 	// Create execution process record
+	fmt.Printf("Debug: Creating execution process record\n")
 	_, err := pm.CreateExecutionProcessRecord(attemptID, processID, executorType, worktreePath)
 	if err != nil {
 		return fmt.Errorf("failed to create process record: %w", err)
 	}
+	fmt.Printf("Debug: Successfully created execution process record\n")
 
 	// Create executor session for coding agents
 	if !executorType.IsFollowup() {
 		if _, ok := executorType.(CodingAgentType); ok {
+			fmt.Printf("Debug: Creating executor session record for coding agent\n")
 			if err := pm.CreateExecutorSessionRecord(attemptID, taskID, processID); err != nil {
 				return fmt.Errorf("failed to create session record: %w", err)
 			}
+			fmt.Printf("Debug: Successfully created executor session record\n")
 		}
 	}
 
 	// Create and start the executor
+	fmt.Printf("Debug: Creating executor from type\n")
 	executor := pm.CreateExecutorFromType(executorType)
+	fmt.Printf("Debug: Created executor: %T\n", executor)
 	ctx := context.Background()
+	fmt.Printf("Debug: Spawning executor with taskID: %s, worktreePath: %s\n", taskID, worktreePath)
 	cmd, err := executor.Spawn(ctx, uuid.MustParse(taskID), worktreePath)
 	if err != nil {
+		fmt.Printf("Debug: Failed to spawn executor: %v\n", err)
 		return fmt.Errorf("failed to spawn executor: %w", err)
 	}
+	fmt.Printf("Debug: Successfully spawned executor, cmd: %v\n", cmd.String())
 
 	// Create managed process for monitoring
 	managedProcess := &ManagedProcess{
@@ -757,9 +890,12 @@ func (pm *ProcessManager) StartProcessExecution(attemptID, taskID string, execut
 
 // monitorExecutorProcess monitors an executor process and handles session extraction
 func (pm *ProcessManager) monitorExecutorProcess(mp *ManagedProcess, executor Executor) {
+	fmt.Printf("Debug: monitorExecutorProcess started for process %s (attempt %s)\n", mp.ID, mp.AttemptID)
 	// Start the command
+	fmt.Printf("Debug: Starting process command: %s %v\n", mp.cmd.Path, mp.cmd.Args)
 	err := mp.cmd.Start()
 	if err != nil {
+		fmt.Printf("Debug: Failed to start process %s: %v\n", mp.ID, err)
 		mp.Status = "failed"
 		now := time.Now()
 		mp.EndTime = &now
@@ -767,31 +903,59 @@ func (pm *ProcessManager) monitorExecutorProcess(mp *ManagedProcess, executor Ex
 		return
 	}
 
+	fmt.Printf("Debug: Process %s started successfully, PID: %d\n", mp.ID, mp.cmd.Process.Pid)
+
+	fmt.Printf("Debug: Process %s started successfully, PID: %d\n", mp.ID, mp.cmd.Process.Pid)
+
 	// Wait for completion
+	fmt.Printf("Debug: Waiting for process %s to complete...\n", mp.ID)
 	err = mp.cmd.Wait()
 	now := time.Now()
 	mp.EndTime = &now
+
+	fmt.Printf("Debug: Process %s completed with error: %v\n", mp.ID, err)
 
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if status, ok := exitError.Sys().(syscall.WaitStatus); ok {
 				exitCode := status.ExitStatus()
 				mp.ExitCode = &exitCode
+				fmt.Printf("Debug: Process %s failed with exit code: %d\n", mp.ID, exitCode)
 			}
 		}
 		mp.Status = "failed"
+		fmt.Printf("Debug: Process %s marked as failed\n", mp.ID)
 	} else {
 		exitCode := 0
 		mp.ExitCode = &exitCode
 		mp.Status = "completed"
+		fmt.Printf("Debug: Process %s completed successfully\n", mp.ID)
+	}
+
+	// Get output for debugging
+	stdout := mp.stdout.GetOutput()
+	stderr := mp.stderr.GetOutput()
+	fmt.Printf("Debug: Process %s stdout length: %d, stderr length: %d\n", mp.ID, len(stdout), len(stderr))
+	if len(stderr) > 0 {
+		fmt.Printf("Debug: Process %s stderr: %s\n", mp.ID, stderr)
+	}
+	if len(stdout) > 0 && len(stdout) < 1000 {
+		fmt.Printf("Debug: Process %s stdout: %s\n", mp.ID, stdout)
 	}
 
 	// Extract normalized conversation and session if this is a coding agent
 	if strings.Contains(mp.Type, "coding") || mp.Type == "claude" {
+		fmt.Printf("Debug: Extracting session from logs for process %s\n", mp.ID)
 		go pm.extractSessionFromLogs(mp, executor)
 	}
 
+	fmt.Printf("Debug: Updating process %s in database\n", mp.ID)
 	pm.updateProcessInDB(mp)
+
+	// Update task attempt status based on process completion
+	pm.updateTaskAttemptStatus(mp)
+
+	fmt.Printf("Debug: monitorExecutorProcess completed for process %s\n", mp.ID)
 }
 
 // extractSessionFromLogs extracts session information from executor logs
@@ -952,4 +1116,81 @@ func (pm *ProcessManager) CreateExecutorSessionRecord(attemptID, taskID, process
 	}
 
 	return pm.db.Create(session).Error
+}
+
+// updateTaskAttemptStatus updates the task attempt status based on process completion
+func (pm *ProcessManager) updateTaskAttemptStatus(mp *ManagedProcess) {
+	fmt.Printf("Debug: Updating task attempt status for attempt %s based on process %s status: %s\n", mp.AttemptID, mp.ID, mp.Status)
+	// Get current attempt
+	var attempt models.VibeTaskAttempt
+	if err := pm.db.First(&attempt, "id = ?", mp.AttemptID).Error; err != nil {
+		fmt.Printf("Debug: Failed to find attempt %s: %v\n", mp.AttemptID, err)
+		return
+	}
+	// Only update if this is a coding agent process (main execution)
+	if !strings.Contains(mp.Type, "coding") && mp.Type != "claude" {
+		fmt.Printf("Debug: Skipping attempt status update for non-coding process type: %s\n", mp.Type)
+		return
+	}
+
+	var newStatus string
+	var endTime *time.Time
+	now := time.Now()
+
+	switch mp.Status {
+	case "completed":
+		newStatus = "completed"
+		endTime = &now
+		fmt.Printf("Debug: Setting attempt %s to completed\n", mp.AttemptID)
+	case "failed":
+		newStatus = "failed"
+		endTime = &now
+		fmt.Printf("Debug: Setting attempt %s to failed\n", mp.AttemptID)
+	default:
+		fmt.Printf("Debug: No status update needed for process status: %s\n", mp.Status)
+		return
+	}
+	// Update attempt status
+	updates := map[string]interface{}{
+		"status":     newStatus,
+		"updated_at": now,
+	}
+	if endTime != nil {
+		updates["end_time"] = endTime
+	}
+	if err := pm.db.Model(&models.VibeTaskAttempt{}).Where("id = ?", mp.AttemptID).Updates(updates).Error; err != nil {
+		fmt.Printf("Debug: Failed to update attempt status: %v\n", err)
+		return
+	}
+	fmt.Printf("Debug: Successfully updated attempt %s status to %s\n", mp.AttemptID, newStatus)
+}
+
+// StartExecution starts the execution flow for a task attempt (main entry point)
+func (pm *ProcessManager) StartExecution(attemptID, taskID, projectID, executor, worktreePath string) error {
+	fmt.Printf("Debug: Starting execution for attempt %s, task %s, project %s\n", attemptID, taskID, projectID)
+	// Get project to check if setup script exists
+	var project models.VibeProject
+	if err := pm.db.First(&project, "id = ?", projectID).Error; err != nil {
+		return fmt.Errorf("project not found (ID: %s): %w", projectID, err)
+	}
+	fmt.Printf("Debug: Found project %s with setup script: %t\n", project.Name, project.SetupScript != "")
+
+	// Check if setup is needed
+	needsSetup := pm.ShouldRunSetupScript(&project)
+	setupCompleted, err := pm.IsSetupCompleted(attemptID)
+	if err != nil {
+		return fmt.Errorf("failed to check setup status for attempt %s: %w", attemptID, err)
+	}
+
+	fmt.Printf("Debug: Setup needed: %t, Setup completed: %t\n", needsSetup, setupCompleted)
+
+	if needsSetup && !setupCompleted {
+		// Start setup script, then continue with coding agent
+		fmt.Printf("Debug: Starting setup script with delegation to coding_agent, worktree: %s\n", worktreePath)
+		return pm.ExecuteSetupWithDelegationAndWorktree(attemptID, taskID, projectID, "coding_agent", nil, worktreePath)
+	} else {
+		// Start coding agent directly with provided worktree path
+		fmt.Printf("Debug: Starting coding agent directly with worktree: %s\n", worktreePath)
+		return pm.StartCodingAgentWithWorktree(attemptID, taskID, projectID, worktreePath)
+	}
 }

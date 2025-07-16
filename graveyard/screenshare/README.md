@@ -9,19 +9,19 @@
 <p align="center"><i>screen sharing for developers</i></p>
 
 <p align="center">
-    <a href="https://github.com/breadchris/share/screenshare/actions?query=workflow%3Abuild">
-        <img alt="Build Status" src="https://github.com/breadchris/share/screenshare/workflows/build/badge.svg">
+    <a href="https://github.com/breadchris/share/graveyard/screenshare/actions?query=workflow%3Abuild">
+        <img alt="Build Status" src="https://github.com/breadchris/share/graveyard/screenshare/workflows/build/badge.svg">
     </a> 
-    <a href="https://github.com/breadchris/share/screenshare/pkgs/container/server">
+    <a href="https://github.com/breadchris/share/graveyard/screenshare/pkgs/container/server">
         <img alt="Build Status" src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fipitio%2Fghcr-pulls%2Fmaster%2Findex.json&query=%24%5B%3F(%40.owner%3D%3D%22screego%22%20%26%26%20%40.repo%3D%3D%22server%22%20%26%26%20%40.image%3D%3D%22server%22)%5D.pulls&logo=github&label=pulls">
     </a> 
-    <a href="https://goreportcard.com/report/github.com/breadchris/share/screenshare">
-        <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/breadchris/share/screenshare">
+    <a href="https://goreportcard.com/report/github.com/breadchris/share/graveyard/screenshare">
+        <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/breadchris/share/graveyard/screenshare">
     </a>
     <a href="https://hub.docker.com/r/screego/server">
         <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/screego/server.svg">
     </a>
-    <a href="https://github.com/breadchris/share/screenshare/releases/latest">
+    <a href="https://github.com/breadchris/share/graveyard/screenshare/releases/latest">
         <img alt="latest release" src="https://img.shields.io/github/release/screego/server.svg">
     </a>
 </p>
@@ -50,4 +50,4 @@ only helps to share your screen. Nothing else (:.
 ## Versioning
 
 We use [SemVer](http://semver.org/) for versioning. For the versions available, see the
-[tags on this repository](https://github.com/breadchris/share/screenshare/tags).
+[tags on this repository](https://github.com/breadchris/share/graveyard/screenshare/tags).

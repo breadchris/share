@@ -21,6 +21,33 @@ async function loadBrowserMCPPort() {
     }
 }
 
+// Load reconnection settings from storage
+async function loadReconnectionSettings() {
+    try {
+        const result = await chrome.storage.sync.get([
+            'autoReconnect',
+            'maxReconnectAttempts', 
+            'reconnectDelay'
+        ]);
+        
+        autoReconnectEnabled = result.autoReconnect !== undefined ? result.autoReconnect : true;
+        maxReconnectAttempts = result.maxReconnectAttempts || 5;
+        reconnectDelay = result.reconnectDelay || 1000;
+        
+        console.log('Loaded reconnection settings:', {
+            autoReconnectEnabled,
+            maxReconnectAttempts,
+            reconnectDelay
+        });
+    } catch (error) {
+        console.error('Error loading reconnection settings:', error);
+        // Use defaults
+        autoReconnectEnabled = true;
+        maxReconnectAttempts = 5;
+        reconnectDelay = 1000;
+    }
+}
+
 // Load server URL and API domain from storage on startup
 async function loadServerUrl() {
     try {
@@ -36,9 +63,10 @@ async function loadServerUrl() {
     }
 }
 
-// Initialize server URL and BrowserMCP port
+// Initialize server URL, BrowserMCP port, and reconnection settings
 loadServerUrl();
 loadBrowserMCPPort();
+loadReconnectionSettings();
 
 chrome.runtime.onInstalled.addListener(() => {
     // Set default server URL and API domain if not already set
@@ -59,6 +87,23 @@ chrome.runtime.onInstalled.addListener(() => {
     chrome.storage.sync.get(['browsermcpPort'], (result) => {
         if (!result.browsermcpPort) {
             chrome.storage.sync.set({ browsermcpPort: 8765 });
+        }
+    });
+
+    // Set default reconnection settings if not already set
+    chrome.storage.sync.get(['autoReconnect', 'maxReconnectAttempts', 'reconnectDelay'], (result) => {
+        const updates = {};
+        if (result.autoReconnect === undefined) {
+            updates.autoReconnect = true;
+        }
+        if (!result.maxReconnectAttempts) {
+            updates.maxReconnectAttempts = 5;
+        }
+        if (!result.reconnectDelay) {
+            updates.reconnectDelay = 1000;
+        }
+        if (Object.keys(updates).length > 0) {
+            chrome.storage.sync.set(updates);
         }
     });
 
@@ -130,6 +175,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // Handle settings update
     if (message.action === 'settingsUpdated') {
         loadServerUrl();
+        loadReconnectionSettings();
         return;
     }
     
@@ -147,8 +193,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'getConnectionStatus') {
         sendResponse({
             status: connectionState,
-            stats: getConnectionStats()
+            stats: getConnectionStats(),
+            reconnectInfo: {
+                attempts: reconnectAttempts,
+                maxAttempts: maxReconnectAttempts,
+                isReconnecting: isReconnecting,
+                autoReconnectEnabled: autoReconnectEnabled
+            }
         });
+        return;
+    }
+    
+    if (message.action === 'stopReconnection') {
+        sendResponse(stopReconnection());
         return;
     }
     
@@ -231,6 +288,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             });
         })(message.data);
     }
+    
+    // Handle console log messages from content scripts
+    if (message.action === 'console_log') {
+        const logEntry = {
+            ...message.log,
+            tab_id: sender.tab ? sender.tab.id : null,
+            id: `log_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        };
+        
+        // Add to console logs storage
+        consoleLogs.push(logEntry);
+        
+        // Trim logs if exceeding maximum
+        if (consoleLogs.length > maxLogEntries) {
+            consoleLogs = consoleLogs.slice(-maxLogEntries);
+        }
+        
+        return;
+    }
+    
     return true;
 });
 
@@ -331,10 +408,13 @@ async function connectToBrowserMCP() {
     }
 
     try {
-        mcpConnection = new WebSocket(`ws://localhost:${BROWSERMCP_WS_PORT}`);
+        // Connect to our extension-mcp server instead of the chromedp-mcp server
+        const mcpUrl = `${API_DOMAIN.replace('http', 'ws')}/extension-mcp/extension-ws`;
+        console.log('Connecting to Extension MCP server:', mcpUrl);
+        mcpConnection = new WebSocket(mcpUrl);
         
         mcpConnection.onopen = () => {
-            console.log('Connected to BrowserMCP server');
+            console.log('Connected to Extension MCP server');
             // Send initialization message
             mcpConnection.send(JSON.stringify({
                 type: 'extension_connected',
@@ -437,35 +517,392 @@ async function connectCurrentTab() {
 }
 
 function handleMCPMessage(message) {
-    switch (message.type) {
-        case 'execute_script':
-            if (message.tabId && connectedTabs.has(message.tabId)) {
-                chrome.scripting.executeScript({
-                    target: { tabId: message.tabId },
-                    func: executeRemoteScript,
-                    args: [message.script]
-                });
+    console.log('Handling MCP message:', message);
+    
+    if (message.type === 'request') {
+        // Handle MCP tool requests
+        handleMCPToolRequest(message);
+    } else if (message.type === 'notification') {
+        // Handle notifications from MCP server
+        console.log('MCP notification:', message.notification_type, message.data);
+    } else {
+        // Legacy message types for backward compatibility
+        switch (message.type) {
+            case 'execute_script':
+                if (message.tabId && connectedTabs.has(message.tabId)) {
+                    chrome.scripting.executeScript({
+                        target: { tabId: message.tabId },
+                        func: executeRemoteScript,
+                        args: [message.script]
+                    });
+                }
+                break;
+            case 'get_page_content':
+                if (message.tabId && connectedTabs.has(message.tabId)) {
+                    chrome.scripting.executeScript({
+                        target: { tabId: message.tabId },
+                        func: getPageContent
+                    }).then(results => {
+                        if (mcpConnection && mcpConnection.readyState === WebSocket.OPEN) {
+                            mcpConnection.send(JSON.stringify({
+                                type: 'page_content_response',
+                                tabId: message.tabId,
+                                content: results[0]?.result || null,
+                                requestId: message.requestId
+                            }));
+                        }
+                    });
+                }
+                break;
+            default:
+                console.log('Unknown MCP message type:', message.type);
+        }
+    }
+}
+
+// Handle MCP tool requests
+async function handleMCPToolRequest(message) {
+    const { action, request_id } = message;
+    
+    try {
+        let response = { success: false };
+        
+        switch (action) {
+            case 'get_console_logs':
+                response = await handleGetConsoleLogs(message);
+                break;
+            case 'clear_console_logs':
+                response = await handleClearConsoleLogs(message);
+                break;
+            case 'get_network_requests':
+                response = await handleGetNetworkRequests(message);
+                break;
+            case 'get_request_details':
+                response = await handleGetRequestDetails(message);
+                break;
+            case 'list_tabs':
+                response = await handleListTabs(message);
+                break;
+            case 'connect_tab':
+                response = await handleConnectTab(message);
+                break;
+            case 'get_tab_info':
+                response = await handleGetTabInfo(message);
+                break;
+            default:
+                response = {
+                    success: false,
+                    error: `Unknown action: ${action}`
+                };
+        }
+        
+        // Send response back to MCP server
+        if (mcpConnection && mcpConnection.readyState === WebSocket.OPEN) {
+            mcpConnection.send(JSON.stringify({
+                type: 'response',
+                request_id: request_id,
+                ...response
+            }));
+        }
+        
+    } catch (error) {
+        console.error('Error handling MCP tool request:', error);
+        
+        // Send error response
+        if (mcpConnection && mcpConnection.readyState === WebSocket.OPEN) {
+            mcpConnection.send(JSON.stringify({
+                type: 'response',
+                request_id: request_id,
+                success: false,
+                error: error.message
+            }));
+        }
+    }
+}
+
+// Console log storage
+let consoleLogs = [];
+let maxLogEntries = 1000;
+
+// Network request storage  
+let networkRequests = [];
+let maxNetworkEntries = 500;
+
+// MCP Tool Handlers
+async function handleGetConsoleLogs(message) {
+    const { tab_id, level_filter, since, limit = 100 } = message;
+    
+    let filteredLogs = consoleLogs;
+    
+    // Filter by tab if specified
+    if (tab_id) {
+        filteredLogs = filteredLogs.filter(log => log.tab_id === parseInt(tab_id));
+    }
+    
+    // Filter by level if specified
+    if (level_filter) {
+        filteredLogs = filteredLogs.filter(log => log.level === level_filter);
+    }
+    
+    // Filter by timestamp if specified
+    if (since) {
+        const sinceTime = parseInt(since) * 1000; // Convert to milliseconds
+        filteredLogs = filteredLogs.filter(log => log.timestamp >= sinceTime);
+    }
+    
+    // Limit results
+    filteredLogs = filteredLogs.slice(-limit);
+    
+    return {
+        success: true,
+        logs: filteredLogs
+    };
+}
+
+async function handleClearConsoleLogs(message) {
+    const { tab_id } = message;
+    
+    if (tab_id) {
+        // Clear logs for specific tab
+        consoleLogs = consoleLogs.filter(log => log.tab_id !== parseInt(tab_id));
+    } else {
+        // Clear all logs
+        consoleLogs = [];
+    }
+    
+    return {
+        success: true,
+        cleared_count: consoleLogs.length
+    };
+}
+
+async function handleGetNetworkRequests(message) {
+    const { tab_id, url_filter, method_filter, status_filter, limit = 50 } = message;
+    
+    let filteredRequests = networkRequests;
+    
+    // Filter by tab if specified
+    if (tab_id) {
+        filteredRequests = filteredRequests.filter(req => req.tab_id === parseInt(tab_id));
+    }
+    
+    // Filter by URL pattern if specified
+    if (url_filter) {
+        const pattern = url_filter.replace(/\*/g, '.*');
+        const regex = new RegExp(pattern, 'i');
+        filteredRequests = filteredRequests.filter(req => regex.test(req.url));
+    }
+    
+    // Filter by method if specified
+    if (method_filter) {
+        filteredRequests = filteredRequests.filter(req => req.method.toUpperCase() === method_filter.toUpperCase());
+    }
+    
+    // Filter by status if specified
+    if (status_filter) {
+        if (status_filter.endsWith('xx')) {
+            const statusPrefix = status_filter.charAt(0);
+            filteredRequests = filteredRequests.filter(req => 
+                req.status && req.status.toString().startsWith(statusPrefix)
+            );
+        } else {
+            filteredRequests = filteredRequests.filter(req => 
+                req.status === parseInt(status_filter)
+            );
+        }
+    }
+    
+    // Limit results
+    filteredRequests = filteredRequests.slice(-limit);
+    
+    return {
+        success: true,
+        requests: filteredRequests
+    };
+}
+
+async function handleGetRequestDetails(message) {
+    const { request_id } = message;
+    
+    const request = networkRequests.find(req => req.id === request_id);
+    
+    if (!request) {
+        return {
+            success: false,
+            error: 'Request not found'
+        };
+    }
+    
+    return {
+        success: true,
+        request: request
+    };
+}
+
+async function handleListTabs(message) {
+    const { active_only, url_filter, title_filter, include_incognito = true } = message;
+    
+    try {
+        let queryOptions = {};
+        
+        if (active_only) {
+            queryOptions.active = true;
+            queryOptions.currentWindow = true;
+        }
+        
+        const tabs = await chrome.tabs.query(queryOptions);
+        
+        let filteredTabs = tabs;
+        
+        // Filter by URL pattern if specified
+        if (url_filter) {
+            const pattern = url_filter.replace(/\*/g, '.*');
+            const regex = new RegExp(pattern, 'i');
+            filteredTabs = filteredTabs.filter(tab => regex.test(tab.url));
+        }
+        
+        // Filter by title pattern if specified
+        if (title_filter) {
+            const pattern = title_filter.replace(/\*/g, '.*');
+            const regex = new RegExp(pattern, 'i');
+            filteredTabs = filteredTabs.filter(tab => regex.test(tab.title));
+        }
+        
+        // Filter incognito tabs if specified
+        if (!include_incognito) {
+            filteredTabs = filteredTabs.filter(tab => !tab.incognito);
+        }
+        
+        // Format tab information
+        const formattedTabs = filteredTabs.map(tab => ({
+            id: tab.id,
+            url: tab.url,
+            title: tab.title,
+            active: tab.active,
+            window_id: tab.windowId,
+            index: tab.index,
+            status: tab.status,
+            favicon_url: tab.favIconUrl,
+            incognito: tab.incognito,
+            highlighted: tab.highlighted,
+            selected: tab.selected,
+            pinned: tab.pinned,
+            audible: tab.audible,
+            muted: tab.mutedInfo?.muted || false,
+            last_accessed: tab.lastAccessed
+        }));
+        
+        return {
+            success: true,
+            tabs: formattedTabs
+        };
+        
+    } catch (error) {
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
+async function handleConnectTab(message) {
+    const { tab_id } = message;
+    
+    try {
+        const tabId = parseInt(tab_id);
+        const tab = await chrome.tabs.get(tabId);
+        
+        if (!tab) {
+            return {
+                success: false,
+                error: 'Tab not found'
+            };
+        }
+        
+        // Add tab to connected tabs
+        connectedTabs.add(tabId);
+        
+        // Inject content script for console monitoring
+        try {
+            await chrome.scripting.executeScript({
+                target: { tabId: tabId },
+                func: initializeConsoleMonitoring
+            });
+        } catch (error) {
+            console.log('Console monitoring script injection failed:', error);
+        }
+        
+        return {
+            success: true,
+            tab: {
+                id: tab.id,
+                url: tab.url,
+                title: tab.title
             }
-            break;
-        case 'get_page_content':
-            if (message.tabId && connectedTabs.has(message.tabId)) {
-                chrome.scripting.executeScript({
-                    target: { tabId: message.tabId },
-                    func: getPageContent
-                }).then(results => {
-                    if (mcpConnection && mcpConnection.readyState === WebSocket.OPEN) {
-                        mcpConnection.send(JSON.stringify({
-                            type: 'page_content_response',
-                            tabId: message.tabId,
-                            content: results[0]?.result || null,
-                            requestId: message.requestId
-                        }));
-                    }
-                });
+        };
+        
+    } catch (error) {
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
+async function handleGetTabInfo(message) {
+    const { tab_id, include_console_count, include_network_count } = message;
+    
+    try {
+        const tabId = parseInt(tab_id);
+        const tab = await chrome.tabs.get(tabId);
+        
+        if (!tab) {
+            return {
+                success: false,
+                error: 'Tab not found'
+            };
+        }
+        
+        const response = {
+            success: true,
+            tab: {
+                id: tab.id,
+                url: tab.url,
+                title: tab.title,
+                active: tab.active,
+                window_id: tab.windowId,
+                index: tab.index,
+                status: tab.status,
+                favicon_url: tab.favIconUrl,
+                incognito: tab.incognito,
+                highlighted: tab.highlighted,
+                selected: tab.selected,
+                pinned: tab.pinned,
+                audible: tab.audible,
+                muted: tab.mutedInfo?.muted || false,
+                last_accessed: tab.lastAccessed
             }
-            break;
-        default:
-            console.log('Unknown MCP message type:', message.type);
+        };
+        
+        // Add console count if requested
+        if (include_console_count) {
+            const consoleCount = consoleLogs.filter(log => log.tab_id === tabId).length;
+            response.console_count = consoleCount;
+        }
+        
+        // Add network count if requested
+        if (include_network_count) {
+            const networkCount = networkRequests.filter(req => req.tab_id === tabId).length;
+            response.network_count = networkCount;
+        }
+        
+        return response;
+        
+    } catch (error) {
+        return {
+            success: false,
+            error: error.message
+        };
     }
 }
 
@@ -473,6 +910,108 @@ function handleMCPMessage(message) {
 function initializeMCPConnection() {
     console.log('BrowserMCP content script initialized');
     // Add any tab-specific initialization here
+}
+
+// Console monitoring injection function
+function initializeConsoleMonitoring() {
+    if (window.mcpConsoleMonitoringEnabled) {
+        return; // Already initialized
+    }
+    
+    window.mcpConsoleMonitoringEnabled = true;
+    
+    // Store original console methods
+    const originalConsole = {
+        log: console.log.bind(console),
+        warn: console.warn.bind(console),
+        error: console.error.bind(console),
+        info: console.info.bind(console),
+        debug: console.debug.bind(console)
+    };
+    
+    // Override console methods to capture logs
+    function captureConsoleMessage(level, args) {
+        // Call original console method
+        originalConsole[level](...args);
+        
+        // Create log entry
+        const logEntry = {
+            level: level,
+            message: args.map(arg => {
+                if (typeof arg === 'object') {
+                    try {
+                        return JSON.stringify(arg, null, 2);
+                    } catch (e) {
+                        return String(arg);
+                    }
+                } else {
+                    return String(arg);
+                }
+            }).join(' '),
+            timestamp: Date.now(),
+            url: window.location.href,
+            stack: (new Error()).stack
+        };
+        
+        // Send to background script
+        try {
+            chrome.runtime.sendMessage({
+                action: 'console_log',
+                log: logEntry
+            });
+        } catch (error) {
+            // Ignore errors if extension context is unavailable
+        }
+    }
+    
+    // Override console methods
+    console.log = (...args) => captureConsoleMessage('log', args);
+    console.warn = (...args) => captureConsoleMessage('warn', args);
+    console.error = (...args) => captureConsoleMessage('error', args);
+    console.info = (...args) => captureConsoleMessage('info', args);
+    console.debug = (...args) => captureConsoleMessage('debug', args);
+    
+    // Capture uncaught errors
+    window.addEventListener('error', (event) => {
+        const logEntry = {
+            level: 'error',
+            message: `Uncaught Error: ${event.message}`,
+            timestamp: Date.now(),
+            url: event.filename || window.location.href,
+            line: event.lineno,
+            column: event.colno,
+            stack: event.error ? event.error.stack : ''
+        };
+        
+        try {
+            chrome.runtime.sendMessage({
+                action: 'console_log',
+                log: logEntry
+            });
+        } catch (error) {
+            // Ignore errors if extension context is unavailable
+        }
+    });
+    
+    // Capture unhandled promise rejections
+    window.addEventListener('unhandledrejection', (event) => {
+        const logEntry = {
+            level: 'error',
+            message: `Unhandled Promise Rejection: ${event.reason}`,
+            timestamp: Date.now(),
+            url: window.location.href,
+            stack: event.reason && event.reason.stack ? event.reason.stack : ''
+        };
+        
+        try {
+            chrome.runtime.sendMessage({
+                action: 'console_log',
+                log: logEntry
+            });
+        } catch (error) {
+            // Ignore errors if extension context is unavailable
+        }
+    });
 }
 
 function executeRemoteScript(script) {
@@ -656,10 +1195,13 @@ function isValidProxyRequest(url) {
 
 // WebSocket connection for real-time communication
 let wsConnection = null;
-let connectionState = 'disconnected'; // 'disconnected', 'connecting', 'connected'
+let connectionState = 'disconnected'; // 'disconnected', 'connecting', 'connected', 'reconnecting'
 let reconnectAttempts = 0;
 let maxReconnectAttempts = 5;
 let reconnectDelay = 1000; // Start with 1 second
+let autoReconnectEnabled = true; // Default to enabled
+let isReconnecting = false;
+let reconnectTimeoutId = null;
 let connectionStats = {
     requestCount: 0,
     connectionTime: null,
@@ -712,9 +1254,13 @@ async function connectWebSocket() {
             wsConnection = null;
             notifyConnectionStatusChanged();
             
-            // Attempt reconnection if it wasn't a manual disconnect
-            if (event.code !== 1000 && reconnectAttempts < maxReconnectAttempts) {
+            // Attempt reconnection if it wasn't a manual disconnect and auto-reconnect is enabled
+            if (event.code !== 1000 && autoReconnectEnabled && reconnectAttempts < maxReconnectAttempts) {
                 scheduleReconnect();
+            } else {
+                // Reset reconnection state if not reconnecting
+                isReconnecting = false;
+                reconnectAttempts = 0;
             }
         };
         
@@ -735,6 +1281,9 @@ async function connectWebSocket() {
 }
 
 function disconnectWebSocket() {
+    // Stop any ongoing reconnection attempts
+    stopReconnection();
+    
     if (wsConnection) {
         connectionState = 'disconnected';
         wsConnection.close(1000, 'Manual disconnect');
@@ -816,16 +1365,43 @@ async function handleProxyRequestFromServer(message) {
 }
 
 function scheduleReconnect() {
+    if (!autoReconnectEnabled) {
+        console.log('Auto-reconnect is disabled, not attempting to reconnect');
+        return;
+    }
+    
     reconnectAttempts++;
+    isReconnecting = true;
+    connectionState = 'reconnecting';
     const delay = Math.min(reconnectDelay * Math.pow(2, reconnectAttempts - 1), 30000); // Max 30 seconds
     
     console.log(`Scheduling reconnect attempt ${reconnectAttempts}/${maxReconnectAttempts} in ${delay}ms`);
+    notifyConnectionStatusChanged();
     
-    setTimeout(() => {
-        if (connectionState === 'disconnected') {
+    reconnectTimeoutId = setTimeout(() => {
+        if (connectionState === 'reconnecting' && isReconnecting) {
             connectWebSocket();
         }
     }, delay);
+}
+
+function stopReconnection() {
+    console.log('Stopping reconnection attempts');
+    
+    if (reconnectTimeoutId) {
+        clearTimeout(reconnectTimeoutId);
+        reconnectTimeoutId = null;
+    }
+    
+    isReconnecting = false;
+    reconnectAttempts = 0;
+    
+    if (connectionState === 'reconnecting') {
+        connectionState = 'disconnected';
+        notifyConnectionStatusChanged();
+    }
+    
+    return { success: true };
 }
 
 function notifyConnectionStatusChanged() {
@@ -863,3 +1439,115 @@ function resetConnectionStats() {
         lastActivity: null
     };
 }
+
+// Network request monitoring
+const ongoingRequests = new Map();
+
+// Monitor outgoing requests
+chrome.webRequest.onBeforeRequest.addListener(
+    (details) => {
+        const requestEntry = {
+            id: `req_${details.requestId}`,
+            url: details.url,
+            method: details.method,
+            tab_id: details.tabId,
+            request_time: Date.now(),
+            type: details.type,
+            request_body: details.requestBody ? details.requestBody : null
+        };
+        
+        ongoingRequests.set(details.requestId, requestEntry);
+    },
+    { urls: ['<all_urls>'] },
+    ['requestBody']
+);
+
+// Monitor request headers
+chrome.webRequest.onBeforeSendHeaders.addListener(
+    (details) => {
+        const requestEntry = ongoingRequests.get(details.requestId);
+        if (requestEntry) {
+            const headers = {};
+            if (details.requestHeaders) {
+                details.requestHeaders.forEach(header => {
+                    headers[header.name] = header.value;
+                });
+            }
+            requestEntry.headers = headers;
+        }
+    },
+    { urls: ['<all_urls>'] },
+    ['requestHeaders']
+);
+
+// Monitor response headers
+chrome.webRequest.onHeadersReceived.addListener(
+    (details) => {
+        const requestEntry = ongoingRequests.get(details.requestId);
+        if (requestEntry) {
+            requestEntry.status = details.statusCode;
+            requestEntry.status_text = details.statusLine;
+            requestEntry.response_time = Date.now();
+            requestEntry.duration = requestEntry.response_time - requestEntry.request_time;
+            
+            const responseHeaders = {};
+            if (details.responseHeaders) {
+                details.responseHeaders.forEach(header => {
+                    responseHeaders[header.name] = header.value;
+                });
+            }
+            requestEntry.response_headers = responseHeaders;
+        }
+    },
+    { urls: ['<all_urls>'] },
+    ['responseHeaders']
+);
+
+// Monitor completed requests
+chrome.webRequest.onCompleted.addListener(
+    (details) => {
+        const requestEntry = ongoingRequests.get(details.requestId);
+        if (requestEntry) {
+            requestEntry.status = details.statusCode;
+            requestEntry.status_text = details.statusLine;
+            requestEntry.response_time = Date.now();
+            requestEntry.duration = requestEntry.response_time - requestEntry.request_time;
+            
+            // Add to network requests storage
+            networkRequests.push(requestEntry);
+            
+            // Trim requests if exceeding maximum
+            if (networkRequests.length > maxNetworkEntries) {
+                networkRequests = networkRequests.slice(-maxNetworkEntries);
+            }
+            
+            // Clean up ongoing requests
+            ongoingRequests.delete(details.requestId);
+        }
+    },
+    { urls: ['<all_urls>'] }
+);
+
+// Monitor failed requests
+chrome.webRequest.onErrorOccurred.addListener(
+    (details) => {
+        const requestEntry = ongoingRequests.get(details.requestId);
+        if (requestEntry) {
+            requestEntry.error = details.error;
+            requestEntry.response_time = Date.now();
+            requestEntry.duration = requestEntry.response_time - requestEntry.request_time;
+            
+            // Add to network requests storage
+            networkRequests.push(requestEntry);
+            
+            // Trim requests if exceeding maximum
+            if (networkRequests.length > maxNetworkEntries) {
+                networkRequests = networkRequests.slice(-maxNetworkEntries);
+            }
+            
+            // Clean up ongoing requests
+            ongoingRequests.delete(details.requestId);
+        }
+    },
+    { urls: ['<all_urls>'] }
+);
