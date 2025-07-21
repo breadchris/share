@@ -6,12 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/breadchris/share/graveyard/list"
-	"github.com/breadchris/share/graveyard/llm"
-	"github.com/breadchris/share/graveyard/op"
-	"github.com/breadchris/share/graveyard/paint"
-	"github.com/breadchris/share/graveyard/registry"
-	"github.com/breadchris/share/graveyard/sqlnotebook"
 	"log"
 	"log/slog"
 	"net/http"
@@ -37,8 +31,8 @@ import (
 	"github.com/breadchris/share/editor/leaps"
 	"github.com/breadchris/share/editor/playground"
 	"github.com/breadchris/share/example"
-	extensionmcp "github.com/breadchris/share/extension-mcp"
 	"github.com/breadchris/share/graph"
+	"github.com/breadchris/share/host"
 	. "github.com/breadchris/share/html"
 	"github.com/breadchris/share/justshare"
 	"github.com/breadchris/share/kanban"
@@ -47,13 +41,13 @@ import (
 	"github.com/breadchris/share/vibekanban"
 	"github.com/breadchris/share/xctf"
 	"github.com/evanw/esbuild/pkg/api"
-	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/protoflow-labs/protoflow/pkg/util/reload"
 	"github.com/sashabaranov/go-openai"
 	"github.com/urfave/cli/v2"
 
 	// Flow module imports
+	flow_claude "github.com/breadchris/flow/claude"
 	flow_code "github.com/breadchris/flow/code"
 	flow_config "github.com/breadchris/flow/config"
 	flow_deps "github.com/breadchris/flow/deps"
@@ -235,17 +229,6 @@ func startServer(useTLS bool, port int) {
 	})
 	slog.SetDefault(slog.New(handler))
 
-	loadJSON(dataFile, &entries)
-	var newEntries []Entry
-	for _, e := range entries {
-		if e.ID == "" {
-			e.ID = uuid.New().String()
-		}
-		newEntries = append(newEntries, e)
-	}
-	entries = newEntries
-	saveJSON(dataFile, entries)
-
 	s, err := session.New()
 	if err != nil {
 		log.Fatalf("Failed to create session store: %v", err)
@@ -258,8 +241,6 @@ func startServer(useTLS bool, port int) {
 		http.Handle(p+"/", http.StripPrefix(p, s))
 	}
 
-	setupWebauthn()
-	setupCursor()
 	//setupRecipe()
 	fileUpload()
 
@@ -269,7 +250,6 @@ func startServer(useTLS bool, port int) {
 	}
 
 	oai := openai.NewClient(appConfig.OpenAIKey)
-	lm := leaps.RegisterRoutes(leaps.NewLogger())
 	docs := NewSqliteDocumentStore("data/docs.db")
 	aip := ai.New(appConfig, db)
 	dockerManager := docker.NewManager(db)
@@ -277,7 +257,6 @@ func startServer(useTLS bool, port int) {
 		DB:      db,
 		Docs:    docs,
 		Session: s,
-		Leaps:   lm,
 		AIProxy: aip,
 		AI:      oai,
 		Config:  appConfig,
@@ -332,40 +311,25 @@ func startServer(useTLS bool, port int) {
 		})
 		return m
 	}))
-	p("/dungeon", interpreted(xctf.NewDungeon))
-	p("/sqlnotebook", interpreted(sqlnotebook.New))
-	p("/list", interpreted(list.New))
-	p("/xctf", interpreted(xctf.New))
 	p("/recipe", interpreted(NewRecipe))
 	p("/articles", interpreted(NewArticle))
 	// p("/card", interpreted(NewCard))
 	p("/ai", interpreted(aiapi.New))
 	//p("/card", interpreted(NewCard2))
-	p("/op", interpreted(op.New))
 	//p("/ainet", interpreted(ainet.New))
 	p("/user", interpreted(user.New))
-	p("/paint", interpreted(paint.New))
-	p("/notes", interpreted(NewNotes))
-	p("/llm", interpreted(llm.NewChatGPT))
-	p("/mood", interpreted(NewMood))
 	p("/chat", interpreted(NewChat))
 	p("/spotify", setupSpotify(deps))
-	p("/leaps", lm.Mux)
 	p("/vote", interpreted(NewVote))
 	p("/breadchris", interpreted(breadchris.New))
 	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./eventcalendar.go", "./card.go", "./ai.go", "./tarot.go"}))
 	//p("/code", interpreted(wasmcode.New))
 	p("/extension", interpreted(NewExtension))
-	p("/extension-mcp", extensionmcp.New(deps))
 	p("/git", interpreted(NewGit))
 	p("/music", interpreted(NewMusic))
 	p("/stripe", interpreted(NewStripe))
-	p("/everout", interpreted(NewEverout))
 	p("/graph", interpreted(graph.New))
-	p("/pipeport", interpreted(NewPipePort))
-	p("/nolanisslow", interpreted(NewNolan))
 	//p("/calendar", interpreted(calendar.NewCalendar))
-	p("/registry", interpreted(registry.New))
 	g := NewGithub(deps)
 	p("/github", interpreted(g.Routes))
 
@@ -381,6 +345,11 @@ func startServer(useTLS bool, port int) {
 	// Mount code package at /flow/code using interpreted pattern
 	p("/code", interpreted(func(d deps2.Deps) *http.ServeMux {
 		return flow_code.New(flowDeps)
+	}))
+
+	// Mount Claude WebSocket handler at /flow/claude
+	p("/flow", interpreted(func(d deps2.Deps) *http.ServeMux {
+		return flow_claude.NewHTTP(flowDeps)
 	}))
 
 	// Mount deployment management at /deploy
@@ -405,6 +374,7 @@ func startServer(useTLS bool, port int) {
 	p("/docker", interpreted(docker.New))
 	p("/browser", interpreted(NewBrowser))
 	p("/awesomelist", interpreted(awesomelist.New))
+	p("/host", interpreted(host.New))
 	p("/filecode", func() *http.ServeMux {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

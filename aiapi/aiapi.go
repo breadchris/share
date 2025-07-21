@@ -207,7 +207,7 @@ func New(deps deps.Deps) *http.ServeMux {
 		`
 		w.Write([]byte(code))
 	})
-	
+
 	m.HandleFunc("/analyze-image", func(w http.ResponseWriter, r *http.Request) {
 		// Set CORS headers
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -325,7 +325,7 @@ func New(deps deps.Deps) *http.ServeMux {
 
 		// Parse AI response
 		aiResponse := resp.Choices[0].Message.Content
-		
+
 		// Try to extract JSON from response
 		var analysisResult struct {
 			Name        string `json:"name"`
@@ -356,7 +356,7 @@ func New(deps deps.Deps) *http.ServeMux {
 			lines := strings.Split(aiResponse, "\n")
 			analysisResult.Name = "Detected Item"
 			analysisResult.Description = "Item identified from image"
-			
+
 			// Simple heuristic to find name and description
 			for _, line := range lines {
 				line = strings.TrimSpace(line)
@@ -415,7 +415,7 @@ func New(deps deps.Deps) *http.ServeMux {
 				Role      string `json:"role"`
 				Content   string `json:"content"`
 				Timestamp string `json:"timestamp"`
-			} `json:"chatHistory"` // Chat history from frontend
+			} `json:"chatHistory"`                  // Chat history from frontend
 			CurrentCode string `json:"currentCode"` // Current code context
 		}
 
@@ -602,6 +602,113 @@ func New(deps deps.Deps) *http.ServeMux {
 		}
 
 		json.NewEncoder(w).Encode(response)
+	})
+
+	// AI Proxy endpoint for BlockNote AI integration
+	m.HandleFunc("/proxy", func(w http.ResponseWriter, r *http.Request) {
+		// Set CORS headers
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// Handle preflight OPTIONS request
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		if r.Method != "POST" {
+			http.Error(w, `{"error":"Method not allowed"}`, http.StatusMethodNotAllowed)
+			return
+		}
+
+		// Get provider and URL from query parameters
+		provider := r.URL.Query().Get("provider")
+		targetURL := r.URL.Query().Get("url")
+
+		if provider == "" {
+			http.Error(w, `{"error":"provider parameter is required"}`, http.StatusBadRequest)
+			return
+		}
+
+		if targetURL == "" {
+			http.Error(w, `{"error":"url parameter is required"}`, http.StatusBadRequest)
+			return
+		}
+
+		// Get API key based on provider
+		var apiKey string
+		switch provider {
+		case "openai":
+			apiKey = deps.Config.OpenAIKey
+		default:
+			http.Error(w, `{"error":"unsupported provider"}`, http.StatusBadRequest)
+			return
+		}
+
+		if apiKey == "" {
+			http.Error(w, `{"error":"API key not configured for provider"}`, http.StatusInternalServerError)
+			return
+		}
+
+		// Read the request body
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, `{"error":"failed to read request body"}`, http.StatusBadRequest)
+			return
+		}
+
+		// Create new request to the target URL
+		proxyReq, err := http.NewRequest("POST", targetURL, strings.NewReader(string(body)))
+		if err != nil {
+			http.Error(w, `{"error":"failed to create proxy request"}`, http.StatusInternalServerError)
+			return
+		}
+
+		// Copy headers from original request
+		for key, values := range r.Header {
+			// Skip headers that we'll set ourselves
+			if key == "Authorization" || key == "Content-Length" || key == "Origin" {
+				continue
+			}
+			for _, value := range values {
+				proxyReq.Header.Add(key, value)
+			}
+		}
+
+		// Set authorization header
+		proxyReq.Header.Set("Authorization", "Bearer "+apiKey)
+		proxyReq.Header.Set("Content-Type", "application/json")
+
+		// Execute the request
+		client := &http.Client{}
+		resp, err := client.Do(proxyReq)
+		if err != nil {
+			http.Error(w, fmt.Sprintf(`{"error":"proxy request failed: %s"}`, err.Error()), http.StatusBadGateway)
+			return
+		}
+		defer resp.Body.Close()
+
+		// Copy response headers (except those that could cause issues)
+		for key, values := range resp.Header {
+			if key == "Content-Encoding" || key == "Content-Length" || key == "Transfer-Encoding" {
+				continue
+			}
+			for _, value := range values {
+				w.Header().Add(key, value)
+			}
+		}
+
+		// Set status code
+		w.WriteHeader(resp.StatusCode)
+
+		// Stream response body
+		_, err = io.Copy(w, resp.Body)
+		if err != nil {
+			// If we've already started writing the response, we can't change the status code
+			// Just log the error
+			fmt.Printf("Error streaming response: %v\n", err)
+		}
 	})
 
 	return m

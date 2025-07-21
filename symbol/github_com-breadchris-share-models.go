@@ -35,6 +35,7 @@ func init() {
 		"FoodName":             reflect.ValueOf((*models.FoodName)(nil)),
 		"Group":                reflect.ValueOf((*models.Group)(nil)),
 		"GroupMembership":      reflect.ValueOf((*models.GroupMembership)(nil)),
+		"HostMapping":          reflect.ValueOf((*models.HostMapping)(nil)),
 		"Identity":             reflect.ValueOf((*models.Identity)(nil)),
 		"Ingredient":           reflect.ValueOf((*models.Ingredient)(nil)),
 		"KanbanBoard":          reflect.ValueOf((*models.KanbanBoard)(nil)),

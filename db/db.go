@@ -333,6 +333,8 @@ func LoadDB(dsn string) *gorm.DB {
 		&models.VibeAgentConfig{},
 		&models.VibeMCPServer{},
 
+		&models.HostMapping{},
+
 		// xctf models
 		&xmodels.Competition{},
 		&xmodels.CompetitionGroup{},

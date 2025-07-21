@@ -53,7 +53,7 @@ export default function ClaudeInterface({ darkMode = true }: ClaudeInterfaceProp
 
   const loadSessions = async () => {
     try {
-      const response = await fetch('/coderunner/claude/sessions');
+      const response = await fetch('/flow/claude/sessions');
       if (response.ok) {
         const sessionsData = await response.json();
         setSessions(sessionsData || []);
@@ -65,7 +65,7 @@ export default function ClaudeInterface({ darkMode = true }: ClaudeInterfaceProp
 
   const connectWebSocket = () => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/coderunner/claude/ws`;
+    const wsUrl = `${protocol}//${window.location.host}/flow/claude/ws`;
     
     const websocket = new WebSocket(wsUrl);
     

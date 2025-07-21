@@ -23,7 +23,7 @@ import (
 )
 
 // Configuration constants for directory paths
-// 
+//
 // The coderunner now supports configurable source and build directories:
 // - BASE_SOURCE_DIR: Root directory for component source files (default: current directory)
 // - BASE_BUILD_DIR: Directory for compiled build outputs (default: ./coderunner/build)
@@ -33,16 +33,17 @@ import (
 // - CODERUNNER_BUILD_DIR: Override the build directory
 //
 // Examples:
-//   CODERUNNER_SOURCE_DIR=./src CODERUNNER_BUILD_DIR=./build ./app
-//   CODERUNNER_SOURCE_DIR=/app/components ./app
+//
+//	CODERUNNER_SOURCE_DIR=./src CODERUNNER_BUILD_DIR=./build ./app
+//	CODERUNNER_SOURCE_DIR=/app/components ./app
 var (
 	// BASE_SOURCE_DIR is the root directory for component source files
 	// Can be overridden with CODERUNNER_SOURCE_DIR environment variable
 	BASE_SOURCE_DIR = getEnvOrDefault("CODERUNNER_SOURCE_DIR", ".")
-	
+
 	// BASE_BUILD_DIR is the directory for compiled build outputs
 	// Can be overridden with CODERUNNER_BUILD_DIR environment variable
-	BASE_BUILD_DIR = getEnvOrDefault("CODERUNNER_BUILD_DIR", "./coderunner/build")
+	BASE_BUILD_DIR = getEnvOrDefault("CODERUNNER_BUILD_DIR", "./data")
 )
 
 // getEnvOrDefault returns environment variable value or default if not set
@@ -67,12 +68,12 @@ func init() {
 	fmt.Printf("CodeRunner configuration:\n")
 	fmt.Printf("  Source directory: %s\n", BASE_SOURCE_DIR)
 	fmt.Printf("  Build directory:  %s\n", BASE_BUILD_DIR)
-	
+
 	// Ensure BASE_SOURCE_DIR exists
 	if err := ensureDirectoryExists(BASE_SOURCE_DIR); err != nil {
 		fmt.Printf("Warning: Failed to create source directory %s: %v\n", BASE_SOURCE_DIR, err)
 	}
-	
+
 	// Ensure BASE_BUILD_DIR exists
 	if err := ensureDirectoryExists(BASE_BUILD_DIR); err != nil {
 		fmt.Printf("Warning: Failed to create build directory %s: %v\n", BASE_BUILD_DIR, err)
@@ -100,7 +101,6 @@ type SaveFileRequest struct {
 	Content string `json:"content"`
 }
 
-
 // ComponentSnapshotter interface for taking screenshots of components
 type ComponentSnapshotter struct {
 	config snapshot.SnapshotConfig
@@ -123,23 +123,23 @@ func (cs *ComponentSnapshotter) Close() {
 func (cs *ComponentSnapshotter) CaptureComponentSnapshot(componentPath, sessionID string, options snapshot.SnapshotOptions) (*snapshot.SnapshotResult, error) {
 	// For now, return a mock result to complete the integration
 	// In production, this would use Chrome headless to capture actual screenshots
-	
+
 	result := &snapshot.SnapshotResult{
-		FilePath:     fmt.Sprintf("%s/%s/%s_%s.%s", cs.config.OutputDir, sessionID, 
+		FilePath: fmt.Sprintf("%s/%s/%s_%s.%s", cs.config.OutputDir, sessionID,
 			strings.ReplaceAll(componentPath, "/", "_"), options.Viewport.Name, options.OutputFormat),
 		Viewport:     options.Viewport,
 		ComponentURL: fmt.Sprintf("%s/code/render/%s", cs.config.BaseURL, componentPath),
 		Timestamp:    time.Now(),
 		FileSize:     1024, // Mock file size
 	}
-	
+
 	return result, nil
 }
 
 // CaptureResponsiveSnapshots captures screenshots across multiple viewports (stub implementation)
 func (cs *ComponentSnapshotter) CaptureResponsiveSnapshots(componentPath, sessionID string) ([]*snapshot.SnapshotResult, error) {
 	var results []*snapshot.SnapshotResult
-	
+
 	for _, viewport := range cs.config.DefaultViewports {
 		options := snapshot.SnapshotOptions{
 			Viewport:     viewport,
@@ -148,15 +148,15 @@ func (cs *ComponentSnapshotter) CaptureResponsiveSnapshots(componentPath, sessio
 			Quality:      90,
 			Delay:        1 * time.Second,
 		}
-		
+
 		result, err := cs.CaptureComponentSnapshot(componentPath, sessionID, options)
 		if err != nil {
 			continue // Skip failed snapshots
 		}
-		
+
 		results = append(results, result)
 	}
-	
+
 	return results, nil
 }
 
@@ -1382,15 +1382,18 @@ func handleFullRenderComponent(w http.ResponseWriter, r *http.Request) {
 		EntryPoints: []string{srcPath},
 		Outdir:      outputDir,
 		Loader: map[string]api.Loader{
-			".js":  api.LoaderJS,
-			".jsx": api.LoaderJSX,
-			".ts":  api.LoaderTS,
-			".tsx": api.LoaderTSX,
-			".css": api.LoaderCSS,
+			".js":    api.LoaderJS,
+			".jsx":   api.LoaderJSX,
+			".ts":    api.LoaderTS,
+			".tsx":   api.LoaderTSX,
+			".css":   api.LoaderCSS,
+			".woff":  api.LoaderFile,
+			".woff2": api.LoaderFile,
 		},
 		Format:          api.FormatESModule,
 		Bundle:          true,
 		Write:           true,
+		Sourcemap:       api.SourceMapExternal,
 		TreeShaking:     api.TreeShakingTrue,
 		Target:          api.ESNext,
 		JSX:             api.JSXAutomatic,
@@ -1489,20 +1492,20 @@ func handleServeCSS(w http.ResponseWriter, r *http.Request) {
 	cssPath := filepath.Join(BASE_BUILD_DIR, "fullrender", cleanPath)
 
 	// Check if file exists and is a CSS file
-	info, err := os.Stat(cssPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			http.Error(w, "CSS file not found", http.StatusNotFound)
-		} else {
-			http.Error(w, fmt.Sprintf("Error accessing CSS file: %v", err), http.StatusInternalServerError)
-		}
-		return
-	}
+	//info, err := os.Stat(cssPath)
+	//if err != nil {
+	//	if os.IsNotExist(err) {
+	//		http.Error(w, "CSS file not found", http.StatusNotFound)
+	//	} else {
+	//		http.Error(w, fmt.Sprintf("Error accessing CSS file: %v", err), http.StatusInternalServerError)
+	//	}
+	//	return
+	//}
 
-	if info.IsDir() || filepath.Ext(cssPath) != ".css" {
-		http.Error(w, "Path is not a CSS file", http.StatusBadRequest)
-		return
-	}
+	//if info.IsDir() || filepath.Ext(cssPath) != ".css" {
+	//	http.Error(w, "Path is not a CSS file", http.StatusBadRequest)
+	//	return
+	//}
 
 	// Read and serve CSS file
 	cssContent, err := os.ReadFile(cssPath)
@@ -1593,11 +1596,11 @@ func handleCaptureSnapshot(w http.ResponseWriter, r *http.Request) {
 	var requestData struct {
 		SessionID    string `json:"sessionId"`
 		Viewport     string `json:"viewport"`     // "mobile", "tablet", "desktop", or "all"
-		FullPage     bool   `json:"fullPage"`    // Capture full page or viewport only
-		Element      string `json:"element"`     // CSS selector for specific element
-		WaitFor      string `json:"waitFor"`     // CSS selector or duration to wait for
+		FullPage     bool   `json:"fullPage"`     // Capture full page or viewport only
+		Element      string `json:"element"`      // CSS selector for specific element
+		WaitFor      string `json:"waitFor"`      // CSS selector or duration to wait for
 		OutputFormat string `json:"outputFormat"` // "png" or "jpeg"
-		Quality      int    `json:"quality"`     // JPEG quality (1-100)
+		Quality      int    `json:"quality"`      // JPEG quality (1-100)
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
@@ -1640,8 +1643,8 @@ func handleCaptureSnapshot(w http.ResponseWriter, r *http.Request) {
 	// Create snapshot config (this would typically come from a config service)
 	config := snapshot.SnapshotConfig{
 		DefaultTimeout:   30 * time.Second,
-		BaseURL:         "http://localhost:8080", // Should use actual server URL
-		OutputDir:       "./data/snapshots",
+		BaseURL:          "http://localhost:8080", // Should use actual server URL
+		OutputDir:        "./data/snapshots",
 		DefaultViewports: snapshot.DefaultViewports,
 	}
 

@@ -123,16 +123,8 @@ func ComponentLoader(componentPath, componentName string, useModuleEndpoint bool
 		// For fullrender, we need to fetch the JS file and create a blob URL
 		jsCode = `
         try {
-            // Read the generated JavaScript file
-            const response = await fetch('/coderunner/fullrender/js/` + componentPath + `/` + componentName + `.js');
-            const jsCode = await response.text();
-            
-            // Create a blob URL for the module
-            const blob = new Blob([jsCode], { type: 'application/javascript' });
-            const moduleUrl = URL.createObjectURL(blob);
-            
             // Import the module
-            const componentModule = await import(moduleUrl);
+            const componentModule = await import('/data/fullrender/` + componentPath + `');
             
             // Import React and ReactDOM
             const React = await import('react');
@@ -158,10 +150,6 @@ func ComponentLoader(componentPath, componentName string, useModuleEndpoint bool
             // Render the component
             const root = ReactDOM.createRoot(document.getElementById('root'));
             root.render(React.createElement(ComponentToRender));
-            
-            // Clean up blob URL
-            URL.revokeObjectURL(moduleUrl);
-            
         } catch (error) {
             console.error('Runtime Error:', error);
             document.getElementById('root').innerHTML = 
@@ -231,6 +219,8 @@ func ReactComponentPageWithCSS(componentName, componentPath string, jsFileName s
 		Meta(Name("viewport"), Content("width=device-width, initial-scale=1.0")),
 		Title(T("React Component - " + componentName)),
 		ReactImportMap(),
+		Link(Rel("stylesheet"), Type("text/css"), Href("https://cdn.jsdelivr.net/npm/daisyui@5")),
+		Script(Src("https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4")),
 	}
 	headNodes = append(headNodes, cssLinks...)
 	headNodes = append(headNodes, ComponentRuntimeStyles())

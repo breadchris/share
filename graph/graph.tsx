@@ -54,6 +54,7 @@ import {YMap} from "yjs/dist/src/types/YMap";
 import {JsonValue} from "@bufbuild/protobuf";
 import {ContentService} from "../breadchris/ContentService";
 import {FileText, Link2, Image, Network, UploadCloud, X, Sparkles} from "lucide-react";
+import BlockNoteAIEditor from "../aiapi/BlockNoteAIEditor";
 
 interface AppState {
     runningAI: boolean;
@@ -202,7 +203,7 @@ export default function GraphApp() {
     const [nodes, onNodesChange] = useNodesStateSynced(nodesMap, edgesMap);
     const [edges, onEdgesChange, onConnect] = useEdgesStateSynced(edgesMap);
     const [state, setState] = useState<{
-        view: 'text' | 'image' | 'url' | 'graph';
+        view: 'text' | 'image' | 'url' | 'graph' | 'ai-editor';
     }>({
         view: 'graph',
     });
@@ -300,6 +301,31 @@ export default function GraphApp() {
                 })} />;
             case 'url':
                 return <div>URL</div>;
+            case 'ai-editor':
+                return (
+                    <div className="container mx-auto md:mt-16 px-4" style={{width: "100%", maxHeight: "calc(100vh - 120px)", overflowY: "auto"}}>
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                            <div className="p-6">
+                                <div className="mb-4">
+                                    <h2 className="text-lg font-semibold text-gray-900 mb-2">AI-Powered Editor</h2>
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                        <p className="text-sm text-blue-800">
+                                            Use <strong>/ai</strong> for AI assistance or click the AI button in the toolbar
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <BlockNoteAIEditor
+                                    placeholder="Start writing or type '/' for commands. Try '/ai' for AI assistance!"
+                                    onChange={(blocks) => {
+                                        console.log("AI Editor content changed:", blocks);
+                                    }}
+                                    className="min-h-96"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                );
             case 'graph':
                 return (
                     <ReactFlow
@@ -374,13 +400,13 @@ export default function GraphApp() {
                     </button>
                     <button
                         onClick={() => {
-                            setAppState((prev) => ({
+                            setState((prev) => ({
                                 ...prev,
-                                runningAI: !prev.runningAI,
+                                view: 'ai-editor',
                             }));
                         }}
                         className="group focus:outline-none"
-                        aria-label="AI"
+                        aria-label="AI Editor"
                     >
                         <Sparkles className="w-8 h-8 transition-transform duration-150 group-hover:scale-125" />
                     </button>

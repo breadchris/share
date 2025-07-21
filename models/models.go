@@ -531,8 +531,8 @@ type VibeProject struct {
 	Model
 	Name          string                             `json:"name" gorm:"not null"`
 	GitRepoPath   string                             `json:"git_repo_path" gorm:"not null"` // Local git repository path
-	SetupScript   string                             `json:"setup_script"`                   // Script to run for project setup
-	DevScript     string                             `json:"dev_script"`                     // Script to run dev server
+	SetupScript   string                             `json:"setup_script"`                  // Script to run for project setup
+	DevScript     string                             `json:"dev_script"`                    // Script to run dev server
 	DefaultBranch string                             `json:"default_branch" gorm:"default:'main'"`
 	UserID        string                             `json:"user_id" gorm:"index;not null"`
 	User          *User                              `gorm:"foreignKey:UserID"`
@@ -545,7 +545,7 @@ type VibeTask struct {
 	Title       string                             `json:"title" gorm:"not null"`
 	Description string                             `json:"description" gorm:"type:text"`
 	Status      string                             `json:"status" gorm:"not null;default:'todo'"` // todo, inprogress, inreview, done, cancelled
-	Priority    string                             `json:"priority" gorm:"default:'medium'"`       // low, medium, high
+	Priority    string                             `json:"priority" gorm:"default:'medium'"`      // low, medium, high
 	ProjectID   string                             `json:"project_id" gorm:"index;not null"`
 	Project     *VibeProject                       `gorm:"foreignKey:ProjectID"`
 	UserID      string                             `json:"user_id" gorm:"index;not null"`
@@ -559,40 +559,40 @@ type VibeTaskAttempt struct {
 	Model
 	TaskID        string                             `json:"task_id" gorm:"index;not null"`
 	Task          *VibeTask                          `gorm:"foreignKey:TaskID"`
-	WorktreePath  string                             `json:"worktree_path"`                       // Git worktree path for isolated execution
-	Branch        string                             `json:"branch"`                              // Git branch for this attempt
-	BaseBranch    string                             `json:"base_branch"`                         // Branch this was created from
-	MergeCommit   string                             `json:"merge_commit"`                        // Commit hash if merged
-	Executor      string                             `json:"executor"`                            // AI agent used (claude, gemini, etc)
-	Status        string                             `json:"status" gorm:"default:'pending'"`     // pending, running, completed, failed
-	PRURL         string                             `json:"pr_url"`                              // GitHub PR URL if created
+	WorktreePath  string                             `json:"worktree_path"`                   // Git worktree path for isolated execution
+	Branch        string                             `json:"branch"`                          // Git branch for this attempt
+	BaseBranch    string                             `json:"base_branch"`                     // Branch this was created from
+	MergeCommit   string                             `json:"merge_commit"`                    // Commit hash if merged
+	Executor      string                             `json:"executor"`                        // AI agent used (claude, gemini, etc)
+	Status        string                             `json:"status" gorm:"default:'pending'"` // pending, running, completed, failed
+	PRURL         string                             `json:"pr_url"`                          // GitHub PR URL if created
 	StartTime     *time.Time                         `json:"start_time"`
 	EndTime       *time.Time                         `json:"end_time"`
 	UserID        string                             `json:"user_id" gorm:"index;not null"`
 	User          *User                              `gorm:"foreignKey:UserID"`
 	Processes     []VibeExecutionProcess             `json:"processes" gorm:"foreignKey:AttemptID;constraint:OnDelete:CASCADE"`
 	Sessions      []VibeExecutorSession              `json:"sessions" gorm:"foreignKey:AttemptID;constraint:OnDelete:CASCADE"`
-	GitDiff       string                             `json:"git_diff" gorm:"type:text"`          // Cached git diff
-	Metadata      *JSONField[map[string]interface{}] `json:"metadata,omitempty"`                 // Execution metadata
-	Configuration *JSONField[map[string]interface{}] `json:"configuration,omitempty"`            // Attempt-specific config
+	GitDiff       string                             `json:"git_diff" gorm:"type:text"` // Cached git diff
+	Metadata      *JSONField[map[string]interface{}] `json:"metadata,omitempty"`        // Execution metadata
+	Configuration *JSONField[map[string]interface{}] `json:"configuration,omitempty"`   // Attempt-specific config
 }
 
 type VibeExecutionProcess struct {
 	Model
-	AttemptID   string                             `json:"attempt_id" gorm:"index;not null"`
-	Attempt     *VibeTaskAttempt                   `gorm:"foreignKey:AttemptID"`
-	Type        string                             `json:"type" gorm:"not null"` // setupscript, codingagent, devserver
-	Status      string                             `json:"status" gorm:"not null;default:'pending'"`
-	Command     string                             `json:"command" gorm:"type:text"`
-	ProcessID   int                                `json:"process_id"`
-	StartTime   *time.Time                         `json:"start_time"`
-	EndTime     *time.Time                         `json:"end_time"`
-	StdOut      string                             `json:"stdout" gorm:"type:text"`
-	StdErr      string                             `json:"stderr" gorm:"type:text"`
-	ExitCode    *int                               `json:"exit_code"`
-	Port        int                                `json:"port"`        // For dev servers
-	URL         string                             `json:"url"`         // For dev servers
-	Metadata    *JSONField[map[string]interface{}] `json:"metadata,omitempty"`
+	AttemptID string                             `json:"attempt_id" gorm:"index;not null"`
+	Attempt   *VibeTaskAttempt                   `gorm:"foreignKey:AttemptID"`
+	Type      string                             `json:"type" gorm:"not null"` // setupscript, codingagent, devserver
+	Status    string                             `json:"status" gorm:"not null;default:'pending'"`
+	Command   string                             `json:"command" gorm:"type:text"`
+	ProcessID int                                `json:"process_id"`
+	StartTime *time.Time                         `json:"start_time"`
+	EndTime   *time.Time                         `json:"end_time"`
+	StdOut    string                             `json:"stdout" gorm:"type:text"`
+	StdErr    string                             `json:"stderr" gorm:"type:text"`
+	ExitCode  *int                               `json:"exit_code"`
+	Port      int                                `json:"port"` // For dev servers
+	URL       string                             `json:"url"`  // For dev servers
+	Metadata  *JSONField[map[string]interface{}] `json:"metadata,omitempty"`
 }
 
 type VibeExecutorSession struct {
@@ -629,4 +629,29 @@ type VibeMCPServer struct {
 	Environment *JSONField[map[string]string] `json:"environment,omitempty"`
 	UserID      string                        `json:"user_id" gorm:"index;not null"`
 	User        *User                         `gorm:"foreignKey:UserID"`
+}
+
+// models.HostMapping represents a domain to component mapping
+type HostMapping struct {
+	ID            uint      `gorm:"primarykey" json:"id"`
+	Domain        string    `gorm:"uniqueIndex;not null" json:"domain"`
+	ComponentPath string    `gorm:"not null" json:"component_path"`
+	Title         string    `json:"title,omitempty"`
+	Description   string    `json:"description,omitempty"`
+	IsActive      bool      `gorm:"default:true" json:"is_active"`
+	CreatedAt     time.Time `json:"created_at"`
+	UpdatedAt     time.Time `json:"updated_at"`
+}
+
+// BeforeCreate generates UUID for new records
+func (h *HostMapping) BeforeCreate(tx *gorm.DB) error {
+	h.CreatedAt = time.Now()
+	h.UpdatedAt = time.Now()
+	return nil
+}
+
+// BeforeUpdate updates the timestamp
+func (h *HostMapping) BeforeUpdate(tx *gorm.DB) error {
+	h.UpdatedAt = time.Now()
+	return nil
 }
