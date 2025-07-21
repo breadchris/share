@@ -1,0 +1,366 @@
+/* Claude Web Interface Styles */
+
+/* Global styles for the Claude interface */
+.claude-interface {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  line-height: 1.5;
+}
+
+/* Code syntax highlighting */
+.code-block {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 16px;
+  margin: 8px 0;
+  overflow-x: auto;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.dark .code-block {
+  background-color: #1f2937;
+  border-color: #374151;
+}
+
+.code-block[data-language="javascript"]:before,
+.code-block[data-language="js"]:before {
+  content: "JavaScript";
+  display: block;
+  color: #f7df1e;
+  font-size: 12px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.code-block[data-language="typescript"]:before,
+.code-block[data-language="ts"]:before {
+  content: "TypeScript";
+  display: block;
+  color: #3178c6;
+  font-size: 12px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.code-block[data-language="python"]:before {
+  content: "Python";
+  display: block;
+  color: #3776ab;
+  font-size: 12px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.code-block[data-language="json"]:before {
+  content: "JSON";
+  display: block;
+  color: #00d4aa;
+  font-size: 12px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.inline-code {
+  background-color: #f1f3f4;
+  color: #d73a49;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+.dark .inline-code {
+  background-color: #374151;
+  color: #fbbf24;
+}
+
+/* Prose styling for assistant messages */
+.prose {
+  max-width: none;
+}
+
+.prose p {
+  margin-bottom: 16px;
+}
+
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  margin-top: 24px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.prose h1 { font-size: 1.5em; }
+.prose h2 { font-size: 1.25em; }
+.prose h3 { font-size: 1.125em; }
+
+.prose ul, .prose ol {
+  margin-bottom: 16px;
+  padding-left: 24px;
+}
+
+.prose li {
+  margin-bottom: 4px;
+}
+
+.prose blockquote {
+  border-left: 4px solid #e5e7eb;
+  padding-left: 16px;
+  margin: 16px 0;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.dark .prose blockquote {
+  border-left-color: #4b5563;
+  color: #9ca3af;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+}
+
+.prose th, .prose td {
+  border: 1px solid #e5e7eb;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.prose th {
+  background-color: #f9fafb;
+  font-weight: 600;
+}
+
+.dark .prose th, .dark .prose td {
+  border-color: #4b5563;
+}
+
+.dark .prose th {
+  background-color: #374151;
+}
+
+/* Animation for loading states */
+@keyframes shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.dark .shimmer {
+  background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+  background-size: 200px 100%;
+}
+
+/* Custom scrollbar */
+.claude-interface ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.claude-interface ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.claude-interface ::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 4px;
+}
+
+.claude-interface ::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}
+
+.dark .claude-interface ::-webkit-scrollbar-thumb {
+  background-color: #4b5563;
+}
+
+.dark .claude-interface ::-webkit-scrollbar-thumb:hover {
+  background-color: #6b7280;
+}
+
+/* Focus styles */
+.claude-interface button:focus-visible,
+.claude-interface input:focus-visible,
+.claude-interface textarea:focus-visible,
+.claude-interface select:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Loading spinner */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Message animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-enter {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .claude-interface {
+    font-size: 14px;
+  }
+  
+  .code-block {
+    font-size: 12px;
+    padding: 12px;
+  }
+  
+  .prose h1 { font-size: 1.25em; }
+  .prose h2 { font-size: 1.125em; }
+  .prose h3 { font-size: 1em; }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .code-block {
+    border-width: 2px;
+  }
+  
+  .claude-interface button,
+  .claude-interface input,
+  .claude-interface textarea,
+  .claude-interface select {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .claude-interface * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  .claude-interface {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .claude-interface button,
+  .claude-interface .opacity-0 {
+    display: none !important;
+  }
+  
+  .claude-interface .message {
+    break-inside: avoid;
+    margin-bottom: 16px;
+  }
+}
+
+/* Keyboard navigation indicators */
+.claude-interface button:focus-visible,
+.claude-interface [tabindex]:focus-visible {
+  box-shadow: 0 0 0 2px #3b82f6;
+}
+
+/* Selection styling */
+.claude-interface ::selection {
+  background-color: #3b82f6;
+  color: white;
+}
+
+/* Line clamp utility for text truncation */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Tooltip styles */
+.tooltip {
+  position: relative;
+}
+
+.tooltip::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #1f2937;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 1000;
+}
+
+.tooltip:hover::before {
+  opacity: 1;
+}
+
+/* Dark mode tooltip */
+.dark .tooltip::before {
+  background-color: #374151;
+}
+
+/* Status indicator pulses */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Bounce animation for typing indicator */
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
+
+.animate-bounce {
+  animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.animate-bounce.delay-75 {
+  animation-delay: 0.1s;
+}
+
+.animate-bounce.delay-150 {
+  animation-delay: 0.2s;
+}

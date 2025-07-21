@@ -1,6 +1,3 @@
 [submodule "claudemd"]
 	path = claudemd
 	url = git@github.com:breadchris/claudemd.git
-[submodule "flow"]
-	path = flow
-	url = git@github.com:breadchris/flow.git
