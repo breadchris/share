@@ -22,11 +22,6 @@
       <change beforePath="$PROJECT_DIR$/chromedp-mcp/tool/navigate.go" beforeDir="false" afterPath="$PROJECT_DIR$/chromedp-mcp/tool/navigate.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/chromedp-mcp/tool/screenshot.go" beforeDir="false" afterPath="$PROJECT_DIR$/chromedp-mcp/tool/screenshot.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/chromedp-mcp/tool/value.go" beforeDir="false" afterPath="$PROJECT_DIR$/chromedp-mcp/tool/value.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/ClaudeInterface.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/ClaudeInterface.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/coderunner.go" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/coderunner.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/html_helpers.go" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/html_helpers.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/db.go" beforeDir="false" afterPath="$PROJECT_DIR$/db/db.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/editor/www/ace/mode-powershell.js" beforeDir="false" afterPath="$PROJECT_DIR$/editor/www/ace/mode-powershell.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow" beforeDir="false" afterPath="$PROJECT_DIR$/flow" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/buf.gen.yaml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/buf.yaml" beforeDir="false" />
@@ -55,14 +50,6 @@
       <change beforePath="$PROJECT_DIR$/flow/pulumi-slackbot/lambda/go.mod" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/pulumi-slackbot/lambda/main.go" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/flow/pulumi-slackbot/main.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/graph/graph.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/graph/graph.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/models.go" beforeDir="false" afterPath="$PROJECT_DIR$/models/models.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-flow-claude.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-flow-claude.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-models.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-models.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/symbol.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/symbol.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -98,7 +85,7 @@
   "keyToString": {
     "DefaultGoTemplateProperty": "Go File",
     "Go Build.flow.executor": "Run",
-    "Go Build.share.executor": "Debug",
+    "Go Build.share.executor": "Run",
     "Go Test.TestClaudeBasicFileModification in github.com/breadchris/flow/worklet.executor": "Run",
     "Go Test.TestClaudeIntegrationDemo in github.com/breadchris/flow/worklet.executor": "Run",
     "Go Test.TestClaudeMigrate in github.com/breadchris/share/db.executor": "Run",
