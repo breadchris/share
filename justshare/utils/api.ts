@@ -119,6 +119,20 @@ export async function deleteContent(contentId: string): Promise<{ success: boole
   });
 }
 
+// File Manager API
+export async function getFiles(groupId: string, path?: string): Promise<any[]> {
+  const params = new URLSearchParams({ group_id: groupId });
+  if (path) {
+    params.append('path', path);
+  }
+  return fetchJSON(`${API_BASE}/files?${params}`);
+}
+
+export async function getFileTree(groupId: string): Promise<any[]> {
+  const params = new URLSearchParams({ group_id: groupId });
+  return fetchJSON(`${API_BASE}/files/tree?${params}`);
+}
+
 // Threading API
 export async function getReplies(
   contentId: string,

@@ -8,6 +8,7 @@ import { ContentCapture } from './components/ContentCapture';
 import { ContentViewer } from './components/ContentViewer';
 import { GroupManager } from './components/GroupManager';
 import { LoginPrompt } from './components/LoginPrompt';
+import { FileManager } from './components/FileManager';
 
 export const JustShare: React.FC = () => {
   const [authState, setAuthState] = useState<AuthState>({
@@ -28,6 +29,7 @@ export const JustShare: React.FC = () => {
   });
 
   const [showContentCapture, setShowContentCapture] = useState(true);
+  const [showFileManager, setShowFileManager] = useState(false);
 
   const [showGroupManager, setShowGroupManager] = useState<{
     visible: boolean;
@@ -91,6 +93,12 @@ export const JustShare: React.FC = () => {
       if ((e.key === 'i' || e.key === 'I' || e.key === ' ') && !isInputFocused()) {
         e.preventDefault();
         setShowContentCapture(prev => !prev);
+      }
+      
+      // Toggle file manager with 'f' key
+      if ((e.key === 'f' || e.key === 'F') && !isInputFocused()) {
+        e.preventDefault();
+        setShowFileManager(prev => !prev);
       }
     };
 
@@ -324,6 +332,7 @@ export const JustShare: React.FC = () => {
         onJoinGroup={() => setShowGroupManager({ visible: true, mode: 'join' })}
         showContentCapture={showContentCapture}
         onToggleContentCapture={() => setShowContentCapture(prev => !prev)}
+        onToggleFileManager={() => setShowFileManager(prev => !prev)}
       />
 
       {/* Main Content Area */}
@@ -377,6 +386,16 @@ export const JustShare: React.FC = () => {
           onClose={() => setShowGroupManager({ visible: false, mode: 'create' })}
           initialJoinCode={initialJoinCode || undefined}
         />
+      )}
+
+      {/* File Manager Modal */}
+      {showFileManager && appState.currentGroup && (
+        <div className="fixed inset-0 z-50 bg-white">
+          <FileManager
+            groupId={appState.currentGroup.id}
+            onClose={() => setShowFileManager(false)}
+          />
+        </div>
       )}
 
       {/* PWA Styles */}

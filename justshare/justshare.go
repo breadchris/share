@@ -184,7 +184,7 @@ func New(d deps.Deps) *http.ServeMux {
 
 	// Main JustShare page
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		coderunner.ServeReactApp(w, r, "justshare/JustShare.tsx", "JustShare")
+		coderunner.ServeFullRenderComponent(w, r, "justshare/JustShare.tsx", "JustShare")
 	})
 
 	// Content endpoints
@@ -300,6 +300,39 @@ func New(d deps.Deps) *http.ServeMux {
 		}
 	})
 
+	// File manager endpoints
+	m.HandleFunc("/api/files", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			requireAuth(d, handleGetFiles)(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	m.HandleFunc("/api/files/folder", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "POST" {
+			requireAuth(d, handleCreateFolder)(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	m.HandleFunc("/api/files/move", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "PUT" {
+			requireAuth(d, handleMoveFile)(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	m.HandleFunc("/api/files/tree", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" {
+			requireAuth(d, handleGetFileTree)(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
 	// File upload endpoint for media content
 	m.HandleFunc("/api/upload", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "POST" {
@@ -377,8 +410,8 @@ func handleCreateContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 		return
 	}
 
-	if req.Type == "" || req.Data == "" || req.GroupID == "" {
-		http.Error(w, `{"error":"type, data, and group_id are required"}`, http.StatusBadRequest)
+	if req.Type == "" || req.GroupID == "" {
+		http.Error(w, `{"error":"type and group_id are required"}`, http.StatusBadRequest)
 		return
 	}
 
@@ -390,6 +423,7 @@ func handleCreateContent(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 		"clipboard": true,
 		"url":       true,
 		"file":      true,
+		"document":  true,
 	}
 	if !validTypes[req.Type] {
 		http.Error(w, `{"error":"invalid content type"}`, http.StatusBadRequest)
@@ -1701,7 +1735,7 @@ func processYouTubeTranscript(d deps.Deps, content *models.Content) {
 	cmd.Env = os.Environ()
 
 	output, err := cmd.CombinedOutput()
-	
+
 	var transcriptText strings.Builder
 	var videoTitle, channel string
 	var hasTranscript bool
@@ -1710,15 +1744,15 @@ func processYouTubeTranscript(d deps.Deps, content *models.Content) {
 		// Script failed - analyze the error to provide helpful feedback
 		errorOutput := string(output)
 		fmt.Printf("Failed to run yt_transcript2.py for content %s: %v\nOutput: %s\n", content.ID, err, errorOutput)
-		
+
 		// Set basic info for error case
 		videoTitle = "YouTube Video"
-		
+
 		// Provide specific error messages based on common failure patterns
 		transcriptText.WriteString(fmt.Sprintf("📹 %s\n", videoTitle))
 		transcriptText.WriteString(fmt.Sprintf("🔗 %s\n\n", videoURL))
 		transcriptText.WriteString("⚠️ Transcript Unavailable\n\n")
-		
+
 		if strings.Contains(errorOutput, "Video unavailable") {
 			transcriptText.WriteString("This video is not available (it may be private, deleted, or restricted in your region).")
 		} else if strings.Contains(errorOutput, "MalformedFileError") || strings.Contains(errorOutput, "Invalid format") {
@@ -1732,14 +1766,14 @@ func processYouTubeTranscript(d deps.Deps, content *models.Content) {
 		} else {
 			transcriptText.WriteString("Unable to extract transcript due to technical limitations. This may happen with certain video types, restricted content, or temporary YouTube API issues.")
 		}
-		
+
 		hasTranscript = false
 	} else {
 		// Parse JSON output
 		start := bytes.IndexByte(output, '{')
 		if start == -1 {
 			fmt.Printf("No JSON found in yt_transcript2.py output for content %s\n", content.ID)
-			
+
 			// Fallback message when no JSON is found
 			transcriptText.WriteString("📹 YouTube Video\n")
 			transcriptText.WriteString(fmt.Sprintf("🔗 %s\n\n", videoURL))
@@ -1761,7 +1795,7 @@ func processYouTubeTranscript(d deps.Deps, content *models.Content) {
 
 			if err := json.Unmarshal(output, &transcriptData); err != nil {
 				fmt.Printf("Failed to parse yt_transcript2.py output for content %s: %v\n", content.ID, err)
-				
+
 				// Fallback message for JSON parsing errors
 				transcriptText.WriteString("📹 YouTube Video\n")
 				transcriptText.WriteString(fmt.Sprintf("🔗 %s\n\n", videoURL))
@@ -1771,17 +1805,17 @@ func processYouTubeTranscript(d deps.Deps, content *models.Content) {
 				// Success - format the transcript nicely
 				videoTitle = transcriptData.Title
 				channel = transcriptData.Channel
-				
+
 				if videoTitle == "" {
 					videoTitle = "YouTube Video"
 				}
-				
+
 				transcriptText.WriteString(fmt.Sprintf("📹 %s\n", videoTitle))
 				if channel != "" {
 					transcriptText.WriteString(fmt.Sprintf("👤 %s\n", channel))
 				}
 				transcriptText.WriteString(fmt.Sprintf("🔗 %s\n\n", videoURL))
-				
+
 				if len(transcriptData.Transcript) == 0 {
 					transcriptText.WriteString("⚠️ No transcript content available for this video.")
 					hasTranscript = false
@@ -1798,11 +1832,11 @@ func processYouTubeTranscript(d deps.Deps, content *models.Content) {
 
 	// Create reply content with transcript or error message
 	metadata := map[string]interface{}{
-		"source":        "youtube_transcript",
-		"video_url":     videoURL,
+		"source":         "youtube_transcript",
+		"video_url":      videoURL,
 		"has_transcript": hasTranscript,
 	}
-	
+
 	if videoTitle != "" {
 		metadata["video_title"] = videoTitle
 	}
@@ -1840,4 +1874,209 @@ func processYouTubeTranscript(d deps.Deps, content *models.Content) {
 	}
 
 	fmt.Printf("Successfully processed YouTube transcript for content %s\n", content.ID)
+}
+
+// File manager handlers
+
+func handleGetFiles(w http.ResponseWriter, r *http.Request, d deps.Deps) {
+	userID := r.Context().Value(UserContextKey).(string)
+	groupID := r.URL.Query().Get("group_id")
+	path := r.URL.Query().Get("path")
+
+	if groupID == "" {
+		http.Error(w, `{"error":"group_id is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Get user's group membership
+	var membership models.GroupMembership
+	if err := d.DB.Where("user_id = ? AND group_id = ?", userID, groupID).First(&membership).Error; err != nil {
+		http.Error(w, `{"error":"not a member of this group"}`, http.StatusForbidden)
+		return
+	}
+
+	// Query for files and folders in the specified path
+	var contents []*models.Content
+	query := d.DB.Where("group_id = ? AND (type = ? OR type = ?)", groupID, "document", "folder")
+
+	// Filter by path if provided
+	if path != "" {
+		query = query.Where("JSON_EXTRACT(metadata, '$.path') LIKE ?", path+"%")
+	}
+
+	if err := query.Preload("User").Find(&contents).Error; err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"failed to fetch files: %v"}`, err), http.StatusInternalServerError)
+		return
+	}
+
+	// Convert to response format
+	var fileResponses []map[string]interface{}
+	for _, content := range contents {
+		metadata := content.Metadata.Data
+		response := map[string]interface{}{
+			"id":         content.ID,
+			"type":       content.Type,
+			"created_at": content.CreatedAt,
+			"updated_at": content.UpdatedAt,
+			"metadata":   metadata,
+		}
+		fileResponses = append(fileResponses, response)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(fileResponses)
+}
+
+func handleCreateFolder(w http.ResponseWriter, r *http.Request, d deps.Deps) {
+	userID := r.Context().Value(UserContextKey).(string)
+
+	var req struct {
+		GroupID  string                 `json:"group_id"`
+		Name     string                 `json:"name"`
+		Path     string                 `json:"path"`
+		Metadata map[string]interface{} `json:"metadata"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Verify group membership
+	var membership models.GroupMembership
+	if err := d.DB.Where("user_id = ? AND group_id = ?", userID, req.GroupID).First(&membership).Error; err != nil {
+		http.Error(w, `{"error":"not a member of this group"}`, http.StatusForbidden)
+		return
+	}
+
+	// Create folder content
+	content := models.NewContent("folder", "", req.GroupID, userID, req.Metadata)
+
+	if err := d.DB.Create(content).Error; err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"failed to create folder: %v"}`, err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(content)
+}
+
+func handleMoveFile(w http.ResponseWriter, r *http.Request, d deps.Deps) {
+	userID := r.Context().Value(UserContextKey).(string)
+
+	var req struct {
+		ContentID string `json:"content_id"`
+		NewPath   string `json:"new_path"`
+		NewName   string `json:"new_name"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Get the content
+	var content models.Content
+	if err := d.DB.Where("id = ?", req.ContentID).First(&content).Error; err != nil {
+		http.Error(w, `{"error":"content not found"}`, http.StatusNotFound)
+		return
+	}
+
+	// Verify user has access to this content's group
+	var membership models.GroupMembership
+	if err := d.DB.Where("user_id = ? AND group_id = ?", userID, content.GroupID).First(&membership).Error; err != nil {
+		http.Error(w, `{"error":"not authorized to modify this content"}`, http.StatusForbidden)
+		return
+	}
+
+	// Update metadata
+	metadata := content.Metadata.Data
+	if req.NewPath != "" {
+		metadata["path"] = req.NewPath
+	}
+	if req.NewName != "" {
+		metadata["title"] = req.NewName
+	}
+
+	content.Metadata = models.MakeJSONField(metadata)
+
+	if err := d.DB.Save(&content).Error; err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"failed to move file: %v"}`, err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"content": content,
+	})
+}
+
+func handleGetFileTree(w http.ResponseWriter, r *http.Request, d deps.Deps) {
+	userID := r.Context().Value(UserContextKey).(string)
+	groupID := r.URL.Query().Get("group_id")
+
+	if groupID == "" {
+		http.Error(w, `{"error":"group_id is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Verify group membership
+	var membership models.GroupMembership
+	if err := d.DB.Where("user_id = ? AND group_id = ?", userID, groupID).First(&membership).Error; err != nil {
+		http.Error(w, `{"error":"not a member of this group"}`, http.StatusForbidden)
+		return
+	}
+
+	// Get all folders for the group
+	var folders []*models.Content
+	if err := d.DB.Where("group_id = ? AND type = ?", groupID, "folder").Find(&folders).Error; err != nil {
+		http.Error(w, fmt.Sprintf(`{"error":"failed to fetch folders: %v"}`, err), http.StatusInternalServerError)
+		return
+	}
+
+	// Build tree structure
+	tree := buildFileTree(folders)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(tree)
+}
+
+// Helper function to build tree structure from flat folder list
+func buildFileTree(folders []*models.Content) []map[string]interface{} {
+	tree := []map[string]interface{}{}
+	folderMap := make(map[string]map[string]interface{})
+
+	// First pass: create map entries for all folders
+	for _, folder := range folders {
+		metadata := folder.Metadata.Data
+		path := metadata["path"].(string)
+
+		node := map[string]interface{}{
+			"id":       folder.ID,
+			"name":     metadata["title"],
+			"path":     path,
+			"children": []map[string]interface{}{},
+		}
+		folderMap[path] = node
+	}
+
+	// Second pass: build tree relationships
+	for path, node := range folderMap {
+		parentPath := path[:strings.LastIndex(path, "/")]
+		if parentPath != "" && parentPath != path {
+			if parent, exists := folderMap[parentPath]; exists {
+				children := parent["children"].([]map[string]interface{})
+				parent["children"] = append(children, node)
+			} else {
+				// Top-level folder
+				tree = append(tree, node)
+			}
+		} else {
+			// Root-level folder
+			tree = append(tree, node)
+		}
+	}
+
+	return tree
 }

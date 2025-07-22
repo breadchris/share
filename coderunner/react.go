@@ -1,7 +1,14 @@
 package coderunner
 
 import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"os"
+	"path/filepath"
+
 	. "github.com/breadchris/share/html"
+	"github.com/evanw/esbuild/pkg/api"
 	"net/http"
 )
 
@@ -54,238 +61,6 @@ func ServeReactAppWithProps(w http.ResponseWriter, r *http.Request, componentPat
 	DefaultLayout(children...).RenderPage(w, r)
 }
 
-// ServeReactAppProduction serves a React application with self-contained production assets
-// This generates a minimal HTML page that loads a pre-built bundle with no external dependencies
-func ServeReactAppProduction(w http.ResponseWriter, r *http.Request, bundlePath string) {
-	htmlContent := `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Supabase CLAUDE.md Platform</title>
-    
-    <!-- Self-contained styling -->
-    <style>
-        /* Reset and base styles */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: #f9fafb;
-            color: #111827;
-            line-height: 1.6;
-        }
-        
-        #root { 
-            width: 100%; 
-            min-height: 100vh; 
-        }
-        
-        /* Loading styles */
-        .loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            gap: 12px;
-            flex-direction: column;
-        }
-        
-        .spinner {
-            border: 3px solid #e5e7eb;
-            border-top: 3px solid #3b82f6;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* Error styles */
-        .error { 
-            padding: 24px; 
-            color: #dc2626; 
-            background: #fef2f2; 
-            border: 2px solid #fecaca; 
-            margin: 20px; 
-            border-radius: 12px;
-            font-family: 'Monaco', 'Menlo', monospace;
-            max-width: 800px;
-            margin: 20px auto;
-        }
-        
-        .error h3 {
-            margin-bottom: 16px;
-            font-size: 18px;
-        }
-        
-        .error pre {
-            background: #ffffff;
-            padding: 12px;
-            border-radius: 6px;
-            overflow-x: auto;
-            margin: 12px 0;
-            border: 1px solid #fca5a5;
-        }
-        
-        .error ul {
-            margin: 16px 0;
-            padding-left: 20px;
-        }
-        
-        .error li {
-            margin: 8px 0;
-        }
-        
-        /* Basic utility styles for components */
-        .btn {
-            padding: 8px 16px;
-            border-radius: 6px;
-            border: 1px solid #d1d5db;
-            background: #ffffff;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-        
-        .btn:hover {
-            background: #f3f4f6;
-        }
-        
-        .btn-primary {
-            background: #3b82f6;
-            color: white;
-            border-color: #3b82f6;
-        }
-        
-        .btn-primary:hover {
-            background: #2563eb;
-        }
-        
-        .card {
-            background: white;
-            border-radius: 8px;
-            padding: 24px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            border: 1px solid #e5e7eb;
-        }
-        
-        .input {
-            padding: 8px 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 14px;
-            width: 100%;
-        }
-        
-        .input:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-        
-        /* Layout utilities */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 16px;
-        }
-        
-        .flex {
-            display: flex;
-        }
-        
-        .flex-col {
-            flex-direction: column;
-        }
-        
-        .gap-4 {
-            gap: 16px;
-        }
-        
-        .p-4 {
-            padding: 16px;
-        }
-        
-        .mt-4 {
-            margin-top: 16px;
-        }
-        
-        .mb-4 {
-            margin-bottom: 16px;
-        }
-        
-        .text-lg {
-            font-size: 18px;
-        }
-        
-        .text-xl {
-            font-size: 20px;
-        }
-        
-        .text-2xl {
-            font-size: 24px;
-        }
-        
-        .font-bold {
-            font-weight: 700;
-        }
-        
-        .text-gray-600 {
-            color: #6b7280;
-        }
-        
-        .text-center {
-            text-align: center;
-        }
-        
-        .min-h-screen {
-            min-height: 100vh;
-        }
-        
-        .bg-gray-50 {
-            background-color: #f9fafb;
-        }
-        
-        .bg-white {
-            background-color: #ffffff;
-        }
-        
-        .rounded {
-            border-radius: 6px;
-        }
-        
-        .shadow {
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-    </style>
-</head>
-<body>
-    <div id="root">
-        <div class="loading">
-            <div class="spinner"></div>
-            <div>Loading Supabase CLAUDE.md Platform...</div>
-        </div>
-    </div>
-    
-    <!-- Self-contained bundled application -->
-    <script src="` + bundlePath + `"></script>
-</body>
-</html>`
-
-	w.Header().Set("Content-Type", "text/html")
-	w.Write([]byte(htmlContent))
-}
-
 // LoadModule creates a script node that loads and renders a React component module
 // componentPath: path to the component file (e.g., "claudemd/ClaudeDocApp.tsx")
 // componentName: name of the component to render (e.g., "ClaudeDocApp")
@@ -331,4 +106,200 @@ func LoadModule(componentPath, componentName string) *Node {
         }
     </script>
 `))
+}
+
+// BuildComponentResult holds the result of building a React component
+type BuildComponentResult struct {
+	JSFileName string
+	CSSFiles   []string
+	ErrorMsgs  []string
+	HasErrors  bool
+}
+
+// buildComponentWithCSS builds a React component with esbuild and returns build results
+func buildComponentWithCSS(componentPath, componentName string) *BuildComponentResult {
+	result := &BuildComponentResult{}
+
+	// Check if file exists
+	if _, err := os.Stat(componentPath); os.IsNotExist(err) {
+		result.ErrorMsgs = []string{fmt.Sprintf("Component file not found: %s", componentPath)}
+		result.HasErrors = true
+		return result
+	}
+
+	// Create output directory for fullrender
+	outputDir := filepath.Join("data/fullrender", componentPath)
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		result.ErrorMsgs = []string{fmt.Sprintf("Failed to create output directory: %v", err)}
+		result.HasErrors = true
+		return result
+	}
+
+	// Build with esbuild using the same configuration as handleFullRenderComponent
+	buildResult := api.Build(api.BuildOptions{
+		EntryPoints: []string{componentPath},
+		Outdir:      outputDir,
+		Loader: map[string]api.Loader{
+			".js":    api.LoaderJS,
+			".jsx":   api.LoaderJSX,
+			".ts":    api.LoaderTS,
+			".tsx":   api.LoaderTSX,
+			".css":   api.LoaderCSS,
+			".woff":  api.LoaderFile,
+			".woff2": api.LoaderFile,
+		},
+		Format:          api.FormatESModule,
+		Bundle:          true,
+		Write:           true,
+		Sourcemap:       api.SourceMapInline,
+		TreeShaking:     api.TreeShakingTrue,
+		Target:          api.ESNext,
+		JSX:             api.JSXAutomatic,
+		JSXImportSource: "react",
+		LogLevel:        api.LogLevelSilent,
+		External:        []string{"react", "react-dom", "react-dom/client", "react/jsx-runtime"},
+		AssetNames:      "[name]-[hash]",
+		EntryNames:      "[name]",
+		TsconfigRaw: `{
+			"compilerOptions": {
+				"jsx": "react-jsx",
+				"allowSyntheticDefaultImports": true,
+				"esModuleInterop": true,
+				"moduleResolution": "node",
+				"target": "ESNext",
+				"lib": ["ESNext", "DOM", "DOM.Iterable"],
+				"allowJs": true,
+				"skipLibCheck": true,
+				"strict": false,
+				"forceConsistentCasingInFileNames": true,
+				"noEmit": true,
+				"incremental": true,
+				"resolveJsonModule": true,
+				"isolatedModules": true
+			}
+		}`,
+	})
+
+	// Check for build errors
+	if len(buildResult.Errors) > 0 {
+		errorMessages := make([]string, len(buildResult.Errors))
+		for i, err := range buildResult.Errors {
+			errorMessages[i] = fmt.Sprintf("%s:%d:%d: %s", err.Location.File, err.Location.Line, err.Location.Column, err.Text)
+		}
+		result.ErrorMsgs = errorMessages
+		result.HasErrors = true
+		return result
+	}
+
+	// Find generated files in the output directory
+	files, err := os.ReadDir(outputDir)
+	if err != nil {
+		result.ErrorMsgs = []string{fmt.Sprintf("Failed to read output directory: %v", err)}
+		result.HasErrors = true
+		return result
+	}
+
+	var jsFiles, cssFiles []string
+	for _, file := range files {
+		if !file.IsDir() {
+			fileName := file.Name()
+			ext := filepath.Ext(fileName)
+			if ext == ".js" {
+				jsFiles = append(jsFiles, fileName)
+			} else if ext == ".css" {
+				cssFiles = append(cssFiles, fileName)
+			}
+		}
+	}
+
+	if len(jsFiles) == 0 {
+		result.ErrorMsgs = []string{"No JavaScript output generated"}
+		result.HasErrors = true
+		return result
+	}
+
+	result.JSFileName = jsFiles[0]
+	result.CSSFiles = cssFiles
+
+	return result
+}
+
+// ServeFullRenderComponent serves a React component using the full render approach
+// This extracts the core logic from handleFullRenderComponent and makes it reusable
+func ServeFullRenderComponent(w http.ResponseWriter, r *http.Request, componentPath, componentName string) {
+	// Build the component with CSS extraction
+	buildResult := buildComponentWithCSS(componentPath, componentName)
+
+	// Handle build errors
+	if buildResult.HasErrors {
+		errorPage := BuildErrorPage(componentPath, buildResult.ErrorMsgs)
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte(errorPage.Render()))
+		return
+	}
+
+	// Create the complete HTML page with CSS links and component loader
+	page := ReactComponentPageWithCSS(
+		componentName,
+		componentPath,
+		buildResult.JSFileName,
+		buildResult.CSSFiles,
+	)
+
+	// Serve the page
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(page.Render()))
+}
+
+// ServeFullRenderComponentWithProps serves a React component with server-side props
+func ServeFullRenderComponentWithProps(w http.ResponseWriter, r *http.Request, componentPath, componentName string, props interface{}) {
+	// Build the component
+	buildResult := buildComponentWithCSS(componentPath, componentName)
+
+	if buildResult.HasErrors {
+		errorPage := BuildErrorPage(componentPath, buildResult.ErrorMsgs)
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte(errorPage.Render()))
+		return
+	}
+
+	// Serialize props to JSON
+	var propsScript *Node
+	if props != nil {
+		propsJSON, err := json.Marshal(props)
+		if err != nil {
+			log.Printf("Error marshaling props: %v", err)
+			propsScript = Script(Type("text/javascript"), Raw("window.__PROPS__ = {};"))
+		} else {
+			propsScript = Script(Type("text/javascript"), Raw(fmt.Sprintf("window.__PROPS__ = %s;", string(propsJSON))))
+		}
+	} else {
+		propsScript = Script(Type("text/javascript"), Raw("window.__PROPS__ = {};"))
+	}
+
+	// Create page with props injection
+	cssLinks := CSSLinks(componentPath, buildResult.CSSFiles)
+
+	headNodes := []*Node{
+		Meta(Charset("UTF-8")),
+		Meta(Name("viewport"), Content("width=device-width, initial-scale=1.0")),
+		Title(T("React Component - " + componentName)),
+		ReactImportMap(),
+		Link(Rel("stylesheet"), Type("text/css"), Href("https://cdn.jsdelivr.net/npm/daisyui@5")),
+		Script(Src("https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4")),
+		propsScript,
+	}
+	headNodes = append(headNodes, cssLinks...)
+	headNodes = append(headNodes, ComponentRuntimeStyles())
+
+	page := Html(
+		Head(Ch(headNodes)),
+		Body(
+			Div(Id("root")),
+			ComponentLoader(componentPath+"/"+buildResult.JSFileName, componentName, false),
+		),
+	)
+
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(page.Render()))
 }

@@ -140,6 +140,7 @@ export interface GroupSelectorProps {
   onJoinGroup: () => void;
   showContentCapture?: boolean;
   onToggleContentCapture?: () => void;
+  onToggleFileManager?: () => void;
 }
 
 export interface TagInputProps {

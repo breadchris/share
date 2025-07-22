@@ -1393,7 +1393,7 @@ func handleFullRenderComponent(w http.ResponseWriter, r *http.Request) {
 		Format:          api.FormatESModule,
 		Bundle:          true,
 		Write:           true,
-		Sourcemap:       api.SourceMapExternal,
+		Sourcemap:       api.SourceMapInline,
 		TreeShaking:     api.TreeShakingTrue,
 		Target:          api.ESNext,
 		JSX:             api.JSXAutomatic,

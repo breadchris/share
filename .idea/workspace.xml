@@ -6,6 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/aiapi/AIEditorDemo.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/aiapi/AIEditorDemo.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/aiapi/BlockNoteAIEditor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/aiapi/BlockNoteAIEditor.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/aiapi/aiapi.go" beforeDir="false" afterPath="$PROJECT_DIR$/aiapi/aiapi.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/chromedp-mcp/cmd/chromedp-mcp/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/chromedp-mcp/cmd/chromedp-mcp/main.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/chromedp-mcp/go.mod" beforeDir="false" />
@@ -22,34 +24,15 @@
       <change beforePath="$PROJECT_DIR$/chromedp-mcp/tool/navigate.go" beforeDir="false" afterPath="$PROJECT_DIR$/chromedp-mcp/tool/navigate.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/chromedp-mcp/tool/screenshot.go" beforeDir="false" afterPath="$PROJECT_DIR$/chromedp-mcp/tool/screenshot.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/chromedp-mcp/tool/value.go" beforeDir="false" afterPath="$PROJECT_DIR$/chromedp-mcp/tool/value.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/coderunner.go" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/coderunner.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/coderunner/react.go" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/react.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/flow" beforeDir="false" afterPath="$PROJECT_DIR$/flow" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/buf.gen.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/buf.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/claude/ClaudeWebInterface.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/flow/claude/ClaudeWebInterface.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/claude/claude.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/claude/claude.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/claude/components/MessageList.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/flow/claude/components/MessageList.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/claude/components/SessionBrowser.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/flow/claude/components/SessionBrowser.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/claude/hooks/useClaudeWebSocket.ts" beforeDir="false" afterPath="$PROJECT_DIR$/flow/claude/hooks/useClaudeWebSocket.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/claude/services/claudeSessionClient.ts" beforeDir="false" afterPath="$PROJECT_DIR$/flow/claude/services/claudeSessionClient.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/claude/session_fix.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/claude/session_fix.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/claude/session_id_fix.go" beforeDir="false" afterPath="$PROJECT_DIR$/flow/claude/session_id_fix.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/claude/types/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/flow/claude/types/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/claude/utils/messageFormatting.ts" beforeDir="false" afterPath="$PROJECT_DIR$/flow/claude/utils/messageFormatting.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/flow" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/proto/claude/claude_session.proto" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/proto/example/example.proto" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/pulumi-slackbot/.env.example" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/pulumi-slackbot/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/pulumi-slackbot/Makefile" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/pulumi-slackbot/Pulumi.yaml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/pulumi-slackbot/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/pulumi-slackbot/build.sh" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/pulumi-slackbot/go.mod" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/pulumi-slackbot/lambda/claude-session/go.mod" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/pulumi-slackbot/lambda/claude-session/main.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/pulumi-slackbot/lambda/go.mod" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/pulumi-slackbot/lambda/main.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow/pulumi-slackbot/main.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/justshare/JustShare.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/JustShare.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/justshare/components/GroupSelector.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/GroupSelector.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/justshare/justshare.go" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/justshare.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/justshare/types/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/types/index.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/justshare/utils/api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/utils/api.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-coderunner.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-coderunner.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
