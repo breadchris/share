@@ -1,0 +1,63 @@
+# Docker Compose for Flow/Worklet Development
+# Alternative to Kind for simpler local development
+
+version: '3.8'
+
+services:
+  worklet-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flow-worklet
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - WORKLET_DOMAIN=worklet.local
+      - WORKLET_BASE_DIR=/tmp/worklet-repos
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./repos:/tmp/worklet-repos
+      - ./config:/app/config:ro
+    networks:
+      - worklet-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  traefik:
+    image: traefik:v3.0
+    container_name: flow-worklet-traefik
+    command:
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--log.level=DEBUG"
+    ports:
+      - "80:80"
+      - "9000:8080"  # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - worklet-network
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.worklet.local`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+
+networks:
+  worklet-network:
+    name: worklet-network
+    driver: bridge
+
+volumes:
+  worklet-repos:
+    name: worklet-repos

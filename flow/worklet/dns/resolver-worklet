@@ -1,0 +1,14 @@
+# DNS resolver configuration for .worklet.local domains
+# This file should be placed at /etc/resolver/worklet
+# It tells macOS to use our dnsmasq instance for .worklet.local domains
+
+# Use our dnsmasq instance running on localhost:53533
+nameserver 127.0.0.1
+port 53533
+
+# Only use this resolver for .worklet.local domains
+domain worklet.local
+
+# Timeout and search settings
+timeout 5
+search_order 1

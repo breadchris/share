@@ -1,0 +1,51 @@
+# Kind cluster configuration for flow/worklet development
+# This configuration sets up a Kind cluster with ingress support and proper port mappings
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: flow-worklet
+nodes:
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+  extraPortMappings:
+  # Traefik HTTP port
+  - containerPort: 30080
+    hostPort: 80
+    protocol: TCP
+  # Traefik HTTPS port  
+  - containerPort: 30443
+    hostPort: 443
+    protocol: TCP
+  # Traefik Dashboard
+  - containerPort: 30900
+    hostPort: 9000
+    protocol: TCP
+  # Additional ports for worklet services (30000-30099 range)
+  - containerPort: 30000
+    hostPort: 3000
+    protocol: TCP
+  - containerPort: 30005
+    hostPort: 3005
+    protocol: TCP
+  - containerPort: 30006
+    hostPort: 3006
+    protocol: TCP
+  - containerPort: 30007
+    hostPort: 3007
+    protocol: TCP
+  - containerPort: 30008
+    hostPort: 3008
+    protocol: TCP
+- role: worker
+  extraMounts:
+  # Mount Docker socket for worklet container management
+  - hostPath: /var/run/docker.sock
+    containerPath: /var/run/docker.sock
+  # Mount local directory for repository storage
+  - hostPath: /tmp/worklet-repos
+    containerPath: /tmp/worklet-repos
+- role: worker

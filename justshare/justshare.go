@@ -182,10 +182,8 @@ func checkAPIKeyScope(ctx context.Context, requiredScope string) error {
 func New(d deps.Deps) *http.ServeMux {
 	m := http.NewServeMux()
 
-	// Main JustShare page
-	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		coderunner.ServeFullRenderComponent(w, r, "justshare/JustShare.tsx", "JustShare")
-	})
+	// Note: Main JustShare page is now handled by the catch-all route at the end
+	// to support file path navigation
 
 	// Content endpoints
 	m.HandleFunc("/api/content", func(w http.ResponseWriter, r *http.Request) {
@@ -386,6 +384,22 @@ func New(d deps.Deps) *http.ServeMux {
 		default:
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
+	})
+
+	// Catch-all route for file navigation
+	// This must come after all API routes to avoid conflicts
+	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// Skip if it's an API route or static file
+		if strings.HasPrefix(r.URL.Path, "/api/") || 
+		   strings.HasPrefix(r.URL.Path, "/static/") ||
+		   strings.HasPrefix(r.URL.Path, "/coderunner/") {
+			http.NotFound(w, r)
+			return
+		}
+		
+		// Pass the URL path to the React component via data attribute
+		// The component will read this to initialize the file manager path
+		coderunner.ServeFullRenderComponent(w, r, "justshare/JustShare.tsx", "JustShare")
 	})
 
 	return m

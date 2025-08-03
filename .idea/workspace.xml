@@ -5,34 +5,24 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/16f42ecc-32ac-4956-9db5-dbb4c457daf2.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/16f42ecc-32ac-4956-9db5-dbb4c457daf2/storage_v2/_src_/schema/main.uQUzAA.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/aiapi/AIEditorDemo.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/aiapi/AIEditorDemo.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/aiapi/BlockNoteAIEditor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/aiapi/BlockNoteAIEditor.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/aiapi/aiapi.go" beforeDir="false" afterPath="$PROJECT_DIR$/aiapi/aiapi.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chromedp-mcp/cmd/chromedp-mcp/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/chromedp-mcp/cmd/chromedp-mcp/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chromedp-mcp/go.mod" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/chromedp-mcp/go.sum" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/chromedp-mcp/tool/all_element.go" beforeDir="false" afterPath="$PROJECT_DIR$/chromedp-mcp/tool/all_element.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chromedp-mcp/tool/chrome.go" beforeDir="false" afterPath="$PROJECT_DIR$/chromedp-mcp/tool/chrome.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chromedp-mcp/tool/click.go" beforeDir="false" afterPath="$PROJECT_DIR$/chromedp-mcp/tool/click.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chromedp-mcp/tool/cookie.go" beforeDir="false" afterPath="$PROJECT_DIR$/chromedp-mcp/tool/cookie.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chromedp-mcp/tool/download_file.go" beforeDir="false" afterPath="$PROJECT_DIR$/chromedp-mcp/tool/download_file.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chromedp-mcp/tool/download_image.go" beforeDir="false" afterPath="$PROJECT_DIR$/chromedp-mcp/tool/download_image.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chromedp-mcp/tool/element.go" beforeDir="false" afterPath="$PROJECT_DIR$/chromedp-mcp/tool/element.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chromedp-mcp/tool/key_event.go" beforeDir="false" afterPath="$PROJECT_DIR$/chromedp-mcp/tool/key_event.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chromedp-mcp/tool/keys.go" beforeDir="false" afterPath="$PROJECT_DIR$/chromedp-mcp/tool/keys.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chromedp-mcp/tool/navigate.go" beforeDir="false" afterPath="$PROJECT_DIR$/chromedp-mcp/tool/navigate.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chromedp-mcp/tool/screenshot.go" beforeDir="false" afterPath="$PROJECT_DIR$/chromedp-mcp/tool/screenshot.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/chromedp-mcp/tool/value.go" beforeDir="false" afterPath="$PROJECT_DIR$/chromedp-mcp/tool/value.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/coderunner.go" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/coderunner.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/coderunner/react.go" beforeDir="false" afterPath="$PROJECT_DIR$/coderunner/react.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/flow" beforeDir="false" afterPath="$PROJECT_DIR$/flow" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/db.go" beforeDir="false" afterPath="$PROJECT_DIR$/db/db.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.work" beforeDir="false" afterPath="$PROJECT_DIR$/go.work" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.work.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.work.sum" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/justshare/JustShare.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/JustShare.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/justshare/components/GroupSelector.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/GroupSelector.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/justshare/components/FileManager.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/FileManager.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/justshare/justshare.go" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/justshare.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/justshare/types/index.ts" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/types/index.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/justshare/utils/api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/utils/api.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-coderunner.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-coderunner.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/models.go" beforeDir="false" afterPath="$PROJECT_DIR$/models/models.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/spotify.go" beforeDir="false" afterPath="$PROJECT_DIR$/spotify.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-models.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-models.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -50,6 +40,20 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="HttpClientEndpointsTabState">
+    <option name="cachedRequestData" value="&lt;CachedHttpClientTabRequests&gt;&#10;  &lt;entry key=&quot;b4a3809b9eb82d1a6a48f2fd7a2ae7b69de4a843&quot; value=&quot;###&amp;#10;GET http://localhost:8080/registry/&quot; /&gt;&#10;&lt;/CachedHttpClientTabRequests&gt;" />
+  </component>
+  <component name="KubernetesApiPersistence">{}</component>
+  <component name="KubernetesApiProvider"><![CDATA[{
+  "configuredContexts": [
+    {
+      "name": "kind-flow-worklet",
+      "kubeConfigUrl": "file:///Users/hacked/.kube/config",
+      "currentNamespace": "flow-worklet"
+    }
+  ],
+  "isMigrated": true
+}]]></component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="g132qsae" />
   </component>
@@ -68,7 +72,7 @@
   "keyToString": {
     "DefaultGoTemplateProperty": "Go File",
     "Go Build.flow.executor": "Run",
-    "Go Build.share.executor": "Run",
+    "Go Build.share.executor": "Debug",
     "Go Test.TestClaudeBasicFileModification in github.com/breadchris/flow/worklet.executor": "Run",
     "Go Test.TestClaudeIntegrationDemo in github.com/breadchris/flow/worklet.executor": "Run",
     "Go Test.TestClaudeMigrate in github.com/breadchris/share/db.executor": "Run",
@@ -95,7 +99,7 @@
     "project.structure.last.edited": "Project",
     "project.structure.proportion": "0.15",
     "project.structure.side.proportion": "0.2",
-    "settings.editor.selected.configurable": "preferences.keymap",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
     "ts.external.directory.path": "/Users/hacked/Documents/GitHub/share/node_modules/typescript/lib",
     "vue.rearranger.settings.migration": "true"
   },
@@ -261,6 +265,9 @@
     </attachedChunks>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="SwiftWorkspaceSettings">
+    <option name="detectedToolchain" value="true" />
+  </component>
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="" />
@@ -299,6 +306,7 @@
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
       <workItem from="1750823408293" duration="331921000" />
+      <workItem from="1754033044459" duration="12835000" />
     </task>
     <servers />
   </component>

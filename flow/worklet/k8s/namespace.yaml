@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: flow-worklet
+  labels:
+    name: flow-worklet
+    purpose: worklet-development

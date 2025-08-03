@@ -30,6 +30,7 @@ import (
 	"github.com/breadchris/share/editor/config"
 	"github.com/breadchris/share/editor/leaps"
 	"github.com/breadchris/share/editor/playground"
+	"github.com/breadchris/share/eventposter"
 	"github.com/breadchris/share/example"
 	"github.com/breadchris/share/graph"
 	"github.com/breadchris/share/host"
@@ -266,7 +267,7 @@ func startServer(useTLS bool, port int) {
 		},
 	}
 
-	shouldInterpret := true
+	shouldInterpret := false
 	//shouldInterpret := false
 	interpreted := func(f func(d deps2.Deps) *http.ServeMux, files ...string) *http.ServeMux {
 		m := http.NewServeMux()
@@ -320,6 +321,7 @@ func startServer(useTLS bool, port int) {
 	p("/user", interpreted(user.New))
 	p("/chat", interpreted(NewChat))
 	p("/spotify", setupSpotify(deps))
+	p("/eventposter", interpreted(eventposter.New))
 	p("/vote", interpreted(NewVote))
 	p("/breadchris", interpreted(breadchris.New))
 	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./eventcalendar.go", "./card.go", "./ai.go", "./tarot.go"}))

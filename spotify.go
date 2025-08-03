@@ -252,3 +252,31 @@ func (s *Spotify) playSongsHandler(w http.ResponseWriter, r *http.Request) {
 	s.songQueue = s.songQueue[1:]
 	http.Redirect(w, r, "/spotify", http.StatusSeeOther)
 }
+
+// CreateSpotifyClient creates a new Spotify client for API access
+func CreateSpotifyClient(c config.AppConfig) (*spotify.Client, error) {
+	config := &clientcredentials.Config{
+		ClientID:     c.Spotify.ClientID,
+		ClientSecret: c.Spotify.ClientSecret,
+		TokenURL:     auth.TokenURL,
+		Scopes: []string{
+			auth.ScopeUserReadPlaybackState, auth.ScopeUserModifyPlaybackState,
+		},
+	}
+	
+	token, err := config.Token(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get token: %v", err)
+	}
+
+	a := auth.New(
+		auth.WithScopes(auth.ScopeUserReadPlaybackState, auth.ScopeUserModifyPlaybackState),
+		auth.WithClientID(c.Spotify.ClientID),
+		auth.WithClientSecret(c.Spotify.ClientSecret),
+	)
+	
+	httpClient := a.Client(context.Background(), token)
+	client := spotify.New(httpClient)
+	
+	return client, nil
+}

@@ -1,0 +1,126 @@
+# Traefik Helm Values for Local Development with Kind
+# Optimized for worklet DNS routing and local development
+
+# Deployment configuration
+deployment:
+  replicas: 1
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/metrics"
+
+# Service configuration for Kind
+service:
+  type: NodePort
+  annotations: {}
+
+# Port configuration
+ports:
+  web:
+    port: 80
+    exposedPort: 80
+    protocol: TCP
+    nodePort: 30080
+  websecure:
+    port: 443
+    exposedPort: 443
+    protocol: TCP
+    nodePort: 30443
+    tls:
+      enabled: false  # Disable TLS for local development
+  traefik:
+    port: 9000
+    exposedPort: 9000
+    nodePort: 30900
+
+# Ingress configuration
+ingressRoute:
+  dashboard:
+    enabled: true
+    annotations: {}
+    matchRule: Host(`traefik.worklet.local`)
+    # No TLS for local development
+
+# Enable API and Dashboard
+api:
+  dashboard: true
+  debug: true
+  insecure: true  # Allow insecure dashboard access for local dev
+
+# Metrics configuration
+metrics:
+  prometheus:
+    addEntryPointsLabels: true
+    addServicesLabels: true
+    addRoutersLabels: true
+
+# Pilot configuration
+pilot:
+  enabled: false
+
+# No global HTTPS redirect for local development
+globalArguments: []
+
+# Additional arguments for local development
+additionalArguments:
+  - "--log.level=DEBUG"
+  - "--accesslog=true"
+  - "--providers.kubernetesingress.ingressendpoint.ip=127.0.0.1"
+  - "--providers.kubernetescrd.allowCrossNamespace=true"
+  - "--serversTransport.insecureSkipVerify=true"
+
+# No persistence needed for local development
+persistence:
+  enabled: false
+
+# Pod security context (relaxed for local development)
+securityContext:
+  capabilities:
+    drop: [ALL]
+  readOnlyRootFilesystem: false  # Allow writes for local dev
+  runAsGroup: 65532
+  runAsNonRoot: true
+  runAsUser: 65532
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: false
+
+# Resource limits (reduced for local development)
+resources:
+  requests:
+    cpu: 50m
+    memory: 32Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+# Node selector and tolerations for Kind
+nodeSelector: {}
+tolerations:
+- key: node-role.kubernetes.io/control-plane
+  operator: Exists
+  effect: NoSchedule
+
+affinity: {}
+
+# Enable RBAC
+rbac:
+  enabled: true
+  namespaced: false
+
+# Service account
+serviceAccount:
+  name: traefik
+
+# Environment variables for local development
+env: []
+
+# Enable providers
+providers:
+  kubernetesCRD:
+    enabled: true
+    allowCrossNamespace: true
+  kubernetesIngress:
+    enabled: true
+    allowExternalNameServices: true

@@ -2,6 +2,12 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/awesomelist/data/awesomelist/298b6acf-d7d9-41aa-b5d0-c3d136c9b75b" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/awesomelist/data/awesomelist/49d0fea3-27c3-474c-a60a-bcfc06c560d9" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/awesomelist/data/awesomelist/4b2a95dd-54b5-422f-bb2a-00b722ae0016" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/awesomelist/data/awesomelist/940fe9dc-0582-4eb9-9f05-54774e9e6c68" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/awesomelist/data/awesomelist/a19fe8c5-48f7-4215-9f62-ab2a86f4e38e" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/awesomelist/data/awesomelist/b7a398e7-5a3e-45aa-9d2b-0082eb5d4796" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/chromedp-mcp" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/claudemd" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/flow" vcs="Git" />

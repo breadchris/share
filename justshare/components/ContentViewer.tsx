@@ -235,7 +235,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
     console.log('ContentViewer Debug - normalizedType:', normalizedType);
     
     // Additional validation for valid content types
-    const validTypes = ['text', 'image', 'audio', 'clipboard', 'file', 'url'];
+    const validTypes = ['text', 'image', 'audio', 'clipboard', 'file', 'url', 'document'];
     const isValidType = typeof normalizedType === 'string' && validTypes.includes(normalizedType);
     console.log('ContentViewer Debug - isValidType:', isValidType);
     
@@ -588,11 +588,72 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
           </div>
         );
 
+      case 'document':
+        const documentName = content.metadata?.title || 'Untitled Document';
+        const documentPath = content.metadata?.path || '';
+        
+        return (
+          <div className="space-y-6">
+            <div className="text-center">
+              <div className="text-8xl mb-4">📄</div>
+              <h3 className={`text-xl font-medium break-words ${isFullscreen ? 'text-white' : 'text-gray-900'}`}>
+                {documentName}
+              </h3>
+              {documentPath && (
+                <p className={`text-sm mt-2 ${isFullscreen ? 'text-gray-300' : 'text-gray-600'}`}>
+                  Path: {documentPath}
+                </p>
+              )}
+              <p className={`text-sm mt-1 ${isFullscreen ? 'text-gray-300' : 'text-gray-600'}`}>
+                Created: {formatTimestamp(content.created_at)}
+              </p>
+            </div>
+
+            <div className="text-center space-y-4">
+              <p className={`text-lg ${isFullscreen ? 'text-gray-300' : 'text-gray-600'}`}>
+                Click to open this document in the editor
+              </p>
+              
+              <div className="flex justify-center">
+                <a
+                  href={`/editor?id=${content.id}`}
+                  className={`inline-flex items-center px-6 py-3 rounded-lg transition-colors text-base font-medium ${
+                    isFullscreen 
+                      ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                      : 'bg-blue-500 text-white hover:bg-blue-600'
+                  }`}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mr-2">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                    <path d="M14 2v6h6"/>
+                    <path d="M16 13H8M16 17H8M10 9H8"/>
+                  </svg>
+                  Open in Editor
+                </a>
+              </div>
+            </div>
+
+            {/* Additional metadata */}
+            {content.metadata && Object.keys(content.metadata).filter(key => !['title', 'path', 'content'].includes(key)).length > 0 && (
+              <div className={`text-sm space-y-1 text-center ${isFullscreen ? 'text-gray-300' : 'text-gray-600'}`}>
+                <h4 className="font-medium">Additional Details:</h4>
+                {Object.entries(content.metadata)
+                  .filter(([key]) => !['title', 'path', 'content'].includes(key))
+                  .map(([key, value]) => (
+                    <p key={key}>
+                      <span className="font-medium">{key}:</span> {String(value)}
+                    </p>
+                  ))}
+              </div>
+            )}
+          </div>
+        );
+
       default:
         console.error('ContentViewer Debug - Reached default case!');
         console.error('ContentViewer Debug - Original content.type:', content.type);
         console.error('ContentViewer Debug - Normalized type:', normalizedType);
-        console.error('ContentViewer Debug - All valid types:', ['text', 'image', 'audio', 'clipboard', 'file', 'url']);
+        console.error('ContentViewer Debug - All valid types:', ['text', 'image', 'audio', 'clipboard', 'file', 'url', 'document']);
         return (
           <div className={`text-center ${isFullscreen ? 'text-white' : 'text-gray-500'}`}>
             <div className="text-6xl mb-4">❓</div>
@@ -647,6 +708,7 @@ export const ContentViewer: React.FC<ContentViewerProps> = ({
                  content.type === 'audio' ? 'Audio Recording' :
                  content.type === 'clipboard' ? 'Clipboard' :
                  content.type === 'file' ? 'File' :
+                 content.type === 'document' ? 'Document' :
                  content.type === 'url' ? (content.metadata?.isYouTube ? 'YouTube Video' : 'Link') : 'Content'}
               </h2>
               <div className={`text-sm ${isFullscreen ? 'text-gray-300' : 'text-gray-600'}`}>

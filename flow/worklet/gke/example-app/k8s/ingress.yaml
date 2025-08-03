@@ -1,0 +1,36 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: flow-worklet-ingressroute
+  namespace: default
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`flow-worklet.example.com`)
+      kind: Rule
+      services:
+        - name: flow-worklet-service
+          port: 80
+      middlewares:
+        - name: https-redirect
+  tls:
+    secretName: flow-worklet-tls
+    certResolver: letsencrypt
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: flow-worklet-ingressroute-http
+  namespace: default
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`flow-worklet.example.com`)
+      kind: Rule
+      services:
+        - name: flow-worklet-service
+          port: 80
+      middlewares:
+        - name: https-redirect

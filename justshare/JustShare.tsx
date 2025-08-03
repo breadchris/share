@@ -30,6 +30,7 @@ export const JustShare: React.FC = () => {
 
   const [showContentCapture, setShowContentCapture] = useState(true);
   const [showFileManager, setShowFileManager] = useState(false);
+  const [initialFilePath, setInitialFilePath] = useState<string | null>(null);
 
   const [showGroupManager, setShowGroupManager] = useState<{
     visible: boolean;
@@ -54,6 +55,14 @@ export const JustShare: React.FC = () => {
     if (joinCode) {
       setInitialJoinCode(joinCode);
       setShowGroupManager({ visible: true, mode: 'join' });
+    }
+    
+    // Check if URL path is a file path (not just "/" and not an API path)
+    const path = window.location.pathname;
+    if (path && path !== '/' && !path.startsWith('/api/')) {
+      setInitialFilePath(path);
+      setShowFileManager(true);
+      setShowContentCapture(false);
     }
   }, []);
 
@@ -393,7 +402,14 @@ export const JustShare: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-white">
           <FileManager
             groupId={appState.currentGroup.id}
-            onClose={() => setShowFileManager(false)}
+            initialPath={initialFilePath}
+            onClose={() => {
+              setShowFileManager(false);
+              // Reset URL to root when closing file manager
+              if (window.location.pathname !== '/') {
+                window.history.pushState(null, '', '/');
+              }
+            }}
           />
         </div>
       )}

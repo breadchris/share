@@ -1,0 +1,135 @@
+# Traefik v3 Helm Values Configuration
+# Deployment configuration
+deployment:
+  replicas: 2
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/metrics"
+
+# Service configuration
+service:
+  type: LoadBalancer
+  annotations:
+    cloud.google.com/load-balancer-type: "External"
+  spec:
+    loadBalancerSourceRanges:
+      - 0.0.0.0/0
+
+# Port configuration
+ports:
+  web:
+    port: 80
+    expose: true
+    exposedPort: 80
+    protocol: TCP
+    redirectTo:
+      port: websecure
+      scheme: https
+  websecure:
+    port: 443
+    expose: true
+    exposedPort: 443
+    protocol: TCP
+    tls:
+      enabled: true
+  traefik:
+    port: 9000
+    expose: false
+
+# Ingress configuration
+ingressRoute:
+  dashboard:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: traefik
+    matchRule: Host(`traefik.example.com`) # Change to your domain
+    middlewares:
+      - name: auth
+    tls:
+      secretName: traefik-dashboard-tls
+
+# Enable API and Dashboard
+api:
+  dashboard: true
+  debug: true
+
+# Metrics configuration
+metrics:
+  prometheus:
+    addEntryPointsLabels: true
+    addServicesLabels: true
+    addRoutersLabels: true
+
+# Pilot configuration (optional - for commercial features)
+pilot:
+  enabled: false
+
+# Global redirect from HTTP to HTTPS
+globalArguments:
+  - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+  - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+  - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+
+# Additional arguments
+additionalArguments:
+  - "--certificatesresolvers.letsencrypt.acme.caserver=https://acme-v02.api.letsencrypt.org/directory"
+  - "--certificatesresolvers.letsencrypt.acme.email=admin@example.com" # Replace with your email
+  - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme.json"
+  - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+  - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+  - "--providers.kubernetesingress.ingressendpoint.ip=0.0.0.0"
+  - "--log.level=INFO"
+  - "--accesslog=true"
+
+# Persistence for ACME certificates
+persistence:
+  enabled: true
+  name: data
+  accessMode: ReadWriteOnce
+  size: 1Gi
+  storageClass: standard
+  path: /data
+
+# Pod security context
+securityContext:
+  capabilities:
+    drop: [ALL]
+  readOnlyRootFilesystem: true
+  runAsGroup: 65532
+  runAsNonRoot: true
+  runAsUser: 65532
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  maxUnavailable: 1
+
+# Resource limits
+resources:
+  requests:
+    cpu: 100m
+    memory: 50Mi
+  limits:
+    cpu: 300m
+    memory: 150Mi
+
+# Node selector and affinity
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# Enable RBAC
+rbac:
+  enabled: true
+  namespaced: false
+
+# Service account
+serviceAccount:
+  create: true
+  name: traefik
+
+# Environment variables
+env:
+  - name: TRAEFIK_CERTIFICATESRESOLVERS_LETSENCRYPT_ACME_EMAIL
+    value: "admin@example.com" # Replace with your email

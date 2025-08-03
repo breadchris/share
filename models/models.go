@@ -655,3 +655,37 @@ func (h *HostMapping) BeforeUpdate(tx *gorm.DB) error {
 	h.UpdatedAt = time.Now()
 	return nil
 }
+
+// Event Poster Models
+
+type EventPoster struct {
+	Model
+	EventName   string                             `json:"event_name" gorm:"not null"`
+	EventDate   string                             `json:"event_date,omitempty"`
+	Venue       string                             `json:"venue,omitempty"`
+	PosterURL   string                             `json:"poster_url" gorm:"not null"`
+	UserID      string                             `json:"user_id" gorm:"index;not null"`
+	User        *User                              `gorm:"foreignKey:UserID"`
+	Artists     *JSONField[[]Artist]               `json:"artists,omitempty" gorm:"type:json"`
+	Tracks      *JSONField[[]SpotifyTrack]         `json:"tracks,omitempty" gorm:"type:json"`
+	Metadata    *JSONField[map[string]interface{}] `json:"metadata,omitempty" gorm:"type:json"`
+}
+
+// Artist represents an extracted artist from a poster
+type Artist struct {
+	Name       string  `json:"name"`
+	Confidence float64 `json:"confidence"`
+}
+
+// SpotifyTrack represents a track found on Spotify
+type SpotifyTrack struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Artist      string `json:"artist"`
+	Album       string `json:"album"`
+	SpotifyURL  string `json:"spotify_url"`
+	PreviewURL  string `json:"preview_url,omitempty"`
+	ImageURL    string `json:"image_url,omitempty"`
+	Duration    int    `json:"duration_ms"`
+	Popularity  int    `json:"popularity"`
+}

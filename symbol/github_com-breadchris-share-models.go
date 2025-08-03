@@ -19,6 +19,7 @@ func init() {
 		// type definitions
 		"AIRecipe":             reflect.ValueOf((*models.AIRecipe)(nil)),
 		"ApiKey":               reflect.ValueOf((*models.ApiKey)(nil)),
+		"Artist":               reflect.ValueOf((*models.Artist)(nil)),
 		"ClaudeDoc":            reflect.ValueOf((*models.ClaudeDoc)(nil)),
 		"ClaudeDocStar":        reflect.ValueOf((*models.ClaudeDocStar)(nil)),
 		"ClaudeDocTag":         reflect.ValueOf((*models.ClaudeDocTag)(nil)),
@@ -31,6 +32,7 @@ func init() {
 		"Direction":            reflect.ValueOf((*models.Direction)(nil)),
 		"DockerHost":           reflect.ValueOf((*models.DockerHost)(nil)),
 		"Equipment":            reflect.ValueOf((*models.Equipment)(nil)),
+		"EventPoster":          reflect.ValueOf((*models.EventPoster)(nil)),
 		"Food":                 reflect.ValueOf((*models.Food)(nil)),
 		"FoodName":             reflect.ValueOf((*models.FoodName)(nil)),
 		"Group":                reflect.ValueOf((*models.Group)(nil)),
@@ -48,6 +50,7 @@ func init() {
 		"PromptContext":        reflect.ValueOf((*models.PromptContext)(nil)),
 		"PromptRun":            reflect.ValueOf((*models.PromptRun)(nil)),
 		"Recipe":               reflect.ValueOf((*models.Recipe)(nil)),
+		"SpotifyTrack":         reflect.ValueOf((*models.SpotifyTrack)(nil)),
 		"Tag":                  reflect.ValueOf((*models.Tag)(nil)),
 		"User":                 reflect.ValueOf((*models.User)(nil)),
 		"UserSecret":           reflect.ValueOf((*models.UserSecret)(nil)),

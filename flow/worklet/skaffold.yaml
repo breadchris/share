@@ -1,0 +1,63 @@
+apiVersion: skaffold/v4beta6
+kind: Config
+metadata:
+  name: flow-worklet
+
+build:
+  artifacts:
+  - image: flow-worklet
+    docker:
+      dockerfile: Dockerfile.simple
+      buildArgs:
+        BUILDKIT_INLINE_CACHE: "1"
+    # Enable syncing for faster development iteration
+    sync:
+      manual:
+      - src: "cmd/**/*.go"
+        dest: .
+        strip: cmd/
+      - src: "*.go"
+        dest: .
+
+manifests:
+  rawYaml:
+  - k8s/namespace.yaml
+  - k8s/worklet-rbac.yaml
+  - k8s/worklet-secrets.yaml
+  - k8s/worklet-deployment.yaml
+  - k8s/worklet-service.yaml
+  - k8s/worklet-ingressroute.yaml
+
+deploy:
+  kubectl: {}
+
+portForward:
+- resourceType: service
+  resourceName: flow-worklet-service
+  namespace: flow-worklet
+  port: 80
+  localPort: 8081
+
+profiles:
+- name: local
+  activation:
+  - kubeContext: kind-flow-worklet
+  build:
+    local:
+      push: false  # Don't push to registry for local Kind cluster
+    tagPolicy:
+      envTemplate:
+        template: "{{.IMAGE_NAME}}:dev-{{.USER}}-{{.DATE}}"
+  deploy:
+    kubectl:
+      flags:
+        global: ["--context=kind-flow-worklet"]
+
+- name: debug
+  patches:
+  - op: replace
+    path: /build/artifacts/0/docker/dockerfile
+    value: Dockerfile.simple
+  - op: add
+    path: /build/artifacts/0/docker/buildArgs/DEBUG
+    value: "true"

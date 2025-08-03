@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flow-worklet-service
+  namespace: flow-worklet
+  labels:
+    app: flow-worklet
+    component: worklet-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: flow-worklet
+      component: worklet-service
+  template:
+    metadata:
+      labels:
+        app: flow-worklet
+        component: worklet-service
+    spec:
+      serviceAccountName: flow-worklet
+      containers:
+      - name: worklet-service
+        image: flow-worklet:latest
+        imagePullPolicy: Never  # Use local images in Kind
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        env:
+        - name: PORT
+          value: "8080"
+        - name: GITHUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: flow-worklet-secrets
+              key: github-token
+              optional: true
+        - name: DOCKER_HOST
+          value: "unix:///var/run/docker.sock"
+        - name: WORKLET_BASE_DIR
+          value: "/tmp/worklet-repos"
+        - name: WORKLET_DOMAIN
+          value: "worklet.local"
+        volumeMounts:
+        - name: docker-socket
+          mountPath: /var/run/docker.sock
+        - name: worklet-repos
+          mountPath: /tmp/worklet-repos
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      volumes:
+      - name: docker-socket
+        hostPath:
+          path: /var/run/docker.sock
+          type: Socket
+      - name: worklet-repos
+        hostPath:
+          path: /tmp/worklet-repos
+          type: DirectoryOrCreate
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule

@@ -1,0 +1,70 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: flow-worklet-main
+  namespace: flow-worklet
+  labels:
+    app: flow-worklet
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`worklet.local`)
+      kind: Rule
+      services:
+        - name: flow-worklet-service
+          port: 80
+    - match: Host(`api.worklet.local`)
+      kind: Rule
+      services:
+        - name: flow-worklet-service
+          port: 80
+      middlewares:
+        - name: api-prefix
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: api-prefix
+  namespace: flow-worklet
+  labels:
+    app: flow-worklet
+spec:
+  stripPrefix:
+    prefixes:
+      - "/api"
+---
+# Template IngressRoute for dynamic worklet routing
+# This will be used as a template by the worklet service
+# to create routes like worklet-123.worklet.local
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: worklet-template
+  namespace: flow-worklet
+  labels:
+    app: flow-worklet
+    template: "true"
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`{worklet-id}.worklet.local`)
+      kind: Rule
+      services:
+        - name: flow-worklet-service
+          port: 80
+      middlewares:
+        - name: worklet-proxy
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: worklet-proxy
+  namespace: flow-worklet
+  labels:
+    app: flow-worklet
+spec:
+  headers:
+    customRequestHeaders:
+      X-Worklet-Host: "{worklet-id}.worklet.local"

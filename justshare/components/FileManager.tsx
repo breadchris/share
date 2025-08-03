@@ -29,11 +29,12 @@ export interface FileItem {
 
 interface FileManagerProps {
   groupId: string;
+  initialPath?: string | null;
   onClose?: () => void;
 }
 
-export const FileManager: React.FC<FileManagerProps> = ({ groupId, onClose }) => {
-  const [currentPath, setCurrentPath] = useState<string>('/');
+export const FileManager: React.FC<FileManagerProps> = ({ groupId, initialPath, onClose }) => {
+  const [currentPath, setCurrentPath] = useState<string>(initialPath || '/');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,10 +49,28 @@ export const FileManager: React.FC<FileManagerProps> = ({ groupId, onClose }) =>
       const user = await getCurrentUser();
       if (user) {
         setUsername(user.username);
-        setCurrentPath(`/${user.username}`);
+        // If initialPath is provided, use it; otherwise use the user's root
+        if (initialPath && initialPath !== '/') {
+          setCurrentPath(initialPath);
+        } else {
+          setCurrentPath(`/${user.username}`);
+        }
       }
     };
     loadUser();
+  }, [initialPath]);
+
+  // Handle browser back/forward navigation
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      const path = window.location.pathname;
+      if (path && path !== '/') {
+        setCurrentPath(path);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   // Load files for current path
@@ -164,6 +183,8 @@ export const FileManager: React.FC<FileManagerProps> = ({ groupId, onClose }) =>
     if (item.type === 'folder') {
       setCurrentPath(item.path);
       setSelectedItems(new Set());
+      // Update browser URL to reflect the new path
+      window.history.pushState(null, '', item.path);
     } else {
       setOpenDocument(item);
     }
@@ -249,7 +270,11 @@ export const FileManager: React.FC<FileManagerProps> = ({ groupId, onClose }) =>
               <h1 className="text-xl font-semibold">Files</h1>
               <nav className="flex items-center space-x-1 text-sm">
                 <button
-                  onClick={() => setCurrentPath(`/${username}`)}
+                  onClick={() => {
+                    const rootPath = `/${username}`;
+                    setCurrentPath(rootPath);
+                    window.history.pushState(null, '', rootPath);
+                  }}
                   className="text-gray-500 hover:text-gray-700"
                 >
                   {username}
@@ -260,7 +285,10 @@ export const FileManager: React.FC<FileManagerProps> = ({ groupId, onClose }) =>
                     <React.Fragment key={path}>
                       <ChevronRight className="h-4 w-4 text-gray-400" />
                       <button
-                        onClick={() => setCurrentPath(path)}
+                        onClick={() => {
+                          setCurrentPath(path);
+                          window.history.pushState(null, '', path);
+                        }}
                         className="text-gray-500 hover:text-gray-700"
                       >
                         {part}
@@ -297,7 +325,10 @@ export const FileManager: React.FC<FileManagerProps> = ({ groupId, onClose }) =>
         <FileManagerSidebar
           currentPath={currentPath}
           username={username}
-          onPathChange={setCurrentPath}
+          onPathChange={(newPath) => {
+            setCurrentPath(newPath);
+            window.history.pushState(null, '', newPath);
+          }}
           groupId={groupId}
         />
         

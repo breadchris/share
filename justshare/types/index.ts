@@ -13,7 +13,7 @@ export interface User {
 
 export interface Content {
   id: string;
-  type: 'text' | 'image' | 'audio' | 'clipboard' | 'file' | 'url';
+  type: 'text' | 'image' | 'audio' | 'clipboard' | 'file' | 'url' | 'document';
   data: string;
   media_url?: string;
   mime_type?: string;
@@ -75,7 +75,7 @@ export interface TimelineResponse {
 }
 
 export interface CreateContentRequest {
-  type: 'text' | 'image' | 'audio' | 'clipboard' | 'file' | 'url';
+  type: 'text' | 'image' | 'audio' | 'clipboard' | 'file' | 'url' | 'document';
   data: string;
   group_id: string;
   parent_content_id?: string;  // For threading - optional

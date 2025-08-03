@@ -1,0 +1,23 @@
+apiVersion: skaffold/v4beta6
+kind: Config
+metadata:
+  name: flow-worklet-example
+build:
+  artifacts:
+  - image: flow-worklet-example
+    docker:
+      dockerfile: Dockerfile
+manifests:
+  rawYaml:
+  - k8s/deployment.yaml
+  - k8s/service.yaml
+  - k8s/ingress.yaml
+  - k8s/middleware.yaml
+  - k8s/certificate.yaml
+deploy:
+  kubectl: {}
+portForward:
+- resourceType: service
+  resourceName: flow-worklet-service
+  port: 80
+  localPort: 8080

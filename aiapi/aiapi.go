@@ -415,7 +415,7 @@ func New(deps deps.Deps) *http.ServeMux {
 				Role      string `json:"role"`
 				Content   string `json:"content"`
 				Timestamp string `json:"timestamp"`
-			} `json:"chatHistory"`                  // Chat history from frontend
+			} `json:"chatHistory"` // Chat history from frontend
 			CurrentCode string `json:"currentCode"` // Current code context
 		}
 
