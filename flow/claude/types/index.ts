@@ -45,6 +45,18 @@ export interface WSMessage {
   payload: any;
 }
 
+export interface ImageAttachment {
+  data: string;        // base64 encoded image data with data URI prefix
+  mimeType: string;    // image/jpeg, image/png, etc.
+  filename?: string;   // optional original filename
+  size?: number;       // file size in bytes
+}
+
+export interface PromptPayload {
+  prompt: string;
+  images?: ImageAttachment[];
+}
+
 export interface ClaudeWebSocketMessage {
   type: 'start' | 'resume' | 'prompt' | 'stop' | 'message' | 'error' | 'start_git' | 'git_diff' | 'git_commit' | 'git_status';
   payload: any;
@@ -118,6 +130,10 @@ export interface InputAreaProps {
   onKeyDown?: (event: React.KeyboardEvent) => void;
   isMobile?: boolean;
   isTouchDevice?: boolean;
+  images?: ImageAttachment[];
+  onImagesChange?: (images: ImageAttachment[]) => void;
+  maxImages?: number;
+  maxImageSize?: number; // in bytes
 }
 
 export interface StatusIndicatorProps {

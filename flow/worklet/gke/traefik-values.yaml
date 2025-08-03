@@ -43,7 +43,7 @@ ingressRoute:
     enabled: true
     annotations:
       kubernetes.io/ingress.class: traefik
-    matchRule: Host(`traefik.example.com`) # Change to your domain
+    matchRule: Host(`traefik.baked.mom`)
     middlewares:
       - name: auth
     tls:
@@ -74,7 +74,7 @@ globalArguments:
 # Additional arguments
 additionalArguments:
   - "--certificatesresolvers.letsencrypt.acme.caserver=https://acme-v02.api.letsencrypt.org/directory"
-  - "--certificatesresolvers.letsencrypt.acme.email=admin@example.com" # Replace with your email
+  - "--certificatesresolvers.letsencrypt.acme.email=chris@breadchris.com"
   - "--certificatesresolvers.letsencrypt.acme.storage=/data/acme.json"
   - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
   - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
@@ -132,4 +132,4 @@ serviceAccount:
 # Environment variables
 env:
   - name: TRAEFIK_CERTIFICATESRESOLVERS_LETSENCRYPT_ACME_EMAIL
-    value: "admin@example.com" # Replace with your email
+    value: "chris@breadchris.com"

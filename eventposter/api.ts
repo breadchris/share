@@ -285,3 +285,45 @@ export async function SearchTracklists(req: SearchTracklistsRequest, options: Fe
         statusText: response.statusText
     };
 }
+
+// Cache check types and function
+
+export interface CheckCacheRequest {
+    image_data: string;
+    mime_type: string;
+}
+
+export interface CheckCacheResponse {
+    has_cache: boolean;
+    cache_id?: string;
+    image_hash: string;
+    cached_result?: EnhancedAnalysisResponse;
+    cached_at?: string;
+    success: boolean;
+    error?: string;
+}
+
+export async function CheckCache(req: CheckCacheRequest, options: FetchOptions = {}): Promise<Response<CheckCacheResponse>> {
+    const url = `${options.baseURL || '/eventposter'}/checkcache`;
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers
+    };
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(req)
+    });
+
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return {
+        data,
+        status: response.status,
+        statusText: response.statusText
+    };
+}

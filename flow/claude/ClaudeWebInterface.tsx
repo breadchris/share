@@ -6,7 +6,9 @@ import {
   GitStartData, 
   GitCommitData, 
   GitRepositoryStatus,
-  ClaudeMDConfig 
+  ClaudeMDConfig,
+  ImageAttachment,
+  PromptPayload
 } from './types';
 import { useClaudeWebSocket } from './hooks/useClaudeWebSocket';
 import { useClaudeSession } from './hooks/useClaudeSession';
@@ -33,6 +35,7 @@ export const ClaudeWebInterface: React.FC<ClaudeWebInterfaceProps> = ({
   onConnectionStatusChange,
 }) => {
   const [input, setInput] = useState('');
+  const [images, setImages] = useState<ImageAttachment[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(showSessionBrowser);
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('light');
   const [showMobileExport, setShowMobileExport] = useState(false);
@@ -351,10 +354,16 @@ export const ClaudeWebInterface: React.FC<ClaudeWebInterfaceProps> = ({
       return;
     }
 
+    // Prepare payload with text and images
+    const payload: PromptPayload = {
+      prompt: input.trim(),
+      ...(images.length > 0 && { images })
+    };
+
     // Send prompt via WebSocket
     sendMessage({
       type: 'prompt',
-      payload: { prompt: input.trim() }
+      payload
     });
 
     // Add user message to local state for immediate feedback
@@ -366,7 +375,8 @@ export const ClaudeWebInterface: React.FC<ClaudeWebInterfaceProps> = ({
     addMessage(userMessage);
 
     setInput('');
-  }, [input, connectionStatus.connected, currentSessionId, sendMessage, addMessage]);
+    setImages([]); // Clear images after sending
+  }, [input, images, connectionStatus.connected, currentSessionId, sendMessage, addMessage]);
 
   const handleStopSession = useCallback(() => {
     sendMessage({
@@ -1316,6 +1326,10 @@ export const ClaudeWebInterface: React.FC<ClaudeWebInterfaceProps> = ({
           darkMode={isDarkMode}
           isMobile={isMobile}
           isTouchDevice={isTouchDevice}
+          images={images}
+          onImagesChange={setImages}
+          maxImages={5}
+          maxImageSize={10 * 1024 * 1024} // 10MB
           placeholder={
             !connectionStatus.connected 
               ? "Connect to start chatting..." 

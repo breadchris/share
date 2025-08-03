@@ -1,0 +1,10 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: acme-redirect-regex
+  namespace: traefik-system
+spec:
+  redirectRegex:
+    regex: "^https?://([^/]+)(?!/\\.well-known/acme-challenge/)(.*)$"
+    replacement: "https://${1}${2}"
+    permanent: true

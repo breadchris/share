@@ -4,7 +4,7 @@ metadata:
   name: flow-worklet-example
 build:
   artifacts:
-  - image: flow-worklet-example
+  - image: gcr.io/planar-sun-402202/flow-worklet-example
     docker:
       dockerfile: Dockerfile
 manifests:

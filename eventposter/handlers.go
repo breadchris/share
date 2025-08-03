@@ -2,7 +2,9 @@ package eventposter
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/breadchris/share/ai"
@@ -96,10 +98,10 @@ type SaveEventDataResponse struct {
 }
 
 type ListEventPostersRequest struct {
-	Search  string `json:"search,omitempty" description:"Search term for event name or artist"`
-	Offset  int    `json:"offset" description:"Pagination offset"`
-	Limit   int    `json:"limit" description:"Number of results to return (max 50)"`
-	UserID  string `json:"user_id,omitempty" description:"Filter by user ID"`
+	Search string `json:"search,omitempty" description:"Search term for event name or artist"`
+	Offset int    `json:"offset" description:"Pagination offset"`
+	Limit  int    `json:"limit" description:"Number of results to return (max 50)"`
+	UserID string `json:"user_id,omitempty" description:"Filter by user ID"`
 }
 
 type ListEventPostersResponse struct {
@@ -112,17 +114,17 @@ type ListEventPostersResponse struct {
 }
 
 type EventPosterListItem struct {
-	ID          string               `json:"id" description:"Event poster ID"`
-	EventName   string               `json:"event_name" description:"Name of the event"`
-	EventDate   *string              `json:"event_date,omitempty" description:"Date of the event"`
-	Venue       *string              `json:"venue,omitempty" description:"Venue name"`
-	PosterURL   string               `json:"poster_url" description:"URL to poster image"`
-	ArtistCount int                  `json:"artist_count" description:"Number of extracted artists"`
-	TrackCount  int                  `json:"track_count" description:"Number of found tracks"`
-	CreatedAt   string               `json:"created_at" description:"Creation timestamp"`
-	UpdatedAt   string               `json:"updated_at" description:"Last update timestamp"`
-	UserID      string               `json:"user_id" description:"User who created this poster"`
-	Artists     []models.Artist      `json:"artists,omitempty" description:"Extracted artists"`
+	ID          string                `json:"id" description:"Event poster ID"`
+	EventName   string                `json:"event_name" description:"Name of the event"`
+	EventDate   *string               `json:"event_date,omitempty" description:"Date of the event"`
+	Venue       *string               `json:"venue,omitempty" description:"Venue name"`
+	PosterURL   string                `json:"poster_url" description:"URL to poster image"`
+	ArtistCount int                   `json:"artist_count" description:"Number of extracted artists"`
+	TrackCount  int                   `json:"track_count" description:"Number of found tracks"`
+	CreatedAt   string                `json:"created_at" description:"Creation timestamp"`
+	UpdatedAt   string                `json:"updated_at" description:"Last update timestamp"`
+	UserID      string                `json:"user_id" description:"User who created this poster"`
+	Artists     []models.Artist       `json:"artists,omitempty" description:"Extracted artists"`
 	Tracks      []models.SpotifyTrack `json:"tracks,omitempty" description:"Found Spotify tracks"`
 }
 
@@ -134,13 +136,13 @@ type EnhancedAnalysisRequest struct {
 }
 
 type EnhancedAnalysisResponse struct {
-	EventAnalysis   AnalyzePosterResponse       `json:"event_analysis" description:"AI analysis results"`
-	VerifiedArtists []VerifiedArtist           `json:"verified_artists" description:"Artists with Spotify verification"`
-	SpotifyTracks   []models.SpotifyTrack      `json:"spotify_tracks" description:"All Spotify tracks found"`
+	EventAnalysis   AnalyzePosterResponse              `json:"event_analysis" description:"AI analysis results"`
+	VerifiedArtists []VerifiedArtist                   `json:"verified_artists" description:"Artists with Spotify verification"`
+	SpotifyTracks   []models.SpotifyTrack              `json:"spotify_tracks" description:"All Spotify tracks found"`
 	DJSets          map[string][]TracklistSearchResult `json:"dj_sets" description:"DJ sets by artist name"`
-	TotalDJSets     int                        `json:"total_dj_sets" description:"Total number of DJ sets found"`
-	Success         bool                       `json:"success" description:"Whether analysis succeeded"`
-	Error           string                     `json:"error,omitempty" description:"Error message if analysis failed"`
+	TotalDJSets     int                                `json:"total_dj_sets" description:"Total number of DJ sets found"`
+	Success         bool                               `json:"success" description:"Whether analysis succeeded"`
+	Error           string                             `json:"error,omitempty" description:"Error message if analysis failed"`
 }
 
 type SearchTracklistsRequest struct {
@@ -153,6 +155,22 @@ type SearchTracklistsResponse struct {
 	Error   string                             `json:"error,omitempty" description:"Error message if search failed"`
 }
 
+// Cache check request and response types
+type CheckCacheRequest struct {
+	ImageData string `json:"image_data" description:"Base64 encoded image data for hash generation"`
+	MimeType  string `json:"mime_type" description:"Image MIME type"`
+}
+
+type CheckCacheResponse struct {
+	HasCache     bool                      `json:"has_cache" description:"Whether cached data exists for this poster"`
+	CacheID      string                    `json:"cache_id,omitempty" description:"Cache ID if found"`
+	ImageHash    string                    `json:"image_hash" description:"Generated hash for this image"`
+	CachedResult *EnhancedAnalysisResponse `json:"cached_result,omitempty" description:"Cached analysis result"`
+	CachedAt     string                    `json:"cached_at,omitempty" description:"When the data was cached"`
+	Success      bool                      `json:"success" description:"Whether cache check succeeded"`
+	Error        string                    `json:"error,omitempty" description:"Error message if cache check failed"`
+}
+
 // New creates a new HTTP handler for the eventposter package
 func New(d deps.Deps) *http.ServeMux {
 	mux := http.NewServeMux()
@@ -162,10 +180,11 @@ func New(d deps.Deps) *http.ServeMux {
 	mux.HandleFunc("/searchspotifytracks", handleSearchSpotifyTracks(d))
 	mux.HandleFunc("/saveeventdata", handleSaveEventData(d))
 	mux.HandleFunc("/list", handleListEventPosters(d))
-	
+
 	// Enhanced endpoints
 	mux.HandleFunc("/enhancedanalysis", handleEnhancedAnalysis(d))
 	mux.HandleFunc("/searchtracklists", handleSearchTracklists(d))
+	mux.HandleFunc("/checkcache", handleCheckCache(d))
 
 	// Component routes
 	mux.HandleFunc("/viewer", func(w http.ResponseWriter, r *http.Request) {
@@ -305,16 +324,16 @@ func handleListEventPosters(d deps.Deps) http.HandlerFunc {
 		}
 
 		// Create context with dependencies
-		ctx := context.WithValue(r.Context(), "deps", d)
+		//ctx := context.WithValue(r.Context(), "deps", d)
 
-		resp, err := ListEventPosters(ctx, req)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		//resp, err := ListEventPosters(ctx, req)
+		//if err != nil {
+		//	http.Error(w, err.Error(), http.StatusInternalServerError)
+		//	return
+		//}
+		//
+		//w.Header().Set("Content-Type", "application/json")
+		//json.NewEncoder(w).Encode(resp)
 	}
 }
 
@@ -374,6 +393,33 @@ func handleSearchTracklists(d deps.Deps) http.HandlerFunc {
 			Results: results,
 			Success: true,
 		})
+	}
+}
+
+func handleCheckCache(d deps.Deps) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		var req CheckCacheRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "Invalid JSON", http.StatusBadRequest)
+			return
+		}
+
+		// Create context with dependencies
+		ctx := context.WithValue(r.Context(), "deps", d)
+
+		resp, err := CheckPosterCache(ctx, req)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
 	}
 }
 
@@ -782,7 +828,7 @@ func EnhancedAnalysisPoster(ctx context.Context, req EnhancedAnalysisRequest) (E
 		ImageData: req.ImageData,
 		MimeType:  req.MimeType,
 	}
-	
+
 	analysisResp, err := AnalyzePoster(ctx, analysisReq)
 	if err != nil {
 		return EnhancedAnalysisResponse{
@@ -790,7 +836,7 @@ func EnhancedAnalysisPoster(ctx context.Context, req EnhancedAnalysisRequest) (E
 			Error:   fmt.Sprintf("AI analysis failed: %v", err),
 		}, nil
 	}
-	
+
 	if !analysisResp.Success {
 		return EnhancedAnalysisResponse{
 			EventAnalysis: analysisResp,
@@ -798,7 +844,7 @@ func EnhancedAnalysisPoster(ctx context.Context, req EnhancedAnalysisRequest) (E
 			Error:         analysisResp.Error,
 		}, nil
 	}
-	
+
 	// Step 2: Search Spotify for all artists
 	var spotifyTracks []models.SpotifyTrack
 	if len(analysisResp.Artists) > 0 {
@@ -810,50 +856,68 @@ func EnhancedAnalysisPoster(ctx context.Context, req EnhancedAnalysisRequest) (E
 			for i, artist := range analysisResp.Artists {
 				artistNames[i] = artist.Name
 			}
-			
+
 			spotifyResp := searchSpotifyTracksWithClient(spotifyCtx, SearchSpotifyTracksRequest{
 				Artists: artistNames,
 				Limit:   5,
 			}, spotifyClient)
-			
+
 			if spotifyResp.Success {
 				spotifyTracks = spotifyResp.Tracks
 			}
 		}
 	}
-	
+
 	// Step 3: Verify artists with Spotify results
 	verifiedArtists := VerifyArtistsWithSpotify(analysisResp.Artists, spotifyTracks)
-	
+
 	// Step 4: Search 1001tracklists for each artist
 	artistNames := make([]string, len(analysisResp.Artists))
 	for i, artist := range analysisResp.Artists {
 		artistNames[i] = artist.Name
 	}
-	
+
 	djSets, err := SearchTracklistsForArtists(artistNames)
 	if err != nil {
 		// Don't fail the entire request if tracklist search fails
 		djSets = make(map[string][]TracklistSearchResult)
 	}
-	
+
 	// Step 5: Add tracklist data to verified artists
 	verifiedArtists = AddTracklistData(verifiedArtists, djSets)
-	
+
 	// Count total DJ sets
 	totalDJSets := 0
 	for _, sets := range djSets {
 		totalDJSets += len(sets)
 	}
-	
-	return EnhancedAnalysisResponse{
+
+	result := EnhancedAnalysisResponse{
 		EventAnalysis:   analysisResp,
 		VerifiedArtists: verifiedArtists,
 		SpotifyTracks:   spotifyTracks,
 		DJSets:          djSets,
 		TotalDJSets:     totalDJSets,
 		Success:         true,
-	}, nil
+	}
+
+	// Cache the result for future use
+	imageHash, err := generateImageHash(req.ImageData)
+	if err == nil {
+		deps := ctx.Value("deps").(deps.Deps)
+		cachedResult, _ := json.Marshal(result)
+		cache := &models.EventPosterCache{
+			Model: models.Model{
+				ID: uuid.NewString(),
+			},
+			ImageHash:      imageHash,
+			AnalysisResult: string(cachedResult),
+			UserID:         "default-user", // TODO: Get from authenticated user context
+		}
+		deps.DB.Create(cache) // Ignore errors - caching is optional
+	}
+
+	return result, nil
 }
 
 // Note: Spotify client creation is now handled in handlers.go
@@ -882,4 +946,66 @@ func ProcessImageUpload(file multipart.File, header *multipart.FileHeader) (stri
 	}
 
 	return encoded, mimeType, nil
+}
+
+// generateImageHash generates a SHA-256 hash of the image data for cache identification
+func generateImageHash(imageData string) (string, error) {
+	// Decode base64 to get raw image bytes
+	imageBytes, err := base64.StdEncoding.DecodeString(imageData)
+	if err != nil {
+		return "", fmt.Errorf("failed to decode image data: %v", err)
+	}
+
+	// Generate SHA-256 hash
+	hasher := sha256.New()
+	hasher.Write(imageBytes)
+	hash := hex.EncodeToString(hasher.Sum(nil))
+
+	return hash, nil
+}
+
+// CheckPosterCache checks if a poster has been processed before
+func CheckPosterCache(ctx context.Context, req CheckCacheRequest) (CheckCacheResponse, error) {
+	deps := ctx.Value("deps").(deps.Deps)
+
+	// Generate hash for the image
+	imageHash, err := generateImageHash(req.ImageData)
+	if err != nil {
+		return CheckCacheResponse{
+			Success: false,
+			Error:   fmt.Sprintf("Failed to generate image hash: %v", err),
+		}, nil
+	}
+
+	// Look for existing cached result
+	var cachedPoster models.EventPosterCache
+	err = deps.DB.Where("image_hash = ?", imageHash).First(&cachedPoster).Error
+
+	if err != nil {
+		// No cache found
+		return CheckCacheResponse{
+			HasCache:  false,
+			ImageHash: imageHash,
+			Success:   true,
+		}, nil
+	}
+
+	// Parse cached enhanced analysis result
+	var cachedResult EnhancedAnalysisResponse
+	err = json.Unmarshal([]byte(cachedPoster.AnalysisResult), &cachedResult)
+	if err != nil {
+		return CheckCacheResponse{
+			Success: false,
+			Error:   fmt.Sprintf("Failed to parse cached result: %v", err),
+		}, nil
+	}
+
+	return CheckCacheResponse{
+		HasCache:     true,
+		CacheID:      cachedPoster.ID,
+		ImageHash:    imageHash,
+		CachedResult: &cachedResult,
+		CachedAt:     cachedPoster.CreatedAt.Format("2006-01-02 15:04:05"),
+		Success:      true,
+	}, nil
 }

@@ -5,24 +5,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/16f42ecc-32ac-4956-9db5-dbb4c457daf2.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/16f42ecc-32ac-4956-9db5-dbb4c457daf2/storage_v2/_src_/schema/main.uQUzAA.meta" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/20138aa4-9138-4eb7-97c5-e48bda394ea2.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/aiapi/aiapi.go" beforeDir="false" afterPath="$PROJECT_DIR$/aiapi/aiapi.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/db.go" beforeDir="false" afterPath="$PROJECT_DIR$/db/db.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/eventposter/EventPosterArtistExtractor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/eventposter/EventPosterArtistExtractor.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/eventposter/api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/eventposter/api.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/eventposter/handlers.go" beforeDir="false" afterPath="$PROJECT_DIR$/eventposter/handlers.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension.go" beforeDir="false" afterPath="$PROJECT_DIR$/extension.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.work" beforeDir="false" afterPath="$PROJECT_DIR$/go.work" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.work.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.work.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/justshare/JustShare.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/JustShare.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/justshare/components/FileManager.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/FileManager.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/justshare/justshare.go" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/justshare.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/justshare/components/DocumentEditor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/DocumentEditor.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models/models.go" beforeDir="false" afterPath="$PROJECT_DIR$/models/models.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/spotify.go" beforeDir="false" afterPath="$PROJECT_DIR$/spotify.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-models.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-models.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scrape_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/scrape_test.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -306,7 +298,7 @@
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
       <workItem from="1750823408293" duration="331921000" />
-      <workItem from="1754033044459" duration="12835000" />
+      <workItem from="1754033044459" duration="22244000" />
     </task>
     <servers />
   </component>

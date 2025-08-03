@@ -671,6 +671,15 @@ type EventPoster struct {
 	Metadata    *JSONField[map[string]interface{}] `json:"metadata,omitempty" gorm:"type:json"`
 }
 
+// EventPosterCache stores cached analysis results for posters
+type EventPosterCache struct {
+	Model
+	ImageHash      string `json:"image_hash" gorm:"unique;not null;index"`
+	AnalysisResult string `json:"analysis_result" gorm:"type:longtext;not null"` // JSON serialized EnhancedAnalysisResponse
+	UserID         string `json:"user_id" gorm:"index"`
+	User           *User  `gorm:"foreignKey:UserID"`
+}
+
 // Artist represents an extracted artist from a poster
 type Artist struct {
 	Name       string  `json:"name"`

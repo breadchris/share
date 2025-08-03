@@ -75,7 +75,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
       });
       return await res.json();
     }}>
-      <div className="flex flex-col h-screen bg-gray-50">
+      <div className="flex flex-col h-screen bg-gray-50 p-16">
         {/* Header */}
         <div className="bg-white border-b border-gray-200 px-4 py-3">
           <div className="flex items-center justify-between">
@@ -138,7 +138,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-scroll">
           {!isPreviewMode ? (
             <div className="h-full bg-white">
               <BlockNoteAIEditor

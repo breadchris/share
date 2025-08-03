@@ -7,7 +7,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`flow-worklet.example.com`)
+    - match: Host(`flow-worklet.baked.mom`)
       kind: Rule
       services:
         - name: flow-worklet-service
@@ -27,7 +27,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`flow-worklet.example.com`)
+    - match: Host(`flow-worklet.baked.mom`)
       kind: Rule
       services:
         - name: flow-worklet-service

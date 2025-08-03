@@ -9,7 +9,7 @@ spec:
     name: letsencrypt-prod
     kind: ClusterIssuer
   dnsNames:
-    - flow-worklet.example.com
+    - flow-worklet.baked.mom
 ---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
@@ -18,7 +18,7 @@ metadata:
 spec:
   acme:
     server: https://acme-v02.api.letsencrypt.org/directory
-    email: admin@example.com # Replace with your email
+    email: chris@breadchris.com
     privateKeySecretRef:
       name: letsencrypt-prod
     solvers:
@@ -33,7 +33,7 @@ metadata:
 spec:
   acme:
     server: https://acme-staging-v02.api.letsencrypt.org/directory
-    email: admin@example.com # Replace with your email
+    email: chris@breadchris.com
     privateKeySecretRef:
       name: letsencrypt-staging
     solvers:

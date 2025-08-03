@@ -349,9 +349,18 @@ func (cs *ClaudeService) HandleWebSocket(conn *websocket.Conn, userID string) {
 				continue
 			}
 
+			// Define WebSocket ImageAttachment struct for payload
+			type WSImageAttachment struct {
+				Data     string `json:"data"`      // base64 encoded image data with data URI prefix
+				MimeType string `json:"mimeType"`  // image/jpeg, image/png, etc.
+				Filename string `json:"filename,omitempty"` // optional original filename
+				Size     int    `json:"size,omitempty"`     // file size in bytes
+			}
+
 			var promptData struct {
-				Prompt    string `json:"prompt"`
-				SessionID string `json:"sessionId"`
+				Prompt    string               `json:"prompt"`
+				Images    []WSImageAttachment  `json:"images,omitempty"`
+				SessionID string               `json:"sessionId"`
 			}
 			if err := json.Unmarshal(wsMsg.Payload, &promptData); err != nil {
 				errorMsg := WSMessage{
@@ -363,14 +372,38 @@ func (cs *ClaudeService) HandleWebSocket(conn *websocket.Conn, userID string) {
 				continue
 			}
 
-			if err := cs.SendMessage(activeProcess, promptData.Prompt); err != nil {
-				errorMsg := WSMessage{
-					Type:      "error",
-					Payload:   json.RawMessage(fmt.Sprintf(`{"error": "Failed to send message: %v"}`, err)),
-					Timestamp: time.Now().UnixMilli(),
+			// Convert WebSocket ImageAttachment to claude package ImageAttachment
+			var claudeImages []ImageAttachment
+			for _, img := range promptData.Images {
+				claudeImages = append(claudeImages, ImageAttachment{
+					Data:     img.Data,
+					MimeType: img.MimeType,
+					Filename: img.Filename,
+					Size:     img.Size,
+				})
+			}
+
+			// Send message with images if provided, otherwise just text
+			if len(claudeImages) > 0 {
+				if err := cs.SendMessageWithImages(activeProcess, promptData.Prompt, claudeImages); err != nil {
+					errorMsg := WSMessage{
+						Type:      "error",
+						Payload:   json.RawMessage(fmt.Sprintf(`{"error": "Failed to send message with images: %v"}`, err)),
+						Timestamp: time.Now().UnixMilli(),
+					}
+					conn.WriteJSON(errorMsg)
+					continue
 				}
-				conn.WriteJSON(errorMsg)
-				continue
+			} else {
+				if err := cs.SendMessage(activeProcess, promptData.Prompt); err != nil {
+					errorMsg := WSMessage{
+						Type:      "error",
+						Payload:   json.RawMessage(fmt.Sprintf(`{"error": "Failed to send message: %v"}`, err)),
+						Timestamp: time.Now().UnixMilli(),
+					}
+					conn.WriteJSON(errorMsg)
+					continue
+				}
 			}
 
 		case "stop":

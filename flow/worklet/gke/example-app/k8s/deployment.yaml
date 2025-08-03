@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: app
-        image: flow-worklet-example
+        image: gcr.io/planar-sun-402202/flow-worklet-example:3b4433e-dirty
         ports:
         - containerPort: 8080
         env:

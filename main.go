@@ -267,7 +267,7 @@ func startServer(useTLS bool, port int) {
 		},
 	}
 
-	shouldInterpret := false
+	shouldInterpret := true
 	//shouldInterpret := false
 	interpreted := func(f func(d deps2.Deps) *http.ServeMux, files ...string) *http.ServeMux {
 		m := http.NewServeMux()

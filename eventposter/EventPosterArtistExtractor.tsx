@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "https://esm.sh/react@18";
-import { Camera, Upload, Check, X, ArrowLeft, Music, Play, Pause, Eye, Loader2, AlertCircle, Stars, ExternalLink, Clock, Users, Disc, Headphones, Shield } from "https://esm.sh/lucide-react@0.263.1";
+import { Camera, Upload, Check, X, ArrowLeft, Music, Play, Pause, Eye, Loader2, AlertCircle, Stars, ExternalLink, Clock, Users, Disc, Headphones, Shield, Database, Zap } from "https://esm.sh/lucide-react@0.263.1";
 import * as API from './api';
 
 interface Artist {
@@ -39,14 +39,15 @@ interface AnalyzePosterResponse {
 }
 
 interface EventPosterState {
-  screen: 'upload' | 'analysis' | 'enhanced-results' | 'save' | 'success';
+  screen: 'upload' | 'cache-choice' | 'analysis' | 'enhanced-results' | 'save' | 'success';
   posterImage: string | null;
   imageFile: File | null;
   analysisResult: AnalyzePosterResponse | null;
   enhancedResult: API.EnhancedAnalysisResponse | null;
   eventData: EventData | null;
-  status: 'idle' | 'analyzing' | 'searching' | 'saving' | 'error';
+  status: 'idle' | 'checking-cache' | 'analyzing' | 'searching' | 'saving' | 'error';
   error: string | null;
+  cacheResult: API.CheckCacheResponse | null;
 }
 
 const EventPosterArtistExtractor: React.FC = () => {
@@ -59,6 +60,7 @@ const EventPosterArtistExtractor: React.FC = () => {
     eventData: null,
     status: 'idle',
     error: null,
+    cacheResult: null,
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -75,6 +77,7 @@ const EventPosterArtistExtractor: React.FC = () => {
       eventData: null,
       status: 'idle',
       error: null,
+      cacheResult: null,
     });
     setPlayingTrack(null);
   };
@@ -90,8 +93,7 @@ const EventPosterArtistExtractor: React.FC = () => {
         ...prev,
         posterImage: imageUrl,
         imageFile: file,
-        screen: 'analysis',
-        status: 'analyzing',
+        status: 'checking-cache',
       }));
 
       // Convert to base64 for API
@@ -99,35 +101,92 @@ const EventPosterArtistExtractor: React.FC = () => {
       const mimeType = file.type;
 
       try {
-        const response = await API.EnhancedAnalysis({
+        // First check if we have cached results
+        const cacheResponse = await API.CheckCache({
           image_data: base64Data,
           mime_type: mimeType,
         });
 
-        if (response.data.success) {
+        if (cacheResponse.data.success && cacheResponse.data.has_cache && cacheResponse.data.cached_result) {
+          // Found cached data - show choice screen
           setState(prev => ({
             ...prev,
-            analysisResult: response.data.event_analysis,
-            enhancedResult: response.data,
-            screen: 'enhanced-results',
+            cacheResult: cacheResponse.data,
+            screen: 'cache-choice',
             status: 'idle',
           }));
         } else {
-          setState(prev => ({
-            ...prev,
-            status: 'error',
-            error: response.data.error || 'Analysis failed',
-          }));
+          // No cache found - proceed with analysis
+          await performAnalysis(base64Data, mimeType);
         }
       } catch (error) {
-        setState(prev => ({
-          ...prev,
-          status: 'error',
-          error: error instanceof Error ? error.message : 'Enhanced analysis failed',
-        }));
+        // If cache check fails, proceed with analysis anyway
+        await performAnalysis(base64Data, mimeType);
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  const performAnalysis = async (base64Data: string, mimeType: string) => {
+    setState(prev => ({
+      ...prev,
+      screen: 'analysis',
+      status: 'analyzing',
+    }));
+
+    try {
+      const response = await API.EnhancedAnalysis({
+        image_data: base64Data,
+        mime_type: mimeType,
+      });
+
+      if (response.data.success) {
+        setState(prev => ({
+          ...prev,
+          analysisResult: response.data.event_analysis,
+          enhancedResult: response.data,
+          screen: 'enhanced-results',
+          status: 'idle',
+        }));
+      } else {
+        setState(prev => ({
+          ...prev,
+          status: 'error',
+          error: response.data.error || 'Analysis failed',
+        }));
+      }
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Enhanced analysis failed',
+      }));
+    }
+  };
+
+  const useCachedResults = () => {
+    if (!state.cacheResult?.cached_result) return;
+    
+    setState(prev => ({
+      ...prev,
+      analysisResult: state.cacheResult!.cached_result!.event_analysis,
+      enhancedResult: state.cacheResult!.cached_result!,
+      screen: 'enhanced-results',
+      status: 'idle',
+    }));
+  };
+
+  const reprocessPoster = async () => {
+    if (!state.imageFile) return;
+    
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const imageUrl = e.target?.result as string;
+      const base64Data = imageUrl.split(',')[1];
+      const mimeType = state.imageFile!.type;
+      await performAnalysis(base64Data, mimeType);
+    };
+    reader.readAsDataURL(state.imageFile);
   };
 
   // Spotify search is now integrated into enhanced analysis
@@ -244,6 +303,87 @@ const EventPosterArtistExtractor: React.FC = () => {
     </div>
   );
 
+  const renderCacheChoiceScreen = () => {
+    if (!state.cacheResult || !state.cacheResult.cached_result) return null;
+    
+    const cachedResult = state.cacheResult.cached_result;
+
+    return (
+      <div className="p-4 space-y-6">
+        {/* Poster Preview */}
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+          <div className="aspect-video">
+            <img 
+              src={state.posterImage || ''} 
+              alt="Event Poster" 
+              className="w-full h-full object-cover"
+            />
+          </div>
+        </div>
+
+        {/* Cache Found Notice */}
+        <div className="bg-green-50 border border-green-200 rounded-2xl p-6">
+          <div className="flex items-center mb-4">
+            <Database className="w-6 h-6 text-green-600 mr-3" />
+            <h2 className="text-lg font-semibold text-green-900">Poster Already Processed!</h2>
+          </div>
+          <p className="text-green-700 mb-4">
+            We found existing analysis for this poster from {state.cacheResult.cached_at}. 
+            You can use the cached results or reprocess to get fresh data.
+          </p>
+          
+          {/* Quick Preview of Cached Results */}
+          <div className="bg-white rounded-lg p-4 mb-4">
+            <h3 className="font-medium text-gray-900 mb-2">Cached Results Preview:</h3>
+            <div className="grid grid-cols-3 gap-4 text-sm">
+              <div className="text-center">
+                <Users className="w-5 h-5 text-blue-600 mx-auto mb-1" />
+                <div className="font-medium">{cachedResult.verified_artists.length}</div>
+                <div className="text-gray-600">Artists</div>
+              </div>
+              <div className="text-center">
+                <Music className="w-5 h-5 text-green-600 mx-auto mb-1" />
+                <div className="font-medium">{cachedResult.spotify_tracks.length}</div>
+                <div className="text-gray-600">Tracks</div>
+              </div>
+              <div className="text-center">
+                <Disc className="w-5 h-5 text-purple-600 mx-auto mb-1" />
+                <div className="font-medium">{cachedResult.total_dj_sets}</div>
+                <div className="text-gray-600">DJ Sets</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Choice Buttons */}
+        <div className="space-y-3">
+          <button
+            onClick={useCachedResults}
+            className="w-full bg-green-600 text-white font-medium py-4 rounded-xl hover:bg-green-700 transition-colors flex items-center justify-center text-lg"
+          >
+            <Database className="w-6 h-6 mr-2" />
+            Use Cached Results
+          </button>
+          
+          <button
+            onClick={reprocessPoster}
+            className="w-full bg-blue-600 text-white font-medium py-4 rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center text-lg"
+          >
+            <Zap className="w-6 h-6 mr-2" />
+            Reprocess with AI
+          </button>
+        </div>
+
+        {/* Additional Info */}
+        <div className="bg-gray-50 rounded-xl p-4">
+          <p className="text-sm text-gray-600 text-center">
+            <strong>Tip:</strong> Use cached results for instant access or reprocess to get the latest music data.
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   const renderAnalysisScreen = () => (
     <div className="p-4 space-y-6">
       {/* Poster Preview */}
@@ -258,7 +398,14 @@ const EventPosterArtistExtractor: React.FC = () => {
       </div>
 
       {/* Analysis Results */}
-      {state.status === 'analyzing' ? (
+      {state.status === 'checking-cache' ? (
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="flex items-center justify-center">
+            <Loader2 className="w-8 h-8 text-blue-600 mr-3 animate-spin" />
+            <span className="text-lg">Checking for existing analysis...</span>
+          </div>
+        </div>
+      ) : state.status === 'analyzing' ? (
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <div className="flex items-center justify-center">
             <Loader2 className="w-8 h-8 text-blue-600 mr-3 animate-spin" />
@@ -529,10 +676,15 @@ const EventPosterArtistExtractor: React.FC = () => {
           {state.screen !== 'upload' && (
             <button
               onClick={() => {
-                if (state.screen === 'analysis') {
+                if (state.screen === 'analysis' || state.screen === 'cache-choice') {
                   resetState();
                 } else if (state.screen === 'enhanced-results') {
-                  setState(prev => ({ ...prev, screen: 'analysis' }));
+                  // Go back based on whether we came from cache or analysis
+                  if (state.cacheResult) {
+                    setState(prev => ({ ...prev, screen: 'cache-choice' }));
+                  } else {
+                    setState(prev => ({ ...prev, screen: 'analysis' }));
+                  }
                 } else {
                   setState(prev => ({ ...prev, screen: 'enhanced-results' }));
                 }
@@ -555,6 +707,7 @@ const EventPosterArtistExtractor: React.FC = () => {
 
       <div className="max-w-md mx-auto">
         {state.screen === 'upload' && renderUploadScreen()}
+        {state.screen === 'cache-choice' && renderCacheChoiceScreen()}
         {state.screen === 'analysis' && renderAnalysisScreen()}
         {state.screen === 'enhanced-results' && renderEnhancedResultsScreen()}
         {state.screen === 'success' && renderSuccessScreen()}

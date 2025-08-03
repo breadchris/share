@@ -863,3 +863,430 @@ func downloadImageWithAuthHeaders(url, outputDir, filename string, headers http.
 func downloadImage(url, outputDir, filename string) error {
 	return downloadImageWithHeaders(url, outputDir, filename)
 }
+
+func TestScrapeMobbinOrigin(t *testing.T) {
+	// Target URL for Origin iOS app screens
+	targetURL := "https://mobbin.com/apps/origin-ios-64b7dd15-3fac-4131-8afb-b8660a29b98d/dc546033-0a54-461e-8473-1fb5f56ce297/screens"
+	
+	// Create output directory structure matching the URL path
+	outputDir := "./data/scrape/mobbin.com/apps/origin-ios-64b7dd15-3fac-4131-8afb-b8660a29b98d/dc546033-0a54-461e-8473-1fb5f56ce297/screens"
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		t.Fatalf("Failed to create output directory: %v", err)
+	}
+
+	// Create Chrome context using user's default profile
+	opts := append(chromedp.DefaultExecAllocatorOptions[:],
+		chromedp.Flag("headless", false), // Visible browser for debugging
+		chromedp.Flag("disable-gpu", false),
+		chromedp.Flag("no-sandbox", false),
+		chromedp.Flag("disable-dev-shm-usage", true),
+		chromedp.UserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"),
+	)
+
+	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	defer cancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	// Set timeout for the entire operation
+	ctx, cancel = context.WithTimeout(ctx, 120*time.Second)
+	defer cancel()
+
+	var html string
+	var imageURLs []string
+
+	err := chromedp.Run(ctx,
+		// Navigate to the target URL
+		chromedp.Navigate(targetURL),
+		
+		// Wait for page to load
+		chromedp.Sleep(5*time.Second),
+		
+		// Log current state
+		chromedp.Evaluate(`
+			console.log('Current URL:', window.location.href);
+			console.log('Page title:', document.title);
+			console.log('Total images found:', document.querySelectorAll('img').length);
+		`, nil),
+		
+		// Scroll down to trigger lazy loading
+		chromedp.Evaluate(`
+			window.scrollTo(0, document.body.scrollHeight);
+		`, nil),
+		chromedp.Sleep(3*time.Second),
+		
+		// Scroll to middle
+		chromedp.Evaluate(`
+			window.scrollTo(0, document.body.scrollHeight / 2);
+		`, nil),
+		chromedp.Sleep(2*time.Second),
+		
+		// Scroll back to top
+		chromedp.Evaluate(`
+			window.scrollTo(0, 0);
+		`, nil),
+		chromedp.Sleep(2*time.Second),
+		
+		// Extract all image URLs
+		chromedp.Evaluate(`
+			const images = [];
+			const seenUrls = new Set();
+			
+			// Get all img elements
+			document.querySelectorAll('img').forEach(img => {
+				let src = img.src || img.getAttribute('data-src') || img.getAttribute('data-lazy') || img.getAttribute('data-original');
+				if (src && !src.startsWith('data:') && !seenUrls.has(src)) {
+					// Skip small icons and logos
+					if (!src.toLowerCase().includes('icon') && 
+						!src.toLowerCase().includes('logo') && 
+						!src.toLowerCase().includes('avatar') &&
+						!src.includes('32x32') && 
+						!src.includes('16x16')) {
+						images.push(src);
+						seenUrls.add(src);
+					}
+				}
+			});
+			
+			// Get background images from CSS
+			document.querySelectorAll('div, section, article').forEach(el => {
+				const style = window.getComputedStyle(el);
+				const bgImage = style.backgroundImage;
+				if (bgImage && bgImage !== 'none') {
+					const matches = bgImage.match(/url\(['"]?([^'"]+)['"]?\)/);
+					if (matches && matches[1] && !matches[1].startsWith('data:') && !seenUrls.has(matches[1])) {
+						if (!matches[1].toLowerCase().includes('icon') && 
+							!matches[1].toLowerCase().includes('logo')) {
+							images.push(matches[1]);
+							seenUrls.add(matches[1]);
+						}
+					}
+				}
+			});
+			
+			console.log('Found', images.length, 'unique images to download');
+			images;
+		`, &imageURLs),
+		
+		// Get the final HTML for debugging
+		chromedp.OuterHTML("html", &html),
+	)
+
+	if err != nil {
+		t.Fatalf("Failed to scrape page: %v", err)
+	}
+
+	// Save HTML content for debugging
+	htmlFile := filepath.Join(outputDir, "page_content.html")
+	if err := os.WriteFile(htmlFile, []byte(html), 0644); err != nil {
+		fmt.Printf("Warning: Failed to save HTML content: %v\n", err)
+	} else {
+		fmt.Printf("Saved page content to: %s\n", htmlFile)
+	}
+
+	// Download all extracted images
+	downloadedCount := 0
+	for i, imgURL := range imageURLs {
+		// Make URL absolute if needed
+		if !strings.HasPrefix(imgURL, "http") {
+			baseURL, _ := url.Parse(targetURL)
+			imgURLParsed, err := baseURL.Parse(imgURL)
+			if err != nil {
+				fmt.Printf("Error parsing relative URL %s: %v\n", imgURL, err)
+				continue
+			}
+			imgURL = imgURLParsed.String()
+		}
+
+		// Download the image
+		filename := fmt.Sprintf("origin_screen_%03d", i+1)
+		if err := downloadImageWithHeaders(imgURL, outputDir, filename); err != nil {
+			fmt.Printf("Failed to download image %s: %v\n", imgURL, err)
+		} else {
+			downloadedCount++
+			fmt.Printf("Downloaded [%d/%d]: %s\n", downloadedCount, len(imageURLs), imgURL)
+		}
+	}
+
+	fmt.Printf("\n✅ Successfully downloaded %d out of %d images\n", downloadedCount, len(imageURLs))
+	fmt.Printf("📁 Images saved to: %s\n", outputDir)
+	fmt.Printf("📄 HTML saved to: %s\n", htmlFile)
+
+	if downloadedCount == 0 {
+		fmt.Println("ℹ️  No images were downloaded. Possible reasons:")
+		fmt.Println("   - Page requires authentication/login")
+		fmt.Println("   - Images are loaded dynamically via JavaScript")
+		fmt.Println("   - Different CSS selectors are used")
+		fmt.Printf("   - Check the saved HTML file: %s\n", htmlFile)
+	}
+}
+
+func TestScrapeMobbinOriginWithLogin(t *testing.T) {
+	// Target URL for Origin iOS app screens
+	targetURL := "https://mobbin.com/apps/origin-ios-64b7dd15-3fac-4131-8afb-b8660a29b98d/dc546033-0a54-461e-8473-1fb5f56ce297/screens"
+	
+	// Create output directory structure matching the URL path
+	outputDir := "./data/scrape/mobbin.com/apps/origin-ios-64b7dd15-3fac-4131-8afb-b8660a29b98d/dc546033-0a54-461e-8473-1fb5f56ce297/screens"
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		t.Fatalf("Failed to create output directory: %v", err)
+	}
+
+	// Enhanced Chrome options for user interaction and login persistence
+	opts := append(chromedp.DefaultExecAllocatorOptions[:],
+		chromedp.Flag("headless", false), // Must be visible for user login
+		chromedp.Flag("disable-gpu", false),
+		chromedp.Flag("no-sandbox", false),
+		chromedp.Flag("disable-dev-shm-usage", true),
+		chromedp.Flag("disable-web-security", false), // Keep security for real login
+		chromedp.Flag("disable-blink-features", "AutomationControlled"), // Avoid detection
+		chromedp.Flag("exclude-switches", "enable-automation"),
+		chromedp.Flag("disable-extensions", false), // Allow extensions that might help with login
+		chromedp.UserDataDir(""), // Use default user profile to persist cookies
+		chromedp.UserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"),
+	)
+
+	allocCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	defer cancel()
+
+	ctx, cancel := chromedp.NewContext(allocCtx)
+	defer cancel()
+
+	// Extended timeout to allow for manual login
+	ctx, cancel = context.WithTimeout(ctx, 300*time.Second) // 5 minutes for login
+	defer cancel()
+
+	fmt.Println("🌐 Starting browser for manual login...")
+	fmt.Println("📝 Instructions:")
+	fmt.Println("   1. A Chrome browser window will open")
+	fmt.Println("   2. You'll be taken to Mobbin.com")
+	fmt.Println("   3. Please log in to your Mobbin account manually")
+	fmt.Println("   4. Once logged in, press Enter in this terminal to continue")
+	fmt.Println("   5. The scraper will then automatically navigate to the target page and download images")
+	fmt.Println()
+
+	var html string
+	var imageURLs []string
+
+	err := chromedp.Run(ctx,
+		// Navigate to Mobbin.com main page for login
+		chromedp.Navigate("https://mobbin.com"),
+		
+		// Wait for initial page load
+		chromedp.Sleep(3*time.Second),
+		
+		// Check current authentication state
+		chromedp.Evaluate(`
+			console.log('=== MOBBIN LOGIN CHECK ===');
+			console.log('Current URL:', window.location.href);
+			console.log('Page title:', document.title);
+			
+			// Look for login indicators
+			const loginButtons = document.querySelectorAll('[href*="login"], [href*="auth"], button:contains("Login"), a:contains("Login"), [class*="login"], [data-testid*="login"]');
+			const signupButtons = document.querySelectorAll('[href*="signup"], [href*="register"], button:contains("Sign"), a:contains("Sign")');
+			
+			// Look for user profile indicators (already logged in)
+			const profileElements = document.querySelectorAll('[data-testid*="profile"], [aria-label*="profile"], [class*="profile"], [class*="avatar"], [class*="user"]');
+			const logoutElements = document.querySelectorAll('[href*="logout"], [class*="logout"], button:contains("Logout"), a:contains("Logout")');
+			
+			console.log('Login buttons found:', loginButtons.length);
+			console.log('Signup buttons found:', signupButtons.length);
+			console.log('Profile elements found:', profileElements.length);
+			console.log('Logout elements found:', logoutElements.length);
+			
+			const isLoggedIn = profileElements.length > 0 || logoutElements.length > 0;
+			console.log('Appears to be logged in:', isLoggedIn);
+			
+			if (!isLoggedIn) {
+				console.log('🚨 Please log in to Mobbin in this browser window');
+			} else {
+				console.log('✅ You appear to be logged in already');
+			}
+			
+			isLoggedIn;
+		`, nil),
+	)
+
+	if err != nil {
+		t.Fatalf("Failed to navigate to Mobbin: %v", err)
+	}
+
+	// Wait for user to complete login
+	fmt.Print("⏳ Press Enter after you have logged in to Mobbin: ")
+	fmt.Scanln() // Wait for user input
+	
+	fmt.Println("🔄 Continuing with scraping...")
+
+	// Now proceed with navigation to target URL and verification
+	err = chromedp.Run(ctx,
+		// Verify login status after user confirmation
+		chromedp.Evaluate(`
+			const profileElements = document.querySelectorAll('[data-testid*="profile"], [aria-label*="profile"], [class*="profile"], [class*="avatar"], [class*="user"]');
+			const logoutElements = document.querySelectorAll('[href*="logout"], [class*="logout"], button:contains("Logout"), a:contains("Logout")');
+			const isLoggedIn = profileElements.length > 0 || logoutElements.length > 0;
+			
+			if (isLoggedIn) {
+				console.log('✅ Login verified - proceeding to target URL');
+			} else {
+				console.log('⚠️  Login not detected - attempting to proceed anyway');
+			}
+			
+			isLoggedIn;
+		`, nil),
+		
+		// Navigate to the target URL
+		chromedp.Navigate(targetURL),
+		
+		// Wait for page to load
+		chromedp.Sleep(5*time.Second),
+		
+		// Check if we successfully accessed the protected content
+		chromedp.Evaluate(`
+			console.log('=== TARGET PAGE VERIFICATION ===');
+			console.log('Current URL:', window.location.href);
+			console.log('Page title:', document.title);
+			
+			// Check for authentication wall or error messages
+			const bodyText = document.body.innerText.toLowerCase();
+			const needsAuth = bodyText.includes('login') || bodyText.includes('sign in') || bodyText.includes('authenticate') || bodyText.includes('unauthorized');
+			const hasError = bodyText.includes('error') || bodyText.includes('not found') || bodyText.includes('access denied');
+			
+			// Count images to verify content loaded
+			const images = document.querySelectorAll('img');
+			console.log('Images found on target page:', images.length);
+			console.log('Needs authentication:', needsAuth);
+			console.log('Has error:', hasError);
+			
+			if (needsAuth) {
+				console.log('🚨 Page indicates authentication required');
+			} else if (hasError) {
+				console.log('🚨 Page shows error - may be inaccessible');
+			} else if (images.length > 0) {
+				console.log('✅ Content appears to be accessible');
+			}
+			
+			// Return status
+			!needsAuth && !hasError && images.length > 0;
+		`, nil),
+		
+		// Scroll down to trigger lazy loading
+		chromedp.Evaluate(`
+			console.log('🔄 Scrolling to load all images...');
+			window.scrollTo(0, document.body.scrollHeight);
+		`, nil),
+		chromedp.Sleep(3*time.Second),
+		
+		// Scroll to middle
+		chromedp.Evaluate(`
+			window.scrollTo(0, document.body.scrollHeight / 2);
+		`, nil),
+		chromedp.Sleep(2*time.Second),
+		
+		// Scroll back to top
+		chromedp.Evaluate(`
+			window.scrollTo(0, 0);
+		`, nil),
+		chromedp.Sleep(2*time.Second),
+		
+		// Extract all image URLs
+		chromedp.Evaluate(`
+			console.log('🔍 Extracting image URLs...');
+			const images = [];
+			const seenUrls = new Set();
+			
+			// Get all img elements
+			document.querySelectorAll('img').forEach(img => {
+				let src = img.src || img.getAttribute('data-src') || img.getAttribute('data-lazy') || img.getAttribute('data-original');
+				if (src && !src.startsWith('data:') && !seenUrls.has(src)) {
+					// Skip small icons and logos
+					if (!src.toLowerCase().includes('icon') && 
+						!src.toLowerCase().includes('logo') && 
+						!src.toLowerCase().includes('avatar') &&
+						!src.includes('32x32') && 
+						!src.includes('16x16')) {
+						images.push(src);
+						seenUrls.add(src);
+					}
+				}
+			});
+			
+			// Get background images from CSS
+			document.querySelectorAll('div, section, article').forEach(el => {
+				const style = window.getComputedStyle(el);
+				const bgImage = style.backgroundImage;
+				if (bgImage && bgImage !== 'none') {
+					const matches = bgImage.match(/url\(['"]?([^'"]+)['"]?\)/);
+					if (matches && matches[1] && !matches[1].startsWith('data:') && !seenUrls.has(matches[1])) {
+						if (!matches[1].toLowerCase().includes('icon') && 
+							!matches[1].toLowerCase().includes('logo')) {
+							images.push(matches[1]);
+							seenUrls.add(matches[1]);
+						}
+					}
+				}
+			});
+			
+			console.log('📊 Found', images.length, 'unique images to download');
+			images;
+		`, &imageURLs),
+		
+		// Get the final HTML for debugging
+		chromedp.OuterHTML("html", &html),
+	)
+
+	if err != nil {
+		t.Fatalf("Failed to scrape page: %v", err)
+	}
+
+	// Save HTML content for debugging
+	htmlFile := filepath.Join(outputDir, "page_content_with_login.html")
+	if err := os.WriteFile(htmlFile, []byte(html), 0644); err != nil {
+		fmt.Printf("Warning: Failed to save HTML content: %v\n", err)
+	} else {
+		fmt.Printf("📄 Saved page content to: %s\n", htmlFile)
+	}
+
+	if len(imageURLs) == 0 {
+		fmt.Println("❌ No images found. Possible reasons:")
+		fmt.Println("   - Login was not successful")
+		fmt.Println("   - Page requires additional authentication")
+		fmt.Println("   - Content is loaded differently when authenticated")
+		fmt.Printf("   - Check the saved HTML file: %s\n", htmlFile)
+		return
+	}
+
+	fmt.Printf("📊 Found %d images to download\n", len(imageURLs))
+
+	// Download all extracted images
+	downloadedCount := 0
+	for i, imgURL := range imageURLs {
+		// Make URL absolute if needed
+		if !strings.HasPrefix(imgURL, "http") {
+			baseURL, _ := url.Parse(targetURL)
+			imgURLParsed, err := baseURL.Parse(imgURL)
+			if err != nil {
+				fmt.Printf("Error parsing relative URL %s: %v\n", imgURL, err)
+				continue
+			}
+			imgURL = imgURLParsed.String()
+		}
+
+		// Download the image
+		filename := fmt.Sprintf("origin_screen_auth_%03d", i+1)
+		if err := downloadImageWithHeaders(imgURL, outputDir, filename); err != nil {
+			fmt.Printf("Failed to download image %s: %v\n", imgURL, err)
+		} else {
+			downloadedCount++
+			fmt.Printf("✅ Downloaded [%d/%d]: %s\n", downloadedCount, len(imageURLs), imgURL)
+		}
+	}
+
+	fmt.Printf("\n🎉 Successfully downloaded %d out of %d images\n", downloadedCount, len(imageURLs))
+	fmt.Printf("📁 Images saved to: %s\n", outputDir)
+	fmt.Printf("📄 HTML saved to: %s\n", htmlFile)
+	
+	if downloadedCount < len(imageURLs) {
+		fmt.Printf("⚠️  %d images failed to download - check network connectivity or permissions\n", len(imageURLs)-downloadedCount)
+	}
+}
+

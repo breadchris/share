@@ -135,8 +135,24 @@ type InputMessage struct {
 }
 
 type InputMessageContent struct {
-	Type string `json:"type"`
-	Text string `json:"text"`
+	Type   string       `json:"type"`           // "text" or "image"
+	Text   string       `json:"text,omitempty"` // for text content
+	Source *ImageSource `json:"source,omitempty"` // for image content
+}
+
+// ImageSource represents an image attachment for Claude CLI
+type ImageSource struct {
+	Type      string `json:"type"`       // "base64"
+	MediaType string `json:"media_type"` // "image/jpeg", "image/png", etc.
+	Data      string `json:"data"`       // base64 encoded image data (without data URI prefix)
+}
+
+// ImageAttachment represents an image from the frontend
+type ImageAttachment struct {
+	Data     string `json:"data"`      // base64 encoded image data with data URI prefix
+	MimeType string `json:"mimeType"`  // image/jpeg, image/png, etc.
+	Filename string `json:"filename,omitempty"` // optional original filename
+	Size     int    `json:"size,omitempty"`     // file size in bytes
 }
 
 func NewService(config Config) *Service {
@@ -788,17 +804,65 @@ func (s *Service) handleStdin(process *Process) {
 	}
 }
 
+// parseImageData extracts base64 data from data URI format
+func parseImageData(dataURI string) (string, error) {
+	// Remove data URI prefix (e.g., "data:image/jpeg;base64,")
+	if !strings.HasPrefix(dataURI, "data:") {
+		return "", fmt.Errorf("invalid data URI format")
+	}
+	
+	parts := strings.SplitN(dataURI, ",", 2)
+	if len(parts) != 2 {
+		return "", fmt.Errorf("invalid data URI format")
+	}
+	
+	return parts[1], nil
+}
+
 func (s *Service) SendMessage(process *Process, text string) error {
+	return s.SendMessageWithImages(process, text, nil)
+}
+
+func (s *Service) SendMessageWithImages(process *Process, text string, images []ImageAttachment) error {
+	// Build content array starting with text
+	content := []InputMessageContent{}
+	
+	// Add text content if provided
+	if text != "" {
+		content = append(content, InputMessageContent{
+			Type: "text",
+			Text: text,
+		})
+	}
+	
+	// Add image content if provided
+	for _, img := range images {
+		// Parse base64 data from data URI
+		base64Data, err := parseImageData(img.Data)
+		if err != nil {
+			return fmt.Errorf("failed to parse image data: %w", err)
+		}
+		
+		content = append(content, InputMessageContent{
+			Type: "image",
+			Source: &ImageSource{
+				Type:      "base64",
+				MediaType: img.MimeType,
+				Data:      base64Data,
+			},
+		})
+	}
+	
+	// Ensure we have some content
+	if len(content) == 0 {
+		return fmt.Errorf("no content provided")
+	}
+	
 	message := Input{
 		Type: "user",
 		Message: InputMessage{
 			Role: "user",
-			Content: []InputMessageContent{
-				{
-					Type: "text",
-					Text: text,
-				},
-			},
+			Content: content,
 		},
 	}
 
@@ -1406,6 +1470,11 @@ func (cs *ClaudeService) copyFile(src, dst string) error {
 // SendMessage sends a message to a Claude process
 func (cs *ClaudeService) SendMessage(process *Process, text string) error {
 	return cs.service.SendMessage(process, text)
+}
+
+// SendMessageWithImages sends a message with images to a Claude process
+func (cs *ClaudeService) SendMessageWithImages(process *Process, text string, images []ImageAttachment) error {
+	return cs.service.SendMessageWithImages(process, text, images)
 }
 
 // ReceiveMessages returns the output channel for a Claude process

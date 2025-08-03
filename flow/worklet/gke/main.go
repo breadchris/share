@@ -61,19 +61,19 @@ func main() {
 		ctx.Export("clusterName", cluster.Name)
 		ctx.Export("clusterEndpoint", cluster.Endpoint)
 		ctx.Export("nodePoolName", nodePool.Name)
-		
-		// Deploy Traefik using Helm
+
+		// Deploy Traefik using Helm with simplified configuration
 		traefikRelease, err := helm.NewRelease(ctx, "traefik", &helm.ReleaseArgs{
-			Chart:     pulumi.String("traefik"),
-			Version:   pulumi.String("28.3.0"),
-			Namespace: pulumi.String("traefik-system"),
+			Chart:           pulumi.String("traefik"),
+			Version:         pulumi.String("28.3.0"),
+			Namespace:       pulumi.String("traefik-system"),
 			CreateNamespace: pulumi.Bool(true),
 			RepositoryOpts: &helm.RepositoryOptsArgs{
 				Repo: pulumi.String("https://helm.traefik.io/traefik"),
 			},
 			Values: pulumi.Map{
 				"deployment": pulumi.Map{
-					"replicas": pulumi.Int(2),
+					"replicas": pulumi.Int(1),
 				},
 				"service": pulumi.Map{
 					"type": pulumi.String("LoadBalancer"),
@@ -81,38 +81,24 @@ func main() {
 				"ports": pulumi.Map{
 					"web": pulumi.Map{
 						"port": pulumi.Int(80),
-						"expose": pulumi.Bool(true),
-						"redirectTo": pulumi.Map{
-							"port": pulumi.String("websecure"),
-						},
 					},
 					"websecure": pulumi.Map{
 						"port": pulumi.Int(443),
-						"expose": pulumi.Bool(true),
 						"tls": pulumi.Map{
 							"enabled": pulumi.Bool(true),
 						},
 					},
 				},
-				"certificatesResolvers": pulumi.Map{
-					"letsencrypt": pulumi.Map{
-						"acme": pulumi.Map{
-							"email": pulumi.String("admin@example.com"), // Replace with your email
-							"storage": pulumi.String("/data/acme.json"),
-							"httpChallenge": pulumi.Map{
-								"entryPoint": pulumi.String("web"),
-							},
-						},
-					},
+				"additionalArguments": pulumi.StringArray{
+					pulumi.String("--certificatesresolvers.letsencrypt.acme.email=chris@breadchris.com"),
+					pulumi.String("--certificatesresolvers.letsencrypt.acme.storage=/data/acme.json"),
+					pulumi.String("--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"),
+					pulumi.String("--entrypoints.web.http.redirections.entrypoint.to=websecure"),
+					pulumi.String("--entrypoints.web.http.redirections.entrypoint.scheme=https"),
 				},
 				"persistence": pulumi.Map{
 					"enabled": pulumi.Bool(true),
-					"size": pulumi.String("1Gi"),
-				},
-				"additionalArguments": pulumi.StringArray{
-					pulumi.String("--certificatesresolvers.letsencrypt.acme.caserver=https://acme-v02.api.letsencrypt.org/directory"),
-					pulumi.String("--entrypoints.web.http.redirections.entrypoint.to=websecure"),
-					pulumi.String("--entrypoints.web.http.redirections.entrypoint.scheme=https"),
+					"size":    pulumi.String("1Gi"),
 				},
 			},
 		})
@@ -147,7 +133,7 @@ users:
       name: gcp`,
 			cluster.MasterAuth.ClusterCaCertificate().Elem(),
 			cluster.Endpoint)
-		
+
 		ctx.Export("kubeconfig", kubeconfig)
 		ctx.Export("traefikRelease", traefikRelease.Name)
 
