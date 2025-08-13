@@ -1,247 +1,266 @@
-// Popup script for WebSocket connection management
+// Share Extension - Popup Script
+
 document.addEventListener('DOMContentLoaded', initialize);
 
-let connectionStats = {
-    requestCount: 0,
-    connectionTime: null,
-    lastActivity: null
-};
-
-let reconnectInfo = {
-    attempts: 0,
-    maxAttempts: 5,
-    isReconnecting: false,
-    autoReconnectEnabled: true
+let currentStats = {
+  shareCount: 0,
+  lastShared: null,
+  currentUrl: null,
+  isShareable: false
 };
 
 async function initialize() {
-    // Load current settings and connection status
-    await loadSettings();
-    await updateConnectionStatus();
+  console.log('Share popup initializing...');
+  
+  try {
+    // Load initial stats and page info
+    await loadStats();
+    await updateUI();
     
     // Set up event listeners
-    document.getElementById('connect-btn').addEventListener('click', connectToServer);
-    document.getElementById('disconnect-btn').addEventListener('click', disconnectFromServer);
-    document.getElementById('stop-reconnect-btn').addEventListener('click', stopReconnection);
-    document.getElementById('options-btn').addEventListener('click', openOptions);
+    document.getElementById('share-btn').addEventListener('click', sharePage);
+    document.getElementById('reload-btn').addEventListener('click', reloadExtension);
     
-    // Update UI every second
-    setInterval(updateUI, 1000);
+    // Update keyboard shortcuts for different platforms
+    updateKeyboardShortcuts();
     
-    // Listen for connection status changes from background script
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-        if (message.action === 'connectionStatusChanged') {
-            updateConnectionStatus();
-        } else if (message.action === 'statsUpdate') {
-            connectionStats = { ...connectionStats, ...message.data };
-            updateStats();
-        }
-    });
+  } catch (error) {
+    console.error('Error initializing popup:', error);
+    showError('Failed to initialize extension popup');
+  }
 }
 
-async function loadSettings() {
-    try {
-        const result = await chrome.storage.sync.get(['serverUrl', 'apiDomain']);
-        const apiDomain = result.apiDomain || 'http://localhost:8080';
-        
-        document.getElementById('server-url').textContent = `API: ${apiDomain}`;
-    } catch (error) {
-        console.error('Error loading settings:', error);
-    }
-}
-
-async function updateConnectionStatus() {
-    try {
-        // Get connection status from background script
-        const response = await chrome.runtime.sendMessage({ 
-            action: 'getConnectionStatus' 
-        });
-        
-        const status = response?.status || 'disconnected';
-        const stats = response?.stats || {};
-        const reconnect = response?.reconnectInfo || {};
-        
-        updateStatusUI(status);
-        
-        if (stats) {
-            connectionStats = { ...connectionStats, ...stats };
-            updateStats();
-        }
-        
-        if (reconnect) {
-            reconnectInfo = { ...reconnectInfo, ...reconnect };
-        }
-        
-    } catch (error) {
-        console.error('Error getting connection status:', error);
-        updateStatusUI('disconnected');
-    }
-}
-
-function updateStatusUI(status) {
-    const statusElement = document.getElementById('status');
-    const statusText = document.getElementById('status-text');
-    const connectBtn = document.getElementById('connect-btn');
-    const disconnectBtn = document.getElementById('disconnect-btn');
-    const stopReconnectBtn = document.getElementById('stop-reconnect-btn');
-    const statsElement = document.getElementById('stats');
+async function loadStats() {
+  try {
+    const response = await chrome.runtime.sendMessage({ action: 'get-stats' });
     
-    // Reset classes
-    statusElement.className = 'status';
-    
-    // Hide all buttons initially
-    connectBtn.style.display = 'none';
-    disconnectBtn.style.display = 'none';
-    stopReconnectBtn.style.display = 'none';
-    
-    switch (status) {
-        case 'connected':
-            statusElement.classList.add('connected');
-            statusText.textContent = 'Connected';
-            disconnectBtn.style.display = 'block';
-            statsElement.style.display = 'flex';
-            break;
-            
-        case 'connecting':
-            statusElement.classList.add('connecting');
-            statusText.textContent = 'Connecting...';
-            connectBtn.disabled = true;
-            statsElement.style.display = 'none';
-            break;
-            
-        case 'reconnecting':
-            statusElement.classList.add('connecting');
-            const attemptText = reconnectInfo.attempts > 0 ? 
-                ` (${reconnectInfo.attempts}/${reconnectInfo.maxAttempts})` : '';
-            statusText.textContent = `Reconnecting...${attemptText}`;
-            stopReconnectBtn.style.display = 'block';
-            statsElement.style.display = 'none';
-            break;
-            
-        case 'disconnected':
-        default:
-            statusElement.classList.add('disconnected');
-            statusText.textContent = 'Disconnected';
-            connectBtn.style.display = 'block';
-            connectBtn.disabled = false;
-            statsElement.style.display = 'none';
-            break;
-    }
-}
-
-async function connectToServer() {
-    try {
-        updateStatusUI('connecting');
-        
-        const response = await chrome.runtime.sendMessage({ 
-            action: 'connectWebSocket' 
-        });
-        
-        if (response?.success) {
-            console.log('Connection initiated successfully');
-            // Status will be updated via message listener
-        } else {
-            console.error('Failed to initiate connection:', response?.error);
-            updateStatusUI('disconnected');
-            showNotification('Connection failed: ' + (response?.error || 'Unknown error'));
-        }
-        
-    } catch (error) {
-        console.error('Error connecting to server:', error);
-        updateStatusUI('disconnected');
-        showNotification('Connection error: ' + error.message);
-    }
-}
-
-async function disconnectFromServer() {
-    try {
-        const response = await chrome.runtime.sendMessage({ 
-            action: 'disconnectWebSocket' 
-        });
-        
-        if (response?.success) {
-            console.log('Disconnected successfully');
-            updateStatusUI('disconnected');
-            resetStats();
-        } else {
-            console.error('Failed to disconnect:', response?.error);
-        }
-        
-    } catch (error) {
-        console.error('Error disconnecting from server:', error);
-    }
-}
-
-async function stopReconnection() {
-    try {
-        const response = await chrome.runtime.sendMessage({ 
-            action: 'stopReconnection' 
-        });
-        
-        if (response?.success) {
-            console.log('Reconnection stopped successfully');
-            updateStatusUI('disconnected');
-        } else {
-            console.error('Failed to stop reconnection:', response?.error);
-        }
-        
-    } catch (error) {
-        console.error('Error stopping reconnection:', error);
-    }
-}
-
-function openOptions() {
-    chrome.runtime.openOptionsPage();
-}
-
-function updateUI() {
-    updateStats();
-}
-
-function updateStats() {
-    if (connectionStats.connectionTime) {
-        const now = Date.now();
-        const duration = now - connectionStats.connectionTime;
-        document.getElementById('connection-time').textContent = formatDuration(duration);
-    }
-    
-    if (connectionStats.lastActivity) {
-        const now = Date.now();
-        const timeSince = now - connectionStats.lastActivity;
-        document.getElementById('last-activity').textContent = formatDuration(timeSince) + ' ago';
-    }
-    
-    document.getElementById('requests-count').textContent = connectionStats.requestCount.toString();
-}
-
-function resetStats() {
-    connectionStats = {
-        requestCount: 0,
-        connectionTime: null,
-        lastActivity: null
-    };
-    updateStats();
-}
-
-function formatDuration(milliseconds) {
-    const seconds = Math.floor(milliseconds / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    
-    if (hours > 0) {
-        return `${hours}h ${minutes % 60}m`;
-    } else if (minutes > 0) {
-        return `${minutes}m ${seconds % 60}s`;
+    if (response && !response.error) {
+      currentStats = response;
+      console.log('Loaded stats:', currentStats);
     } else {
-        return `${seconds}s`;
+      console.error('Error loading stats:', response?.error);
     }
+  } catch (error) {
+    console.error('Error communicating with background script:', error);
+  }
 }
 
-function showNotification(message) {
-    chrome.notifications.create({
-        type: 'basic',
-        iconUrl: 'icons/icon48.png',
-        title: 'Share Extension',
-        message: message
-    });
+async function updateUI() {
+  try {
+    // Update current page info
+    const pageTitle = document.getElementById('page-title');
+    const pageUrl = document.getElementById('page-url');
+    const shareBtn = document.getElementById('share-btn');
+    
+    if (currentStats.currentUrl) {
+      // Truncate title if too long
+      const title = currentStats.currentUrl.length > 0 ? 
+        document.title || 'Current Page' : 'No Page';
+      pageTitle.textContent = title.length > 60 ? title.substring(0, 60) + '...' : title;
+      
+      // Truncate URL if too long
+      let displayUrl = currentStats.currentUrl;
+      if (displayUrl.length > 50) {
+        displayUrl = displayUrl.substring(0, 47) + '...';
+      }
+      pageUrl.textContent = displayUrl;
+      
+      // Enable/disable share button based on URL
+      shareBtn.disabled = !currentStats.isShareable;
+      if (!currentStats.isShareable) {
+        shareBtn.title = 'This type of page cannot be shared';
+      } else {
+        shareBtn.title = 'Share this page (Cmd+Shift+B)';
+      }
+    } else {
+      pageTitle.textContent = 'No active page';
+      pageUrl.textContent = 'Unable to access current page';
+      shareBtn.disabled = true;
+    }
+    
+    // Update stats
+    document.getElementById('share-count').textContent = currentStats.shareCount;
+    
+    // Format last share time
+    const lastShareEl = document.getElementById('last-share');
+    if (currentStats.lastShared) {
+      const lastTime = new Date(currentStats.lastShared);
+      const now = new Date();
+      const diffMinutes = Math.floor((now - lastTime) / (1000 * 60));
+      
+      if (diffMinutes < 1) {
+        lastShareEl.textContent = 'Just now';
+      } else if (diffMinutes < 60) {
+        lastShareEl.textContent = `${diffMinutes}m ago`;
+      } else if (diffMinutes < 1440) {
+        lastShareEl.textContent = `${Math.floor(diffMinutes / 60)}h ago`;
+      } else {
+        lastShareEl.textContent = `${Math.floor(diffMinutes / 1440)}d ago`;
+      }
+    } else {
+      lastShareEl.textContent = 'Never';
+    }
+    
+  } catch (error) {
+    console.error('Error updating UI:', error);
+  }
 }
+
+async function sharePage() {
+  const button = document.getElementById('share-btn');
+  const originalText = button.innerHTML;
+  
+  try {
+    // Disable button and show loading
+    button.disabled = true;
+    button.innerHTML = '<span class="button-icon">⏳</span><span>Sharing...</span>';
+    showLoading(true);
+    
+    // Send share request to background script
+    const response = await chrome.runtime.sendMessage({ action: 'share-page' });
+    
+    if (response && response.success) {
+      showSuccess('Page shared successfully!');
+      
+      // Update stats
+      currentStats.shareCount += 1;
+      currentStats.lastShared = Date.now();
+      await updateUI();
+      
+      // Briefly show success state on button
+      button.innerHTML = '<span class="button-icon">✅</span><span>Shared!</span>';
+      setTimeout(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+      }, 1500);
+      
+    } else {
+      throw new Error(response?.error || 'Unknown error occurred');
+    }
+    
+  } catch (error) {
+    console.error('Error sharing page:', error);
+    showError('Failed to share page: ' + error.message);
+    
+    // Restore button
+    button.innerHTML = originalText;
+    button.disabled = currentStats.isShareable ? false : true;
+  } finally {
+    showLoading(false);
+  }
+}
+
+async function reloadExtension() {
+  const button = document.getElementById('reload-btn');
+  const originalText = button.innerHTML;
+  
+  try {
+    // Disable button and show loading
+    button.disabled = true;
+    button.innerHTML = '<span class="button-icon">⏳</span><span>Reloading...</span>';
+    showLoading(true);
+    
+    showSuccess('Extension is reloading...');
+    
+    // Send reload request to background script
+    await chrome.runtime.sendMessage({ action: 'reload-extension' });
+    
+    // If we get here, the reload didn't work as expected
+    setTimeout(() => {
+      button.innerHTML = originalText;
+      button.disabled = false;
+      showLoading(false);
+    }, 2000);
+    
+  } catch (error) {
+    console.error('Error reloading extension:', error);
+    showError('Failed to reload extension: ' + error.message);
+    
+    // Restore button
+    button.innerHTML = originalText;
+    button.disabled = false;
+    showLoading(false);
+  }
+}
+
+function showSuccess(message) {
+  const successEl = document.getElementById('success-message');
+  const errorEl = document.getElementById('error-message');
+  
+  // Hide error message
+  errorEl.classList.remove('show');
+  
+  // Show success message
+  successEl.textContent = message;
+  successEl.classList.add('show');
+  
+  // Auto-hide after 3 seconds
+  setTimeout(() => {
+    successEl.classList.remove('show');
+  }, 3000);
+}
+
+function showError(message) {
+  const errorEl = document.getElementById('error-message');
+  const successEl = document.getElementById('success-message');
+  
+  // Hide success message
+  successEl.classList.remove('show');
+  
+  // Show error message
+  errorEl.textContent = message;
+  errorEl.classList.add('show');
+  
+  // Auto-hide after 5 seconds
+  setTimeout(() => {
+    errorEl.classList.remove('show');
+  }, 5000);
+}
+
+function showLoading(show) {
+  const loadingEl = document.getElementById('loading');
+  if (show) {
+    loadingEl.classList.add('show');
+  } else {
+    loadingEl.classList.remove('show');
+  }
+}
+
+function updateKeyboardShortcuts() {
+  // Update keyboard shortcuts display for different platforms
+  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+  
+  const shortcuts = document.querySelectorAll('.keyboard-shortcut');
+  shortcuts.forEach(shortcut => {
+    if (isMac) {
+      // Already shows Cmd+Shift+B and Cmd+Shift+R for Mac
+    } else {
+      // Update to show Ctrl+Shift+B and Ctrl+Shift+R for Windows/Linux
+      shortcut.textContent = shortcut.textContent.replace('Cmd+', 'Ctrl+');
+    }
+  });
+}
+
+// Handle messages from background script (if any)
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log('Popup received message:', message);
+  
+  switch (message.type) {
+    case 'stats-updated':
+      currentStats = message.stats;
+      updateUI();
+      break;
+      
+    case 'share-success':
+      showSuccess(`"${message.title}" shared successfully!`);
+      // Refresh stats display
+      loadStats().then(() => updateUI());
+      break;
+      
+    case 'share-error':
+      showError('Failed to share page');
+      break;
+  }
+});
+
+console.log('Share extension popup script loaded');

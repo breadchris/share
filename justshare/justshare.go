@@ -390,13 +390,13 @@ func New(d deps.Deps) *http.ServeMux {
 	// This must come after all API routes to avoid conflicts
 	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// Skip if it's an API route or static file
-		if strings.HasPrefix(r.URL.Path, "/api/") || 
-		   strings.HasPrefix(r.URL.Path, "/static/") ||
-		   strings.HasPrefix(r.URL.Path, "/coderunner/") {
+		if strings.HasPrefix(r.URL.Path, "/api/") ||
+			strings.HasPrefix(r.URL.Path, "/static/") ||
+			strings.HasPrefix(r.URL.Path, "/coderunner/") {
 			http.NotFound(w, r)
 			return
 		}
-		
+
 		// Pass the URL path to the React component via data attribute
 		// The component will read this to initialize the file manager path
 		coderunner.ServeFullRenderComponent(w, r, "justshare/JustShare.tsx", "JustShare")
@@ -2012,7 +2012,7 @@ func handleMoveFile(w http.ResponseWriter, r *http.Request, d deps.Deps) {
 		metadata["title"] = req.NewName
 	}
 
-	content.Metadata = models.MakeJSONField(metadata)
+	content.Metadata = models.MakeJSONFieldMapStringInterface(metadata)
 
 	if err := d.DB.Save(&content).Error; err != nil {
 		http.Error(w, fmt.Sprintf(`{"error":"failed to move file: %v"}`, err), http.StatusInternalServerError)

@@ -2,22 +2,141 @@ apiVersion: skaffold/v4beta6
 kind: Config
 metadata:
   name: flow-worklet-example
+
+# Default configuration (development)
 build:
   artifacts:
   - image: gcr.io/planar-sun-402202/flow-worklet-example
     docker:
       dockerfile: Dockerfile
+    sync:
+      manual:
+      - src: "**/*.go"
+        dest: "/app"
+        strip: ""
+      - src: "static/**"
+        dest: "/app/static"
+        strip: ""
+
 manifests:
   rawYaml:
   - k8s/deployment.yaml
   - k8s/service.yaml
-  - k8s/ingress.yaml
-  - k8s/middleware.yaml
-  - k8s/certificate.yaml
+
 deploy:
   kubectl: {}
+
 portForward:
 - resourceType: service
   resourceName: flow-worklet-service
   port: 80
   localPort: 8080
+
+# Development profile - Hot reload and fast iteration
+profiles:
+- name: dev
+  build:
+    artifacts:
+    - image: gcr.io/planar-sun-402202/flow-worklet-example
+      docker:
+        dockerfile: Dockerfile.dev
+      sync:
+        manual:
+        - src: "**/*.go"
+          dest: "/app"
+          strip: ""
+        - src: "go.mod"
+          dest: "/app"
+        - src: "go.sum"
+          dest: "/app"
+  manifests:
+    rawYaml:
+    - k8s/deployment-dev.yaml
+    - k8s/service.yaml
+  portForward:
+  - resourceType: service
+    resourceName: flow-worklet-service
+    port: 80
+    localPort: 8080
+  deploy:
+    kubectl: {}
+
+# Debug profile - Remote debugging enabled
+- name: debug
+  build:
+    artifacts:
+    - image: gcr.io/planar-sun-402202/flow-worklet-example
+      docker:
+        dockerfile: Dockerfile.debug
+  manifests:
+    rawYaml:
+    - k8s/deployment-debug.yaml
+    - k8s/service.yaml
+  portForward:
+  - resourceType: service
+    resourceName: flow-worklet-service
+    port: 80
+    localPort: 8080
+  - resourceType: service
+    resourceName: flow-worklet-service
+    port: 40000
+    localPort: 40000  # Delve debugger port
+  deploy:
+    kubectl: {}
+
+# Production profile - Optimized builds with proper tagging
+- name: prod
+  build:
+    artifacts:
+    - image: gcr.io/planar-sun-402202/flow-worklet-example
+      docker:
+        dockerfile: Dockerfile
+        buildArgs:
+          BUILD_ENV: production
+    tagPolicy:
+      gitCommit: {}
+  manifests:
+    rawYaml:
+    - k8s/deployment.yaml
+    - k8s/service.yaml
+    - k8s/ingress.yaml
+    - k8s/middleware.yaml
+    - k8s/certificate.yaml
+  deploy:
+    kubectl: {}
+
+# Local development profile - Uses local Docker daemon, no push to registry
+- name: local
+  build:
+    artifacts:
+    - image: flow-worklet-example
+      docker:
+        dockerfile: Dockerfile.dev
+    local:
+      push: false
+  manifests:
+    rawYaml:
+    - k8s/deployment-local.yaml
+    - k8s/service.yaml
+  portForward:
+  - resourceType: service
+    resourceName: flow-worklet-service
+    port: 80
+    localPort: 8080
+  deploy:
+    kubectl: {}
+
+# Test profile - Runs tests and deploys to test namespace
+- name: test
+  build:
+    artifacts:
+    - image: gcr.io/planar-sun-402202/flow-worklet-example
+      docker:
+        dockerfile: Dockerfile.test
+  manifests:
+    rawYaml:
+    - k8s/deployment-test.yaml
+    - k8s/service.yaml
+  deploy:
+    kubectl:
+      defaultNamespace: test

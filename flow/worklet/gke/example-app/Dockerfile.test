@@ -1,0 +1,45 @@
+# Test Dockerfile - Runs tests and then serves the application
+FROM golang:1.24-alpine AS builder
+
+# Install testing tools
+RUN apk --no-cache add git ca-certificates tzdata
+
+WORKDIR /app
+
+# Copy go mod files first for better caching
+COPY go.mod ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Run tests first - build will fail if tests fail
+RUN echo "🧪 Running tests..." && \
+    go test -v ./... && \
+    echo "✅ All tests passed!"
+
+# Build the application only if tests pass
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+
+# Test stage - minimal runtime
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates curl
+
+WORKDIR /root/
+
+# Copy the tested binary
+COPY --from=builder /app/main .
+
+# Set environment for testing
+ENV ENV=test
+ENV DEBUG_MODE=false
+ENV LOG_LEVEL=info
+
+# Health check
+HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8080/health || exit 1
+
+EXPOSE 8080
+
+CMD ["./main"]

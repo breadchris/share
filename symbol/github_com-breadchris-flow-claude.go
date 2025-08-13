@@ -26,6 +26,8 @@ func init() {
 		"Config":                     reflect.ValueOf((*claude.Config)(nil)),
 		"GitService":                 reflect.ValueOf((*claude.GitService)(nil)),
 		"GitSessionInfo":             reflect.ValueOf((*claude.GitSessionInfo)(nil)),
+		"ImageAttachment":            reflect.ValueOf((*claude.ImageAttachment)(nil)),
+		"ImageSource":                reflect.ValueOf((*claude.ImageSource)(nil)),
 		"Input":                      reflect.ValueOf((*claude.Input)(nil)),
 		"InputMessage":               reflect.ValueOf((*claude.InputMessage)(nil)),
 		"InputMessageContent":        reflect.ValueOf((*claude.InputMessageContent)(nil)),

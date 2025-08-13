@@ -10,11 +10,12 @@ import (
 func init() {
 	Symbols["github.com/breadchris/share/models/models"] = map[string]reflect.Value{
 		// function, constant and variable definitions
-		"AIRecipeToModel": reflect.ValueOf(models.AIRecipeToModel),
-		"HashToken":       reflect.ValueOf(models.HashToken),
-		"NewApiKey":       reflect.ValueOf(models.NewApiKey),
-		"NewContent":      reflect.ValueOf(models.NewContent),
-		"NewContentReply": reflect.ValueOf(models.NewContentReply),
+		"AIRecipeToModel":                 reflect.ValueOf(models.AIRecipeToModel),
+		"HashToken":                       reflect.ValueOf(models.HashToken),
+		"MakeJSONFieldMapStringInterface": reflect.ValueOf(models.MakeJSONFieldMapStringInterface),
+		"NewApiKey":                       reflect.ValueOf(models.NewApiKey),
+		"NewContent":                      reflect.ValueOf(models.NewContent),
+		"NewContentReply":                 reflect.ValueOf(models.NewContentReply),
 
 		// type definitions
 		"AIRecipe":             reflect.ValueOf((*models.AIRecipe)(nil)),
@@ -33,6 +34,7 @@ func init() {
 		"DockerHost":           reflect.ValueOf((*models.DockerHost)(nil)),
 		"Equipment":            reflect.ValueOf((*models.Equipment)(nil)),
 		"EventPoster":          reflect.ValueOf((*models.EventPoster)(nil)),
+		"EventPosterCache":     reflect.ValueOf((*models.EventPosterCache)(nil)),
 		"Food":                 reflect.ValueOf((*models.Food)(nil)),
 		"FoodName":             reflect.ValueOf((*models.FoodName)(nil)),
 		"Group":                reflect.ValueOf((*models.Group)(nil)),

@@ -4,6 +4,7 @@ metadata:
   name: flow-worklet-app
   labels:
     app: flow-worklet
+    environment: production
 spec:
   replicas: 3
   selector:
@@ -13,15 +14,18 @@ spec:
     metadata:
       labels:
         app: flow-worklet
+        environment: production
     spec:
       containers:
       - name: app
-        image: gcr.io/planar-sun-402202/flow-worklet-example:3b4433e-dirty
+        image: gcr.io/planar-sun-402202/flow-worklet-example
         ports:
         - containerPort: 8080
         env:
         - name: PORT
           value: "8080"
+        - name: ENV
+          value: "production"
         resources:
           requests:
             memory: "64Mi"
@@ -35,9 +39,13 @@ spec:
             port: 8080
           initialDelaySeconds: 30
           periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
         readinessProbe:
           httpGet:
             path: /health
             port: 8080
           initialDelaySeconds: 5
           periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3

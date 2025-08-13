@@ -62,6 +62,8 @@ func main() {
 		deps[k] = v
 	}
 
+	//
+
 	// 1. Walk all .ts/.tsx files
 	err := filepath.WalkDir(".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() {

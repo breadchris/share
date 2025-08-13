@@ -5,16 +5,59 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/moving/utils/storage.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tools/package_fixer.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/eventposter/EventPosterArtistExtractor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/eventposter/EventPosterArtistExtractor.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/eventposter/api.ts" beforeDir="false" afterPath="$PROJECT_DIR$/eventposter/api.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/eventposter/handlers.go" beforeDir="false" afterPath="$PROJECT_DIR$/eventposter/handlers.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bread/cmd/fix_imports_and_generate_package.go" beforeDir="false" afterPath="$PROJECT_DIR$/bread/cmd/fix_imports_and_generate_package.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/extension.go" beforeDir="false" afterPath="$PROJECT_DIR$/extension.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/justshare/components/DocumentEditor.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/components/DocumentEditor.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/Readability.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/background.js" beforeDir="false" afterPath="$PROJECT_DIR$/extension/background.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/content.js" beforeDir="false" afterPath="$PROJECT_DIR$/extension/content.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/devtools.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/devtools.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/extension/manifest.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/options.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/options.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/popup.html" beforeDir="false" afterPath="$PROJECT_DIR$/extension/popup.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/popup.js" beforeDir="false" afterPath="$PROJECT_DIR$/extension/popup.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/scrape.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/sidebar.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/sidebar.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/background.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/manifest.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS Extension/Info.plist" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS Extension/SafariWebExtensionHandler.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS Extension/TabFS_Extension.entitlements" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS.xcodeproj/project.pbxproj" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS.xcodeproj/project.xcworkspace/contents.xcworkspacedata" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS.xcodeproj/project.xcworkspace/xcuserdata/osnr.xcuserdatad/UserInterfaceState.xcuserstate" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS.xcodeproj/xcuserdata/osnr.xcuserdatad/xcdebugger/Breakpoints_v2.xcbkptlist" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS.xcodeproj/xcuserdata/osnr.xcuserdatad/xcschemes/xcschememanagement.plist" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS/AppDelegate.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS/Assets.xcassets/AccentColor.colorset/Contents.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS/Assets.xcassets/AppIcon.appiconset/Contents.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS/Assets.xcassets/Contents.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS/Base.lproj/Main.storyboard" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS/Info.plist" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS/TabFS.entitlements" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS/ViewController.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFSServer/main.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFSService/Info.plist" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFSService/TabFSService.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFSService/TabFSServiceProtocols.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFSService/main.swift" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/tabfs/vendor/browser-polyfill.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/extension/test.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/justshare/justshare.go" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/justshare.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models/models.go" beforeDir="false" afterPath="$PROJECT_DIR$/models/models.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scrape_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/scrape_test.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-flow-claude.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-flow-claude.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-models.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-models.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -36,16 +79,16 @@
     <option name="cachedRequestData" value="&lt;CachedHttpClientTabRequests&gt;&#10;  &lt;entry key=&quot;b4a3809b9eb82d1a6a48f2fd7a2ae7b69de4a843&quot; value=&quot;###&amp;#10;GET http://localhost:8080/registry/&quot; /&gt;&#10;&lt;/CachedHttpClientTabRequests&gt;" />
   </component>
   <component name="KubernetesApiPersistence">{}</component>
-  <component name="KubernetesApiProvider"><![CDATA[{
-  "configuredContexts": [
+  <component name="KubernetesApiProvider">{
+  &quot;configuredContexts&quot;: [
     {
-      "name": "kind-flow-worklet",
-      "kubeConfigUrl": "file:///Users/hacked/.kube/config",
-      "currentNamespace": "flow-worklet"
+      &quot;name&quot;: &quot;kind-flow-worklet&quot;,
+      &quot;kubeConfigUrl&quot;: &quot;file:///Users/hacked/.kube/config&quot;,
+      &quot;currentNamespace&quot;: &quot;flow-worklet&quot;
     }
   ],
-  "isMigrated": true
-}]]></component>
+  &quot;isMigrated&quot;: true
+}</component>
   <component name="MacroExpansionManager">
     <option name="directoryName" value="g132qsae" />
   </component>
@@ -64,13 +107,19 @@
   "keyToString": {
     "DefaultGoTemplateProperty": "Go File",
     "Go Build.flow.executor": "Run",
-    "Go Build.share.executor": "Debug",
+    "Go Build.share.executor": "Run",
     "Go Test.TestClaudeBasicFileModification in github.com/breadchris/flow/worklet.executor": "Run",
     "Go Test.TestClaudeIntegrationDemo in github.com/breadchris/flow/worklet.executor": "Run",
     "Go Test.TestClaudeMigrate in github.com/breadchris/share/db.executor": "Run",
+    "Go Test.TestExtractImages in github.com/breadchris/share.executor": "Run",
     "Go Test.TestKanban in github.com/breadchris/share.executor": "Debug",
     "Go Test.TestMigrate in github.com/breadchris/flow/db.executor": "Run",
+    "Go Test.TestScrapeMobbinWithExtensionLogic in github.com/breadchris/share.executor": "Run",
+    "Go Test.TestScrapeWebLinksWithExtension in github.com/breadchris/share.executor": "Run",
+    "Go Test.TestSetupMobbinChromeProfile in github.com/breadchris/share.executor": "Run",
     "Go Test.TestSlackBot_PreprocessMessage in github.com/breadchris/flow/slackbot.executor": "Run",
+    "Go Test.TestSlugDeduplicationValidation in github.com/breadchris/share.executor": "Run",
+    "Go Test.TestSyncPhotosToGCS in github.com/breadchris/share.executor": "Run",
     "RunOnceActivity.OpenProjectViewOnStart": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
@@ -91,7 +140,7 @@
     "project.structure.last.edited": "Project",
     "project.structure.proportion": "0.15",
     "project.structure.side.proportion": "0.2",
-    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "settings.editor.selected.configurable": "com.github.copilot.settings.ApplicationConfigurable",
     "ts.external.directory.path": "/Users/hacked/Documents/GitHub/share/node_modules/typescript/lib",
     "vue.rearranger.settings.migration": "true"
   },
@@ -159,31 +208,7 @@
       <output_directory value="$PROJECT_DIR$/data" />
       <method v="2" />
     </configuration>
-    <configuration name="TestClaudeBasicFileModification in github.com/breadchris/flow/worklet" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
-      <module name="share" />
-      <working_directory value="$PROJECT_DIR$/flow/worklet" />
-      <root_directory value="$PROJECT_DIR$/flow" />
-      <kind value="PACKAGE" />
-      <package value="github.com/breadchris/flow/worklet" />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$" />
-      <framework value="gotest" />
-      <pattern value="^\QTestClaudeBasicFileModification\E$" />
-      <method v="2" />
-    </configuration>
-    <configuration name="TestClaudeIntegrationDemo in github.com/breadchris/flow/worklet" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
-      <module name="share" />
-      <working_directory value="$PROJECT_DIR$/flow/worklet" />
-      <root_directory value="$PROJECT_DIR$/flow" />
-      <kind value="PACKAGE" />
-      <package value="github.com/breadchris/flow/worklet" />
-      <directory value="$PROJECT_DIR$" />
-      <filePath value="$PROJECT_DIR$" />
-      <framework value="gotest" />
-      <pattern value="^\QTestClaudeIntegrationDemo\E$" />
-      <method v="2" />
-    </configuration>
-    <configuration name="TestKanban in github.com/breadchris/share" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestScrapeMobbinWithExtensionLogic in github.com/breadchris/share" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="share" />
       <working_directory value="$PROJECT_DIR$" />
       <kind value="PACKAGE" />
@@ -191,31 +216,51 @@
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
-      <pattern value="^\QTestKanban\E$" />
+      <pattern value="^\QTestScrapeMobbinWithExtensionLogic\E$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestMigrate in github.com/breadchris/flow/db" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestScrapeWebLinksWithExtension in github.com/breadchris/share" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="share" />
-      <working_directory value="$PROJECT_DIR$/flow/" />
-      <root_directory value="$PROJECT_DIR$/flow" />
+      <working_directory value="$PROJECT_DIR$" />
       <kind value="PACKAGE" />
-      <package value="github.com/breadchris/flow/db" />
+      <package value="github.com/breadchris/share" />
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
-      <pattern value="^\QTestMigrate\E$" />
+      <pattern value="^\QTestScrapeWebLinksWithExtension\E$" />
       <method v="2" />
     </configuration>
-    <configuration name="TestSlackBot_PreprocessMessage in github.com/breadchris/flow/slackbot" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="TestSetupMobbinChromeProfile in github.com/breadchris/share" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
       <module name="share" />
-      <working_directory value="$PROJECT_DIR$/flow/slackbot" />
-      <root_directory value="$PROJECT_DIR$/flow" />
+      <working_directory value="$PROJECT_DIR$" />
       <kind value="PACKAGE" />
-      <package value="github.com/breadchris/flow/slackbot" />
+      <package value="github.com/breadchris/share" />
       <directory value="$PROJECT_DIR$" />
       <filePath value="$PROJECT_DIR$" />
       <framework value="gotest" />
-      <pattern value="^\QTestSlackBot_PreprocessMessage\E$" />
+      <pattern value="^\QTestSetupMobbinChromeProfile\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestSlugDeduplicationValidation in github.com/breadchris/share" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="share" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/breadchris/share" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestSlugDeduplicationValidation\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestSyncPhotosToGCS in github.com/breadchris/share" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="share" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/breadchris/share" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestSyncPhotosToGCS\E$" />
       <method v="2" />
     </configuration>
     <configuration default="true" type="GoTestRunConfiguration" factoryName="Go Test">
@@ -232,19 +277,19 @@
       <item itemvalue="Go Build.share" />
       <item itemvalue="Go Build.flow" />
       <item itemvalue="Go Build.xctf" />
-      <item itemvalue="Go Test.TestSlackBot_PreprocessMessage in github.com/breadchris/flow/slackbot" />
-      <item itemvalue="Go Test.TestKanban in github.com/breadchris/share" />
-      <item itemvalue="Go Test.TestMigrate in github.com/breadchris/flow/db" />
-      <item itemvalue="Go Test.TestClaudeBasicFileModification in github.com/breadchris/flow/worklet" />
-      <item itemvalue="Go Test.TestClaudeIntegrationDemo in github.com/breadchris/flow/worklet" />
+      <item itemvalue="Go Test.TestScrapeWebLinksWithExtension in github.com/breadchris/share" />
+      <item itemvalue="Go Test.TestSlugDeduplicationValidation in github.com/breadchris/share" />
+      <item itemvalue="Go Test.TestSyncPhotosToGCS in github.com/breadchris/share" />
+      <item itemvalue="Go Test.TestScrapeMobbinWithExtensionLogic in github.com/breadchris/share" />
+      <item itemvalue="Go Test.TestSetupMobbinChromeProfile in github.com/breadchris/share" />
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Go Test.TestSlackBot_PreprocessMessage in github.com/breadchris/flow/slackbot" />
-        <item itemvalue="Go Test.TestMigrate in github.com/breadchris/flow/db" />
-        <item itemvalue="Go Test.TestKanban in github.com/breadchris/share" />
-        <item itemvalue="Go Test.TestClaudeIntegrationDemo in github.com/breadchris/flow/worklet" />
-        <item itemvalue="Go Test.TestClaudeBasicFileModification in github.com/breadchris/flow/worklet" />
+        <item itemvalue="Go Test.TestSyncPhotosToGCS in github.com/breadchris/share" />
+        <item itemvalue="Go Test.TestSlugDeduplicationValidation in github.com/breadchris/share" />
+        <item itemvalue="Go Test.TestScrapeWebLinksWithExtension in github.com/breadchris/share" />
+        <item itemvalue="Go Test.TestScrapeMobbinWithExtensionLogic in github.com/breadchris/share" />
+        <item itemvalue="Go Test.TestSetupMobbinChromeProfile in github.com/breadchris/share" />
       </list>
     </recent_temporary>
   </component>
@@ -298,7 +343,8 @@
       <workItem from="1750822908633" duration="265000" />
       <workItem from="1750823183824" duration="106000" />
       <workItem from="1750823408293" duration="331921000" />
-      <workItem from="1754033044459" duration="22244000" />
+      <workItem from="1754033044459" duration="64530000" />
+      <workItem from="1754586855265" duration="9653000" />
     </task>
     <servers />
   </component>

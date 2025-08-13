@@ -5,11 +5,15 @@ metadata:
   labels:
     app: flow-worklet
 spec:
-  type: ClusterIP
-  ports:
-  - port: 80
-    targetPort: 8080
-    protocol: TCP
-    name: http
   selector:
     app: flow-worklet
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  - name: debug
+    port: 40000
+    targetPort: 40000
+    protocol: TCP
+  type: ClusterIP

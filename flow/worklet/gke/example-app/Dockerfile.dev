@@ -1,0 +1,116 @@
+# Development Dockerfile - Fast rebuilds with hot reloading
+FROM golang:1.24-alpine AS builder
+
+# Install development tools
+RUN apk --no-cache add git ca-certificates tzdata
+
+WORKDIR /app
+
+# Copy go mod files first for better caching
+COPY go.mod ./
+RUN go mod download
+
+# Install air for hot reloading in development
+RUN go install github.com/air-verse/air@latest
+
+# Copy source code
+COPY . .
+
+# Build the application (for fallback if air fails)
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+
+# Development stage with hot reloading
+FROM golang:1.24-alpine
+
+# Install development tools and git
+RUN apk --no-cache add git ca-certificates tzdata curl
+
+# Install air for hot reloading
+RUN go install github.com/air-verse/air@latest
+
+WORKDIR /app
+
+# Copy the pre-built binary as fallback
+COPY --from=builder /app/main ./main-fallback
+
+# Copy go.mod and go.sum for dependency management
+# COPY go.mod go.sum ./
+COPY go.mod ./
+
+# Download dependencies
+RUN go mod download
+
+# Set environment variables for development
+ENV ENV=development
+ENV DEBUG_MODE=true
+ENV GIN_MODE=debug
+ENV LOG_LEVEL=debug
+
+# Create air configuration for hot reloading
+RUN echo 'root = "."' > .air.toml && \
+    echo 'testdata_dir = "testdata"' >> .air.toml && \
+    echo 'tmp_dir = "tmp"' >> .air.toml && \
+    echo '' >> .air.toml && \
+    echo '[build]' >> .air.toml && \
+    echo '  args_bin = []' >> .air.toml && \
+    echo '  bin = "./tmp/main"' >> .air.toml && \
+    echo '  cmd = "go build -o ./tmp/main ."' >> .air.toml && \
+    echo '  delay = 1000' >> .air.toml && \
+    echo '  exclude_dir = ["assets", "tmp", "vendor", "testdata"]' >> .air.toml && \
+    echo '  exclude_file = []' >> .air.toml && \
+    echo '  exclude_regex = ["_test.go"]' >> .air.toml && \
+    echo '  exclude_unchanged = false' >> .air.toml && \
+    echo '  follow_symlink = false' >> .air.toml && \
+    echo '  full_bin = ""' >> .air.toml && \
+    echo '  include_dir = []' >> .air.toml && \
+    echo '  include_ext = ["go", "tpl", "tmpl", "html"]' >> .air.toml && \
+    echo '  kill_delay = "0s"' >> .air.toml && \
+    echo '  log = "build-errors.log"' >> .air.toml && \
+    echo '  send_interrupt = false' >> .air.toml && \
+    echo '  stop_on_root = false' >> .air.toml && \
+    echo '' >> .air.toml && \
+    echo '[color]' >> .air.toml && \
+    echo '  app = ""' >> .air.toml && \
+    echo '  build = "yellow"' >> .air.toml && \
+    echo '  main = "magenta"' >> .air.toml && \
+    echo '  runner = "green"' >> .air.toml && \
+    echo '  watcher = "cyan"' >> .air.toml && \
+    echo '' >> .air.toml && \
+    echo '[log]' >> .air.toml && \
+    echo '  time = false' >> .air.toml && \
+    echo '' >> .air.toml && \
+    echo '[misc]' >> .air.toml && \
+    echo '  clean_on_exit = false' >> .air.toml
+
+# Create startup script that tries air first, falls back to binary
+RUN echo '#!/bin/sh' > /app/start-dev.sh && \
+    echo 'echo "🚀 Starting Flow Worklet in development mode..."' >> /app/start-dev.sh && \
+    echo 'echo "📁 Working directory: $(pwd)"' >> /app/start-dev.sh && \
+    echo 'echo "📋 Files present: $(ls -la)"' >> /app/start-dev.sh && \
+    echo '' >> /app/start-dev.sh && \
+    echo '# Try to start with air for hot reloading' >> /app/start-dev.sh && \
+    echo 'if command -v air >/dev/null 2>&1 && [ -f "main.go" ]; then' >> /app/start-dev.sh && \
+    echo '  echo "🔥 Starting with hot reloading (air)..."' >> /app/start-dev.sh && \
+    echo '  exec air' >> /app/start-dev.sh && \
+    echo 'else' >> /app/start-dev.sh && \
+    echo '  echo "⚠️  Air not available or main.go not found, using fallback binary..."' >> /app/start-dev.sh && \
+    echo '  if [ -f "./main-fallback" ]; then' >> /app/start-dev.sh && \
+    echo '    exec ./main-fallback' >> /app/start-dev.sh && \
+    echo '  else' >> /app/start-dev.sh && \
+    echo '    echo "❌ No fallback binary found"' >> /app/start-dev.sh && \
+    echo '    exit 1' >> /app/start-dev.sh && \
+    echo '  fi' >> /app/start-dev.sh && \
+    echo 'fi' >> /app/start-dev.sh && \
+    chmod +x /app/start-dev.sh
+
+# Create tmp directory for air
+RUN mkdir -p tmp
+
+# Health check for development
+HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8080/health || exit 1
+
+EXPOSE 8080
+
+# Start with the development script
+CMD ["/app/start-dev.sh"]

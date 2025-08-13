@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flow-worklet-app
+  labels:
+    app: flow-worklet
+    environment: debug
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flow-worklet
+  template:
+    metadata:
+      labels:
+        app: flow-worklet
+        environment: debug
+    spec:
+      containers:
+      - name: app
+        image: gcr.io/planar-sun-402202/flow-worklet-example
+        ports:
+        - containerPort: 8080
+        - containerPort: 40000  # Delve debugger port
+        env:
+        - name: PORT
+          value: "8080"
+        - name: ENV
+          value: "debug"
+        - name: DEBUG_MODE
+          value: "true"
+        - name: LOG_LEVEL
+          value: "debug"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "500m"
+          limits:
+            memory: "512Mi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 5

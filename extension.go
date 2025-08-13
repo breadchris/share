@@ -25,14 +25,25 @@ import (
 	"gorm.io/gorm"
 )
 
+type DiscoveredImage struct {
+	Src               string `json:"src"`
+	Alt               string `json:"alt"`
+	Width             int    `json:"width"`
+	Height            int    `json:"height"`
+	Loading           string `json:"loading"`
+	Timestamp         int64  `json:"timestamp"`
+	LoadedDuringScroll bool   `json:"loadedDuringScroll"`
+}
+
 type PageInfo struct {
-	ID        string `json:"id"`
-	URL       string `json:"url"`
-	Title     string `json:"title"`
-	HTML      string `json:"html"`
-	CreatedAt int64  `json:"created_at"`
-	Article   string `json:"article"`
-	HitCount  int    `json:"hit_count"`
+	ID               string            `json:"id"`
+	URL              string            `json:"url"`
+	Title            string            `json:"title"`
+	HTML             string            `json:"html"`
+	CreatedAt        int64             `json:"created_at"`
+	Article          string            `json:"article"`
+	HitCount         int               `json:"hit_count"`
+	DiscoveredImages []DiscoveredImage `json:"discoveredImages,omitempty"`
 }
 
 type ProxyRequest struct {
@@ -101,6 +112,9 @@ var wsUpgrader = websocket.Upgrader{
 func NewExtension(d deps.Deps) *http.ServeMux {
 	m := http.NewServeMux()
 
+	// Serve extracted images
+	m.Handle("/content/", http.StripPrefix("/content/", http.FileServer(http.Dir("./data/content/"))))
+
 	// Get default user and group for extension usage
 	defaultUserID := "extension-user"
 	defaultGroupID := "extension-group"
@@ -134,7 +148,7 @@ func NewExtension(d deps.Deps) *http.ServeMux {
 			}
 
 			var pageInfo PageInfo
-			
+
 			// Always try to decode JSON first since extension sends JSON
 			err := json.NewDecoder(r.Body).Decode(&pageInfo)
 			if err != nil {
@@ -142,7 +156,7 @@ func NewExtension(d deps.Deps) *http.ServeMux {
 				pageInfo.URL = r.FormValue("url")
 				pageInfo.Title = r.FormValue("title")
 				pageInfo.HTML = r.FormValue("html")
-				
+
 				// If still no data, return error
 				if pageInfo.URL == "" {
 					http.Error(w, "No URL or page data provided", http.StatusBadRequest)
@@ -196,6 +210,12 @@ func NewExtension(d deps.Deps) *http.ServeMux {
 				"hit_count": hitCount,
 			}
 
+			// Add discovered images if any were provided
+			if len(pageInfo.DiscoveredImages) > 0 {
+				metadata["discovered_images"] = pageInfo.DiscoveredImages
+				slog.Info("stored discovered images", "count", len(pageInfo.DiscoveredImages), "url", pageInfo.URL)
+			}
+
 			// Create or update content first
 			content := models.NewContent("page", pageInfo.Article, defaultGroupID, defaultUserID, metadata)
 
@@ -217,13 +237,13 @@ func NewExtension(d deps.Deps) *http.ServeMux {
 
 			// Server-side processing based on domain patterns (after content is saved)
 			if shouldProcessHTML(pageInfo.URL) {
-				extractedImages, err := extractAndSaveImagesWithProxy(pageInfo, content.ID, proxyManager, d)
+				extractedImages, err := extractAndSaveImagesWithProxy(pageInfo, content.ID, proxyManager)
 				if err != nil {
 					slog.Error("failed to extract images", "error", err, "url", pageInfo.URL)
 				} else if len(extractedImages) > 0 {
 					// Update content with extracted images
 					metadata["extracted_images"] = extractedImages
-					content.Metadata = models.MakeJSONField[map[string]interface{}](metadata)
+					content.Metadata = models.MakeJSONFieldMapStringInterface(metadata)
 					if err := d.DB.Save(content).Error; err != nil {
 						slog.Error("failed to save extracted images metadata", "error", err)
 					} else {
@@ -257,6 +277,35 @@ func NewExtension(d deps.Deps) *http.ServeMux {
 		switch r.Method {
 		case http.MethodGet:
 			if id != "" {
+				// Check if this is an HTML view request
+				if strings.HasSuffix(id, "/html") {
+					baseID := strings.TrimSuffix(id, "/html")
+					var content models.Content
+					if err := d.DB.Where("id = ? AND type = ?", baseID, "page").First(&content).Error; err != nil {
+						http.Error(w, "Page not found", http.StatusNotFound)
+						return
+					}
+
+					// Get HTML from metadata
+					var htmlContent string
+					if content.Metadata != nil {
+						if html, ok := content.Metadata.Data["html"].(string); ok {
+							htmlContent = html
+						}
+					}
+
+					if htmlContent == "" {
+						http.Error(w, "HTML content not available for this page", http.StatusNotFound)
+						return
+					}
+
+					// Serve raw HTML directly
+					w.Header().Set("Content-Type", "text/html; charset=utf-8")
+					w.Write([]byte(htmlContent))
+					return
+				}
+
+				// Regular page view
 				var content models.Content
 				if err := d.DB.Where("id = ? AND type = ?", id, "page").First(&content).Error; err != nil {
 					http.Error(w, "Page not found", http.StatusNotFound)
@@ -264,17 +313,107 @@ func NewExtension(d deps.Deps) *http.ServeMux {
 				}
 
 				title := "Page"
+				pageURL := ""
+				var extractedImages []interface{}
+				hasImages := false
+
 				if content.Metadata != nil {
 					if t, ok := content.Metadata.Data["title"].(string); ok {
 						title = t
 					}
+					if url, ok := content.Metadata.Data["url"].(string); ok {
+						pageURL = url
+					}
+					if imgs, ok := content.Metadata.Data["extracted_images"].([]interface{}); ok {
+						extractedImages = imgs
+						hasImages = len(imgs) > 0
+					}
 				}
+
+				// Build image gallery if images exist
+				var imageGallery *Node
+				if hasImages {
+					var imageNodes []*Node
+					for i, img := range extractedImages {
+						if imgPath, ok := img.(string); ok {
+							// Convert file path to web-accessible URL
+							//webPath := strings.Replace(imgPath, "./data/content/", "/content/", 1)
+							imgPath = "/" + imgPath
+							imageNodes = append(imageNodes,
+								Div(
+									Class("relative group"),
+									Img(
+										Attr("src", imgPath),
+										Class("w-full h-48 object-cover rounded-lg"),
+										Attr("alt", fmt.Sprintf("Image %d", i+1)),
+									),
+									//A(
+									//	Href_(imgPath),
+									//	Class("absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity rounded-lg flex items-center justify-center"),
+									//	Attr("target", "_blank"),
+									//	Span(
+									//		Class("text-white opacity-0 group-hover:opacity-100 transition-opacity"),
+									//		T("View Full Size"),
+									//	),
+									//),
+								),
+							)
+						}
+					}
+
+					imageGallery = Div(
+						Class("space-y-4"),
+						H3(Class("text-lg font-semibold"), T(fmt.Sprintf("Extracted Images (%d)", len(extractedImages)))),
+						Div(
+							Class("grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"),
+							Ch(imageNodes),
+						),
+					)
+				}
+
+				// Build reprocess form
+				buttonText := "Extract Images"
+				if hasImages {
+					buttonText = "Re-extract Images"
+				}
+				reprocessForm := Form(
+					Method("POST"),
+					Action("/"+content.ID),
+					Button(
+						Type("submit"),
+						Class("btn btn-sm btn-accent"),
+						T(buttonText),
+					),
+				)
 
 				DefaultLayout(
 					Div(
 						Class("mx-auto w-3/4 pt-6 space-y-6"),
-						P(Class("text-xl"), T(title)),
+						Div(
+							Class("flex justify-between items-center"),
+							P(Class("text-xl"), T(title)),
+							Div(
+								Class("flex gap-2"),
+								If(pageURL != "",
+									A(
+										Href(pageURL),
+										Class("btn btn-sm btn-outline"),
+										Attr("target", "_blank"),
+										T("Original"),
+									),
+									Nil(),
+								),
+								A(
+									Href("/"+content.ID+"/html"),
+									Class("btn btn-sm btn-secondary"),
+									Attr("target", "_blank"),
+									T("View HTML"),
+								),
+								reprocessForm,
+							),
+						),
 						P(Raw(content.Data)),
+						If(hasImages, imageGallery, Nil()),
 					),
 				).RenderPageCtx(ctx, w, r)
 				return
@@ -303,6 +442,80 @@ func NewExtension(d deps.Deps) *http.ServeMux {
 				),
 			).RenderPageCtx(ctx, w, r)
 			return
+
+		case http.MethodPost:
+			// Retrieve content
+			var content models.Content
+			if err := d.DB.Where("id = ? AND type = ?", id, "page").First(&content).Error; err != nil {
+				http.Error(w, "Page not found", http.StatusNotFound)
+				return
+			}
+
+			// Get HTML and URL from metadata
+			var htmlContent, pageURL, pageTitle string
+			if content.Metadata != nil {
+				if html, ok := content.Metadata.Data["html"].(string); ok {
+					htmlContent = html
+				}
+				if url, ok := content.Metadata.Data["url"].(string); ok {
+					pageURL = url
+				}
+				if title, ok := content.Metadata.Data["title"].(string); ok {
+					pageTitle = title
+				}
+			}
+
+			if htmlContent == "" || pageURL == "" {
+				http.Error(w, "Cannot reprocess: missing HTML or URL data", http.StatusBadRequest)
+				return
+			}
+
+			// Extract discovered images from metadata if available
+			var discoveredImages []DiscoveredImage
+			if discoveredImagesData, ok := content.Metadata.Data["discovered_images"]; ok {
+				discoveredImages = convertMetadataToDiscoveredImages(discoveredImagesData)
+				slog.Info("loaded discovered images from metadata", "count", len(discoveredImages), "contentID", content.ID)
+			}
+
+			// Create PageInfo for image extraction
+			pageInfo := PageInfo{
+				URL:              pageURL,
+				Title:            pageTitle,
+				HTML:             htmlContent,
+				DiscoveredImages: discoveredImages,
+			}
+
+			// Extract images using proxy manager
+			extractedImages, err := extractAndSaveImagesWithProxy(pageInfo, content.ID, proxyManager)
+			if err != nil {
+				slog.Error("failed to extract images during reprocess", "error", err, "id", content.ID)
+				http.Error(w, fmt.Sprintf("Failed to extract images: %v", err), http.StatusInternalServerError)
+				return
+			}
+
+			// Update metadata with extracted images
+			metadata := content.Metadata.Data
+			if metadata == nil {
+				metadata = make(map[string]interface{})
+			}
+
+			if len(extractedImages) > 0 {
+				metadata["extracted_images"] = extractedImages
+				metadata["images_extracted_at"] = time.Now().Format(time.RFC3339)
+				content.Metadata = models.MakeJSONFieldMapStringInterface(metadata)
+
+				if err := d.DB.Save(&content).Error; err != nil {
+					slog.Error("failed to save extracted images metadata", "error", err)
+					http.Error(w, "Failed to save extracted images", http.StatusInternalServerError)
+					return
+				}
+
+				slog.Info("reprocessed and extracted images", "count", len(extractedImages), "id", content.ID)
+			}
+
+			// Redirect back to the page view
+			http.Redirect(w, r, "/extension/"+id, http.StatusSeeOther)
+			return
 		}
 	})
 
@@ -319,8 +532,6 @@ func RenderMasonry(db *gorm.DB, groupID string) *Node {
 		return Div(Class("board-grid justify-center mt-6 space-y-6"))
 	}
 
-	println("Rendering masonry with", len(contents), "contents")
-
 	for _, content := range contents {
 		if content.Metadata == nil {
 			continue
@@ -328,6 +539,13 @@ func RenderMasonry(db *gorm.DB, groupID string) *Node {
 
 		pageURL, _ := content.Metadata.Data["url"].(string)
 		pageTitle, _ := content.Metadata.Data["title"].(string)
+
+		// Check if images have been extracted
+		extractedImages, hasImages := content.Metadata.Data["extracted_images"].([]interface{})
+		imageCount := 0
+		if hasImages {
+			imageCount = len(extractedImages)
+		}
 
 		if pageURL == "" {
 			continue
@@ -353,6 +571,33 @@ func RenderMasonry(db *gorm.DB, groupID string) *Node {
 						A(Href("/"+content.ID), T(shortText(200, content.Data))),
 					),
 					Nil(),
+				),
+				// Button container for actions
+				Div(
+					Class("flex flex-wrap gap-2 mt-3 px-4 pb-4"),
+					A(
+						Href("/"+content.ID),
+						Class("btn btn-sm btn-primary"),
+						T("View Page"),
+					),
+					A(
+						Href("/"+content.ID+"/html"),
+						Class("btn btn-sm btn-outline"),
+						T("View HTML"),
+					),
+					Form(
+						Method("POST"),
+						Action("/"+content.ID),
+						Attr("style", "display: inline"),
+						Button(
+							Type("submit"),
+							Class("btn btn-sm btn-accent"),
+							If(hasImages,
+								T(fmt.Sprintf("Images (%d)", imageCount)),
+								T("Extract Images"),
+							),
+						),
+					),
 				),
 			),
 		)
@@ -391,6 +636,67 @@ func shouldProcessHTML(urlStr string) bool {
 		}
 	}
 
+	return false
+}
+
+// convertMetadataToDiscoveredImages converts metadata interface{} to []DiscoveredImage
+func convertMetadataToDiscoveredImages(discoveredImagesData interface{}) []DiscoveredImage {
+	var discoveredImages []DiscoveredImage
+	
+	if imgList, ok := discoveredImagesData.([]interface{}); ok {
+		for _, img := range imgList {
+			if imgMap, ok := img.(map[string]interface{}); ok {
+				discoveredImg := DiscoveredImage{
+					Src:               getString(imgMap, "src"),
+					Alt:               getString(imgMap, "alt"),
+					Width:             getInt(imgMap, "width"),
+					Height:            getInt(imgMap, "height"),
+					Loading:           getString(imgMap, "loading"),
+					Timestamp:         getInt64(imgMap, "timestamp"),
+					LoadedDuringScroll: getBool(imgMap, "loadedDuringScroll"),
+				}
+				if discoveredImg.Src != "" {
+					discoveredImages = append(discoveredImages, discoveredImg)
+				}
+			}
+		}
+	}
+	
+	return discoveredImages
+}
+
+// Helper functions for type conversion
+func getString(m map[string]interface{}, key string) string {
+	if val, ok := m[key].(string); ok {
+		return val
+	}
+	return ""
+}
+
+func getInt(m map[string]interface{}, key string) int {
+	if val, ok := m[key].(float64); ok {
+		return int(val)
+	}
+	if val, ok := m[key].(int); ok {
+		return val
+	}
+	return 0
+}
+
+func getInt64(m map[string]interface{}, key string) int64 {
+	if val, ok := m[key].(float64); ok {
+		return int64(val)
+	}
+	if val, ok := m[key].(int64); ok {
+		return val
+	}
+	return 0
+}
+
+func getBool(m map[string]interface{}, key string) bool {
+	if val, ok := m[key].(bool); ok {
+		return val
+	}
 	return false
 }
 
@@ -441,10 +747,6 @@ func extractAndSaveImages(pageInfo PageInfo, contentID string, d deps.Deps) ([]s
 
 	// Download and save images
 	for i, imgURL := range extractedImages {
-		if i >= 10 { // Limit to 10 images to avoid excessive downloads
-			break
-		}
-
 		savedPath, err := downloadAndSaveImage(imgURL, contentDir, i)
 		if err != nil {
 			slog.Error("failed to download image", "url", imgURL, "error", err)
@@ -458,7 +760,7 @@ func extractAndSaveImages(pageInfo PageInfo, contentID string, d deps.Deps) ([]s
 }
 
 // extractAndSaveImagesWithProxy extracts images using the browser extension proxy for authenticated requests
-func extractAndSaveImagesWithProxy(pageInfo PageInfo, contentID string, proxyManager *ProxyManager, d deps.Deps) ([]string, error) {
+func extractAndSaveImagesWithProxy(pageInfo PageInfo, contentID string, proxyManager *ProxyManager) ([]string, error) {
 	if pageInfo.HTML == "" {
 		return nil, fmt.Errorf("no HTML content to process")
 	}
@@ -476,16 +778,28 @@ func extractAndSaveImagesWithProxy(pageInfo PageInfo, contentID string, proxyMan
 
 	var extractedImages []string
 
-	// Extract images based on domain-specific logic
-	if isMobbinDomain(u.Hostname()) {
-		images := extractMobbinImages(doc, u)
-		extractedImages = append(extractedImages, images...)
+	// First priority: Use discovered images from metadata if available
+	if len(pageInfo.DiscoveredImages) > 0 {
+		for _, discoveredImg := range pageInfo.DiscoveredImages {
+			if discoveredImg.Src != "" {
+				extractedImages = append(extractedImages, discoveredImg.Src)
+			}
+		}
+		slog.Info("using discovered images", "count", len(extractedImages), "contentID", contentID)
 	}
 
-	// If no domain-specific logic matched, use generic image extraction
+	// Second priority: Domain-specific extraction (if no discovered images)
+	if len(extractedImages) == 0 && isMobbinDomain(u.Hostname()) {
+		images := extractMobbinImages(doc, u)
+		extractedImages = append(extractedImages, images...)
+		slog.Info("using domain-specific extraction", "count", len(extractedImages), "domain", u.Hostname())
+	}
+
+	// Third priority: Generic HTML parsing (fallback)
 	if len(extractedImages) == 0 {
 		images := extractGenericImages(doc, u)
 		extractedImages = append(extractedImages, images...)
+		slog.Info("using generic HTML extraction", "count", len(extractedImages), "contentID", contentID)
 	}
 
 	if len(extractedImages) == 0 {
@@ -504,20 +818,16 @@ func extractAndSaveImagesWithProxy(pageInfo PageInfo, contentID string, proxyMan
 
 	// Download images using proxy for authenticated requests
 	for i, imgURL := range extractedImages {
-		if i >= 10 { // Limit to 10 images to avoid excessive downloads
-			break
-		}
-
-		savedPath, err := downloadImageWithProxy(imgURL, contentDir, i, proxyManager)
+		//savedPath, err := downloadImageWithProxy(imgURL, contentDir, i, proxyManager)
+		//if err != nil {
+		slog.Error("failed to download image via proxy", "url", imgURL, "error", err)
+		// Fallback to direct download
+		savedPath, err := downloadAndSaveImage(imgURL, contentDir, i)
 		if err != nil {
-			slog.Error("failed to download image via proxy", "url", imgURL, "error", err)
-			// Fallback to direct download
-			savedPath, err = downloadAndSaveImage(imgURL, contentDir, i)
-			if err != nil {
-				slog.Error("failed to download image directly", "url", imgURL, "error", err)
-				continue
-			}
+			slog.Error("failed to download image directly", "url", imgURL, "error", err)
+			continue
 		}
+		//}
 
 		savedImages = append(savedImages, savedPath)
 	}
@@ -536,14 +846,7 @@ func extractMobbinImages(doc *goquery.Document, baseURL *url.URL) []string {
 
 	// Look for common Mobbin image selectors
 	selectors := []string{
-		"img[src*='mobbin']",
-		"img[data-src*='mobbin']",
-		"img[src*='screenshot']",
-		"img[data-src*='screenshot']",
-		"img.screenshot",
-		"img[alt*='screenshot']",
-		"img[alt*='screen']",
-		"div[style*='background-image'] img",
+		"img",
 	}
 
 	for _, selector := range selectors {

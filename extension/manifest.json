@@ -1,20 +1,20 @@
 {
   "manifest_version": 3,
   "name": "share",
-  "version": "1.0",
-  "description": "Browser extension with MCP server integration for console monitoring, network analysis, and tab management.",
+  "version": "2.0",
+  "description": "Simple browser extension for sharing pages and reloading the extension.",
   "permissions": [
-    "webRequest",
     "activeTab",
-    "contextMenus",
-    "scripting",
     "tabs",
     "storage",
-    "notifications",
-    "cookies",
-    "tabCapture"
+    "management",
+    "contextMenus",
+    "notifications"
   ],
-  "devtools_page": "devtools.html",
+  "host_permissions": [
+    "http://localhost:8080/*",
+    "https://localhost:8080/*"
+  ],
   "background": {
     "service_worker": "background.js"
   },
@@ -27,25 +27,11 @@
     "default_popup": "popup.html",
     "default_title": "Share Extension"
   },
-  "options_page": "options.html",
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js", "scrape.js"]
+      "js": ["content.js"],
+      "run_at": "document_end"
     }
-  ],
-  "host_permissions": [
-    "http://localhost:8080/*",
-    "https://justshare.io/*",
-    "*://*/*"
-  ],
-  "commands": {
-    "connect-current-tab": {
-      "suggested_key": {
-        "default": "Ctrl+Shift+C",
-        "mac": "Command+Shift+C"
-      },
-      "description": "Connect current tab to BrowserMCP server"
-    }
-  }
+  ]
 }

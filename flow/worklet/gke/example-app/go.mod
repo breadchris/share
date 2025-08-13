@@ -1,3 +1,3 @@
-module github.com/flow/worklet/gke/example-app
+module github.com/breadchris/share/flow/worklet/example
 
-go 1.21
+go 1.24

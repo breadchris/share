@@ -1,0 +1,63 @@
+# Debug Dockerfile - Remote debugging with Delve
+FROM golang:1.24-alpine AS builder
+
+# Install development tools
+RUN apk --no-cache add git ca-certificates tzdata
+
+WORKDIR /app
+
+# Copy go mod files first for better caching
+COPY go.mod ./
+RUN go mod download
+
+# Install Delve debugger
+RUN go install github.com/go-delve/delve/cmd/dlv@latest
+
+# Copy source code
+COPY . .
+
+# Build with debug symbols (no optimizations)
+RUN CGO_ENABLED=0 GOOS=linux go build -gcflags "all=-N -l" -o main .
+
+# Debug stage
+FROM golang:1.24-alpine
+
+# Install debugging tools
+RUN apk --no-cache add git ca-certificates tzdata curl bash
+
+# Install Delve debugger
+RUN go install github.com/go-delve/delve/cmd/dlv@latest
+
+WORKDIR /app
+
+# Copy the debug binary
+COPY --from=builder /app/main .
+
+# Copy source for debugging
+COPY . .
+
+# Set environment variables for debugging
+ENV ENV=debug
+ENV DEBUG_MODE=true
+ENV GIN_MODE=debug
+ENV LOG_LEVEL=debug
+
+# Create debug startup script
+RUN echo '#!/bin/bash' > /app/start-debug.sh && \
+    echo 'echo "🐛 Starting Flow Worklet in debug mode..."' >> /app/start-debug.sh && \
+    echo 'echo "📍 Debug server will listen on :40000"' >> /app/start-debug.sh && \
+    echo 'echo "🔗 Connect your debugger to :40000"' >> /app/start-debug.sh && \
+    echo '' >> /app/start-debug.sh && \
+    echo '# Start with Delve in headless mode' >> /app/start-debug.sh && \
+    echo 'exec dlv --listen=:40000 --headless=true --api-version=2 --accept-multiclient exec ./main' >> /app/start-debug.sh && \
+    chmod +x /app/start-debug.sh
+
+# Health check that accounts for debug startup time
+HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:8080/health || exit 1
+
+# Expose application port and debug port
+EXPOSE 8080 40000
+
+# Start with the debug script
+CMD ["/app/start-debug.sh"]

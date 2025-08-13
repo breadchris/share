@@ -38,6 +38,7 @@ import (
 	"github.com/breadchris/share/justshare"
 	"github.com/breadchris/share/kanban"
 	"github.com/breadchris/share/session"
+	"github.com/breadchris/share/tools"
 	"github.com/breadchris/share/user"
 	"github.com/breadchris/share/vibekanban"
 	"github.com/breadchris/share/xctf"
@@ -944,6 +945,38 @@ func main() {
 				},
 				Action: func(c *cli.Context) error {
 					return runBrowserCommand(c.String("url"), c.Int("timeout"), c.Bool("headless"))
+				},
+			},
+			{
+				Name:  "fix-imports",
+				Usage: "Fix TypeScript imports and generate/update package.json with dependencies",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "dir",
+						Aliases: []string{"d"},
+						Usage:   "Target directory to process (defaults to current directory)",
+						Value:   ".",
+					},
+				},
+				Action: func(c *cli.Context) error {
+					targetDir := c.String("dir")
+
+					// Convert to absolute path
+					if !filepath.IsAbs(targetDir) {
+						abs, err := filepath.Abs(targetDir)
+						if err != nil {
+							return fmt.Errorf("failed to get absolute path: %w", err)
+						}
+						targetDir = abs
+					}
+
+					// Validate directory exists
+					if _, err := os.Stat(targetDir); os.IsNotExist(err) {
+						return fmt.Errorf("target directory does not exist: %s", targetDir)
+					}
+
+					fmt.Printf("Processing TypeScript files in: %s\n", targetDir)
+					return tools.FixImportsAndGeneratePackage(targetDir)
 				},
 			},
 		},

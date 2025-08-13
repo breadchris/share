@@ -1,36 +1,27 @@
-apiVersion: traefik.io/v1alpha1
-kind: IngressRoute
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
-  name: flow-worklet-ingressroute
-  namespace: default
+  name: flow-worklet-ingress
+  labels:
+    app: flow-worklet
+  annotations:
+    kubernetes.io/ingress.class: "traefik"
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.tls.certresolver: "letsencrypt"
+    traefik.ingress.kubernetes.io/router.middlewares: "default-security-headers@kubernetescrd"
 spec:
-  entryPoints:
-    - websecure
-  routes:
-    - match: Host(`flow-worklet.baked.mom`)
-      kind: Rule
-      services:
-        - name: flow-worklet-service
-          port: 80
-      middlewares:
-        - name: https-redirect
   tls:
+  - hosts:
+    - flow-worklet.baked.mom
     secretName: flow-worklet-tls
-    certResolver: letsencrypt
----
-apiVersion: traefik.io/v1alpha1
-kind: IngressRoute
-metadata:
-  name: flow-worklet-ingressroute-http
-  namespace: default
-spec:
-  entryPoints:
-    - web
-  routes:
-    - match: Host(`flow-worklet.baked.mom`)
-      kind: Rule
-      services:
-        - name: flow-worklet-service
-          port: 80
-      middlewares:
-        - name: https-redirect
+  rules:
+  - host: flow-worklet.baked.mom
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: flow-worklet-service
+            port:
+              number: 80

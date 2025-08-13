@@ -29,6 +29,10 @@ func MakeJSONField[T any](data T) *JSONField[T] {
 	}
 }
 
+func MakeJSONFieldMapStringInterface(m map[string]interface{}) *JSONField[map[string]interface{}] {
+	return MakeJSONField(m)
+}
+
 func (j *JSONField[T]) Scan(src any) error {
 	if src == nil {
 		var empty T
@@ -660,15 +664,15 @@ func (h *HostMapping) BeforeUpdate(tx *gorm.DB) error {
 
 type EventPoster struct {
 	Model
-	EventName   string                             `json:"event_name" gorm:"not null"`
-	EventDate   string                             `json:"event_date,omitempty"`
-	Venue       string                             `json:"venue,omitempty"`
-	PosterURL   string                             `json:"poster_url" gorm:"not null"`
-	UserID      string                             `json:"user_id" gorm:"index;not null"`
-	User        *User                              `gorm:"foreignKey:UserID"`
-	Artists     *JSONField[[]Artist]               `json:"artists,omitempty" gorm:"type:json"`
-	Tracks      *JSONField[[]SpotifyTrack]         `json:"tracks,omitempty" gorm:"type:json"`
-	Metadata    *JSONField[map[string]interface{}] `json:"metadata,omitempty" gorm:"type:json"`
+	EventName string                             `json:"event_name" gorm:"not null"`
+	EventDate string                             `json:"event_date,omitempty"`
+	Venue     string                             `json:"venue,omitempty"`
+	PosterURL string                             `json:"poster_url" gorm:"not null"`
+	UserID    string                             `json:"user_id" gorm:"index;not null"`
+	User      *User                              `gorm:"foreignKey:UserID"`
+	Artists   *JSONField[[]Artist]               `json:"artists,omitempty" gorm:"type:json"`
+	Tracks    *JSONField[[]SpotifyTrack]         `json:"tracks,omitempty" gorm:"type:json"`
+	Metadata  *JSONField[map[string]interface{}] `json:"metadata,omitempty" gorm:"type:json"`
 }
 
 // EventPosterCache stores cached analysis results for posters
@@ -688,13 +692,13 @@ type Artist struct {
 
 // SpotifyTrack represents a track found on Spotify
 type SpotifyTrack struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Artist      string `json:"artist"`
-	Album       string `json:"album"`
-	SpotifyURL  string `json:"spotify_url"`
-	PreviewURL  string `json:"preview_url,omitempty"`
-	ImageURL    string `json:"image_url,omitempty"`
-	Duration    int    `json:"duration_ms"`
-	Popularity  int    `json:"popularity"`
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	Artist     string `json:"artist"`
+	Album      string `json:"album"`
+	SpotifyURL string `json:"spotify_url"`
+	PreviewURL string `json:"preview_url,omitempty"`
+	ImageURL   string `json:"image_url,omitempty"`
+	Duration   int    `json:"duration_ms"`
+	Popularity int    `json:"popularity"`
 }
