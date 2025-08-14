@@ -1,0 +1,17 @@
+apiVersion: traefik.io/v1alpha1
+kind: TLSOption
+metadata:
+  name: default
+  namespace: share-main
+spec:
+  minVersion: "VersionTLS12"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: move-baked-mom-tls
+  namespace: share-main
+type: kubernetes.io/tls
+data:
+  tls.crt: ""
+  tls.key: ""

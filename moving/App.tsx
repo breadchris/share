@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { LabelMaker } from './components/LabelMaker';
 import { ItemManager } from './components/ItemManager';
 import { SpreadsheetView } from './components/SpreadsheetView';
@@ -42,6 +42,27 @@ export default function App() {
   const [selectedSheet, setSelectedSheet] = useState<GoogleSheet | null>(null);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
+
+  // Auto-redirect to labels tab when no boxes exist
+  useEffect(() => {
+    if (boxes.length === 0 && (activeTab === 'items' || activeTab === 'spreadsheet')) {
+      setActiveTab('labels');
+    }
+  }, [boxes.length, activeTab]);
+
+  // Track previous box count for auto-switching
+  const previousBoxCount = useRef(0);
+  
+  // Auto-switch to items tab when first box is created (optional enhancement)
+  useEffect(() => {
+    if (previousBoxCount.current === 0 && boxes.length === 1 && activeTab === 'labels') {
+      // Small delay to let the user see their box was created
+      setTimeout(() => {
+        setActiveTab('items');
+      }, 1000);
+    }
+    previousBoxCount.current = boxes.length;
+  }, [boxes.length, activeTab]);
 
   // Check for existing authentication on mount
   useEffect(() => {
@@ -531,21 +552,57 @@ export default function App() {
             </CardContent>
           </Card>
         ) : (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-8">
-              <TabsTrigger value="labels" className="flex items-center space-x-2">
-                <Package className="h-4 w-4" />
-                <span>Create Labels</span>
-              </TabsTrigger>
-              <TabsTrigger value="items" className="flex items-center space-x-2">
-                <QrCode className="h-4 w-4" />
-                <span>Manage Items</span>
-              </TabsTrigger>
-              <TabsTrigger value="spreadsheet" className="flex items-center space-x-2">
-                <Table className="h-4 w-4" />
-                <span>View All Items</span>
-              </TabsTrigger>
-            </TabsList>
+          <Tabs value={activeTab} onValueChange={(value) => {
+            // Prevent switching to items or spreadsheet tab if no boxes exist
+            if ((value === 'items' || value === 'spreadsheet') && boxes.length === 0) {
+              return;
+            }
+            setActiveTab(value);
+          }} className="w-full">
+            <div className="space-y-4">
+              {boxes.length === 0 && (
+                <Card className="border-blue-200 bg-blue-50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-2 text-blue-800">
+                      <Package className="h-5 w-5" />
+                      <span className="font-medium">Welcome! Start by creating your first box label.</span>
+                    </div>
+                    <p className="text-sm text-blue-700 mt-1 ml-7">
+                      You'll need to create at least one box before you can add items or view the spreadsheet.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+              
+              <TabsList className="grid w-full grid-cols-3 mb-8">
+                <TabsTrigger value="labels" className="flex items-center space-x-2">
+                  <Package className="h-4 w-4" />
+                  <span>Create Labels</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="items" 
+                  className={`flex items-center space-x-2 ${boxes.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={boxes.length === 0}
+                >
+                  <QrCode className="h-4 w-4" />
+                  <span>Manage Items</span>
+                  {boxes.length === 0 && (
+                    <span className="text-xs text-gray-400">(Create a box first)</span>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="spreadsheet" 
+                  className={`flex items-center space-x-2 ${boxes.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={boxes.length === 0}
+                >
+                  <Table className="h-4 w-4" />
+                  <span>View All Items</span>
+                  {boxes.length === 0 && (
+                    <span className="text-xs text-gray-400">(Create a box first)</span>
+                  )}
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             <TabsContent value="labels">
               <LabelMaker 
@@ -557,19 +614,57 @@ export default function App() {
             </TabsContent>
 
             <TabsContent value="items">
-              <ItemManager 
-                boxes={boxes}
-                onAddItem={addItemToBox}
-                onRemoveItem={removeItemFromBox}
-                onUpdateBox={updateBox}
-                isAuthenticated={isAuthenticated}
-                selectedSheet={selectedSheet}
-                accessToken={accessToken}
-              />
+              {boxes.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center space-y-4">
+                    <Package className="h-16 w-16 text-gray-400 mx-auto" />
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-medium text-gray-900">No Boxes Created Yet</h3>
+                      <p className="text-gray-600">You need to create at least one box before you can manage items.</p>
+                    </div>
+                    <Button 
+                      onClick={() => setActiveTab('labels')}
+                      className="mt-4"
+                    >
+                      <Package className="h-4 w-4 mr-2" />
+                      Create Your First Box
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <ItemManager 
+                  boxes={boxes}
+                  onAddItem={addItemToBox}
+                  onRemoveItem={removeItemFromBox}
+                  onUpdateBox={updateBox}
+                  isAuthenticated={isAuthenticated}
+                  selectedSheet={selectedSheet}
+                  accessToken={accessToken}
+                />
+              )}
             </TabsContent>
 
             <TabsContent value="spreadsheet">
-              <SpreadsheetView boxes={boxes} />
+              {boxes.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center space-y-4">
+                    <Table className="h-16 w-16 text-gray-400 mx-auto" />
+                    <div className="space-y-2">
+                      <h3 className="text-lg font-medium text-gray-900">No Data to Display</h3>
+                      <p className="text-gray-600">Create some boxes and add items to see them in spreadsheet view.</p>
+                    </div>
+                    <Button 
+                      onClick={() => setActiveTab('labels')}
+                      className="mt-4"
+                    >
+                      <Package className="h-4 w-4 mr-2" />
+                      Create Your First Box
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <SpreadsheetView boxes={boxes} />
+              )}
             </TabsContent>
           </Tabs>
         )}

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/breadchris/share/deps"
-	"github.com/breadchris/share/graveyard/websocket"
+	// "github.com/breadchris/share/graveyard/websocket" // Commented out for Docker build
 	. "github.com/breadchris/share/html"
 	"github.com/google/uuid"
 	"github.com/sashabaranov/go-openai"

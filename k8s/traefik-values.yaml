@@ -1,0 +1,21 @@
+additionalArguments:
+  - --certificatesresolvers.letsencrypt.acme.email=chris@breadchris.com
+  - --certificatesresolvers.letsencrypt.acme.storage=/data/acme.json
+  - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+
+persistence:
+  enabled: true
+  
+deployment:
+  initContainers:
+    - name: volume-permissions
+      image: busybox:1.35
+      command: ["sh", "-c", "touch /data/acme.json && chmod 600 /data/acme.json && chown 65532:65532 /data/acme.json"]
+      volumeMounts:
+        - name: data
+          mountPath: /data
+      securityContext:
+        runAsUser: 0
+
+service:
+  type: LoadBalancer

@@ -85,6 +85,15 @@ export function GoogleSheetsNavbar({
     setShowSheetSelector(false);
   };
 
+  const handleSelectSheetClick = async () => {
+    setShowSheetSelector(true);
+    
+    // Fetch sheets if not already loaded
+    if (sheets.length === 0 && !isLoading) {
+      await fetchSheets();
+    }
+  };
+
   if (!isAuthenticated) {
     return null;
   }
@@ -181,15 +190,84 @@ export function GoogleSheetsNavbar({
                   )}
                 </div>
               ) : (
-                <Button
-                  variant="outline"
-                  onClick={() => setShowSheetSelector(!showSheetSelector)}
-                  className="flex items-center space-x-2"
-                >
-                  <Cloud className="h-4 w-4" />
-                  <span>Select Sheet</span>
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
+                <div className="relative">
+                  <Button
+                    variant="outline"
+                    onClick={handleSelectSheetClick}
+                    className="flex items-center space-x-2"
+                  >
+                    <Cloud className="h-4 w-4" />
+                    <span>Select Sheet</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+
+                  {showSheetSelector && (
+                    <div className="absolute right-0 top-full mt-2 w-80 bg-white border rounded-lg shadow-lg z-50">
+                      <div className="p-3 border-b">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-medium">Select Google Sheet</h3>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={fetchSheets}
+                            disabled={isLoading}
+                          >
+                            {isLoading ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <RefreshCw className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="max-h-60 overflow-y-auto">
+                        {isLoading ? (
+                          <div className="p-4 text-center text-gray-500">
+                            <Loader2 className="h-4 w-4 animate-spin mx-auto mb-2" />
+                            <div>Loading spreadsheets...</div>
+                          </div>
+                        ) : sheets.length === 0 ? (
+                          <div className="p-4 text-center text-gray-500">
+                            <div className="mb-2">No spreadsheets found</div>
+                            <div className="text-xs text-gray-400">
+                              Make sure you have Google Sheets in your Google Drive
+                            </div>
+                          </div>
+                        ) : (
+                          sheets.map((sheet) => (
+                            <button
+                              key={sheet.id}
+                              onClick={() => handleSheetSelect(sheet)}
+                              className="w-full p-3 text-left hover:bg-gray-50 border-b last:border-b-0"
+                            >
+                              <div className="flex items-center space-x-2">
+                                <FileSpreadsheet className="h-4 w-4 text-green-600" />
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium truncate">{sheet.name}</div>
+                                  <div className="text-sm text-gray-500">
+                                    Modified: {new Date(sheet.modifiedTime).toLocaleDateString()}
+                                  </div>
+                                </div>
+                              </div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                      
+                      <div className="p-3 border-t bg-gray-50">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowSheetSelector(false)}
+                          className="w-full"
+                        >
+                          Close
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* Sync Status */}

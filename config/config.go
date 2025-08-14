@@ -75,6 +75,7 @@ type AppConfig struct {
 	JamsocketURL       string           `json:"jamsocket_url"`
 	SupabaseURL        string           `json:"supabase_url"`
 	ClaudeDebug        bool             `json:"claude_debug"`
+	HostRoutes         map[string]string `json:"host_routes"` // domain -> component_path
 }
 
 // Deployment convenience methods
@@ -159,4 +160,65 @@ func New() AppConfig {
 		log.Fatalf("Failed to decode dbconfig file: %v", err)
 	}
 	return appConfig
+}
+
+// NewFromEnv loads configuration based on environment variables
+func NewFromEnv() AppConfig {
+	configPath := os.Getenv("CONFIG_FILE_PATH")
+	if configPath == "" {
+		configPath = getDefaultConfigPath()
+	}
+	config := NewFromFile(configPath)
+	config.loadFromEnv()
+	return config
+}
+
+// getDefaultConfigPath returns the default config path based on CONFIG_MODE
+func getDefaultConfigPath() string {
+	mode := os.Getenv("CONFIG_MODE")
+	switch mode {
+	case "production":
+		return "data/production.json"
+	case "k8s":
+		return "/app/config/production.json"
+	default:
+		return "data/config.json"
+	}
+}
+
+// loadFromEnv overrides config values with environment variables if present
+func (c *AppConfig) loadFromEnv() {
+	if key := os.Getenv("OPENAI_KEY"); key != "" {
+		c.OpenAIKey = key
+	}
+	if secret := os.Getenv("SESSION_SECRET"); secret != "" {
+		c.SessionSecret = secret
+	}
+	if googleClientID := os.Getenv("GOOGLE_CLIENT_ID"); googleClientID != "" {
+		c.GoogleClientID = googleClientID
+	}
+	if googleClientSecret := os.Getenv("GOOGLE_CLIENT_SECRET"); googleClientSecret != "" {
+		c.GoogleClientSecret = googleClientSecret
+	}
+	if githubClientSecret := os.Getenv("GITHUB_CLIENT_SECRET"); githubClientSecret != "" {
+		c.Github.ClientSecret = githubClientSecret
+	}
+	if stripeKey := os.Getenv("STRIPE_SECRET_KEY"); stripeKey != "" {
+		c.Stripe.SecretKey = stripeKey
+	}
+	if smtpPassword := os.Getenv("SMTP_PASSWORD"); smtpPassword != "" {
+		c.SMTP.Password = smtpPassword
+	}
+	if supabaseURL := os.Getenv("SUPABASE_URL"); supabaseURL != "" {
+		c.SupabaseURL = supabaseURL
+	}
+	if jamsocketURL := os.Getenv("JAMSOCKET_URL"); jamsocketURL != "" {
+		c.JamsocketURL = jamsocketURL
+	}
+	if externalURL := os.Getenv("EXTERNAL_URL"); externalURL != "" {
+		c.ExternalURL = externalURL
+	}
+	if db := os.Getenv("DATABASE_URL"); db != "" {
+		c.DB = db
+	}
 }

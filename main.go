@@ -3,7 +3,7 @@ package main
 // //go:generate buf generate --path proto
 
 import (
-	"context"
+	// "context" // Commented out for Docker build
 	"encoding/json"
 	"fmt"
 	"log"
@@ -20,16 +20,16 @@ import (
 	"github.com/breadchris/share/awesomelist"
 	"github.com/breadchris/share/bread"
 	"github.com/breadchris/share/breadchris"
-	"github.com/breadchris/share/code"
+	// "github.com/breadchris/share/code" // Commented out for Docker build
 	"github.com/breadchris/share/coderunner"
 	config2 "github.com/breadchris/share/config"
 	. "github.com/breadchris/share/db"
 	"github.com/breadchris/share/deploy"
 	deps2 "github.com/breadchris/share/deps"
 	"github.com/breadchris/share/docker"
-	"github.com/breadchris/share/editor/config"
-	"github.com/breadchris/share/editor/leaps"
-	"github.com/breadchris/share/editor/playground"
+	// "github.com/breadchris/share/editor/config" // Commented out for Docker build
+	// "github.com/breadchris/share/editor/leaps" // Commented out for Docker build
+	// "github.com/breadchris/share/editor/playground" // Commented out for Docker build
 	"github.com/breadchris/share/eventposter"
 	"github.com/breadchris/share/example"
 	"github.com/breadchris/share/graph"
@@ -48,13 +48,13 @@ import (
 	"github.com/sashabaranov/go-openai"
 	"github.com/urfave/cli/v2"
 
-	// Flow module imports
-	flow_claude "github.com/breadchris/flow/claude"
-	flow_code "github.com/breadchris/flow/code"
-	flow_config "github.com/breadchris/flow/config"
-	flow_deps "github.com/breadchris/flow/deps"
-	flow_slackbot "github.com/breadchris/flow/slackbot"
-	flow_worklet "github.com/breadchris/flow/worklet"
+	// Flow module imports - commented out for Docker build
+	// flow_claude "github.com/breadchris/flow/claude"
+	// flow_code "github.com/breadchris/flow/code"
+	// flow_config "github.com/breadchris/flow/config"
+	// flow_deps "github.com/breadchris/flow/deps"
+	// flow_slackbot "github.com/breadchris/flow/slackbot"
+	// flow_worklet "github.com/breadchris/flow/worklet"
 )
 
 var upgrader = websocket.Upgrader{
@@ -80,14 +80,67 @@ func cspMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// hostRoutingMiddleware handles host header routing to TSX components
+func hostRoutingMiddleware(hostService *host.Service, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Extract host from request, removing port if present
+		hostHeader := r.Host
+		if idx := strings.Index(hostHeader, ":"); idx != -1 {
+			hostHeader = hostHeader[:idx]
+		}
+
+		// Check if this is a root domain that should use default routing
+		rootDomains := []string{
+			"localhost",
+			"127.0.0.1",
+			"0.0.0.0",
+			"justshare.io",
+			"www.justshare.io",
+		}
+
+		for _, domain := range rootDomains {
+			if hostHeader == domain {
+				// Continue with normal routing for root domains
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
+
+		// Look up host mapping in database
+		mapping, err := hostService.GetByDomain(hostHeader)
+		if err != nil {
+			// No mapping found, continue with normal routing
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Extract component name from path (e.g., "moving/App.tsx" -> "App")
+		componentName := "App" // Default component name
+		if strings.Contains(mapping.ComponentPath, "/") {
+			parts := strings.Split(mapping.ComponentPath, "/")
+			if len(parts) > 1 {
+				filename := parts[len(parts)-1]
+				// Remove .tsx/.jsx extension
+				componentName = strings.TrimSuffix(strings.TrimSuffix(filename, ".tsx"), ".jsx")
+			}
+		}
+
+		// Serve the React component using coderunner
+		coderunner.ServeReactApp(w, r, mapping.ComponentPath, componentName)
+	})
+}
+
 func startXCTF(port int) error {
-	appConfig := config2.New()
+	appConfig := config2.NewFromEnv()
+
+	// Skip migrations in production (k8s) environment
+	runMigrations := os.Getenv("CONFIG_MODE") != "k8s"
 
 	s, err := session.New()
 	if err != nil {
 		log.Fatalf("Failed to create session store: %v", err)
 	}
-	db := LoadDB(appConfig.DB)
+	db := LoadDB(appConfig.DB, runMigrations)
 	e := NewSMTPEmail(&appConfig)
 	a := NewAuth(s, e, appConfig, db)
 
@@ -216,15 +269,21 @@ func startXCTF(port int) error {
 		}
 	})
 
-	// Add CSP middleware to allow Google Identity scripts
-	h := cspMiddleware(s.LoadAndSave(http.DefaultServeMux))
+	// Initialize host service for host header routing
+	hostService := host.NewService(db)
+
+	// Add CSP middleware and host routing middleware to allow Google Identity scripts
+	h := hostRoutingMiddleware(hostService, cspMiddleware(s.LoadAndSave(http.DefaultServeMux)))
 
 	log.Printf("Starting HTTP server on port: %d", port)
 	return http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), h)
 }
 
 func startServer(useTLS bool, port int) {
-	appConfig := config2.New()
+	appConfig := config2.NewFromEnv()
+
+	// Skip migrations in production (k8s) environment
+	runMigrations := os.Getenv("CONFIG_MODE") != "k8s"
 
 	handler := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
@@ -235,7 +294,7 @@ func startServer(useTLS bool, port int) {
 	if err != nil {
 		log.Fatalf("Failed to create session store: %v", err)
 	}
-	db := LoadDB(appConfig.DB)
+	db := LoadDB(appConfig.DB, runMigrations)
 	e := NewSMTPEmail(&appConfig)
 	a := NewAuth(s, e, appConfig, db)
 
@@ -244,15 +303,23 @@ func startServer(useTLS bool, port int) {
 	}
 
 	//setupRecipe()
+	slog.Info("Debug: About to call fileUpload()")
 	fileUpload()
+	slog.Info("Debug: fileUpload() completed")
 
+	slog.Info("Debug: About to create search index")
 	recipeIdx, err := NewSearchIndex(smittenIndex)
 	if err != nil {
+		slog.Error("Debug: Search index creation failed", "error", err)
 		panic(err)
 	}
+	slog.Info("Debug: Search index created successfully")
 
+	slog.Info("Debug: About to create OpenAI client")
 	oai := openai.NewClient(appConfig.OpenAIKey)
+	slog.Info("Debug: About to create document store")
 	docs := NewSqliteDocumentStore("data/docs.db")
+	slog.Info("Debug: Document store created")
 	aip := ai.New(appConfig, db)
 	dockerManager := docker.NewManager(db)
 	deps := deps2.Deps{
@@ -274,7 +341,8 @@ func startServer(useTLS bool, port int) {
 		m := http.NewServeMux()
 		m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			if shouldInterpret {
-				code.DynamicHTTPMux(f, files...)(deps).ServeHTTP(w, r)
+				// Code interpreter disabled - use static version
+				f(deps).ServeHTTP(w, r)
 			} else {
 				f(deps).ServeHTTP(w, r)
 			}
@@ -321,11 +389,20 @@ func startServer(useTLS bool, port int) {
 	//p("/ainet", interpreted(ainet.New))
 	p("/user", interpreted(user.New))
 	p("/chat", interpreted(NewChat))
+	slog.Info("Debug: Setting up Spotify routes")
 	p("/spotify", setupSpotify(deps))
+	slog.Info("Debug: Setting up other routes")
 	p("/eventposter", interpreted(eventposter.New))
 	p("/vote", interpreted(NewVote))
 	p("/breadchris", interpreted(breadchris.New))
-	p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./eventcalendar.go", "./card.go", "./ai.go", "./tarot.go"}))
+	
+	// Only enable reload file watching in development mode
+	if os.Getenv("CONFIG_MODE") != "k8s" {
+		slog.Info("Debug: Setting up reload file watching (development mode)")
+		p("/reload", setupReload([]string{"./scratch.go", "./vote.go", "./eventcalendar.go", "./card.go", "./ai.go", "./tarot.go"}))
+	} else {
+		slog.Info("Debug: Skipping reload file watching (production mode)")
+	}
 	//p("/code", interpreted(wasmcode.New))
 	p("/extension", interpreted(NewExtension))
 	p("/git", interpreted(NewGit))
@@ -336,36 +413,36 @@ func startServer(useTLS bool, port int) {
 	g := NewGithub(deps)
 	p("/github", interpreted(g.Routes))
 
-	// Mount flow module routes under /flow prefix
-	flowCfg := flow_config.LoadConfig()
-	flowDeps := flow_deps.NewDepsFactory(flowCfg).CreateDeps()
-
-	// Mount worklet API at /flow/api/worklet using interpreted pattern
-	p("/flow/api/worklet", interpreted(func(d deps2.Deps) *http.ServeMux {
-		return flow_worklet.New(&flowDeps)
-	}))
-
-	// Mount code package at /flow/code using interpreted pattern
-	p("/code", interpreted(func(d deps2.Deps) *http.ServeMux {
-		return flow_code.New(flowDeps)
-	}))
-
-	// Mount Claude WebSocket handler at /flow/claude
-	p("/flow", interpreted(func(d deps2.Deps) *http.ServeMux {
-		return flow_claude.NewHTTP(flowDeps)
-	}))
-
-	// Mount deployment management at /deploy
+	// Flow module routes commented out for Docker build
+	// flowCfg := flow_config.LoadConfig()
+	// flowDeps := flow_deps.NewDepsFactory(flowCfg).CreateDeps()
+	//
+	// // Mount worklet API at /flow/api/worklet using interpreted pattern
+	// p("/flow/api/worklet", interpreted(func(d deps2.Deps) *http.ServeMux {
+	//	return flow_worklet.New(&flowDeps)
+	// }))
+	//
+	// // Mount code package at /flow/code using interpreted pattern
+	// p("/code", interpreted(func(d deps2.Deps) *http.ServeMux {
+	//	return flow_code.New(flowDeps)
+	// }))
+	//
+	// // Mount Claude WebSocket handler at /flow/claude
+	// p("/flow", interpreted(func(d deps2.Deps) *http.ServeMux {
+	//	return flow_claude.NewHTTP(flowDeps)
+	// }))
+	//
+	// // Mount deployment management at /deploy
 	p("/deploy", interpreted(deploy.New))
-
-	// Mount slackbot event handler registry for yaegi interpretation
-	p("/flow/slackbot", interpreted(func(d deps2.Deps) *http.ServeMux {
-		// Import the slackbot yaegi integration function
-		return flow_slackbot.YaegiIntegrationMux(flow_deps.Deps{
-			Config: flowDeps.Config,
-			DB:     flowDeps.DB,
-		})
-	}))
+	//
+	// // Mount slackbot event handler registry for yaegi interpretation
+	// p("/flow/slackbot", interpreted(func(d deps2.Deps) *http.ServeMux {
+	//	// Import the slackbot yaegi integration function
+	//	return flow_slackbot.YaegiIntegrationMux(flow_deps.Deps{
+	//		Config: flowDeps.Config,
+	//		DB:     flowDeps.DB,
+	//	})
+	// }))
 
 	p("", interpreted(justshare.New))
 
@@ -385,7 +462,8 @@ func startServer(useTLS bool, port int) {
 			if err != nil {
 				http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			}
-			interpreted(code.New).ServeHTTP(w, r)
+			// Code interpreter disabled for Docker build
+			http.Error(w, "Code interpreter not available in this build", http.StatusServiceUnavailable)
 		})
 		return m
 	}())
@@ -451,12 +529,14 @@ func startServer(useTLS bool, port int) {
 
 	// p("", interpreted(NewRecipe))
 
-	go func() {
-		paths := []string{
-			"./breadchris/editor.tsx",
-			"./breadchris/CodeBlock.tsx",
-		}
-		if err := WatchFilesAndFolders(paths, func(s string) {
+	// Only enable file watching in development mode
+	if os.Getenv("CONFIG_MODE") != "k8s" {
+		go func() {
+			paths := []string{
+				"./breadchris/editor.tsx",
+				"./breadchris/CodeBlock.tsx",
+			}
+			if err := WatchFilesAndFolders(paths, func(s string) {
 			result := api.Build(api.BuildOptions{
 				EntryPoints: paths,
 				Loader: map[string]api.Loader{
@@ -495,38 +575,58 @@ func startServer(useTLS bool, port int) {
 			for _, f := range result.OutputFiles {
 				fmt.Println(f.Path)
 			}
-		}); err != nil {
-			log.Fatalf("Failed to watch files: %v", err)
-		}
-	}()
-	go func() {
-		entrypoints := []string{
-			// "./graph/graph.tsx",
-			// "./graph/nodes.tsx",
-			// "./graph/code.ts",
-			//"./xctf/graph.tsx",
-			//"./code/monaco.tsx",
-			//"./code/playground.ts",
-			// "./music.tsx",
-			"./coderunner/CodeRunner.tsx",
-			//"./wasmcode/monaco.tsx",
-			//"./wasmcode/analyzer/analyzer.worker.ts",
-			//"./wasmcode/language/language.worker.ts",
+			}); err != nil {
+				log.Fatalf("Failed to watch files: %v", err)
+			}
+		}()
+	}
+	
+	// Only enable file watching in development mode
+	if os.Getenv("CONFIG_MODE") != "k8s" {
+		go func() {
+		var entrypoints []string
+		// Only include TypeScript entrypoints in development mode
+		if _, err := os.Stat("./coderunner"); err == nil {
+			entrypoints = []string{
+				// "./graph/graph.tsx",
+				// "./graph/nodes.tsx",
+				// "./graph/code.ts",
+				//"./xctf/graph.tsx",
+				//"./code/monaco.tsx",
+				//"./code/playground.ts",
+				// "./music.tsx",
+				"./coderunner/CodeRunner.tsx",
+				//"./wasmcode/monaco.tsx",
+				//"./wasmcode/analyzer/analyzer.worker.ts",
+				//"./wasmcode/language/language.worker.ts",
+			}
+		} else {
+			// No TypeScript files to build in production
+			entrypoints = []string{}
+			log.Printf("Info: Coderunner directory not found, skipping TypeScript build")
 		}
 		paths := make([]string, len(entrypoints))
 		copy(paths, entrypoints)
-		if err := filepath.Walk("./coderunner", func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
+		// Only walk coderunner directory if it exists (development mode)
+		if _, err := os.Stat("./coderunner"); err == nil {
+			if err := filepath.Walk("./coderunner", func(path string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+				if filepath.Ext(path) == ".ts" || filepath.Ext(path) == ".tsx" {
+					paths = append(paths, path)
+				}
+				return nil
+			}); err != nil {
+				log.Printf("Warning: Failed to walk coderunner directory: %v", err)
 			}
-			if filepath.Ext(path) == ".ts" || filepath.Ext(path) == ".tsx" {
-				paths = append(paths, path)
-			}
-			return nil
-		}); err != nil {
-			log.Fatalf("Failed to walk wasmcode: %v", err)
+		} else {
+			log.Printf("Info: Coderunner directory not found, skipping TypeScript file discovery")
 		}
-		if err := WatchFilesAndFolders(paths, func(s string) {
+		
+		// Only setup file watching and esbuild if we have TypeScript files
+		if len(entrypoints) > 0 {
+			if err := WatchFilesAndFolders(paths, func(s string) {
 			result := api.Build(api.BuildOptions{
 				EntryPoints: entrypoints,
 				Loader: map[string]api.Loader{
@@ -576,12 +676,19 @@ func startServer(useTLS bool, port int) {
 			// }
 
 			// rel <- struct{}{}
-		}); err != nil {
-			log.Fatalf("Failed to watch files: %v", err)
+			}); err != nil {
+				log.Fatalf("Failed to watch files: %v", err)
+			}
+		} else {
+			log.Printf("Info: No TypeScript files to build in production")
 		}
 	}()
-	// non-module code
-	go func() {
+	}
+	
+	// Only enable non-module code file watching in development mode
+	if os.Getenv("CONFIG_MODE") != "k8s" {
+		// non-module code
+		go func() {
 		entrypoints := []string{
 			"./code/playground.ts",
 			"./recipe.tsx",
@@ -626,25 +733,26 @@ func startServer(useTLS bool, port int) {
 			log.Fatalf("Failed to watch files: %v", err)
 		}
 	}()
+	}
 
-	// Start Slack bot from flow module (non-blocking)
-	go func() {
-		if flowDeps.Config.IsSlackBotEnabled() {
-			slog.Info("Starting Flow Slack bot...")
-			bot, err := flow_slackbot.New(flowDeps)
-			if err != nil {
-				slog.Error("Failed to create Flow Slack bot", "error", err)
-				return
-			}
-
-			ctx := context.Background()
-			if err := bot.Start(ctx); err != nil {
-				slog.Error("Failed to start Flow Slack bot", "error", err)
-			}
-		} else {
-			slog.Info("Flow Slack bot is disabled")
-		}
-	}()
+	// Slack bot from flow module commented out for Docker build
+	// go func() {
+	//	if flowDeps.Config.IsSlackBotEnabled() {
+	//		slog.Info("Starting Flow Slack bot...")
+	//		bot, err := flow_slackbot.New(flowDeps)
+	//		if err != nil {
+	//			slog.Error("Failed to create Flow Slack bot", "error", err)
+	//			return
+	//		}
+	//
+	//		ctx := context.Background()
+	//		if err := bot.Start(ctx); err != nil {
+	//			slog.Error("Failed to start Flow Slack bot", "error", err)
+	//		}
+	//	} else {
+	//		slog.Info("Flow Slack bot is disabled")
+	//	}
+	// }()
 
 	// Initialize snapshot manager
 	snapshotManager := NewSnapshotManager(&appConfig, db)
@@ -731,8 +839,11 @@ func startServer(useTLS bool, port int) {
 	certFile := path.Join(dir, "domain.cert.pem")
 	keyFile := path.Join(dir, "private.key.pem")
 
-	// Add CSP middleware to allow Google Identity scripts
-	h := cspMiddleware(s.LoadAndSave(http.DefaultServeMux))
+	// Initialize host service for host header routing
+	hostService := host.NewService(db)
+	
+	// Add CSP middleware and host routing middleware to allow Google Identity scripts
+	h := hostRoutingMiddleware(hostService, cspMiddleware(s.LoadAndSave(http.DefaultServeMux)))
 
 	if useTLS {
 		tlsConfig := NewTLSConfig(interCertFile, certFile, keyFile)
@@ -808,7 +919,7 @@ func main() {
 			{
 				Name: "food",
 				Action: func(c *cli.Context) error {
-					db := LoadDB("sqlite://data/db.sqlite")
+					db := LoadDB("sqlite://data/db.sqlite", true)
 
 					println("loading food data")
 					//f, err := loadBrandedFoodData()
@@ -830,25 +941,26 @@ func main() {
 					return nil
 				},
 			},
-			{
-				Name: "editor",
-				Action: func(c *cli.Context) error {
-					m := leaps.RegisterRoutes(leaps.NewLogger())
-
-					cfg := config.DefaultConfig()
-					cfg.Build.PackagesFile = "./editor/packages.json"
-					cfg.HTTP.Addr = "localhost:8000"
-					playground.StartEditor(cfg, m.Mux)
-					return nil
-				},
-			},
-			{
-				Name: "leaps",
-				Action: func(c *cli.Context) error {
-					leaps.NewLeaps()
-					return nil
-				},
-			},
+			// Editor and leaps commands commented out for Docker build
+			// {
+			//	Name: "editor",
+			//	Action: func(c *cli.Context) error {
+			//		m := leaps.RegisterRoutes(leaps.NewLogger())
+			//
+			//		cfg := config.DefaultConfig()
+			//		cfg.Build.PackagesFile = "./editor/packages.json"
+			//		cfg.HTTP.Addr = "localhost:8000"
+			//		playground.StartEditor(cfg, m.Mux)
+			//		return nil
+			//	},
+			// },
+			// {
+			//	Name: "leaps",
+			//	Action: func(c *cli.Context) error {
+			//		leaps.NewLeaps()
+			//		return nil
+			//	},
+			// },
 			{
 				Name:  "push",
 				Usage: "Push changes to git submodules and main repo",

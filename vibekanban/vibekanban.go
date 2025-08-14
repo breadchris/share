@@ -3,7 +3,7 @@ package vibekanban
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/breadchris/flow/code"
+	// "github.com/breadchris/flow/code" // Commented out for Docker build
 	"net/http"
 	"os"
 	"path/filepath"
@@ -1571,7 +1571,8 @@ func NewHTTP(d deps.Deps) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		code.ServeReactApp(w, r, "vibekanban/VibeKanbanApp.tsx", "VibeKanbanApp")
+		// React app serving disabled for Docker build
+		http.Error(w, "React app serving not available in this build", http.StatusServiceUnavailable)
 	})
 
 	// Project endpoints

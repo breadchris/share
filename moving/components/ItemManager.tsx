@@ -35,6 +35,76 @@ const CATEGORIES = [
   'Electronics', 'Clothing', 'Books', 'Kitchen', 'Fragile', 'Documents', 'Toys', 'Tools', 'Other'
 ];
 
+// Component for handling image loading with fallback URLs
+interface ImageWithFallbackProps {
+  src: string;
+  fallbackUrls: string[];
+  alt: string;
+  className: string;
+}
+
+const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({ src, fallbackUrls, alt, className }) => {
+  const [currentUrlIndex, setCurrentUrlIndex] = useState(0);
+  const [hasError, setHasError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const handleImageError = () => {
+    console.log(`Failed to load image from: ${fallbackUrls[currentUrlIndex]}`);
+    
+    if (currentUrlIndex < fallbackUrls.length - 1) {
+      setCurrentUrlIndex(prev => prev + 1);
+      setHasError(false);
+      setIsLoading(true);
+    } else {
+      setHasError(true);
+      setIsLoading(false);
+      console.error('All image URL formats failed for:', fallbackUrls);
+    }
+  };
+
+  const handleImageLoad = () => {
+    setIsLoading(false);
+    setHasError(false);
+    console.log(`Successfully loaded image from: ${fallbackUrls[currentUrlIndex]}`);
+  };
+
+  // Reset state when src changes
+  useEffect(() => {
+    setCurrentUrlIndex(0);
+    setHasError(false);
+    setIsLoading(true);
+  }, [src]);
+
+  if (hasError) {
+    return (
+      <div className={`${className} bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300`}>
+        <div className="text-center">
+          <AlertCircle className="h-4 w-4 text-gray-400 mx-auto mb-1" />
+          <span className="text-xs text-gray-400">Image failed</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <img
+        src={fallbackUrls[currentUrlIndex]}
+        alt={alt}
+        className={className}
+        onError={handleImageError}
+        onLoad={handleImageLoad}
+        style={{ display: isLoading ? 'none' : 'block' }}
+      />
+      {isLoading && (
+        <div className={`${className} bg-gray-100 flex items-center justify-center`}>
+          <Loader2 className="h-4 w-4 text-gray-400 animate-spin" />
+        </div>
+      )}
+    </div>
+  );
+};
+
 export function ItemManager({ boxes, onAddItem, onRemoveItem, onUpdateBox, isAuthenticated, selectedSheet, accessToken }: ItemManagerProps) {
   // Existing state
   const [selectedBoxId, setSelectedBoxId] = useState('');
@@ -93,6 +163,11 @@ export function ItemManager({ boxes, onAddItem, onRemoveItem, onUpdateBox, isAut
     // If it's a base64 image, return as is
     if (url.startsWith('data:')) return url;
     
+    // If already in uc?export=view format, return as is
+    if (url.includes('uc?export=view') || url.includes('uc?id=')) {
+      return url;
+    }
+    
     // Convert Google Drive view URL to direct image URL
     // From: https://drive.google.com/file/d/FILE_ID/view
     // To: https://drive.google.com/uc?export=view&id=FILE_ID
@@ -101,8 +176,22 @@ export function ItemManager({ boxes, onAddItem, onRemoveItem, onUpdateBox, isAut
       return `https://drive.google.com/uc?export=view&id=${driveFileMatch[1]}`;
     }
     
-    // If already in the correct format or unknown format, return as is
+    // If unknown format, return as is
     return url;
+  };
+
+  // Helper function to get alternative Drive URL formats
+  const getDriveImageFallbackUrls = (url: string): string[] => {
+    const fileIdMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/) || url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (!fileIdMatch) return [url];
+    
+    const fileId = fileIdMatch[1];
+    return [
+      url, // Original URL
+      `https://drive.google.com/uc?export=view&id=${fileId}`, // Standard export format
+      `https://drive.google.com/uc?id=${fileId}`, // Simpler format
+      `https://lh3.googleusercontent.com/d/${fileId}`, // Google's image hosting
+    ];
   };
 
   // Remove fetchSheets - now handled in App
@@ -209,7 +298,7 @@ export function ItemManager({ boxes, onAddItem, onRemoveItem, onUpdateBox, isAut
       const result = await response.json();
 
       // Make the file publicly viewable
-      await fetch(
+      const permissionResponse = await fetch(
         `https://www.googleapis.com/drive/v3/files/${result.id}/permissions`,
         {
           method: 'POST',
@@ -224,8 +313,15 @@ export function ItemManager({ boxes, onAddItem, onRemoveItem, onUpdateBox, isAut
         }
       );
 
-      // Return the shareable view URL
-      return `https://drive.google.com/file/d/${result.id}/view`;
+      if (!permissionResponse.ok) {
+        console.error('Failed to set file permissions:', await permissionResponse.text());
+        // Continue anyway - the file is uploaded, just may not be publicly accessible
+      } else {
+        console.log('Successfully set public permissions for file:', result.id);
+      }
+
+      // Return the direct image URL format for better compatibility
+      return `https://drive.google.com/uc?export=view&id=${result.id}`;
     } catch (error) {
       console.error('Error in folder creation or upload:', error);
       throw new Error('Failed to upload image with folder organization');
@@ -377,10 +473,9 @@ export function ItemManager({ boxes, onAddItem, onRemoveItem, onUpdateBox, isAut
 
   const handleSubmitWithSheets = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedBoxId || !newItem.name.trim()) return;
+    if (!selectedBoxId || !newItem.name.trim() || isAddingItem) return;
 
-    const selectedBoxData = boxes.find(box => box.id === selectedBoxId);
-    if (!selectedBoxData) return;
+    setIsAddingItem(true);
 
     try {
       let imageUrl = '';
@@ -391,7 +486,7 @@ export function ItemManager({ boxes, onAddItem, onRemoveItem, onUpdateBox, isAut
         imageUrl = await uploadImageToDrive(imageFile);
       }
 
-      setItemStatus({ status: 'saving', message: 'Saving to sheet...', progress: 70 });
+      setItemStatus({ status: 'saving', message: 'Saving to Google Sheets...', progress: 70 });
 
       // Create the item object with Drive URL instead of base64
       const itemData: Omit<BoxItem, 'id'> = {
@@ -399,34 +494,13 @@ export function ItemManager({ boxes, onAddItem, onRemoveItem, onUpdateBox, isAut
         description: newItem.description.trim() || undefined,
         category: newItem.category || undefined,
         fragile: newItem.fragile,
-        image: imageUrl || undefined // Use Drive URL instead of base64
+        image: imageUrl || undefined
       };
 
-      // Save to local state first
-      onAddItem(selectedBoxId, itemData);
+      // Save via App's onAddItem which handles Google Sheets
+      await onAddItem(selectedBoxId, itemData);
 
-      // If sheets are connected, also save to Google Sheets
-      if (isAuthenticated && selectedSheet && accessToken) {
-        // Create a temporary item with ID for sheets
-        const tempItem: BoxItem = {
-          id: Date.now().toString(),
-          ...itemData
-        };
-
-        await addItemToSheet(tempItem, selectedBoxData);
-
-        setItemStatus({ status: 'success', message: 'Item saved to both local storage and Google Sheets!', progress: 100 });
-
-        // Clear success message after 3 seconds
-        setTimeout(() => {
-          setItemStatus({ status: 'idle', message: '' });
-        }, 3000);
-      } else {
-        setItemStatus({ status: 'success', message: 'Item saved locally!' });
-        setTimeout(() => {
-          setItemStatus({ status: 'idle', message: '' });
-        }, 2000);
-      }
+      setItemStatus({ status: 'success', message: 'Item saved to Google Sheets!', progress: 100 });
 
       // Reset form
       setNewItem({ name: '', description: '', category: '', fragile: false, image: '' });
@@ -436,7 +510,9 @@ export function ItemManager({ boxes, onAddItem, onRemoveItem, onUpdateBox, isAut
 
     } catch (error) {
       console.error('Failed to save item:', error);
-      setItemStatus({ status: 'error', message: 'Failed to save to Google Sheets. Item saved locally.' });
+      setItemStatus({ status: 'error', message: 'Failed to save item. Please try again.' });
+    } finally {
+      setIsAddingItem(false);
     }
   };
 
@@ -793,8 +869,9 @@ export function ItemManager({ boxes, onAddItem, onRemoveItem, onUpdateBox, isAut
                   <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center space-x-3 flex-1">
                       {item.image && (
-                        <img
+                        <ImageWithFallback
                           src={formatDriveUrlForDisplay(item.image)}
+                          fallbackUrls={getDriveImageFallbackUrls(item.image)}
                           alt={item.name}
                           className="w-12 h-12 object-cover rounded-md border"
                         />

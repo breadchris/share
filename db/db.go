@@ -174,7 +174,7 @@ func (s *DB[T]) watchFiles() {
 	}
 }
 
-func LoadClaudeMD(dsn string) *gorm.DB {
+func LoadClaudeMD(dsn string, runMigrations bool) *gorm.DB {
 	var (
 		db  *gorm.DB
 		err error
@@ -194,13 +194,15 @@ func LoadClaudeMD(dsn string) *gorm.DB {
 		log.Fatalf("Unknown db: %s", dsn)
 	}
 
-	if err := db.AutoMigrate(
-		&models.ClaudeDoc{},
-		&models.ClaudeDocTag{},
-		&models.ClaudeDocStar{},
-		&models.PinnedFile{},
-	); err != nil {
-		log.Fatalf("Failed to migrate db: %v", err)
+	if runMigrations {
+		if err := db.AutoMigrate(
+			&models.ClaudeDoc{},
+			&models.ClaudeDocTag{},
+			&models.ClaudeDocStar{},
+			&models.PinnedFile{},
+		); err != nil {
+			log.Fatalf("Failed to migrate db: %v", err)
+		}
 	}
 	return db
 }
@@ -281,7 +283,7 @@ func (config *PinnedDocsConfig) IsPinned(docID string) bool {
 	return false
 }
 
-func LoadDB(dsn string) *gorm.DB {
+func LoadDB(dsn string, runMigrations bool) *gorm.DB {
 	var (
 		db  *gorm.DB
 		err error
@@ -301,7 +303,8 @@ func LoadDB(dsn string) *gorm.DB {
 		log.Fatalf("Unknown db: %s", dsn)
 	}
 
-	if err := db.AutoMigrate(
+	if runMigrations {
+		if err := db.AutoMigrate(
 		&models.User{},
 		&models.Identity{},
 		&models.Group{},
@@ -341,8 +344,9 @@ func LoadDB(dsn string) *gorm.DB {
 		// xctf models
 		&xmodels.Competition{},
 		&xmodels.CompetitionGroup{},
-	); err != nil {
-		log.Fatalf("Failed to migrate db: %v", err)
+		); err != nil {
+			log.Fatalf("Failed to migrate db: %v", err)
+		}
 	}
 	return db
 }

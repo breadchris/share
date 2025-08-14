@@ -1,0 +1,75 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: share-main-web
+  namespace: share-main
+  labels:
+    app: share-main
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`move.baked.mom`)
+      kind: Rule
+      services:
+        - name: share-main-service
+          port: 80
+      middlewares:
+        - name: share-main-headers
+  tls:
+    certResolver: letsencrypt
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: share-main-headers
+  namespace: share-main
+  labels:
+    app: share-main
+spec:
+  headers:
+    customRequestHeaders:
+      X-Forwarded-Proto: "https"
+      X-Forwarded-Host: "move.baked.mom"
+    customResponseHeaders:
+      X-Frame-Options: "SAMEORIGIN"
+      X-Content-Type-Options: "nosniff"
+      X-XSS-Protection: "1; mode=block"
+    sslRedirect: true
+---
+# HTTP to HTTPS redirect with ACME challenge exception
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: share-main-redirect
+  namespace: share-main
+  labels:
+    app: share-main
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`move.baked.mom`) && !PathPrefix(`/.well-known/acme-challenge/`)
+      kind: Rule
+      services:
+        - name: share-main-service
+          port: 80
+      middlewares:
+        - name: redirect-to-https
+    - match: Host(`move.baked.mom`) && PathPrefix(`/.well-known/acme-challenge/`)
+      kind: Rule
+      services:
+        - name: share-main-service
+          port: 80
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-to-https
+  namespace: share-main
+  labels:
+    app: share-main
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true

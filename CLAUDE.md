@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 only refer to the code in the git repo directory in isolation, this is a separate git repo and does not share code with the rest of the codebase.
 
 ## Config
-Environment variables will not be used, instead use the `config/config.go` file to set configuration options.
+Environment variables shall never be used for configuration unless explicitly stated. Always use the `config/config.go` file to set configuration options.
 
 ## Proto / GRPC
 - Proto files are located in the `proto/` directory

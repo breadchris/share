@@ -1,0 +1,129 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: share-main-service
+  namespace: share-main
+  labels:
+    app: share-main
+    component: web-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: share-main
+      component: web-service
+  template:
+    metadata:
+      labels:
+        app: share-main
+        component: web-service
+    spec:
+      serviceAccountName: share-main
+      containers:
+      - name: share-main
+        image: gcr.io/planar-sun-402202/share-main:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        env:
+        - name: CONFIG_MODE
+          value: "k8s"
+        - name: CONFIG_FILE_PATH
+          value: "/app/config/production.json"
+        - name: PORT
+          value: "8080"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: share-main-secrets
+              key: db-url
+        # Sensitive environment variables from secrets
+        - name: OPENAI_KEY
+          valueFrom:
+            secretKeyRef:
+              name: share-main-secrets
+              key: openai-key
+        - name: SESSION_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: share-main-secrets
+              key: session-secret
+        - name: GOOGLE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: share-main-secrets
+              key: google-client-id
+        - name: GOOGLE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: share-main-secrets
+              key: google-client-secret
+        - name: GITHUB_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: share-main-secrets
+              key: github-client-secret
+        - name: STRIPE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: share-main-secrets
+              key: stripe-secret-key
+        - name: SMTP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: share-main-secrets
+              key: smtp-password
+        - name: SUPABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: share-main-secrets
+              key: supabase-url
+        - name: JAMSOCKET_URL
+          valueFrom:
+            secretKeyRef:
+              name: share-main-secrets
+              key: jamsocket-url
+        - name: EXTERNAL_URL
+          valueFrom:
+            secretKeyRef:
+              name: share-main-secrets
+              key: external-url
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+          readOnly: true
+        - name: data-volume
+          mountPath: /app/data
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 180
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 120
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
+      volumes:
+      - name: config-volume
+        configMap:
+          name: share-main-config
+      - name: data-volume
+        emptyDir: {}
+      nodeSelector:
+        kubernetes.io/os: linux

@@ -1,0 +1,94 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+README*
+CHANGELOG*
+LICENSE*
+
+# Development files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Build artifacts
+main
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test files
+*_test.go
+test*
+
+# Development data that shouldn't be in container - exclude entire data directory except needed files
+data/
+!data/.gitkeep
+
+# Node modules and frontend build artifacts
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+**/node_modules/
+**/dist/
+**/build/
+
+# Kubernetes
+k8s/
+skaffold.yaml
+
+# Static build artifacts that are large
+static/coderunner/
+breadchris/static/
+
+# Symbol files that cause build issues
+symbol/
+
+# Code package that depends on symbol (temporary exclusion for Docker build)
+code/
+
+# Other packages that depend on symbol or flow workspace
+editor/
+
+# Large directories that aren't needed for the container
+graveyard/
+wasmcode/
+ygo/
+flow/worklet/test/
+
+# Additional exclusions for size
+*.sqlite
+*.sqlite3
+*.db
+*.log
+
+# Main directory files that depend on graveyard packages
+notes.go
+ai.go
+
+# Other development tools
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Temporary files
+tmp/
+temp/

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: share-main
+  labels:
+    app: share-main
+    environment: production

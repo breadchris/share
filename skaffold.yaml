@@ -1,0 +1,76 @@
+apiVersion: skaffold/v4beta6
+kind: Config
+metadata:
+  name: share-main
+
+build:
+  artifacts:
+  - image: gcr.io/planar-sun-402202/share-main
+    docker:
+      dockerfile: Dockerfile
+      buildArgs:
+        BUILDKIT_INLINE_CACHE: "1"
+  googleCloudBuild:
+    projectId: planar-sun-402202
+    machineType: E2_HIGHCPU_8
+    timeout: 1200s
+
+manifests:
+  rawYaml:
+  - k8s/main-namespace.yaml
+  - k8s/main-rbac.yaml
+  - k8s/main-configmap.yaml
+  - k8s/main-secrets.yaml
+  - k8s/main-deployment.yaml
+  - k8s/main-service.yaml
+  - k8s/main-ingressroute.yaml
+
+deploy:
+  kubectl: {}
+
+portForward:
+- resourceType: service
+  resourceName: share-main-service
+  namespace: share-main
+  port: 80
+  localPort: 8080
+
+profiles:
+- name: gke
+  activation:
+  - kubeContext: gke_planar-sun-402202_us-central1-a_flow-worklet-cluster
+  build:
+    googleCloudBuild:
+      projectId: planar-sun-402202
+      machineType: E2_HIGHCPU_8
+      timeout: 1200s
+    tagPolicy:
+      envTemplate:
+        template: "{{.IMAGE_NAME}}:{{.GIT_COMMIT_SHORT}}-{{.DATE}}"
+  deploy:
+    kubectl:
+      flags:
+        global: ["--context=gke_planar-sun-402202_us-central1-a_flow-worklet-cluster"]
+
+- name: local
+  activation:
+  - kubeContext: kind-flow-worklet
+  build:
+    local:
+      push: false
+    tagPolicy:
+      envTemplate:
+        template: "{{.IMAGE_NAME}}:dev-{{.USER}}-{{.DATE}}"
+  deploy:
+    kubectl:
+      flags:
+        global: ["--context=kind-flow-worklet"]
+
+- name: dev
+  patches:
+  - op: replace
+    path: /build/artifacts/0/docker/dockerfile
+    value: Dockerfile
+  - op: add
+    path: /build/artifacts/0/docker/buildArgs/DEBUG
+    value: "true"

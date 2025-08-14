@@ -5,59 +5,39 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/moving/utils/storage.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tools/package_fixer.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bread/cmd/fix_imports_and_generate_package.go" beforeDir="false" afterPath="$PROJECT_DIR$/bread/cmd/fix_imports_and_generate_package.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension.go" beforeDir="false" afterPath="$PROJECT_DIR$/extension.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/Readability.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/background.js" beforeDir="false" afterPath="$PROJECT_DIR$/extension/background.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/content.js" beforeDir="false" afterPath="$PROJECT_DIR$/extension/content.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/devtools.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/devtools.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/manifest.json" beforeDir="false" afterPath="$PROJECT_DIR$/extension/manifest.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/options.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/options.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/popup.html" beforeDir="false" afterPath="$PROJECT_DIR$/extension/popup.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/popup.js" beforeDir="false" afterPath="$PROJECT_DIR$/extension/popup.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/scrape.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/sidebar.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/sidebar.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/background.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/manifest.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS Extension/Info.plist" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS Extension/SafariWebExtensionHandler.swift" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS Extension/TabFS_Extension.entitlements" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS.xcodeproj/project.pbxproj" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS.xcodeproj/project.xcworkspace/contents.xcworkspacedata" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS.xcodeproj/project.xcworkspace/xcuserdata/osnr.xcuserdatad/UserInterfaceState.xcuserstate" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS.xcodeproj/xcuserdata/osnr.xcuserdatad/xcdebugger/Breakpoints_v2.xcbkptlist" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS.xcodeproj/xcuserdata/osnr.xcuserdatad/xcschemes/xcschememanagement.plist" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS/AppDelegate.swift" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS/Assets.xcassets/AccentColor.colorset/Contents.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS/Assets.xcassets/AppIcon.appiconset/Contents.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS/Assets.xcassets/Contents.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS/Base.lproj/Main.storyboard" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS/Info.plist" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS/TabFS.entitlements" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFS/ViewController.swift" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFSServer/main.swift" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFSService/Info.plist" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFSService/TabFSService.swift" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFSService/TabFSServiceProtocols.swift" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/safari/TabFS/TabFSService/main.swift" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/tabfs/vendor/browser-polyfill.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/extension/test.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/justshare/justshare.go" beforeDir="false" afterPath="$PROJECT_DIR$/justshare/justshare.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ai.go" beforeDir="false" afterPath="$PROJECT_DIR$/ai.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db/db.go" beforeDir="false" afterPath="$PROJECT_DIR$/db/db.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/deps/deps.go" beforeDir="false" afterPath="$PROJECT_DIR$/deps/deps.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hmr/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/hmr/.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/hmr/.idea/esbuild-hmr.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/hmr/.idea/misc.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/hmr/.idea/modules.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/hmr/.idea/vcs.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/hmr/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/hmr/client/index.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/hmr/client/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/hmr/client/main.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/hmr/client/sub.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/hmr/package-lock.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/hmr/package.json" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/hmr/server.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/hmr/tsconfig.json" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/models/models.go" beforeDir="false" afterPath="$PROJECT_DIR$/models/models.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scrape_test.go" beforeDir="false" afterPath="$PROJECT_DIR$/scrape_test.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-flow-claude.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-flow-claude.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/symbol/github_com-breadchris-share-models.go" beforeDir="false" afterPath="$PROJECT_DIR$/symbol/github_com-breadchris-share-models.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/moving/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/moving/App.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/moving/components/GoogleSheetsNavbar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/moving/components/GoogleSheetsNavbar.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/moving/components/ItemManager.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/moving/components/ItemManager.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/notes.go" beforeDir="false" afterPath="$PROJECT_DIR$/notes.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/analyzer@v1.wasm" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/node_modules/monaco-editor/esm/vs/editor/editor.worker.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/node_modules/monaco-editor/esm/vs/language/css/css.worker.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/node_modules/monaco-editor/esm/vs/language/html/html.worker.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/node_modules/monaco-editor/esm/vs/language/json/json.worker.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/node_modules/monaco-editor/esm/vs/language/typescript/ts.worker.js" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/vibekanban/vibekanban.go" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/vibekanban.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -344,7 +324,7 @@
       <workItem from="1750823183824" duration="106000" />
       <workItem from="1750823408293" duration="331921000" />
       <workItem from="1754033044459" duration="64530000" />
-      <workItem from="1754586855265" duration="9653000" />
+      <workItem from="1754586855265" duration="22863000" />
     </task>
     <servers />
   </component>
