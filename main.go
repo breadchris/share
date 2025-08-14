@@ -284,7 +284,7 @@ func startXCTF(port int) error {
 	hostService := host.NewService(db)
 
 	// Add CSP middleware and host routing middleware to allow Google Identity scripts
-	h := hostRoutingMiddleware(hostService, appConfig, cspMiddleware(s.LoadAndSave(http.DefaultServeMux)))
+	h := hostRoutingMiddleware(hostService, &appConfig, cspMiddleware(s.LoadAndSave(http.DefaultServeMux)))
 
 	log.Printf("Starting HTTP server on port: %d", port)
 	return http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), h)
@@ -854,7 +854,7 @@ func startServer(useTLS bool, port int) {
 	hostService := host.NewService(db)
 	
 	// Add CSP middleware and host routing middleware to allow Google Identity scripts
-	h := hostRoutingMiddleware(hostService, appConfig, cspMiddleware(s.LoadAndSave(http.DefaultServeMux)))
+	h := hostRoutingMiddleware(hostService, &appConfig, cspMiddleware(s.LoadAndSave(http.DefaultServeMux)))
 
 	if useTLS {
 		tlsConfig := NewTLSConfig(interCertFile, certFile, keyFile)
