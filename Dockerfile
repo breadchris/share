@@ -35,10 +35,13 @@ WORKDIR /app
 # Copy binary from builder
 COPY --from=builder /app/main .
 
-# Copy source files needed by coderunner
-COPY --from=builder /app/moving ./moving
-COPY --from=builder /app/justshare ./justshare
-COPY --from=builder /app/data/coderunner/src ./data/coderunner/src
+# Copy source files needed by coderunner (only if they exist)
+RUN --mount=from=builder,source=/app,target=/tmp/source,rw \
+    if [ -d "/tmp/source/moving" ]; then cp -r /tmp/source/moving ./moving; fi && \
+    if [ -d "/tmp/source/justshare" ]; then cp -r /tmp/source/justshare ./justshare; fi && \
+    if [ -d "/tmp/source/data/coderunner/src" ]; then \
+        mkdir -p ./data/coderunner && cp -r /tmp/source/data/coderunner/src ./data/coderunner/src; \
+    fi
 
 # Create necessary directories and set permissions
 RUN mkdir -p /app/data /app/static /app/templates /app/config && \
