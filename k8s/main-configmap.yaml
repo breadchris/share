@@ -84,6 +84,6 @@ data:
         "claude_session_only": false
       },
       "host_routes": {
-        "move.baked.mom": "moving/GoogleSheetsNavbar.tsx"
+        "move.baked.mom": "moving/components/GoogleSheetsNavbar.tsx"
       }
     }

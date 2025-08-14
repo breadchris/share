@@ -35,6 +35,11 @@ WORKDIR /app
 # Copy binary from builder
 COPY --from=builder /app/main .
 
+# Copy source files needed by coderunner
+COPY --from=builder /app/moving ./moving
+COPY --from=builder /app/justshare ./justshare
+COPY --from=builder /app/data/coderunner/src ./data/coderunner/src
+
 # Create necessary directories and set permissions
 RUN mkdir -p /app/data /app/static /app/templates /app/config && \
     chown -R app:app /app
