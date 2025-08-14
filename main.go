@@ -81,7 +81,7 @@ func cspMiddleware(next http.Handler) http.Handler {
 }
 
 // hostRoutingMiddleware handles host header routing to TSX components
-func hostRoutingMiddleware(hostService *host.Service, next http.Handler) http.Handler {
+func hostRoutingMiddleware(hostService *host.Service, appConfig *config2.AppConfig, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Extract host from request, removing port if present
 		hostHeader := r.Host
@@ -106,18 +106,29 @@ func hostRoutingMiddleware(hostService *host.Service, next http.Handler) http.Ha
 			}
 		}
 
-		// Look up host mapping in database
-		mapping, err := hostService.GetByDomain(hostHeader)
-		if err != nil {
-			// No mapping found, continue with normal routing
-			next.ServeHTTP(w, r)
-			return
+		// First check config for host routes
+		var componentPath string
+		if appConfig != nil && appConfig.HostRoutes != nil {
+			if path, ok := appConfig.HostRoutes[hostHeader]; ok {
+				componentPath = path
+			}
+		}
+
+		// If not found in config, look up host mapping in database
+		if componentPath == "" {
+			mapping, err := hostService.GetByDomain(hostHeader)
+			if err != nil {
+				// No mapping found, continue with normal routing
+				next.ServeHTTP(w, r)
+				return
+			}
+			componentPath = mapping.ComponentPath
 		}
 
 		// Extract component name from path (e.g., "moving/App.tsx" -> "App")
 		componentName := "App" // Default component name
-		if strings.Contains(mapping.ComponentPath, "/") {
-			parts := strings.Split(mapping.ComponentPath, "/")
+		if strings.Contains(componentPath, "/") {
+			parts := strings.Split(componentPath, "/")
 			if len(parts) > 1 {
 				filename := parts[len(parts)-1]
 				// Remove .tsx/.jsx extension
@@ -126,7 +137,7 @@ func hostRoutingMiddleware(hostService *host.Service, next http.Handler) http.Ha
 		}
 
 		// Serve the React component using coderunner
-		coderunner.ServeReactApp(w, r, mapping.ComponentPath, componentName)
+		coderunner.ServeReactApp(w, r, componentPath, componentName)
 	})
 }
 
@@ -273,7 +284,7 @@ func startXCTF(port int) error {
 	hostService := host.NewService(db)
 
 	// Add CSP middleware and host routing middleware to allow Google Identity scripts
-	h := hostRoutingMiddleware(hostService, cspMiddleware(s.LoadAndSave(http.DefaultServeMux)))
+	h := hostRoutingMiddleware(hostService, appConfig, cspMiddleware(s.LoadAndSave(http.DefaultServeMux)))
 
 	log.Printf("Starting HTTP server on port: %d", port)
 	return http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), h)
@@ -843,7 +854,7 @@ func startServer(useTLS bool, port int) {
 	hostService := host.NewService(db)
 	
 	// Add CSP middleware and host routing middleware to allow Google Identity scripts
-	h := hostRoutingMiddleware(hostService, cspMiddleware(s.LoadAndSave(http.DefaultServeMux)))
+	h := hostRoutingMiddleware(hostService, appConfig, cspMiddleware(s.LoadAndSave(http.DefaultServeMux)))
 
 	if useTLS {
 		tlsConfig := NewTLSConfig(interCertFile, certFile, keyFile)

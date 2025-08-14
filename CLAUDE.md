@@ -10,6 +10,71 @@ only refer to the code in the git repo directory in isolation, this is a separat
 ## Config
 Environment variables shall never be used for configuration unless explicitly stated. Always use the `config/config.go` file to set configuration options.
 
+### Host Mapping System
+
+The application supports host-based routing to serve different React components based on the domain name. This allows multiple applications to be served from a single deployment.
+
+#### How It Works
+
+1. **Config-Based Routing** (Primary): Define static host mappings in the configuration file
+2. **Database-Based Routing** (Secondary): Dynamic host mappings stored in the database
+
+The middleware checks config first, then falls back to database if no config mapping exists.
+
+#### Configuration
+
+Add host mappings to your config file (`data/production.json` or environment-specific):
+
+```json
+{
+  "host_routes": {
+    "move.baked.mom": "moving/GoogleSheetsNavbar.tsx",
+    "example.domain.com": "path/to/Component.tsx"
+  }
+}
+```
+
+#### Kubernetes Deployment
+
+When deploying to Kubernetes, host mappings are configured in the ConfigMap:
+
+1. **Update ConfigMap** (`k8s/main-configmap.yaml`):
+   - Add or modify entries in the `host_routes` section
+   - Each entry maps a domain to a component path
+
+2. **Apply ConfigMap Changes**:
+   ```bash
+   kubectl apply -f k8s/main-configmap.yaml
+   ```
+
+3. **Restart Pods** to pick up configuration changes:
+   ```bash
+   kubectl rollout restart deployment/share-main-service -n share-main
+   ```
+
+4. **Verify**: Check that pods have restarted and the new configuration is active:
+   ```bash
+   kubectl get pods -n share-main
+   kubectl logs -n share-main <pod-name> | grep "host_routes"
+   ```
+
+#### Application Lifecycle
+
+1. **Configuration Loading**: AppConfig loads from environment-specific JSON files
+2. **Middleware Initialization**: Host routing middleware receives AppConfig
+3. **Request Processing**: 
+   - Extract host header from incoming request
+   - Check config `host_routes` map
+   - Fall back to database if not in config
+   - Serve the mapped React component
+
+#### Database Host Mappings
+
+For dynamic host mappings, use the `/host` management interface or API:
+- Create, update, delete host mappings
+- Mappings stored in `host_mappings` table
+- Useful for development or dynamic tenant provisioning
+
 ## Proto / GRPC
 - Proto files are located in the `proto/` directory
 - Use go generate . to generate Go and Typescript from proto files

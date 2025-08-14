@@ -82,5 +82,8 @@ data:
         "mode": "disabled",
         "session_filter": [],
         "claude_session_only": false
+      },
+      "host_routes": {
+        "move.baked.mom": "moving/GoogleSheetsNavbar.tsx"
       }
     }

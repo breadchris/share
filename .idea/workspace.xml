@@ -6,38 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="97efbdbe-2d60-42ad-81df-773bc1252d9e" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CLAUDE.md" beforeDir="false" afterPath="$PROJECT_DIR$/CLAUDE.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ai.go" beforeDir="false" afterPath="$PROJECT_DIR$/ai.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/config/config.go" beforeDir="false" afterPath="$PROJECT_DIR$/config/config.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db/db.go" beforeDir="false" afterPath="$PROJECT_DIR$/db/db.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/deps/deps.go" beforeDir="false" afterPath="$PROJECT_DIR$/deps/deps.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hmr/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/hmr/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/hmr/.idea/esbuild-hmr.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/hmr/.idea/misc.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/hmr/.idea/modules.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/hmr/.idea/vcs.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/hmr/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/hmr/client/index.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/hmr/client/index.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/hmr/client/main.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/hmr/client/sub.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/hmr/package-lock.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/hmr/package.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/hmr/server.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/hmr/tsconfig.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/moving/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/moving/App.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/moving/components/GoogleSheetsNavbar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/moving/components/GoogleSheetsNavbar.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/moving/components/ItemManager.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/moving/components/ItemManager.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notes.go" beforeDir="false" afterPath="$PROJECT_DIR$/notes.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/analyzer@v1.wasm" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/node_modules/monaco-editor/esm/vs/editor/editor.worker.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/node_modules/monaco-editor/esm/vs/language/css/css.worker.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/node_modules/monaco-editor/esm/vs/language/html/html.worker.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/node_modules/monaco-editor/esm/vs/language/json/json.worker.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/node_modules/monaco-editor/esm/vs/language/typescript/ts.worker.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vibekanban/vibekanban.go" beforeDir="false" afterPath="$PROJECT_DIR$/vibekanban/vibekanban.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -324,7 +292,7 @@
       <workItem from="1750823183824" duration="106000" />
       <workItem from="1750823408293" duration="331921000" />
       <workItem from="1754033044459" duration="64530000" />
-      <workItem from="1754586855265" duration="22863000" />
+      <workItem from="1754586855265" duration="27139000" />
     </task>
     <servers />
   </component>
