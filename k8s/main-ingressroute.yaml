@@ -17,7 +17,7 @@ spec:
       middlewares:
         - name: share-main-headers
   tls:
-    certResolver: letsencrypt
+    secretName: move-baked-mom-tls
 ---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
